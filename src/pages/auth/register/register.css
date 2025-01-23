@@ -1,0 +1,29 @@
+.register-heading{
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #333;
+}
+
+.modal {
+    position: absolute;
+    top: 10%;
+    right: 29%;
+    background-color: blueviolet;
+    width: 40%;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.69);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal button {
+    position: inherit;
+    right: 100%;
+    width: 23px;
+    right: 0;
+    top: 10;
+    margin-right: 10px;
+    border-radius: 8px;
+    background-color: inherit;
+    color: #333;
+}

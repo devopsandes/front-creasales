@@ -1,0 +1,17 @@
+.icon-eye{
+    position: absolute;
+    top: 50%;
+    right: 10px; /* Espaciado del borde derecho */
+    transform: translateY(-50%);
+    cursor: pointer; /* Opcional: para que sea clickeable */
+    color: rgba(48, 48, 48, 0.69);
+    width: 20px;
+    height: 20px;
+}
+
+.icon-x {
+    cursor: pointer; /* Opcional: para que sea clickeable */
+    color: rgba(48, 48, 48, 0.69);
+    width: 20px;
+    height: 20px;
+}

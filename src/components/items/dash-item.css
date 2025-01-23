@@ -1,0 +1,16 @@
+.di-container {
+    padding: 5px;
+    background-color: rgb(134 108 99 / .6);
+    box-shadow: 2px 2px 2px 0 rgb(0 0 0 / .2);
+    width: 98%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+    text-decoration: none;
+    color: white;
+}
+
+.di-container:hover {
+    background-color: rgb(134 108 99 / .8);
+}

@@ -1,0 +1,13 @@
+.textarea-empresa {
+    width: 60%;
+    height: 150px; /* Altura inicial */
+    min-height: 100px; /* Altura mínima */
+    border: none;
+    background-color: white;
+    margin-left: 5px;
+    outline: none;
+    border-radius: 8px;
+    color: black;
+    padding: 4px;
+    resize: none;
+}

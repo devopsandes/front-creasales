@@ -1,0 +1,21 @@
+.dash-layout {
+    width: 100%;
+    display: grid;
+    height: 100%;
+    grid:
+      "sidebar body" 1fr
+      / 1fr 6fr;
+    /* gap: 8px; */
+}
+  
+.dash-sidebar { 
+    grid-area: sidebar; 
+    /* background-color: blueviolet; */
+}
+.dash-body { 
+    padding: 1rem;
+    grid-area: body; 
+    background-color: #4b7e93;
+    /* background-color: rgb(134 108 99 / .8); */
+
+}
