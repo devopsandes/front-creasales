@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { getMunicipios, getProvincias } from "../../services/common/common.services"
 import { Municipio, Provincia } from "../../interfaces/common.interface"
 import { sectores, tamanos } from "../../utils/constans"
-import { createEmpresa } from "../../services/empresas/empresa.services"
+// import { createEmpresa } from "../../services/empresas/empresa.services"
 import { ToastContainer, toast } from 'react-toastify';
 import Spinner23 from "../../components/spinners/Spinner23"
 import Eye from "../../components/icons/Eye"
@@ -12,13 +12,11 @@ import EyeSlash from "../../components/icons/EyeSlash"
 const FormUsuarios = () => {
   const [nombre, setNombre] = useState<string>('')
   const [direccion, setDireccion] = useState<string>('')
-  const [sitioWeb, setSitioWeb] = useState<string>('')
   const [email, setEmail] = useState<string>('')
   const [nacimiento, setNacimiento] = useState<string>('')
   const [telefono, setTelefono] = useState<string>('')
   const [pass, setPass] = useState<string>('')
   const [hidden, setHidden] = useState<boolean>(false)
-  const [cuit, setCuit] = useState<string>('')
   const [pais, setPais] = useState<string>('')
   const [provincia, setProvincia] = useState<string>('')
   const [municipio, setMunicipio] = useState<string>('')
@@ -66,7 +64,12 @@ const FormUsuarios = () => {
 
     let token = localStorage.getItem('token')
 
-    const regex = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:[0-9]{1,5})?(\/.*)?$/
+    console.log(provincia);
+    
+
+    toast.success('Datos cargados correctamente')
+
+    // const regex = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:[0-9]{1,5})?(\/.*)?$/
 
    /*  if(nombre.trim() === '' || direccion.trim() === '' || sitioWeb.trim() === '' || email.trim() === '' || telefono.trim() === '' || cuit.trim() === '' || pais.trim() === '' || provincia.trim() === '' || municipio.trim() === '' || sector.trim() === '' || tamano.trim() === '') {
       alert('Todos los campos son obligatorios')
@@ -80,13 +83,13 @@ const FormUsuarios = () => {
       return
     }
 
-    if(!regex.test(sitioWeb)){
+   /*  if(!regex.test(sitioWeb)){
       alert('Sitio web inválido')
       setShowSpinner(false)
       return
-    }
+    } */
 
-    const resp = await createEmpresa(token!,{
+    /* const resp = await createEmpresa(token!,{
       nombre,
       direccion,
       sitio_web: sitioWeb,
@@ -98,11 +101,11 @@ const FormUsuarios = () => {
       CUIT: cuit,
       sector,
       tamano
-    })
+    }) */
 
     setShowSpinner(false)
 
-    if(resp.statusCode === 201){
+   /*  if(resp.statusCode === 201){
       setShowSpinner(false)
       toast.success(resp.msg)
       // limpiar el formulario
@@ -120,7 +123,7 @@ const FormUsuarios = () => {
       setShowSpinner(false)
       setErrores(resp.message)
       toast.error('Error al cargar los datos')
-    }
+    } */
 
   }
 
@@ -182,8 +185,8 @@ const FormUsuarios = () => {
                   name="email" 
                   className="input-empresa"
                   placeholder="Ej: www.sitioweb.com"
-                  value={sitioWeb}
-                  onChange={e => setSitioWeb(e.target.value)}
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                 />
               </div>
               <div>
@@ -218,6 +221,7 @@ const FormUsuarios = () => {
                   name="pass"  
                   placeholder="Ingrese su password" 
                   className="input-empresa"
+                  value={pass}
                   onChange={(e) => setPass(e.target.value)}
                   required
                 />

@@ -1,11 +1,11 @@
-import { registerForPushNotifications } from "../../services/prueba.services"
+// import { registerForPushNotifications } from "../../services/prueba.services"
 
 const DatosEmpresa = () => {
 
-  const handleClickButton = async () => {
+  /* const handleClickButton = async () => {
     const resp = await registerForPushNotifications()
     console.log(resp);
-  }
+  } */
   
   return (
     <div>

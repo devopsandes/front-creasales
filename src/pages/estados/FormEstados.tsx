@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ToastContainer, toast, ToastOptions } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import Spinner23 from "../../components/spinners/Spinner23"
 import './estados.css'
 import { createEstado } from "../../services/estados/estados.services"

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
-import { NavTagProps, Tag } from '../../interfaces/common.interface';
+import { NavTagProps } from '../../interfaces/common.interface';
 import './navtag.css'
 
 const NavTag: React.FC<NavTagProps> = (elements) => {
