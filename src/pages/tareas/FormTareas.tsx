@@ -135,7 +135,8 @@ const FormTareas = () => {
                   onChange={handleChangeModulo}
                 >
                     <option value="">-- Seleccione --</option>
-                    {modulos.map(mod => (
+
+                    {modulos != undefined && modulos.map(mod => (
                         <option value={mod.id} key={mod.id}>{mod.nombre}</option>
                     ))}
                 </select>
@@ -151,7 +152,7 @@ const FormTareas = () => {
                 >
                     <option value="">-- Seleccione --</option>
                     
-                    {categorias && categorias.map(mod => (
+                    {categorias != undefined && categorias.map(mod => (
                         <option value={mod.id} key={mod.id}>{mod.nombre}</option>
                     ))}
                 </select>

@@ -118,7 +118,7 @@ const FormCategorias = () => {
                   onChange={handleChangeModulo}
                 >
                     <option value="">-- Seleccione --</option>
-                    {modulos.map(mod => (
+                    {modulos != undefined && modulos.map(mod => (
                         <option value={mod.id} key={mod.id}>{mod.nombre}</option>
                     ))}
                 </select>
