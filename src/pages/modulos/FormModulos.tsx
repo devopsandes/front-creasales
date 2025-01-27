@@ -1,4 +1,4 @@
-import {  FormEvent, useState, useEffect } from "react"
+import {  FormEvent, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ToastContainer, toast } from 'react-toastify';
 import Spinner23 from "../../components/spinners/Spinner23"
@@ -14,9 +14,9 @@ const FormModulos = () => {
 
   const navigate = useNavigate()
 
-  useEffect(()=>{
-   
-  },[])
+  let token = localStorage.getItem('token')
+
+ 
 
   
 
@@ -25,7 +25,7 @@ const FormModulos = () => {
     setErrores([])
     setShowSpinner(true)
 
-    let token = localStorage.getItem('token')
+    // let token = localStorage.getItem('token')
 
     if(!token){
       setShowSpinner(false)
@@ -62,7 +62,6 @@ const FormModulos = () => {
       setErrores([`${resp.message}`])
       toast.error('Error al cargar los datos')
     }else {
-      console.log(resp.message);
       setShowSpinner(false)
       setErrores(resp.message)
       toast.error('Error al cargar los datos')

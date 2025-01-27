@@ -17,6 +17,8 @@ import { Tag } from '../interfaces/common.interface'
 import FormMeta from '../pages/meta/FormMeta'
 import FormModulos from '../pages/modulos/FormModulos'
 import FormUsuarios from '../pages/usuarios/FormUsuarios'
+import FormCategorias from '../pages/categorias/FormCategorias'
+import FormTareas from '../pages/tareas/FormTareas'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -80,7 +82,29 @@ const AppRouter = () => {
   const navUsuarios: Tag[] = [
     {
       name: "Form",
-      path: "/dashboard/modulos"
+      path: "/dashboard/usuarios"
+    },
+    {
+      name: "Datos",
+      path: "/dashboard/modulos/datos"
+    }
+  ]
+
+  const navCategorias: Tag[] = [
+    {
+      name: "Form",
+      path: "/dashboard/categorias"
+    },
+    {
+      name: "Datos",
+      path: "/dashboard/modulos/datos"
+    }
+  ]
+
+  const navTareas: Tag[] = [
+    {
+      name: "Form",
+      path: "/dashboard/tareas"
     },
     {
       name: "Datos",
@@ -135,6 +159,16 @@ const AppRouter = () => {
 
           <Route path='usuarios' element={<NavTag tags={navUsuarios} />}>
             <Route index element={<FormUsuarios />}/>
+            <Route path='datos' element={<DatosEmpresa/>}/>
+          </Route>
+
+          <Route path='categorias' element={<NavTag tags={navCategorias} />}>
+            <Route index element={<FormCategorias />}/>
+            <Route path='datos' element={<DatosEmpresa/>}/>
+          </Route>
+
+          <Route path='tareas' element={<NavTag tags={navTareas} />}>
+            <Route index element={<FormTareas />}/>
             <Route path='datos' element={<DatosEmpresa/>}/>
           </Route>
 

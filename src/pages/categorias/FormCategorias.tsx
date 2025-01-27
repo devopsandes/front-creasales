@@ -2,42 +2,49 @@ import { ChangeEvent, FormEvent, useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { ToastContainer, toast } from 'react-toastify';
 import Spinner23 from "../../components/spinners/Spinner23"
-import { createEstado } from "../../services/estados/estados.services"
-import { REF_STATES, STATES_CLIENT, STATES_TICKETS, STATES_USER } from "../../utils/constans";
-import './estados.css'
+import { Modulo } from "../../interfaces/modulos.interface";
+import { findAllModulos } from "../../services/modulos/modulos.services";
+import { createCategoria } from "../../services/categorias/categorias.services";
 
 
-const FormEstados = () => {
+const FormCategorias = () => {
   const [nombre, setNombre] = useState<string>('')
   const [descripcion, setDescripcion] = useState<string>('')
-  const [referencia, setReferencia] = useState<string>('USER')
+  const [modulo, setModulo] = useState<string>('')
+  const [modulos, setModulos] = useState<Modulo[]>([])
   const [showSpinner, setShowSpinner] = useState(false)
   const [errores, setErrores] = useState<string[]>([])
 
   const navigate = useNavigate()
 
+  let token = localStorage.getItem('token')
+
+
   useEffect(()=>{
-    setNombre('')
-    if(referencia === 'USER')
-      setNombre(STATES_USER[0].nombre)
-    if(referencia === 'CLIENTE')
-      setNombre(STATES_CLIENT[0].nombre)
-    if(referencia === 'TICKET')
-      setNombre(STATES_TICKETS[0].nombre)
-  },[referencia])
+
+    const inicio = async (token: string) => {
+      const resp = await findAllModulos(token)
+      setModulos(resp.modulos)
+      
+      return modulos
+    }
+
+    inicio(token!)
+  },[])
 
   
 
-  const handleChangeReferencia = (e: ChangeEvent<HTMLSelectElement>) => {
-    const selectedText = e.target.options[e.target.selectedIndex].text;
-    setReferencia(selectedText)
+  
+
+  const handleChangeModulo = (e: ChangeEvent<HTMLSelectElement>) => {
+    // const selectedText = e.target.options[e.target.selectedIndex].text;
+    // console.log(e.target.value);
+    setModulo(e.target.value)
+    // console.log(selectedText);
+    
   }
 
-  const handleChangeNombre = (e: ChangeEvent<HTMLSelectElement>) => {
-    const selectedText = e.target.options[e.target.selectedIndex].text;
-    setNombre(selectedText)
-  }
-
+ 
  
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -54,10 +61,10 @@ const FormEstados = () => {
       return
     }
 
-    const resp = await createEstado(token, {nombre, descripcion, referencia})
+    const resp = await createCategoria(token, {nombre, descripcion, modulo_id: modulo})
 
 
-    if(resp.statusCode === 201){
+   if(resp.statusCode === 201){
       setShowSpinner(false)
       setNombre('')
       setDescripcion('')
@@ -72,15 +79,12 @@ const FormEstados = () => {
       setShowSpinner(false)
       setErrores([`${resp.message}`])
       toast.error('Error al cargar los datos')
-
-      
     }else {
       console.log(resp.message);
       setShowSpinner(false)
       setErrores(resp.message)
       toast.error('Error al cargar los datos')
     }
-  
    
 
   }
@@ -105,39 +109,31 @@ const FormEstados = () => {
             <div className="form-col">
 
               <div>
-                <label htmlFor="referencia">Referencia:</label>
+                <label htmlFor="referencia">Modulo:</label>
                 <select 
                   name="referencia" 
                   id="referencia" 
                   className="select-empresa"
-                  value={referencia}
-                  onChange={handleChangeReferencia}
+                  value={modulo}
+                  onChange={handleChangeModulo}
                 >
-                  {REF_STATES.map(ref => (
-                    <option value={ref.nombre} key={ref.id}>{ref.nombre}</option>
-                  ))}
+                    <option value="">-- Seleccione --</option>
+                    {modulos.map(mod => (
+                        <option value={mod.id} key={mod.id}>{mod.nombre}</option>
+                    ))}
                 </select>
               </div>
               <div>
                 <label htmlFor="nombre">Nombre:</label>
-                <select 
-                  name="nombre" 
+                <input 
+                  type="text" 
                   id="nombre" 
-                  className="select-empresa"
+                  name="nombre" 
+                  className="input-empresa"
+                  placeholder="Ej: Fiscalización, Prestaciones, etc"
                   value={nombre}
-                  onChange={handleChangeNombre}
-                >
-                    {referencia === 'USER' && STATES_USER.map(user => (
-                        <option value={user.nombre} key={user.id}>{user.nombre}</option>
-                    ))}
-                    {referencia === 'CLIENTE' && STATES_CLIENT.map(client => (
-                        <option value={client.nombre} key={client.id}>{client.nombre}</option>
-                    ))}
-                    {referencia === 'TICKET' && STATES_TICKETS.map(ticket => (
-                        <option value={ticket.nombre} key={ticket.id}>{ticket.nombre}</option>
-                    ))}
-                 
-                </select>
+                  onChange={e => setNombre(e.target.value)}
+                />
               </div>
               <div>
                 <label htmlFor="descripcion">Descripción:</label>
@@ -150,15 +146,6 @@ const FormEstados = () => {
                 >
 
                 </textarea>
-              {/*   <input 
-                  type="text" 
-                  id="desccripcion" 
-                  name="desccripcion" 
-                  className="input-empresa"
-                  placeholder="Ej: Calle 123"
-                  value={direccion}
-                  onChange={e => setDireccion(e.target.value)}
-                /> */}
               </div>
             
             
@@ -192,4 +179,4 @@ const FormEstados = () => {
   )
 }
 
-export default FormEstados
+export default FormCategorias

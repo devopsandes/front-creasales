@@ -49,7 +49,6 @@ const Register = () => {
       nro_doc: nro!,
       role: "ADMIN"
     })
-    console.log(respuesta);
     
     if(respuesta.statusCode === 201){
       dispatch(addMessage(respuesta.msg))
