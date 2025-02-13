@@ -15,7 +15,6 @@ const Dashboard = () => {
     if(token){
       empresaXUser(token)
         .then(data => {
-          console.log(data.statusCode);
           if(data.statusCode === 401){
             localStorage.removeItem('token')
             localStorage.removeItem('role')

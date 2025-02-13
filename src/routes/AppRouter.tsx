@@ -13,12 +13,15 @@ import FormEmpresa from '../pages/empresa/FormEmpresa'
 import DatosEmpresa from '../pages/empresa/DatosEmpresa'
 import FormEstados from '../pages/estados/FormEstados'
 import NavTag from '../components/navs/NavTag'
-import { Tag } from '../interfaces/common.interface'
 import FormMeta from '../pages/meta/FormMeta'
 import FormModulos from '../pages/modulos/FormModulos'
 import FormUsuarios from '../pages/usuarios/FormUsuarios'
 import FormCategorias from '../pages/categorias/FormCategorias'
 import FormTareas from '../pages/tareas/FormTareas'
+import Chats from '../pages/chats/Chats'
+import BusquedaChats from '../pages/chats/BusquedaChats'
+import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navTareas, navUsuarios } from '../utils/navegacion'
+import ListaChats from '../pages/chats/ListaChats'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -34,84 +37,7 @@ const AppRouter = () => {
     return token ? true : false
   }
 
-  const navEmpresa: Tag[] = [
-    {
-      name: "Form",
-      path: "/dashboard/empresa"
-    },
-    {
-      name: "Datos",
-      path: "/dashboard/empresa/datos"
-    }
-  ]
-
-  const navEstados: Tag[] = [
-    {
-      name: "Form",
-      path: "/dashboard/estados"
-    },
-    {
-      name: "Datos",
-      path: "/dashboard/estados/datos"
-    }
-  ]
-
-  const navMeta: Tag[] = [
-    {
-      name: "Form",
-      path: "/dashboard/meta"
-    },
-    {
-      name: "Datos",
-      path: "/dashboard/meta/datos"
-    }
-  ]
-
-
-  const navModulos: Tag[] = [
-    {
-      name: "Form",
-      path: "/dashboard/modulos"
-    },
-    {
-      name: "Datos",
-      path: "/dashboard/modulos/datos"
-    }
-  ]
-
-  const navUsuarios: Tag[] = [
-    {
-      name: "Form",
-      path: "/dashboard/usuarios"
-    },
-    {
-      name: "Datos",
-      path: "/dashboard/modulos/datos"
-    }
-  ]
-
-  const navCategorias: Tag[] = [
-    {
-      name: "Form",
-      path: "/dashboard/categorias"
-    },
-    {
-      name: "Datos",
-      path: "/dashboard/modulos/datos"
-    }
-  ]
-
-  const navTareas: Tag[] = [
-    {
-      name: "Form",
-      path: "/dashboard/tareas"
-    },
-    {
-      name: "Datos",
-      path: "/dashboard/modulos/datos"
-    }
-  ]
-
+ 
 
   
 
@@ -171,6 +97,15 @@ const AppRouter = () => {
             <Route index element={<FormTareas />}/>
             <Route path='datos' element={<DatosEmpresa/>}/>
           </Route>
+
+          <Route path='chats' element={<NavTag tags={navChats} />}>
+            <Route  element={<BusquedaChats />}>
+              <Route index element={<ListaChats/>}/>
+              <Route path=':id' element={<Chats/>}/>
+            </Route >
+            {/* <Route path=':id' element={<Chats/>}/> */}
+          </Route>
+
 
 
 

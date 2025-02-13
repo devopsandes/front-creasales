@@ -42,6 +42,10 @@ input, select{
   background-color: rgb(189, 189, 189) !important;
 }
 
+button {
+  all: unset;
+}
+
 
 
 

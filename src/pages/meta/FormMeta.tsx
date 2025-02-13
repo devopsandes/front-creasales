@@ -34,6 +34,9 @@ const FormMeta = () => {
     setErrores([])
     setShowSpinner(true)
 
+    console.log(servicios);
+    
+
     let token = localStorage.getItem('token')
 
     if(!token){
@@ -60,7 +63,8 @@ const FormMeta = () => {
     const resp = await createMeta(token, {
         graph_api_token: accessToken, 
         user_token: userToken.length > 0 ? userToken : undefined, 
-        id_phone_number: +idPhoneNumber
+        id_phone_number: +idPhoneNumber,
+        servicios
     })
 
 

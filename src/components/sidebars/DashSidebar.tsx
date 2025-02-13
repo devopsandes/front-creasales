@@ -18,7 +18,7 @@ const DashSidebar = () => {
         <DashItem icon={HiCog} path='' titulo="Configuración"/>
         <DashItem icon={HiCpuChip} path='' titulo="BOT/IA"/>
         <DashItem icon={HiClipboardDocumentList} path='/dashboard/empresa' titulo="Empresa"/>
-        <DashItem icon={FaComments} path='' titulo="Chats"/>
+        <DashItem icon={FaComments} path='/dashboard/chats' titulo="Chats"/>
         <DashItem icon={HiMiniTicket} path='' titulo="Tickets"/>
         <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta"/>
         <DashItem icon={HiMiniUsers} path='/dashboard/usuarios' titulo="Usuarios"/>
