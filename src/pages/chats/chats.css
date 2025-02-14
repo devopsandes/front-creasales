@@ -140,6 +140,10 @@
 }
 
 .col-lista {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
     width: 33.3%;
     padding:  15px;
     display: flex;

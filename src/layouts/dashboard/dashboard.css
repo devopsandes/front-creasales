@@ -16,6 +16,7 @@
     padding: 1rem;
     grid-area: body; 
     background-color: #4b7e93;
+    overflow: hidden;
     /* background-color: rgb(134 108 99 / .8); */
 
 }

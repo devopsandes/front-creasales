@@ -34,6 +34,10 @@ const ListaChats = () => {
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link> 
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link> 
                
             </div>
             <div className="col-lista">
@@ -46,6 +50,10 @@ const ListaChats = () => {
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link> 
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link> 
             </div>
             <div className="col-lista">
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
@@ -53,6 +61,10 @@ const ListaChats = () => {
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
+                <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link> 
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
                 <Link to="/dashboard/chats/sarasa" className="item-lista">chat</Link>
