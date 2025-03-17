@@ -6,6 +6,7 @@ import { empresaXUser } from "../../services/empresas/empresa.services";
 import './dashboard.css'
 
 
+
 const Dashboard = () => {
 
   const navigate = useNavigate()

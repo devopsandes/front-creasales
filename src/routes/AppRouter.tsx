@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import {  useSelector } from 'react-redux'
 import Auth from '../layouts/auth/Auth'
 import Login from '../pages/auth/login/Login'
 import Register from '../pages/auth/register/Register'
@@ -27,6 +27,7 @@ const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
+ 
   const authenticated = (): boolean => {
     const token = localStorage.getItem('token')
 
