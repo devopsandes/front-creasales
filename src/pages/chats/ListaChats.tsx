@@ -38,7 +38,7 @@ const ListaChats = () => {
         socket = getSocket()
         
         return () => {
-            dispatch(disconnectSocket())
+            // dispatch(disconnectSocket())
         }
     },[dispatch])
 
@@ -50,6 +50,8 @@ const ListaChats = () => {
         if(!socket) return
         
         const handleChats = (data: ChatState[]) => {
+            console.log(data);
+            
             const arreglo = dividirArrayEnTres(data)
             setChats1(arreglo[0])
             setChats2(arreglo[1])
@@ -61,7 +63,6 @@ const ListaChats = () => {
         }
 
         const handleError = (error: any) => {
-            console.log(error);
             if (error.name === 'TokenExpiredError') {
                 alert('Su sesión ha caducado')
                 navigate('/auth/signin')
@@ -71,8 +72,16 @@ const ListaChats = () => {
             navigate('/auth/signin')
             return
         }
+
+        const handleDisconnect = () => {
+            console.log('Se ha desconectado del socket');
+            
+            alert('Su sesión ha caducado')
+            navigate('/auth/signin')
+            return
+        }
         
-     
+        // socket.on('disconnect', handleDisconnect)
 
         socket.on('nuevo-chat',handleNuevoChat)
 

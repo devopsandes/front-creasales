@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
 import { findChatById } from '../../services/chats/chats.services'
 import { Mensaje } from '../../interfaces/chats.interface'
-import { formatCreatedAt } from '../../utils/functions'
+import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { Socket } from 'socket.io-client'
 import { connectSocket, disconnectSocket, getSocket } from '../../app/slices/socketSlice'
 import { useDispatch } from 'react-redux'
@@ -14,6 +14,7 @@ import './chats.css'
 const Chats = () => {
     const [mensajes, setMensajes] = useState<Mensaje[]>([])
     const [mensaje, setMensaje] = useState<string>('')
+    const [condChat, setCondChat] = useState<boolean>(false)
 
     const location = useLocation()
     const token = localStorage.getItem('token')
@@ -31,6 +32,7 @@ const Chats = () => {
 
     let socket: Socket | null = null
 
+   
     useEffect(()=>{
         dispatch(connectSocket())
         socket = getSocket()
@@ -72,6 +74,11 @@ const Chats = () => {
         const inicio = async () => {
             const data = await findChatById(token!, id)
             setMensajes(data.chat.mensajes)
+            const ultimo = data.chat.mensajes[data.chat.mensajes.length - 1]
+            console.log(ultimo.createdAt);
+            setCondChat(menos24hs(ultimo.createdAt))
+            
+            
         }
         inicio()
     }, [id, token])
@@ -129,16 +136,23 @@ const Chats = () => {
                     ))}
                 </div>
                 <div className='footer-chat'>
-                    <form action="" className='enviar-msj' onSubmit={handleClickBtn}>
-                        <input 
-                            type="text" 
-                            placeholder='Escriba un mensaje' 
-                            className='input-msg'
-                            value={mensaje}
-                            onChange={(e) => setMensaje(e.target.value)}
-                        />
-                        <button type='submit' className='btn-msg'>Enviar</button>
-                    </form>
+                    {condChat ? (
+                        <form action="" className='enviar-msj' onSubmit={handleClickBtn}>
+                            <input 
+                                type="text" 
+                                placeholder='Escriba un mensaje' 
+                                className='input-msg'
+                                value={mensaje}
+                                onChange={(e) => setMensaje(e.target.value)}
+                            />
+                            <button type='submit' className='btn-msg'>Enviar</button>
+                        </form>
+                    ) : (
+                        <div className='no-chat'>
+                            <p className='no-chat-text'>No se pueden enviar mensajes</p>
+                        </div>
+                    )}
+                    
                 </div>
             </div>
         </div>

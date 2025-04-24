@@ -43,4 +43,14 @@ function formatCreatedAt(createdAt: string): string {
     return `${fecha} ${hora}`
 }
 
-export { dividirArrayEnTres, formatCreatedAt }
+function menos24hs(createdAt: Date): boolean {
+    
+    const date = new Date(createdAt);
+    const ahora = new Date();
+    const diferencia = ahora.getTime() - date.getTime();
+    const horasDiferencia = diferencia / (1000 * 60 * 60); // Convertir a horas
+    
+    return horasDiferencia < 24;
+}
+
+export { dividirArrayEnTres, formatCreatedAt, menos24hs };

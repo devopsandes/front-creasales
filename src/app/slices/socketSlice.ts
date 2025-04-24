@@ -68,6 +68,7 @@ export default socketSlice.reducer; */
 
 const SOCKET_URL = `${import.meta.env.VITE_URL_BACK}`; // URL de tu backend con Socket.IO
 
+
 let socket: Socket | null = null; // Variable externa para almacenar la instancia del socket
 
 interface SocketState {
@@ -86,6 +87,7 @@ const socketSlice = createSlice({
     initialState,
     reducers: {
       connectSocket: (state) => {
+        
         if (!socket) {
             
             socket = io(SOCKET_URL,{
@@ -101,8 +103,7 @@ const socketSlice = createSlice({
             })
 
             socket.on('disconnect', () => {
-                // console.log('se desconecta del socket');
-                
+                // alert('Su sesión ha caducado')
             })
         }
         state.isConnected = true;
