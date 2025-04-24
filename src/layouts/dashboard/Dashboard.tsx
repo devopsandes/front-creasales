@@ -9,6 +9,14 @@ import './dashboard.css'
 
 const Dashboard = () => {
 
+  let role: string | null = localStorage.getItem('role')
+
+  useEffect(() => {
+    role = role ? localStorage.getItem('role') : null
+    console.log(localStorage.getItem('role'));
+    
+  },[])
+
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -34,7 +42,7 @@ const Dashboard = () => {
   return (
     <section className="dash-layout">
         <div className="dash-sidebar">
-          <DashSidebar/>
+          <DashSidebar role={role!}/>
 
         </div>
         <div className="dash-body">

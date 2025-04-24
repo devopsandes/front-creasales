@@ -36,7 +36,8 @@ const ListaChats = () => {
         
         dispatch(connectSocket())
         socket = getSocket()
-
+        console.log(`URL  BACK -> ${import.meta.env.VITE_URL_BACK}`);
+        
         return () => {
             dispatch(disconnectSocket())
         }

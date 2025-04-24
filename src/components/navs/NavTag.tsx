@@ -6,7 +6,8 @@ import './navtag.css'
 const NavTag: React.FC<NavTagProps> = (elements) => {
 
     useEffect(()=>{
-
+        console.log(elements)
+        
     },[])
     
     return (
@@ -16,7 +17,7 @@ const NavTag: React.FC<NavTagProps> = (elements) => {
                     {elements.tags.map(tag => (
                         <li>
                             <Link 
-                                key={tag.name}
+                                key={tag.id}
                                 to={`${tag.path}`} 
                                 className='dash-link'
                             >   

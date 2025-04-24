@@ -49,6 +49,7 @@ export interface NavTagProps {
 }
 
 export interface Tag {
+    id: number
     path: string
     name: string
 }

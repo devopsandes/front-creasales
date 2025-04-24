@@ -22,10 +22,14 @@ import Chats from '../pages/chats/Chats'
 import BusquedaChats from '../pages/chats/BusquedaChats'
 import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navTareas, navUsuarios } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
+import { useEffect } from 'react'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+
+  let role = localStorage.getItem('role')
+  useEffect(() => {},[])
 
  
   const authenticated = (): boolean => {
@@ -45,6 +49,11 @@ const AppRouter = () => {
   const msgLogin = `Su cuenta no ha sido validada, revise su casilla de email para validar la misma e inicie sesión`
   const msgValidacion = `Su cuenta ha sido validada correctamente ya puede iniciar sesión en la misma`
 
+  /* 
+  TODO: Tener en cuenta los roles en los desarrollos
+  TODO: realizar las rutas faltantes y las vistas de las mismas
+  */
+
   return (
     <Routes>
         <Route path='/auth' element={<Auth />}>
@@ -59,45 +68,63 @@ const AppRouter = () => {
           <Route path='*' element={<Message msg={'404 Oops no hay nada en esta ruta...'} tipo={'auth'}  />}/>
         </Route>
         <Route path='/dashboard' element={
-          <PrivateRoute isAuthenticated={authenticated()}>
-            <Dashboard />
-          </PrivateRoute>
+          <>
+            <PrivateRoute isAuthenticated={authenticated()}>
+              <Dashboard />
+            </PrivateRoute>
+          </>
+          
           }
         >
-          <Route path='empresa' element={<NavTag tags={navEmpresa} />}>
-            <Route index element={<FormEmpresa/>}/>
-            <Route path='datos' element={<DatosEmpresa/>}/>
-          </Route>
+          {role === 'ROOT' && (
+            <Route path='empresa' element={<NavTag tags={navEmpresa} />}>
+              <Route index element={<FormEmpresa/>}/>
+              <Route path='datos' element={<DatosEmpresa/>}/>
+            </Route>
+          )}
+        
+          {role === 'ROOT' && (
+            <Route path='modulos' element={<NavTag tags={navModulos} />}>
+              <Route index element={<FormModulos />}/>
+              <Route path='datos' element={<DatosEmpresa/>}/>
+            </Route>
+          )}
 
-          <Route path='modulos' element={<NavTag tags={navModulos} />}>
-            <Route index element={<FormModulos />}/>
-            <Route path='datos' element={<DatosEmpresa/>}/>
-          </Route>
+          {(role === 'ROOT' || role === 'ADMIN') && (
+            <Route path='estados' element={<NavTag tags={navEstados} />}>
+              <Route index element={<FormEstados/>}/>
+              <Route path='datos' element={<DatosEmpresa/>}/>
+            </Route>
+          )}
 
-          <Route path='estados' element={<NavTag tags={navEstados} />}>
-            <Route index element={<FormEstados/>}/>
-            <Route path='datos' element={<DatosEmpresa/>}/>
-          </Route>
+          {(role === 'ROOT' || role === 'ADMIN') && (
+            <Route path='meta' element={<NavTag tags={navMeta} />}>
+              <Route index element={<FormMeta />}/>
+              <Route path='datos' element={<DatosEmpresa/>}/>
+            </Route>
+          )}
 
-          <Route path='meta' element={<NavTag tags={navMeta} />}>
-            <Route index element={<FormMeta />}/>
-            <Route path='datos' element={<DatosEmpresa/>}/>
-          </Route>
+          {(role === 'ROOT' || role === 'ADMIN') && (
+            <Route path='usuarios' element={<NavTag tags={navUsuarios} />}>
+              <Route index element={<FormUsuarios />}/>
+              <Route path='datos' element={<DatosEmpresa/>}/>
+            </Route>
+          )}
 
-          <Route path='usuarios' element={<NavTag tags={navUsuarios} />}>
-            <Route index element={<FormUsuarios />}/>
-            <Route path='datos' element={<DatosEmpresa/>}/>
-          </Route>
+          {(role === 'ROOT' || role === 'ADMIN') && (
+            <Route path='categorias' element={<NavTag tags={navCategorias} />}>
+              <Route index element={<FormCategorias />}/>
+              <Route path='datos' element={<DatosEmpresa/>}/>
+            </Route>
+          )}
 
-          <Route path='categorias' element={<NavTag tags={navCategorias} />}>
-            <Route index element={<FormCategorias />}/>
-            <Route path='datos' element={<DatosEmpresa/>}/>
-          </Route>
-
-          <Route path='tareas' element={<NavTag tags={navTareas} />}>
-            <Route index element={<FormTareas />}/>
-            <Route path='datos' element={<DatosEmpresa/>}/>
-          </Route>
+          {(role === 'ROOT' || role === 'ADMIN') && (
+            <Route path='tareas' element={<NavTag tags={navTareas} />}>
+              <Route index element={<FormTareas />}/>
+              <Route path='datos' element={<DatosEmpresa/>}/>
+            </Route>
+          )}
+        
 
           <Route path='chats' element={<NavTag tags={navChats} />}>
             <Route  element={<BusquedaChats />}>
