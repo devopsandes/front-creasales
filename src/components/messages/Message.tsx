@@ -15,6 +15,7 @@ const Message = ({msg, tipo}: MessageProps) => {
 
   const dispatch = useDispatch()
 
+  const msj1 = searchParams.get('msg')
 
   useEffect(() => {
     const token = searchParams.get('token')
@@ -51,7 +52,7 @@ const Message = ({msg, tipo}: MessageProps) => {
       <Spinner />
       ) : (
       <p className='msg-register signup-link'>
-        {msg} 
+        {msj1} 
         {tipo === 'auth' && (
           <>
             {'\t -> \t'}
