@@ -5,12 +5,14 @@ import { dividirArrayEnTres } from "../../utils/functions"
 import {  connectSocket, disconnectSocket, getSocket } from "../../app/slices/socketSlice"
 import { useDispatch } from "react-redux"
 import { Socket } from "socket.io-client"
+import './chats.css'
 
 
 const ListaChats = () => {
     const [chats1,setChats1] = useState<ChatState[]>([])
     const [chats2,setChats2] = useState<ChatState[]>([])
     const [chats3,setChats3] = useState<ChatState[]>([])
+    const [loading, setLoading] = useState<boolean>(true)
 
     const navigate = useNavigate()
     const dispatch = useDispatch()
@@ -36,9 +38,9 @@ const ListaChats = () => {
         
         dispatch(connectSocket())
         socket = getSocket()
-        
+        setLoading(true)
         return () => {
-            // dispatch(disconnectSocket())
+            dispatch(disconnectSocket())
         }
     },[dispatch])
 
@@ -50,12 +52,12 @@ const ListaChats = () => {
         if(!socket) return
         
         const handleChats = (data: ChatState[]) => {
-            console.log(data);
-            
+            //TENGO QUE PONER UNA CONDICION PARA UN SPINNER
             const arreglo = dividirArrayEnTres(data)
             setChats1(arreglo[0])
             setChats2(arreglo[1])
             setChats3(arreglo[2])
+            setLoading(false)
         }
 
         const handleNuevoChat = (chat: ChatState) => {
@@ -120,26 +122,59 @@ const ListaChats = () => {
         </div>
         <div className="lista-main">
             <div className="col-lista">
-                {chats1.map(chat => (
-                    <Link to={`/dashboard/chats/id=${chat.id}&telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} className="item-lista" key={chat.id}>
-                        {chat.cliente.nombre} - {chat.cliente.telefono}
-                    </Link>
-                ))}
-            </div>
-            <div className="col-lista">
-                {chats2.map(chat => (
-                    <Link to={`/dashboard/chats/${chat.cliente.telefono}`} className="item-lista" key={chat.id}>
-                        {chat.cliente.nombre} - {chat.cliente.telefono}
-                    </Link>
-                ))}
+                {loading && (
+                    <div className="spinner-lista">
+                        <div className="loader2"></div>
+                    </div>
+                )}
+                {!loading && chats1.length === 0 && (
+                    <p className="msg-error">No hay chats disponibles</p>
+                )}
+                {!loading && chats1.length > 0 && 
+                    chats1.map(chat => (
+                        <Link to={`/dashboard/chats/id=${chat.id}&telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} className="item-lista" key={chat.id}>
+                            {chat.cliente.nombre} - {chat.cliente.telefono}
+                        </Link>
+                    ))
+                }
                
             </div>
             <div className="col-lista">
-                {chats3.map(chat => (
-                    <Link to={`/dashboard/chats/${chat.cliente.telefono}`} className="item-lista" key={chat.id}>
-                        {chat.cliente.nombre} - {chat.cliente.telefono}
-                    </Link>
-                ))}
+            {loading && (
+                    <div className="spinner-lista">
+                        <div className="loader2"></div>
+                    </div>
+                )}
+                {!loading && chats1.length === 0 && (
+                    <p className="msg-error">No hay chats disponibles</p>
+                )}
+                {!loading && chats2.length > 0 && 
+                    chats2.map(chat => (
+                        <Link to={`/dashboard/chats/id=${chat.id}&telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} className="item-lista" key={chat.id}>
+                            {chat.cliente.nombre} - {chat.cliente.telefono}
+                        </Link>
+                    ))
+                }
+               
+               
+            </div>
+            <div className="col-lista">
+            {loading && (
+                    <div className="spinner-lista">
+                        <div className="loader2"></div>
+                    </div>
+                )}
+                {!loading && chats1.length === 0 && (
+                    <p className="msg-error">No hay chats disponibles</p>
+                )}
+                {!loading && chats3.length > 0 && 
+                    chats3.map(chat => (
+                        <Link to={`/dashboard/chats/id=${chat.id}&telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} className="item-lista" key={chat.id}>
+                            {chat.cliente.nombre} - {chat.cliente.telefono}
+                        </Link>
+                    ))
+                }
+               
             </div>
         </div>
     </div>

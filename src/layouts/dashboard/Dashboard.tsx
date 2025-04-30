@@ -13,7 +13,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     role = role ? localStorage.getItem('role') : null
-    console.log(localStorage.getItem('role'));
     
   },[])
 

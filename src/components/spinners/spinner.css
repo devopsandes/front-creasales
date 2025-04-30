@@ -43,8 +43,8 @@
   display: grid;
   border-radius: 50%;
   background:
-    linear-gradient(0deg ,rgb(134 108 99/50%) 30%,#0000 0 70%,rgb(134 108 99/100%) 0) 50%/8% 100%,
-    linear-gradient(90deg,rgb(134 108 99/25%) 30%,#0000 0 70%,rgb(134 108 99/75% ) 0) 50%/100% 8%;
+    linear-gradient(0deg ,rgb(201 188 183/50%) 30%,#0000 0 70%,rgb(201 188 183/100%) 0) 50%/8% 100%,
+    linear-gradient(90deg,rgb(201 188 183/25%) 30%,#0000 0 70%,rgb(201 188 183/75% ) 0) 50%/100% 8%;
   background-repeat: no-repeat;
   animation: l23 1s infinite steps(12);
 }

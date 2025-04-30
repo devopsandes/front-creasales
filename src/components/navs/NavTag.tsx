@@ -6,7 +6,6 @@ import './navtag.css'
 const NavTag: React.FC<NavTagProps> = (elements) => {
 
     useEffect(()=>{
-        console.log(elements)
         
     },[])
     
