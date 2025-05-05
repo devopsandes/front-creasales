@@ -76,14 +76,14 @@ const AppRouter = () => {
           
           }
         >
-          {role === 'ROOT' && (
+          {(role === 'ROOT' || role === 'ADMIN') && (
             <Route path='empresa' element={<NavTag tags={navEmpresa} />}>
               <Route index element={<FormEmpresa/>}/>
               <Route path='datos' element={<DatosEmpresa/>}/>
             </Route>
           )}
         
-          {role === 'ROOT' && (
+          {(role === 'ROOT' || role === 'ADMIN') && (
             <Route path='modulos' element={<NavTag tags={navModulos} />}>
               <Route index element={<FormModulos />}/>
               <Route path='datos' element={<DatosEmpresa/>}/>
