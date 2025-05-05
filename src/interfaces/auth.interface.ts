@@ -31,6 +31,7 @@ export interface DataRegister {
     nro_doc:    number;
     password:   string;
     role:       string;
+    empresa_id?: string | undefined;
 }
 
 export interface ValidationResponse {

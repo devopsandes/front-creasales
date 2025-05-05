@@ -1,6 +1,19 @@
 import axios from 'axios'
 import { DataLogin, DataRegister, ErrorResponse, LoginResponse, SuccessResponse, ValidationResponse } from '../../interfaces/auth.interface'
 
+type Objeto = {
+    nombre: string;
+    apellido: string;
+    email: string;
+    nacimiento: string;
+    telefono: string;
+    tipo_doc: string;
+    nro_doc: number;
+    password: string;
+    role: string;
+}
+
+
 const authLogin = async ({email,password}: DataLogin): Promise<LoginResponse & ErrorResponse> => {
     try {
         const url = 'https://sales.createch.com.ar/api/v1/auth/signin'
@@ -21,9 +34,26 @@ const authLogin = async ({email,password}: DataLogin): Promise<LoginResponse & E
 
 const authRegister = async (dataRegister: DataRegister): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = 'https://sales.createch.com.ar/api/v1/auth/signup'
+        let url
+        if(dataRegister.empresa_id != undefined){
+            url = `https://sales.createch.com.ar/api/v1/auth/signup?empresa_id=${dataRegister.empresa_id}`
+        }else{
+            url = `https://sales.createch.com.ar/api/v1/auth/signup`
+        }
 
-        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url,dataRegister)
+        const objeto: Objeto = {
+            nombre: dataRegister.nombre,
+            apellido: dataRegister.apellido,
+            email: dataRegister.email,
+            nacimiento: dataRegister.nacimiento,
+            telefono: dataRegister.telefono,
+            tipo_doc: dataRegister.tipo_doc,
+            nro_doc: +dataRegister.nro_doc,
+            password: dataRegister.password,
+            role: dataRegister.role
+        }
+
+        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url,objeto)
 
         return data
 

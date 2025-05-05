@@ -4,7 +4,7 @@ export interface EmpresaResponse {
 }
 
 export interface Empresa {
-    id: number;
+    id: string;
     nombre: string;
     cuit: string;
     direccion: string;

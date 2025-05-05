@@ -6,6 +6,7 @@ import Spinner23 from "../../components/spinners/Spinner23"
 import Eye from "../../components/icons/Eye"
 import EyeSlash from "../../components/icons/EyeSlash"
 import { authRegister } from "../../services/auth/auth.services";
+import { empresaXUser } from "../../services/empresas/empresa.services";
 
 const FormUsuarios = () => {
   const [nombre, setNombre] = useState<string>('')
@@ -52,6 +53,13 @@ const FormUsuarios = () => {
 
     let token = localStorage.getItem('token')
 
+    const empresa = await empresaXUser(token!)
+
+    if(empresa){
+      console.error(empresa);
+      
+    }
+
     
 
    /*  if(nombre.trim() === '' || direccion.trim() === '' || sitioWeb.trim() === '' || email.trim() === '' || telefono.trim() === '' || cuit.trim() === '' || pais.trim() === '' || provincia.trim() === '' || municipio.trim() === '' || sector.trim() === '' || tamano.trim() === '') {
@@ -79,7 +87,8 @@ const FormUsuarios = () => {
         password: pass,
         tipo_doc: tipo.valor,
         nro_doc: +numero,
-        role
+        role,
+        empresa_id: empresa ? empresa.empresa.id : undefined
       })
 
    

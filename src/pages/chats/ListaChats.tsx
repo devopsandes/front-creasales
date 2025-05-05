@@ -75,13 +75,13 @@ const ListaChats = () => {
             return
         }
 
-        const handleDisconnect = () => {
+       /*  const handleDisconnect = () => {
             console.log('Se ha desconectado del socket');
             
             alert('Su sesión ha caducado')
             navigate('/auth/signin')
             return
-        }
+        } */
         
         // socket.on('disconnect', handleDisconnect)
 
