@@ -11,7 +11,7 @@ type Props = {
 const DashSidebar = ({ role }: Props) => {
   return (
     <div className='dashsidebar-container'>
-        {role === 'ROOT' || role === 'ADMIN' && (
+        {(role === 'ROOT' || role === 'ADMIN')  && (
           <>
             <DashItem icon={HiCog} path='' titulo="Configuración"/>
             <DashItem icon={HiCpuChip} path='' titulo="BOT/IA"/>
