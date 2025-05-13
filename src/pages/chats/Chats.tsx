@@ -33,21 +33,27 @@ const Chats = () => {
 
     let socket: Socket | null = null
 
-   
+    
+    
     useEffect(()=>{
         dispatch(connectSocket())
         socket = getSocket()
         setLoading(true)
+        socket?.emit('register',telefono)
         return () => {
             dispatch(disconnectSocket())
         }
     },[dispatch])
+    
+   
 
     useEffect(()=>{
         
         if(!socket) return
 
+
         const handleNewMessage = (mensaje: Mensaje) => {
+            
             setCondChat(menos24hs(mensaje.createdAt))
             setMensajes(prevChats => [...prevChats,mensaje])
         }
@@ -61,12 +67,11 @@ const Chats = () => {
             }
         }
 
-       
-        socket.on('new-message',handleNewMessage)
+        socket.on(`new-message`,handleNewMessage)
         socket.on('error',handleError)
 
         return () => {
-            socket!.off('new-message', handleNewMessage)
+            socket!.off(`new-message`, handleNewMessage)
             socket!.off('error', handleError)
         }
     },[socket])
