@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import {  useSelector } from 'react-redux'
+import { useEffect } from 'react'
 import Auth from '../layouts/auth/Auth'
 import Login from '../pages/auth/login/Login'
 import Register from '../pages/auth/register/Register'
@@ -21,7 +22,7 @@ import FormTareas from '../pages/tareas/FormTareas'
 import Chats from '../pages/chats/Chats'
 import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navTareas, navUsuarios } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
-import { useEffect } from 'react'
+import LogoFondo from '../components/logo/LogoFondo'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -128,7 +129,7 @@ const AppRouter = () => {
           <Route path='chats' element={<NavTag tags={navChats} />}>
             <Route  element={<ListaChats />}>
               {/* <Route index element={<ListaChats/>}/> */}
-              <Route index element={<div>me la chupa</div>}/>
+              <Route index element={<LogoFondo />}/>
               <Route path=':id' element={<Chats/>}/>
             </Route >
             {/* <Route path=':id' element={<Chats/>}/> */}
