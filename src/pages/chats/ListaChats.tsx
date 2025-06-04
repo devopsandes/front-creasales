@@ -1,7 +1,7 @@
 import { Link, Outlet, useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
-import { dividirArrayEnTres } from "../../utils/functions"
+// import { dividirArrayEnTres } from "../../utils/functions"
 import {  connectSocket, disconnectSocket, getSocket } from "../../app/slices/socketSlice"
 import { useDispatch } from "react-redux"
 import { Socket } from "socket.io-client"
@@ -10,8 +10,8 @@ import './chats.css'
 
 const ListaChats = () => {
     const [chats1,setChats1] = useState<ChatState[]>([])
-    const [chats2,setChats2] = useState<ChatState[]>([])
-    const [chats3,setChats3] = useState<ChatState[]>([])
+    // const [chats2,setChats2] = useState<ChatState[]>([])
+    // const [chats3,setChats3] = useState<ChatState[]>([])
     const [loading, setLoading] = useState<boolean>(true)
 
     const navigate = useNavigate()
@@ -53,10 +53,10 @@ const ListaChats = () => {
         
         const handleChats = (data: ChatState[]) => {
             //TENGO QUE PONER UNA CONDICION PARA UN SPINNER
-            const arreglo = dividirArrayEnTres(data)
+            // const arreglo = dividirArrayEnTres(data)
             setChats1(data)
-            setChats2(arreglo[1])
-            setChats3(arreglo[2])
+            // setChats2(arreglo[1])
+            // setChats3(arreglo[2])
             setLoading(false)
         }
 
