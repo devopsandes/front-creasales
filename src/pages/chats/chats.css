@@ -160,12 +160,25 @@
     overflow-x: hidden;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    width: 33.3%;
+    /* width: 33.3%; */
     padding:  15px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 10px;
+}
+
+.col-lista:nth-child(odd) {
+    width: 20%;
+}
+
+.col-lista:nth-child(even) {
+    width: 55%;
+    padding: 0%;
+}
+
+.col-lista:last-child {
+    width: 25%;
 }
 
 .col-lista:nth-child(2) {

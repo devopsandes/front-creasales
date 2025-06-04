@@ -19,7 +19,6 @@ import FormUsuarios from '../pages/usuarios/FormUsuarios'
 import FormCategorias from '../pages/categorias/FormCategorias'
 import FormTareas from '../pages/tareas/FormTareas'
 import Chats from '../pages/chats/Chats'
-import BusquedaChats from '../pages/chats/BusquedaChats'
 import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navTareas, navUsuarios } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import { useEffect } from 'react'
@@ -127,8 +126,9 @@ const AppRouter = () => {
         
 
           <Route path='chats' element={<NavTag tags={navChats} />}>
-            <Route  element={<BusquedaChats />}>
-              <Route index element={<ListaChats/>}/>
+            <Route  element={<ListaChats />}>
+              {/* <Route index element={<ListaChats/>}/> */}
+              <Route index element={<div>me la chupa</div>}/>
               <Route path=':id' element={<Chats/>}/>
             </Route >
             {/* <Route path=':id' element={<Chats/>}/> */}
