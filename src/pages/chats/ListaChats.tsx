@@ -103,22 +103,54 @@ const ListaChats = () => {
         <div className='main-chat'>
             <div className="header-lista">
                 <div className="header-item">
-                    <p>Estado</p>
-                    <select name="" id="" className="select-empresa">
-                        <option value="">Opcion 1</option>
-                    </select>
+                    <button 
+                        onClick={() => alert('No implementado')} 
+                        className="btn-item"
+                    >
+                        Asignadas a mí
+                        <span>99</span>
+                    </button>
+                    
                 </div>
                 <div className="header-item">
-                    <p>Categoria</p>
-                    <select name="" id="" className="select-empresa">
-                        <option value="">Opcion 1</option>
-                    </select>
+                     <button 
+                        onClick={() => alert('No implementado')} 
+                        className="btn-item"
+                    >
+                        Asignadas a otros
+                        <span>99</span>
+                    </button>
+                   
                 </div>
                 <div className="header-item">
-                    <p>Operador</p>
-                    <select name="" id="" className="select-empresa">
-                        <option value="">Opcion 1</option>
-                    </select>
+                     <button 
+                        onClick={() => alert('No implementado')} 
+                        className="btn-item"
+                    >
+                        Archivadas
+                        <span>99</span>
+                    </button>
+                   
+                </div>
+                 <div className="header-item">
+                     <button 
+                        onClick={() => alert('No implementado')} 
+                        className="btn-item"
+                    >
+                        Menciones
+                        <span>99</span>
+                    </button>
+                   
+                </div>
+                 <div className="header-item">
+                     <button 
+                        onClick={() => alert('No implementado')} 
+                        className="btn-item"
+                    >
+                        Bots
+                        <span>99</span>
+                    </button>
+                   
                 </div>
             </div>
             <div className="lista-main">
