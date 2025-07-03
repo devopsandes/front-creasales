@@ -7,6 +7,10 @@ import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { Socket } from 'socket.io-client'
 import { connectSocket, disconnectSocket, getSocket } from '../../app/slices/socketSlice'
 import { useDispatch } from 'react-redux'
+import UserSearchModal from '../../components/modal/UserSearchModal'
+import { FaFileArrowDown } from "react-icons/fa6";
+import { IoPersonAdd } from "react-icons/io5";
+import { openModal } from '../../app/slices/actionSlice'
 import './chats.css'
 
 
@@ -16,6 +20,7 @@ const Chats = () => {
     const [mensaje, setMensaje] = useState<string>('')
     const [condChat, setCondChat] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
+
 
     const location = useLocation()
     const token = localStorage.getItem('token')
@@ -32,6 +37,7 @@ const Chats = () => {
     const navigate = useNavigate()
 
     let socket: Socket | null = null
+
 
     
     
@@ -67,7 +73,13 @@ const Chats = () => {
             }
         }
 
+        const handleMsjArchivar = (mensaje: Mensaje) => {
+            console.log(mensaje);
+            
+        }
+
         socket.on(`new-message`,handleNewMessage)
+        socket.on('msj-archivar',handleMsjArchivar)
         socket.on('error',handleError)
 
         return () => {
@@ -120,6 +132,32 @@ const Chats = () => {
      
     }
 
+    const handleArchivar = () => {
+        const conf = confirm('¿Quiere archivar el siguiente chat?');
+        if(!conf) return
+        try {
+            socket = getSocket()
+            if (socket && socket.connected) {
+               const objMsj = {
+                mensaje,
+                chatId: id,
+                telefono,
+                token
+               }
+               console.log(objMsj);
+               
+                socket.emit("archivar", objMsj);
+            } else {
+                console.warn("Socket desconectado, enviando por HTTP...");
+                //await axios.post("/api/mensajes", { contenido: mensaje, usuarioId: "12345", chatId: "67890" });
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    
+
     return (
         <div className='chats-container'>
             {loading && (
@@ -130,6 +168,7 @@ const Chats = () => {
             {!loading && (
                 <div className='main-chat'>
                     <div className='header-chat'>
+                       
                         <div className='header-icon'>
                             <FaCircleUser size={25} />
                         </div>
@@ -137,15 +176,38 @@ const Chats = () => {
                             <span className=''>+{telefono}</span>
                             <span className=''>{nombre}</span>
                         </p>
+                        <div className='ml-96 w-full flex justify-end p-14 gap-6'>
+                            <button
+                                onClick={() => dispatch(openModal())}
+                                className="btn flex gap-2 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+                            >
+                                <IoPersonAdd />
+                                <span>Asignar</span>
+                            </button>
+                            <button
+                                onClick={handleArchivar}
+                                className="btn flex gap-2 rounded-xl cursor-pointer bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+                            >
+                                <FaFileArrowDown />
+                                <span>Archivar</span>
+                            </button>
+                        </div>
                     </div>
                     <div className='body-chat' ref={mensajesContainerRef}>
                         {mensajes.map((msj, index) => (
+                            msj.msg_salida === '%archivado%' ? (
+                                <div className='contenedor-archivado' key={index}>
+                                    <p className='mensaje-archivado'> Archivado</p>
+                                    <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
+                                </div>
+                            ) : (
                             <div key={index} className={`${msj.msg_entrada ? 'contenedor-entrada' : 'contenedor-salida'}`}>
                                 <p className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
                                     {msj.msg_entrada ? msj.msg_entrada : msj.msg_salida}
                                 </p>
-                                <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
                             </div>
+                            )
+                          
                         ))}
                     </div>
                     <div className='footer-chat'>
@@ -167,6 +229,8 @@ const Chats = () => {
                         )}
                         
                     </div>
+
+                    <UserSearchModal  />
                 </div>
             )}
            

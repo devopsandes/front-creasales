@@ -61,8 +61,8 @@ const navEmpresa: Tag[] = [
     },
     {
       id: 2,
-      name: "Datos",
-      path: "/dashboard/modulos/datos"
+      name: "Usuarios",
+      path: "/dashboard/usuarios/lista"
     }
   ]
 

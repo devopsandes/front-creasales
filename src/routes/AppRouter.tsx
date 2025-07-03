@@ -23,6 +23,7 @@ import Chats from '../pages/chats/Chats'
 import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navTareas, navUsuarios } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import LogoFondo from '../components/logo/LogoFondo'
+import TableUsers from '../pages/usuarios/TableUsers'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -107,7 +108,7 @@ const AppRouter = () => {
           {(role === 'ROOT' || role === 'ADMIN') && (
             <Route path='usuarios' element={<NavTag tags={navUsuarios} />}>
               <Route index element={<FormUsuarios />}/>
-              <Route path='datos' element={<DatosEmpresa/>}/>
+              <Route path='lista' element={<TableUsers/>}/>
             </Route>
           )}
 

@@ -48,7 +48,8 @@ const Login = () => {
     {showSpinner ? (
       <Spinner />
     ) : (
-        <div className="login-container">
+      <div className="login-container">
+          {/* <h1 className='text-3xl font-bold text-blue-500'>esto es una prueba</h1> */}
           <form className="login-form" onSubmit={handleSubmit}>
             <h2>Login</h2>
             <div className="form-group">

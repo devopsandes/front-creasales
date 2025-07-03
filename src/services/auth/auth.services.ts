@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { DataLogin, DataRegister, ErrorResponse, LoginResponse, SuccessResponse, ValidationResponse } from '../../interfaces/auth.interface'
+import { DataLogin, DataRegister, ErrorResponse, LoginResponse, SuccessResponse, UsersResponse, ValidationResponse } from '../../interfaces/auth.interface'
 
 type Objeto = {
     nombre: string;
@@ -101,7 +101,6 @@ const sendEmailRecuperarPass = async (email: string): Promise<SuccessResponse & 
 
 const cambiarPassword = async (token: string, password: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        console.log(token);
         
         const url = `https://sales.createch.com.ar/api/v1/auth/cambiar-pass?token=${token}`
 
@@ -117,6 +116,28 @@ const cambiarPassword = async (token: string, password: string): Promise<Success
     }
 }
 
+const usuariosXRole = async (role: string, token: string): Promise<UsersResponse & ErrorResponse>  => {
+    try {
+        const url = `https://sales.createch.com.ar/api/v1/auth/usuarios?role=${role}`
+
+        const headers = {
+            authorization: `Bearer ${token}`
+        }
+
+        const { data } = await axios<UsersResponse & ErrorResponse>(url, {headers})
+
+        return data
+    } catch (error) {
+         if (axios.isAxiosError(error) && error.response) {
+            const objeto: ErrorResponse & UsersResponse  = error.response.data
+            return objeto
+        }
+        throw error; // Lanza el error si no es del tipo esperado
+    }
+}
+
+const asignarOperador = async () => {}
 
 
-export { authLogin, authRegister, tokenValidacion, sendEmailRecuperarPass, cambiarPassword }
+
+export { authLogin, authRegister, tokenValidacion, sendEmailRecuperarPass, cambiarPassword, usuariosXRole, asignarOperador }

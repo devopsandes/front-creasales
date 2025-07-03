@@ -21,6 +21,30 @@ export interface SuccessResponse {
     msg: string;
 }
 
+export interface UsersResponse {
+    statusCode: number;
+    msg:        string;
+    users:      Usuario[];
+}
+
+export interface Usuario {
+    id:         string;
+    nombre:     string;
+    apellido:   string;
+    nacimiento: Date;
+    telefono:   string;
+    tipo_doc:   string;
+    nro_doc:    number;
+    cuil:       null;
+    email:      string;
+    createdAt:  Date;
+    updatedAt:  Date;
+    verificado: boolean;
+    token:      string;
+    role:       string;
+}
+
+
 export interface DataRegister {
     nombre:     string;
     apellido:   string;

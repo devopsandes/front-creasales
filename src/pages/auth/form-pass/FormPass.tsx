@@ -39,7 +39,6 @@ const FormPass = () => {
 
         setShowSpinner(true)
         const respuesta = await cambiarPassword(token!,pass)
-        console.log(respuesta);
         if(respuesta.statusCode === 200){
             setMsgError('')
             dispatch(addMessage('Contraseña actulizada correctamente'))
