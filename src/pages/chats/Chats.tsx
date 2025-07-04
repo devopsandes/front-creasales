@@ -74,7 +74,7 @@ const Chats = () => {
         }
 
         const handleMsjArchivar = (mensaje: Mensaje) => {
-            console.log(mensaje);
+            setMensajes(prevChats => [...prevChats,mensaje])
             
         }
 
@@ -92,9 +92,17 @@ const Chats = () => {
         // Obtener los mensajes del chat
         const inicio = async () => {
             const data = await findChatById(token!, id)
+            if(data.statusCode === 401) {
+                alert('Su sesión ha caducado')
+                return navigate('/auth/signin')
+            }
+            
             setMensajes(data.chat.mensajes)
-            const ultimo = data.chat.mensajes[data.chat.mensajes.length - 1]
-            console.log(ultimo.createdAt);
+            let ultimo = data.chat.mensajes[data.chat.mensajes.length - 1]
+            if(ultimo.msg_salida === '%archivado%'){
+                // con este bloque condicional verificamos que el ultimo mensaje no sea el de archivado, si lo es, tomamos el penúltimo
+                ultimo = data.chat.mensajes[data.chat.mensajes.length - 2]
+            }
             setCondChat(menos24hs(ultimo.createdAt))
             setLoading(false)
             
@@ -144,7 +152,6 @@ const Chats = () => {
                 telefono,
                 token
                }
-               console.log(objMsj);
                
                 socket.emit("archivar", objMsj);
             } else {
@@ -205,6 +212,8 @@ const Chats = () => {
                                 <p className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
                                     {msj.msg_entrada ? msj.msg_entrada : msj.msg_salida}
                                 </p>
+                                <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
+
                             </div>
                             )
                           

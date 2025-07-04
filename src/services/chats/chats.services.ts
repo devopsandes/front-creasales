@@ -4,7 +4,6 @@ import { ChatResponse } from "../../interfaces/chats.interface"
 
 
 
-
 const findChatById = async (token: string, id: string): Promise<ChatResponse & ErrorResponse> => {
     try {
         const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}`
