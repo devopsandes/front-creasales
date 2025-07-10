@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import {  useParams } from 'react-router-dom';
 import { closeModal } from '../../app/slices/actionSlice';
 import {  UserCircle2 } from 'lucide-react';
-import { usuariosXRole } from '../../services/auth/auth.services';
+import { asignarOperador, usuariosXRole } from '../../services/auth/auth.services';
 import { RootState } from '../../app/store';
 import {  Usuario } from '../../interfaces/auth.interface';
 
@@ -27,7 +28,8 @@ const UserSearchModal = ( ) => {
     token: '',
     role: ''
   }]);
-
+  const chat_id = useParams().id || '';
+ 
   const dispatch = useDispatch();
   const modalView = useSelector((state: RootState) => state.action.modal);
   
@@ -40,6 +42,7 @@ const UserSearchModal = ( ) => {
       
     }
     ejecucion();
+   
   },[])
 
   
@@ -51,10 +54,19 @@ const UserSearchModal = ( ) => {
 
   if (!modalView) return null;
 
-  const handleAsignar = () => {
-    dispatch(closeModal());
-    alert('Usuario asignado correctamente');
-    // TODO: aqui tengo que llamar a la funcion que asigna un operador al chat
+  const handleAsignar = async (user_id: string) => {
+  
+    console.log(`chat_id ${chat_id} user_id ${user_id} token ${token}`);
+    
+    const resp = await asignarOperador(chat_id,user_id ,token); 
+    console.log(resp);
+
+    if(resp.statusCode === 200) {
+      // Aquí puedes manejar la lógica después de asignar el usuario, como actualizar el estado global o redirigir
+      dispatch(closeModal());
+      alert('Usuario asignado correctamente');
+    }
+    
   }
 
   
@@ -88,7 +100,7 @@ const UserSearchModal = ( ) => {
               <li 
                 key={user.id} 
                 className="flex items-center gap-3 py-2 cursor-pointer"
-                onClick={handleAsignar}
+                onClick={() => handleAsignar(user.id)}
               >
                {/*  {user.avatar ? (
                   <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />

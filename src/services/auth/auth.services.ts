@@ -118,7 +118,11 @@ const cambiarPassword = async (token: string, password: string): Promise<Success
 
 const usuariosXRole = async (role: string, token: string): Promise<UsersResponse & ErrorResponse>  => {
     try {
-        const url = `https://sales.createch.com.ar/api/v1/auth/usuarios?role=${role}`
+        let url = ''
+        if(role === '')
+            url = `https://sales.createch.com.ar/api/v1/auth/usuarios`
+        else
+            url = `https://sales.createch.com.ar/api/v1/auth/usuarios?role=${role}`
 
         const headers = {
             authorization: `Bearer ${token}`
@@ -136,8 +140,46 @@ const usuariosXRole = async (role: string, token: string): Promise<UsersResponse
     }
 }
 
-const asignarOperador = async () => {}
+const switchActivo = async (userId: string | undefined, token: string, activo: boolean | undefined): Promise<SuccessResponse & ErrorResponse> => {
+    try {
+        const url = `https://sales.createch.com.ar/api/v1/auth/usuarios/${userId}`
+
+        const headers = {
+            authorization: `Bearer ${token}`
+        }
+
+        const { data } = await axios.patch<SuccessResponse & ErrorResponse>(url,{ activo },{headers})
+
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            const objeto: ErrorResponse & UsersResponse  = error.response.data
+            return objeto
+        }
+        throw error; // Lanza el error si no es del tipo esperado
+    }
+}
+
+const asignarOperador = async (chat_id: string, user_id: string, token: string): Promise<SuccessResponse & ErrorResponse> => {
+    try {
+        const url = `https://sales.createch.com.ar/api/v1/auth/usuarios/operador?chat_id=${chat_id}&user_id=${user_id}`
+
+        const headers = {
+            authorization: `Bearer ${token}`
+        }
+
+        const { data } = await axios<SuccessResponse & ErrorResponse>(url, {headers})
+
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            const objeto: ErrorResponse & SuccessResponse  = error.response.data
+            return objeto
+        }
+        throw error; // Lanza el error si no es del tipo esperado
+    }
+}
 
 
 
-export { authLogin, authRegister, tokenValidacion, sendEmailRecuperarPass, cambiarPassword, usuariosXRole, asignarOperador }
+export { authLogin, authRegister, tokenValidacion, sendEmailRecuperarPass, cambiarPassword, usuariosXRole, asignarOperador, switchActivo }

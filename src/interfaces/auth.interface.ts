@@ -27,6 +27,8 @@ export interface UsersResponse {
     users:      Usuario[];
 }
 
+
+
 export interface Usuario {
     id:         string;
     nombre:     string;
@@ -42,6 +44,7 @@ export interface Usuario {
     verificado: boolean;
     token:      string;
     role:       string;
+    activo:    boolean;
 }
 
 

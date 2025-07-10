@@ -165,7 +165,7 @@ const ListaChats = () => {
                     )}
                     {!loading && chats1.length > 0 && 
                         chats1.map(chat => (
-                            <Link to={`/dashboard/chats/id=${chat.id}&telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} className="item-lista" key={chat.id}>
+                            <Link to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} className="item-lista" key={chat.id}>
                                 {chat.cliente.nombre} - {chat.cliente.telefono}
                             </Link>
                         ))

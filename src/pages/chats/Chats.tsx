@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState, useRef } from 'react'
-import { useLocation, useNavigate } from "react-router-dom"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
 import { findChatById } from '../../services/chats/chats.services'
 import { Mensaje } from '../../interfaces/chats.interface'
@@ -24,12 +24,13 @@ const Chats = () => {
 
     const location = useLocation()
     const token = localStorage.getItem('token')
-    const ahre = location.pathname.split('/')
-    const query = ahre[ahre.length - 1]
-    const ops = query.split('&')
-    const id = ops[0].split('=')[1]
-    const telefono = ops[1].split('=')[1]
-    const nombre = ops[2].split('=')[1]
+   
+    const id = useParams().id 
+    const queryParams = new URLSearchParams(location.search);
+    const telefono = queryParams.get('telefono');
+    const nombre = queryParams.get('nombre');
+
+  
 
     // Referencia para el contenedor de mensajes
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
@@ -38,6 +39,7 @@ const Chats = () => {
 
     let socket: Socket | null = null
 
+  
 
     
     
@@ -91,7 +93,7 @@ const Chats = () => {
     useEffect(() => {
         // Obtener los mensajes del chat
         const inicio = async () => {
-            const data = await findChatById(token!, id)
+            const data = await findChatById(token!, id!)
             if(data.statusCode === 401) {
                 alert('Su sesión ha caducado')
                 return navigate('/auth/signin')
