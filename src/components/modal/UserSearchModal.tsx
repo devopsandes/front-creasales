@@ -26,7 +26,8 @@ const UserSearchModal = ( ) => {
     updatedAt: new Date(),
     verificado: false,
     token: '',
-    role: ''
+    role: '',
+    activo: false
   }]);
   const chat_id = useParams().id || '';
  
