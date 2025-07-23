@@ -20,10 +20,11 @@ import FormUsuarios from '../pages/usuarios/FormUsuarios'
 import FormCategorias from '../pages/categorias/FormCategorias'
 import FormTareas from '../pages/tareas/FormTareas'
 import Chats from '../pages/chats/Chats'
-import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navTareas, navUsuarios } from '../utils/navegacion'
+import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navTareas, navUsuarios, navTickets } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import LogoFondo from '../components/logo/LogoFondo'
 import TableUsers from '../pages/usuarios/TableUsers'
+import TableTickets from '../pages/tickets/TableTickets'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -134,6 +135,10 @@ const AppRouter = () => {
               <Route path=':id' element={<Chats/>}/>
             </Route >
             {/* <Route path=':id' element={<Chats/>}/> */}
+          </Route>
+
+          <Route path='tickets' element={<NavTag tags={navTickets} />}>
+            <Route index element={<TableTickets/>}/>
           </Route>
 
 

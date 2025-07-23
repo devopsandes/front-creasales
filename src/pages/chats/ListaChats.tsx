@@ -6,6 +6,8 @@ import {  connectSocket, disconnectSocket, getSocket } from "../../app/slices/so
 import { useDispatch } from "react-redux"
 import { Socket } from "socket.io-client"
 import './chats.css'
+import { usuariosXRole } from "../../services/auth/auth.services"
+import { Usuario } from "../../interfaces/auth.interface"
 
 
 const ListaChats = () => {
@@ -13,35 +15,68 @@ const ListaChats = () => {
     // const [chats2,setChats2] = useState<ChatState[]>([])
     // const [chats3,setChats3] = useState<ChatState[]>([])
     const [loading, setLoading] = useState<boolean>(true)
+    const [users, setUsers] = useState<Usuario[]>([{
+        id: 'BOT',
+        nombre: 'OPERADOR',
+        apellido: 'BOT',
+        nacimiento: new Date(),
+        telefono: '',
+        tipo_doc: '',
+        nro_doc: 0,
+        cuil: null,
+        email: '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        verificado: false,
+        token: '',
+        role: '',
+        activo: false
+    }]);
+    const [filtrados, setFiltrados] = useState<ChatState[]>([])
+
+    // const conectado = useSelector((state: RootState) => state.socket.isConnected);
+
+    const token  = localStorage.getItem('token') || '';
+
+    
 
     const navigate = useNavigate()
     const dispatch = useDispatch()
     let socket: Socket | null = null
 
 
-    /* useEffect(()=>{
+    useEffect(()=>{
+        const ejecucion = async () => {
+            const respUsers = await usuariosXRole('USER', token);
+            
+            setUsers([...users,...respUsers.users]);
         
-        socket = io(`${import.meta.env.VITE_URL_BACK}`,{
-            transports: ['websocket'],
-            withCredentials: true,
-            auth: {
-                token: localStorage.getItem('token')
-            }
-        });
-
-        return () => {
-          socket.disconnect(); 
-        };
-    },[]) */
+        }
+        ejecucion();
+      
+    },[])
 
     useEffect(() => {
-        
-        dispatch(connectSocket())
-        socket = getSocket()
-        setLoading(true)
-        return () => {
-            dispatch(disconnectSocket())
+
+        try {
+            dispatch(connectSocket())
+            socket = getSocket()
+            setLoading(true)
+            
+            
+            return () => {
+                if(!socket?.connected){
+                    /* alert('Su sesión ha caducado, por favor inicie sesión nuevamente');
+                    navigate('/auth/signin')
+                    return */
+                }
+                dispatch(disconnectSocket())
+            }
+        } catch (error) {
+            console.log(error);
         }
+        
+       
     },[dispatch])
 
    
@@ -55,8 +90,10 @@ const ListaChats = () => {
             //TENGO QUE PONER UNA CONDICION PARA UN SPINNER
             // const arreglo = dividirArrayEnTres(data)
             setChats1(data)
+            setFiltrados(data)
             // setChats2(arreglo[1])
             // setChats3(arreglo[2])
+            
             setLoading(false)
         }
 
@@ -98,6 +135,21 @@ const ListaChats = () => {
         }
     },[socket]) 
 
+    const handleChangeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedValue = e.target.value
+        let filtrados: ChatState[] = []
+
+        
+        if(selectedValue === ""){
+            filtrados = [...chats1]
+        }else if(selectedValue === 'BOT'){
+            filtrados = chats1.filter(chat => chat.operador.id === null)
+        }else{
+            filtrados = chats1.filter(chat => chat.operador.id === selectedValue)
+        }
+        setFiltrados(filtrados)
+    }
+
   return (
      <div className="chats-container">
         <div className='main-chat'>
@@ -113,17 +165,24 @@ const ListaChats = () => {
                     
                 </div>
                 <div className="header-item">
-                     <button 
-                        onClick={() => alert('No implementado')} 
-                        className="btn-item"
-                    >
-                        Asignadas a otros
-                        <span>99</span>
-                    </button>
+                    <div>
+                        <select
+                            id="operador-select"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                            onChange={handleChangeSelect}
+                        >
+                            <option value="" className="bg-gray-500">Selecciona un operador</option>
+                            {users.map(user => (
+                                <option value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
+                            ))}
+                           
+                        </select>
+                    </div>
+                
                    
                 </div>
                 <div className="header-item">
-                     <button 
+                    <button 
                         onClick={() => alert('No implementado')} 
                         className="btn-item"
                     >
@@ -164,7 +223,7 @@ const ListaChats = () => {
                         <p className="msg-error">No hay chats disponibles</p>
                     )}
                     {!loading && chats1.length > 0 && 
-                        chats1.map(chat => (
+                        filtrados.map(chat => (
                             <Link to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} className="item-lista" key={chat.id}>
                                 {chat.cliente.nombre} - {chat.cliente.telefono}
                             </Link>

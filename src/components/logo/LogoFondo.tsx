@@ -1,7 +1,7 @@
 import './logoFondo.css';
 import logo from '../../assets/logo-sol.png'
 
-const LogoFondo = () => {
+/* const LogoFondo = () => {
   return (
     <div className="container-logo">
         <div className='franja-cel'></div>
@@ -11,6 +11,14 @@ const LogoFondo = () => {
         <div className='franja-cel'></div>
     </div>
   )
-}
+} */
 
+
+const LogoFondo = () => {
+  return (
+    <div className="container-logo">
+        
+    </div>
+  )
+}
 export default LogoFondo

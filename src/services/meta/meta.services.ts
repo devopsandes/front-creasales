@@ -18,6 +18,8 @@ const createMeta = async (token: string, dataMeta: DataMeta): Promise<SuccessRes
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
+            console.log(error);
+            
             const objeto:  SuccessResponse & ErrorResponse  = error.response.data
             return objeto
         }

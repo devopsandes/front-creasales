@@ -1,4 +1,4 @@
-import { FaUser } from "react-icons/fa";
+import { FaRegCommentDots, FaUser } from "react-icons/fa";
 import  { useEffect, useState } from "react";
 import Switch from "../../components/switch/Switch";
 import { usuariosXRole } from "../../services/auth/auth.services";
@@ -15,6 +15,7 @@ const TableUsers = () => {
   const [loading, setLoading] = useState<boolean>();
 
   const token  = localStorage.getItem('token') || '';
+  let role = localStorage.getItem('role') || '';
   const navigate = useNavigate();
 
 
@@ -29,7 +30,8 @@ const TableUsers = () => {
 
   useEffect(() => {
       const ejecucion = async () => {
-        const respUsers = await usuariosXRole('', token);
+       
+        const respUsers = await usuariosXRole(role, token);
 
         if (respUsers.statusCode === 401) {
           alert('Su sesión ha expirado, por favor inicie sesión nuevamente');
@@ -54,15 +56,16 @@ const TableUsers = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
-              <thead>
-                <tr className="bg-slate-600 text-left text-sm font-bold">
+              <thead className="">
+                <tr className="bg-slate-600 text-left text-sm font-bold w-full">
                   <th className="p-2">ID</th>
                   <th className="p-2">Usuario</th>
                   <th className="p-2">Nombre</th>
                   <th className="p-2">Acceso</th>
                   <th className="p-2">Departamentos</th>
                   <th className="p-2">Estado</th>
-                  <th className="p-2"></th>
+                  <th className="p-2">Chats</th>
+                  <th></th>
 
                 </tr>
               </thead>
@@ -87,7 +90,11 @@ const TableUsers = () => {
                     <td className="p-2 text-left capitalize">
                       <Switch checked={user.activo} label={''} id={user.id} />
                     </td>
-
+                    
+                    <td className="p-2 text-center ">
+                        2 {'\t'} 
+                        <FaRegCommentDots className="inline mr-1 text-blue-600" />
+                    </td>
                     <td className="p-2 flex  justify-center items-center gap-8 ">
                       <button className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 cursor-pointer">Editar</button>
                       <button className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 cursor-pointer">Eliminar</button>

@@ -1,7 +1,10 @@
+import { Usuario } from "./auth.interface";
+
 export interface ChatState {
     cliente:   Cliente;
     createdAt: Date;
     id:        string;
+    operador: Usuario;
     thread_id: string;
     updatedAt: Date;
 }

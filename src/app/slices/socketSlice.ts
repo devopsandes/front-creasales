@@ -98,6 +98,8 @@ const socketSlice = createSlice({
                 }
             });
 
+            // TODO: revisar error de conexión al socket
+            // state.isConnected = true;
             socket.on('connect', () => {
                 // console.log('se conecta al socket');
             })
@@ -109,7 +111,7 @@ const socketSlice = createSlice({
         state.isConnected = true;
       },
       disconnectSocket: (state) => {
-        
+        // TODO: revisar error de conexión al socket
         socket?.disconnect();
         socket = null;
         state.isConnected = false;

@@ -4,17 +4,42 @@ import { ToastContainer, toast } from 'react-toastify';
 import DashSidebar from "../../components/sidebars/DashSidebar";
 import { empresaXUser } from "../../services/empresas/empresa.services";
 import './dashboard.css'
+import { useDispatch } from "react-redux";
+import { Socket } from "socket.io-client";
+import { connectSocket, disconnectSocket, getSocket } from "../../app/slices/socketSlice";
 
 
 
 const Dashboard = () => {
 
   let role: string | null = localStorage.getItem('role')
+  const dispatch = useDispatch()
+  let socket: Socket | null = null
 
   useEffect(() => {
     role = role ? localStorage.getItem('role') : null
-    
+    //TODO: tengo que poner un toast cada vez que se haya asignado un chat a un operador
+    // toast.success('puto el que lee')
   },[])
+
+   useEffect(() => {
+          try {
+              dispatch(connectSocket())
+              socket = getSocket()
+              
+              return () => {
+                  if(!socket?.connected){
+                      /* alert('Su sesión ha caducado, por favor inicie sesión nuevamente');
+                      navigate('/auth/signin')
+                      return */
+                  }
+                  dispatch(disconnectSocket())
+              }
+          } catch (error) {
+              console.log(error);
+          }
+    },[dispatch])
+  
 
   const navigate = useNavigate()
 
@@ -37,6 +62,41 @@ const Dashboard = () => {
         })  
     }
   },[])
+
+   useEffect(()=>{
+  
+          
+          if(!socket) return
+          
+          const handleOperadorAsignado = (payload: string) => {
+            toast.success(payload)
+          }
+         
+  
+          const handleError = (error: any) => {
+              if (error.name === 'TokenExpiredError') {
+                  alert('Su sesión ha caducado')
+                  navigate('/auth/signin')
+                  return
+              }
+              alert('Su sesión ha caducado')
+              navigate('/auth/signin')
+              return
+          }
+  
+      
+  
+          socket.on('error',handleError)
+          socket.on('operador-asignado',handleOperadorAsignado)
+
+  
+  
+          return () => {
+              socket!.off('error', handleError)
+              socket!.off('operador-asignado', handleOperadorAsignado)
+          }
+      },[socket]) 
+  
   
   return (
     <section className="dash-layout">
@@ -47,7 +107,13 @@ const Dashboard = () => {
         <div className="dash-body">
           <Outlet />
         </div>
-        <ToastContainer />
+         <ToastContainer
+          autoClose={3000} 
+          closeButton 
+          pauseOnHover
+          draggable
+          limit={1}
+        />     
     </section>
   )
 }

@@ -101,6 +101,14 @@ const navEmpresa: Tag[] = [
    
   ]
 
+  const navTickets: Tag[] = [
+    {
+      id: 1,
+      name: "Tickets",
+      path: "/dashboard/tickets"
+    },
+  ]
+
 export {
     navCategorias,
     navChats,
@@ -110,4 +118,5 @@ export {
     navModulos,
     navTareas,
     navUsuarios,
+    navTickets
 }

@@ -112,7 +112,7 @@ const FormEmpresa = () => {
       setErrores([`${resp.message}`])
       toast.error('Error al cargar los datos')
     }else {
-      console.log(resp.message);
+      // console.log(resp.message);
       setShowSpinner(false)
       setErrores(resp.message)
       toast.error('Error al cargar los datos')

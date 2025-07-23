@@ -7,3 +7,16 @@
     gap: .5rem;
 }
 
+
+
+.dashsidebar-logout {
+    box-sizing: border-box;
+    width: 3%;
+    left: 0;
+    background-color: rgb(134 108 99 / .6);
+    padding: .5rem 10px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+}
+

@@ -5,7 +5,6 @@ import { DataEmpresa, EmpresaResponse } from "../../interfaces/empresa.interface
 const empresaXUser = async (token: string): Promise<EmpresaResponse & ErrorResponse> => {
     try {
         const url = `${import.meta.env.VITE_URL_BACKEND}/empresas/usuarios`
-        console.log(url);
         
 
         const headers = {
@@ -39,6 +38,7 @@ const createEmpresa = async (token: string, dataEmpresa: DataEmpresa): Promise<S
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
+            
             const objeto:  SuccessResponse & ErrorResponse  = error.response.data
             return objeto
         }
