@@ -1,7 +1,7 @@
 // TableTickets.tsx
 
 import { useState } from "react";
-import { FaRegClock, FaCheck, FaTimes, FaRegCommentDots } from "react-icons/fa";
+import { FaRegClock, FaCheck,  FaRegCommentDots } from "react-icons/fa";
 
 interface Ticket {
   id: number;

@@ -1,5 +1,5 @@
 import './logoFondo.css';
-import logo from '../../assets/logo-sol.png'
+// import logo from '../../assets/logo-sol.png'
 
 /* const LogoFondo = () => {
   return (
