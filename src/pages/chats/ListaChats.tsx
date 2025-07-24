@@ -143,9 +143,9 @@ const ListaChats = () => {
         if(selectedValue === ""){
             filtrados = [...chats1]
         }else if(selectedValue === 'BOT'){
-            filtrados = chats1.filter(chat => chat.operador.id === null)
+            filtrados = chats1.filter(chat => chat.operador === null)
         }else{
-            filtrados = chats1.filter(chat => chat.operador.id === selectedValue)
+            filtrados = chats1.filter(chat => chat.operador?.id === selectedValue)
         }
         setFiltrados(filtrados)
     }
