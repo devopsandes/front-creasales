@@ -77,6 +77,7 @@ export interface AuthState  {
     isAuthenticated: boolean;
     isLoading: boolean;
     message: string;
+    empresa: string | null; 
 };
 
 

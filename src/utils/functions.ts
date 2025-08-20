@@ -53,4 +53,11 @@ function menos24hs(createdAt: Date): boolean {
     return horasDiferencia < 24;
 }
 
-export { dividirArrayEnTres, formatCreatedAt, menos24hs };
+function capitalizeWords(str: string): string {
+  return str
+    .split(" ") // separa por espacios
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // mayúscula primera letra
+    .join(" "); // vuelve a unir
+}
+
+export { dividirArrayEnTres, formatCreatedAt, menos24hs, capitalizeWords };

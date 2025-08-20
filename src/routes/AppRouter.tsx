@@ -18,13 +18,14 @@ import FormMeta from '../pages/meta/FormMeta'
 import FormModulos from '../pages/modulos/FormModulos'
 import FormUsuarios from '../pages/usuarios/FormUsuarios'
 import FormCategorias from '../pages/categorias/FormCategorias'
-import FormTareas from '../pages/tareas/FormTareas'
 import Chats from '../pages/chats/Chats'
-import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navTareas, navUsuarios, navTickets } from '../utils/navegacion'
+import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navTareas, navUsuarios, navTickets, navTags } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import LogoFondo from '../components/logo/LogoFondo'
 import TableUsers from '../pages/usuarios/TableUsers'
 import TableTickets from '../pages/tickets/TableTickets'
+import TableTags from '../pages/tags/TableTags'
+import TableAcciones from '../pages/acciones/TableAcciones'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -121,8 +122,8 @@ const AppRouter = () => {
           )}
 
           {(role === 'ROOT' || role === 'ADMIN') && (
-            <Route path='tareas' element={<NavTag tags={navTareas} />}>
-              <Route index element={<FormTareas />}/>
+            <Route path='acciones' element={<NavTag tags={navTareas} />}>
+              <Route index element={<TableAcciones />}/>
               <Route path='datos' element={<DatosEmpresa/>}/>
             </Route>
           )}
@@ -139,6 +140,10 @@ const AppRouter = () => {
 
           <Route path='tickets' element={<NavTag tags={navTickets} />}>
             <Route index element={<TableTickets/>}/>
+          </Route>
+
+          <Route path='tags' element={<NavTag tags={navTags} />}>
+            <Route index element={<TableTags/>}/>
           </Route>
 
 

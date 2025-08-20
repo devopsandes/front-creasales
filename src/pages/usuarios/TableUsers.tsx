@@ -2,7 +2,7 @@ import { FaRegCommentDots, FaUser } from "react-icons/fa";
 import  { useEffect, useState } from "react";
 import Switch from "../../components/switch/Switch";
 import { usuariosXRole } from "../../services/auth/auth.services";
-import {  Usuario } from "../../interfaces/auth.interface";
+import {   Usuario } from "../../interfaces/auth.interface";
 import { useNavigate } from "react-router-dom";
 
 
@@ -45,6 +45,10 @@ const TableUsers = () => {
       ejecucion();
      
     },[])
+
+    const handleClickChats = (user: Usuario) => {
+      navigate(`/dashboard/chats?id=${user.id}&nombre=${user.nombre} ${user.apellido}`);
+    }
 
   return (
 
@@ -92,8 +96,13 @@ const TableUsers = () => {
                     </td>
                     
                     <td className="p-2 text-center ">
-                        2 {'\t'} 
-                        <FaRegCommentDots className="inline mr-1 text-blue-600" />
+                        <button
+                          className="text-white  cursor-pointer" 
+                          onClick={() => handleClickChats(user)}
+                        >
+                          2 {'\t'} 
+                          <FaRegCommentDots className="inline mr-1 text-blue-600" />
+                        </button>
                     </td>
                     <td className="p-2 flex  justify-center items-center gap-8 ">
                       <button className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 cursor-pointer">Editar</button>

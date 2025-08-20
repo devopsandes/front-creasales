@@ -6,6 +6,7 @@ const initialState: AuthState = {
     isAuthenticated: false, // Indica si el usuario está autenticado
     isLoading: false, // Maneja el estado de carga
     message: '', // Almacena mensajes de error o satisfactorios
+    empresa: null, // Almacena la información de la empresa del usuario
 };
 
 const authSlice = createSlice({
@@ -17,9 +18,12 @@ const authSlice = createSlice({
         },
         accessGranted: (state) => {
             state.isAuthenticated = true
+        },
+        setEmpresa:(state, action) => {
+            state.empresa = action.payload
         }
     }
 })
 
-export const { addMessage, accessGranted } = authSlice.actions
+export const { addMessage, accessGranted, setEmpresa } = authSlice.actions
 export default authSlice.reducer

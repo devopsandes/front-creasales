@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState, useRef } from 'react'
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatById } from '../../services/chats/chats.services'
+import { findChatById, getUserData } from '../../services/chats/chats.services'
 import { Mensaje } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { Socket } from 'socket.io-client'
@@ -10,7 +10,7 @@ import { useDispatch } from 'react-redux'
 import UserSearchModal from '../../components/modal/UserSearchModal'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
-import { openModal } from '../../app/slices/actionSlice'
+import { openModal, setUserData, setViewSide } from '../../app/slices/actionSlice'
 import './chats.css'
 
 
@@ -38,6 +38,21 @@ const Chats = () => {
     const navigate = useNavigate()
 
     let socket: Socket | null = null
+
+
+    useEffect(() => {
+        const ejecucion = async () => {
+            const resp = await getUserData(telefono!);
+            dispatch(setUserData(resp));
+            dispatch(setViewSide(true))
+            
+            if (resp.statusCode === 401) {
+                alert('Su sesión ha caducado')
+                return navigate('/auth/signin')
+            }
+        }
+        ejecucion();
+    },[])
 
   
 

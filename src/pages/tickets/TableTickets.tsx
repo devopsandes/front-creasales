@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { FaRegClock, FaCheck,  FaRegCommentDots } from "react-icons/fa";
+import { openModalTicket } from "../../app/slices/actionSlice";
+import { useDispatch } from "react-redux";
+import CrearTicketModal from "../../components/modal/CrearTicketModal";
 
 interface Ticket {
   id: number;
@@ -76,13 +79,15 @@ const TableTickets = () => {
   const startIndex = (page - 1) * ITEMS_PER_PAGE;
   const currentTickets = mockTickets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
+  const dispatch = useDispatch();
+
   return (
     <div className="p-4 w-full h-full">
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse">
           <thead>
             <tr className="bg-slate-600 text-left text-sm font-bold text-white grid grid-cols-9">
-              <th className="p-2 col-span-1">#</th>
+              <th className="p-2 col-span-1 flex">#</th>
               <th className="p-2 col-span-2">Asunto</th>
               <th className="p-2 col-span-2">Solicitante</th>
               <th className="p-2 col-span-1">Hora</th>
@@ -123,6 +128,12 @@ const TableTickets = () => {
 
       {/* Pagination */}
       <div className="flex justify-end mt-4 space-x-2">
+        <button 
+          onClick={() => dispatch(openModalTicket())}
+          className="btn flex ml-5 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+        >
+          Crear Ticket
+        </button>
         <button
           onClick={() => setPage((p) => Math.max(p - 1, 1))}
           disabled={page === 1}
@@ -141,6 +152,7 @@ const TableTickets = () => {
           Siguiente
         </button>
       </div>
+      <CrearTicketModal />
     </div>
   );
 };

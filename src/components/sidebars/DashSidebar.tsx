@@ -1,7 +1,7 @@
 import { HiCog, HiCpuChip, HiClipboardDocumentList, HiMiniUsers, HiMiniTicket } from "react-icons/hi2";
 import { FaComments, FaMeta } from "react-icons/fa6";
 import { IoMdLogOut } from "react-icons/io";
-import { FaTasks, FaAddressBook, FaThList, FaCodepen, FaTable } from "react-icons/fa";
+import { FaTasks, FaAddressBook, FaThList, FaCodepen, FaTable, FaTags } from "react-icons/fa";
 import DashItem from '../items/DashItem'
 import './dashsidebar.css'
 import { useNavigate } from "react-router-dom";
@@ -39,7 +39,9 @@ const DashSidebar = ({ role }: Props) => {
             <DashItem icon={FaThList} path='/dashboard/estados' titulo="Estados"/>
             <DashItem icon={FaCodepen} path='/dashboard/modulos' titulo="Modulos"/>
             <DashItem icon={FaTable} path='/dashboard/categorias' titulo="Categorias"/>
-            <DashItem icon={FaTasks} path='/dashboard/tareas' titulo="Tareas"/>
+            <DashItem icon={FaTasks} path='/dashboard/acciones' titulo="Acciones"/>
+            <DashItem icon={FaTags} path='/dashboard/tags' titulo="Etiquetas"/>
+
             <div className="dashsidebar-logout" onClick={handleLogout}>
               <IoMdLogOut size={25}/>
             </div>

@@ -4,9 +4,11 @@ import { ToastContainer, toast } from 'react-toastify';
 import DashSidebar from "../../components/sidebars/DashSidebar";
 import { empresaXUser } from "../../services/empresas/empresa.services";
 import './dashboard.css'
-import { useDispatch } from "react-redux";
+import { useDispatch  } from "react-redux";
 import { Socket } from "socket.io-client";
 import { connectSocket, disconnectSocket, getSocket } from "../../app/slices/socketSlice";
+import { setEmpresa } from "../../app/slices/authSlice";
+// import { RootState } from "../../app/store";
 
 
 
@@ -14,15 +16,25 @@ const Dashboard = () => {
 
   let role: string | null = localStorage.getItem('role')
   const dispatch = useDispatch()
+  /* const alerta = useSelector((state: RootState) => state.action.alerta);
+  const mensaje = useSelector((state: RootState) => state.action.msg); */
+  
   let socket: Socket | null = null
+  
 
   useEffect(() => {
     role = role ? localStorage.getItem('role') : null
     //TODO: tengo que poner un toast cada vez que se haya asignado un chat a un operador
-    // toast.success('puto el que lee')
   },[])
 
-   useEffect(() => {
+
+// revisar el siguiente useEffect, no se si es necesario
+ /*  useEffect(()=>{
+
+    toast.success(`${mensaje} - PRUEBA` );
+  },[mensaje]) */
+
+  useEffect(() => {
           try {
               dispatch(connectSocket())
               socket = getSocket()
@@ -54,8 +66,10 @@ const Dashboard = () => {
             return navigate('/auth/signin')
           }
           if(data?.empresa === null){
-            return toast.warn('Debe llenar los datos de su empresa')
+            return toast.warn('llenar los datos de su empresa')
           }
+          dispatch(setEmpresa(data.empresa.nombre))
+          
         })
         .catch(error => {
           console.log(error);

@@ -1,13 +1,17 @@
-import { Link, Outlet, useNavigate } from "react-router-dom"
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
 import {  connectSocket, disconnectSocket, getSocket } from "../../app/slices/socketSlice"
-import { useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { Socket } from "socket.io-client"
 import './chats.css'
 import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
+import { LuArrowDownFromLine } from "react-icons/lu";
+import { RootState } from "../../app/store"
+import { setUserData, setViewSide } from "../../app/slices/actionSlice"
+
 
 
 const ListaChats = () => {
@@ -34,13 +38,16 @@ const ListaChats = () => {
     }]);
     const [filtrados, setFiltrados] = useState<ChatState[]>([])
 
-    // const conectado = useSelector((state: RootState) => state.socket.isConnected);
+    const dataUser = useSelector((state: RootState) => state.action.dataUser);
+    const viewSide = useSelector((state: RootState) => state.action.viewSide);
+
 
     const token  = localStorage.getItem('token') || '';
 
     
 
     const navigate = useNavigate()
+    const location = useLocation()
     const dispatch = useDispatch()
     let socket: Socket | null = null
 
@@ -53,8 +60,10 @@ const ListaChats = () => {
         
         }
         ejecucion();
+        dispatch(setUserData(null)); // Reset user data on component mount
+        dispatch(setViewSide(false)); // Reset view side on component mount
       
-    },[])
+    },[,location])
 
     useEffect(() => {
 
@@ -62,6 +71,7 @@ const ListaChats = () => {
             dispatch(connectSocket())
             socket = getSocket()
             setLoading(true)
+            
             
             
             return () => {
@@ -164,7 +174,7 @@ const ListaChats = () => {
                     </button>
                     
                 </div>
-                <div className="header-item">
+               {/*  <div className="header-item">
                     <div>
                         <select
                             id="operador-select"
@@ -180,7 +190,7 @@ const ListaChats = () => {
                     </div>
                 
                    
-                </div>
+                </div> */}
                 <div className="header-item">
                     <button 
                         onClick={() => alert('No implementado')} 
@@ -222,13 +232,50 @@ const ListaChats = () => {
                     {!loading && chats1.length === 0 && (
                         <p className="msg-error">No hay chats disponibles</p>
                     )}
-                    {!loading && chats1.length > 0 && 
-                        filtrados.map(chat => (
-                            <Link to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} className="item-lista" key={chat.id}>
-                                {chat.cliente.nombre} - {chat.cliente.telefono}
-                            </Link>
-                        ))
-                    }
+                    {!loading && chats1.length > 0 && (
+                        <>
+                            <div className="w-full flex justify-between px-2 items-center mb-4 py-2">
+                                <div className="border border-white rounded-none p-2">
+                                    {/* Contenido opcional aquí */}
+                                    <LuArrowDownFromLine />
+                                </div>
+                               
+                                <div>
+                                    <select
+                                        id="operador-select"
+                                        className="block w-30 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                        onChange={handleChangeSelect}
+                                    >
+                                        <option value="" className="bg-gray-500">Seleccione</option>
+                                        {users.map(user => (
+                                            <option value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
+                                        ))}
+                                    
+                                    </select>
+                                </div>
+                            </div>
+                            {filtrados.map(chat => (
+                                <Link 
+                                    to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} 
+                                    className="item-lista text-left" 
+                                    key={chat.id}
+                                >
+                                    {chat.cliente.nombre} - {chat.cliente.telefono}
+                                    <div className="flex justify-start gap-2 w-full pt-2">
+                                        <input
+                                            type="checkbox"
+                                            className="checkbox"
+                                        />
+                                        <p className="p-0.5 bg-gray-600  text-center">AC <span className="font-bold text-gray-400" >X</span></p>
+                                        <p className="p-0.5 bg-gray-600 text-center">BLACK <span className="font-bold text-gray-400" >X</span></p>
+                                        <p className="p-0.5 bg-gray-600 text-center">DEUDA <span className="font-bold text-gray-400" >X</span></p>
+
+                                        
+                                    </div>
+                                </Link>
+                            ))}
+                        </>
+                    )}
                 
                 </div>
                 <div className="col-lista">
@@ -252,6 +299,52 @@ const ListaChats = () => {
                 
                 </div>
                 <div className="col-lista">
+                    {viewSide && (
+                        <>
+                            <div className="w-full">
+                                <p className="text-left text-gray-700 font-bold">&#9658;Etiquetas:</p>
+                                <div className="bg-white h-20 w-full p-2 flex flex-col justify-start gap-2">
+                                    <div className="flex gap-2">
+                                        <p className="p-0.5 bg-gray-600  text-center">AC <span className="font-bold text-gray-400" >X</span></p>
+                                        <p className="p-0.5 bg-gray-600 text-center">BLACK <span className="font-bold text-gray-400" >X</span></p>
+                                        <p className="p-0.5 bg-gray-600 text-center">DEUDA <span className="font-bold text-gray-400" >X</span></p>
+                                    </div>
+                                
+                                </div>
+                            </div>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Canal: </span> 5492615789456</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Estado: </span>Abierto</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">ChatBot: </span>#andessalud</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Departamento: </span>Atención</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Asignado: </span>Pepe Botella</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Email: </span>{dataUser?.mail}</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Telefono: </span>{dataUser?.celular}</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">TipoAltaBaja: </span>Alta</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Plan Prestacional: </span>{dataUser?.planAfiliado}</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Provincia: </span>{dataUser?.provinciaDom}</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Via Clinica: </span>CATEGORIA D;SC</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Cuil Afiliado: </span>{dataUser?.CUILTitular}</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Id Afiliado Titular: </span>{dataUser?.IdAfiliadoTitular}</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Fecha Alta: </span>{dataUser?.mesAlta}</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Obra social: </span>{dataUser?.OSAndes}</p>
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Localidad: </span>{dataUser?.localidadDom}</p>
+                            <p className="text-left text-gray-700 w-full p-1">
+                                &#9658;<span className="font-bold">DNI: </span>
+                                {dataUser?.CUILTitular ? dataUser.CUILTitular.toString().slice(2, -1) : ""}
+                            </p>
+                            {/* <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">DNI: </span>{dataUser?.CUILTitular.toString()}</p> */}
+                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Zoho Ticket id: </span>#260937</p>
+
+                        </>
+                            
+
+                    )}
+                   
+
+
+
+
+
                 {/* {loading && (
                         <div className="spinner-lista">
                             <div className="loader2"></div>

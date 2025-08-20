@@ -82,7 +82,7 @@ const navEmpresa: Tag[] = [
   const navTareas: Tag[] = [
     {
       id: 1,
-      name: "Form",
+      name: "Acciones",
       path: "/dashboard/tareas"
     },
     {
@@ -109,6 +109,15 @@ const navEmpresa: Tag[] = [
     },
   ]
 
+  const navTags: Tag[] = [
+    {
+      id: 1,
+      name: "Tags",
+      path: "/dashboard/tags"
+    },
+  ]
+
+
 export {
     navCategorias,
     navChats,
@@ -118,5 +127,6 @@ export {
     navModulos,
     navTareas,
     navUsuarios,
-    navTickets
+    navTickets,
+    navTags
 }
