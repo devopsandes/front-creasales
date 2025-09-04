@@ -12,9 +12,9 @@ const NavTag: React.FC<NavTagProps> = (elements) => {
     return (
         <div className='dash-container'>
             <nav className='dash-navbar'>
-                <ul className='dash-nav-listado flex justify-between pr-4' >
+                <ul className='dash-nav-listado flex justify-between pr-4' key={Math.random()} >
                     {elements.tags.map(tag => (
-                        <li>
+                        <li key={tag.id} >
                             <Link 
                                 key={tag.id}
                                 to={`${tag.path}`} 

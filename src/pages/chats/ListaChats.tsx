@@ -273,7 +273,7 @@ const ListaChats = () => {
                                     >
                                         <option value="" className="bg-gray-500">Seleccione</option>
                                         {users.map(user => (
-                                            <option value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
+                                            <option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
                                         ))}
                                     
                                     </select>
