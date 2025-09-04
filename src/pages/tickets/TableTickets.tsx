@@ -1,10 +1,11 @@
 // TableTickets.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaRegClock, FaCheck,  FaRegCommentDots } from "react-icons/fa";
 import { openModalTicket } from "../../app/slices/actionSlice";
 import { useDispatch } from "react-redux";
 import CrearTicketModal from "../../components/modal/CrearTicketModal";
+import { getTickets } from "../../services/tickets/tickets.services";
 
 interface Ticket {
   id: number;
@@ -79,7 +80,18 @@ const TableTickets = () => {
   const startIndex = (page - 1) * ITEMS_PER_PAGE;
   const currentTickets = mockTickets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
+  const token  = localStorage.getItem('token') || '';
+
   const dispatch = useDispatch();
+
+  useEffect(()=>{
+    const ejecucion = async () => {
+      const resp = await getTickets(token, {limit: '10', page: '1'})
+      console.log(resp.tickets);
+      
+    }
+    ejecucion()
+  },[])
 
   return (
     <div className="p-4 w-full h-full">

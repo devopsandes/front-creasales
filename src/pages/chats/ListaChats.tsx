@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
-import {  connectSocket, disconnectSocket, getSocket } from "../../app/slices/socketSlice"
+import {  getSocket } from "../../app/slices/socketSlice"
 import { useDispatch, useSelector } from "react-redux"
 import { Socket } from "socket.io-client"
 import './chats.css'
@@ -11,13 +11,16 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine } from "react-icons/lu";
 import { RootState } from "../../app/store"
 import { setUserData, setViewSide } from "../../app/slices/actionSlice"
+import { jwtDecode } from "jwt-decode"
 
 
 
 const ListaChats = () => {
     const [chats1,setChats1] = useState<ChatState[]>([])
-    // const [chats2,setChats2] = useState<ChatState[]>([])
-    // const [chats3,setChats3] = useState<ChatState[]>([])
+    const [archivadas,setArchivadas] = useState<ChatState[]>([])
+    const [asignadas,setAsignadas] = useState<ChatState[]>([])
+    const [bots,setBots] = useState<ChatState[]>([])
+
     const [loading, setLoading] = useState<boolean>(true)
     const [users, setUsers] = useState<Usuario[]>([{
         id: 'BOT',
@@ -43,16 +46,19 @@ const ListaChats = () => {
 
 
     const token  = localStorage.getItem('token') || '';
+    const id = jwtDecode<{ id: string }>(token).id;
 
     
 
     const navigate = useNavigate()
     const location = useLocation()
+    const path = location.pathname
     const dispatch = useDispatch()
     let socket: Socket | null = null
 
 
     useEffect(()=>{
+        
         const ejecucion = async () => {
             const respUsers = await usuariosXRole('USER', token);
             
@@ -60,36 +66,32 @@ const ListaChats = () => {
         
         }
         ejecucion();
-        dispatch(setUserData(null)); // Reset user data on component mount
-        dispatch(setViewSide(false)); // Reset view side on component mount
+        dispatch(setUserData(null))
+        dispatch(setViewSide(false))
       
-    },[,location])
+    },[,path])
 
     useEffect(() => {
 
         try {
-            dispatch(connectSocket())
+            // dispatch(connectSocket())
             socket = getSocket()
             setLoading(true)
             
             
             
-            return () => {
+          /*   return () => {
                 if(!socket?.connected){
-                    /* alert('Su sesión ha caducado, por favor inicie sesión nuevamente');
-                    navigate('/auth/signin')
-                    return */
+                  
                 }
                 dispatch(disconnectSocket())
-            }
+            } */
         } catch (error) {
             console.log(error);
         }
         
        
     },[dispatch])
-
-   
 
     useEffect(()=>{
 
@@ -99,6 +101,21 @@ const ListaChats = () => {
         const handleChats = (data: ChatState[]) => {
             //TENGO QUE PONER UNA CONDICION PARA UN SPINNER
             // const arreglo = dividirArrayEnTres(data)
+            
+            data.map(chat => {
+                if(chat.archivar){
+                    setArchivadas(prev => [...prev,chat])
+                }
+
+                if(!chat.operador){
+                    setBots(prev => [...prev,chat])
+                }
+
+                if(id === chat.operador?.id){
+                    setAsignadas(prev => [...prev,chat])
+                }
+            })
+            
             setChats1(data)
             setFiltrados(data)
             // setChats2(arreglo[1])
@@ -160,17 +177,25 @@ const ListaChats = () => {
         setFiltrados(filtrados)
     }
 
+    const handlerArchivadas = () => {
+        setFiltrados(archivadas)
+    }
+
+    const handleClickLink = () => {
+        dispatch(setViewSide(true))
+    }
+
   return (
      <div className="chats-container">
         <div className='main-chat'>
             <div className="header-lista">
                 <div className="header-item">
                     <button 
-                        onClick={() => alert('No implementado')} 
+                        onClick={() => setFiltrados(asignadas)} 
                         className="btn-item"
                     >
                         Asignadas a mí
-                        <span>99</span>
+                        <span>{asignadas.length}</span>
                     </button>
                     
                 </div>
@@ -193,31 +218,31 @@ const ListaChats = () => {
                 </div> */}
                 <div className="header-item">
                     <button 
-                        onClick={() => alert('No implementado')} 
+                        onClick={handlerArchivadas} 
                         className="btn-item"
                     >
                         Archivadas
-                        <span>99</span>
+                        <span>{archivadas.length}</span>
                     </button>
                    
                 </div>
                  <div className="header-item">
                      <button 
-                        onClick={() => alert('No implementado')} 
+                        onClick={() => setFiltrados(chats1)} 
                         className="btn-item"
                     >
-                        Menciones
-                        <span>99</span>
+                        Todas
+                        <span>{chats1.length}</span>
                     </button>
                    
                 </div>
                  <div className="header-item">
                      <button 
-                        onClick={() => alert('No implementado')} 
+                        onClick={() => setFiltrados(bots)} 
                         className="btn-item"
                     >
                         Bots
-                        <span>99</span>
+                        <span>{bots.length}</span>
                     </button>
                    
                 </div>
@@ -259,6 +284,7 @@ const ListaChats = () => {
                                     to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} 
                                     className="item-lista text-left" 
                                     key={chat.id}
+                                    onClick={handleClickLink}
                                 >
                                     {chat.cliente.nombre} - {chat.cliente.telefono}
                                     <div className="flex justify-start gap-2 w-full pt-2">

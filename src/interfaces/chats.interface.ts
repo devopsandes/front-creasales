@@ -1,6 +1,7 @@
 import { Usuario } from "./auth.interface";
 
 export interface ChatState {
+    archivar: boolean;
     cliente:   Cliente;
     createdAt: Date;
     id:        string;

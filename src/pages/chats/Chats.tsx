@@ -5,7 +5,7 @@ import { findChatById, getUserData } from '../../services/chats/chats.services'
 import { Mensaje } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { Socket } from 'socket.io-client'
-import { connectSocket, disconnectSocket, getSocket } from '../../app/slices/socketSlice'
+import { getSocket } from '../../app/slices/socketSlice'
 import { useDispatch } from 'react-redux'
 import UserSearchModal from '../../components/modal/UserSearchModal'
 import { FaFileArrowDown } from "react-icons/fa6";
@@ -52,13 +52,13 @@ const Chats = () => {
             }
         }
         ejecucion();
-    },[])
+    },[, location])
 
   
 
     
     
-    useEffect(()=>{
+  /*   useEffect(()=>{
         dispatch(connectSocket())
         socket = getSocket()
         setLoading(true)
@@ -66,7 +66,7 @@ const Chats = () => {
         return () => {
             dispatch(disconnectSocket())
         }
-    },[dispatch])
+    },[dispatch]) */
     
    
 
