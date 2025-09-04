@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
-import {  getSocket } from "../../app/slices/socketSlice"
+import {  getSocket, connectSocket, disconnectSocket } from "../../app/slices/socketSlice"
 import { useDispatch, useSelector } from "react-redux"
 import { Socket } from "socket.io-client"
 import './chats.css'
@@ -74,18 +74,18 @@ const ListaChats = () => {
     useEffect(() => {
 
         try {
-            // dispatch(connectSocket())
+            dispatch(connectSocket())
             socket = getSocket()
             setLoading(true)
             
             
             
-          /*   return () => {
+            return () => {
                 if(!socket?.connected){
                   
                 }
                 dispatch(disconnectSocket())
-            } */
+            }
         } catch (error) {
             console.log(error);
         }

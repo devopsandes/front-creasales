@@ -58,15 +58,15 @@ const Chats = () => {
 
     
     
-  /*   useEffect(()=>{
-        dispatch(connectSocket())
+    useEffect(()=>{
+        // dispatch(connectSocket())
         socket = getSocket()
         setLoading(true)
         socket?.emit('register',telefono)
         return () => {
-            dispatch(disconnectSocket())
+            // dispatch(disconnectSocket())
         }
-    },[dispatch]) */
+    },[dispatch])
     
    
 
