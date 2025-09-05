@@ -2,16 +2,18 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
-import {  getSocket, connectSocket, disconnectSocket } from "../../app/slices/socketSlice"
+// import {  getSocket, connectSocket } from "../../app/slices/socketSlice"
 import { useDispatch, useSelector } from "react-redux"
-import { Socket } from "socket.io-client"
-import './chats.css'
+// import { Socket } from "socket.io-client"
 import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine } from "react-icons/lu";
 import { RootState } from "../../app/store"
 import { setUserData, setViewSide } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
+import './chats.css'
+import { getSocket } from "../../app/slices/socketSlice"
+import { getChats } from "../../services/chats/chats.services"
 
 
 
@@ -43,7 +45,9 @@ const ListaChats = () => {
 
     const dataUser = useSelector((state: RootState) => state.action.dataUser);
     const viewSide = useSelector((state: RootState) => state.action.viewSide);
+    // const socket = useSelector((state: RootState) => state.socket);
 
+    const socket = getSocket()
 
     const token  = localStorage.getItem('token') || '';
     const id = jwtDecode<{ id: string }>(token).id;
@@ -54,13 +58,34 @@ const ListaChats = () => {
     const location = useLocation()
     const path = location.pathname
     const dispatch = useDispatch()
-    let socket: Socket | null = null
+    // let socket: Socket | null = null
 
 
     useEffect(()=>{
         
         const ejecucion = async () => {
             const respUsers = await usuariosXRole('USER', token);
+            const chatos = await getChats(token,'1','100')
+
+           
+
+            chatos.chats.map(chat => {
+                if(chat.archivar){
+                    setArchivadas(prev => [...prev,chat])
+                }
+
+                if(!chat.operador){
+                    setBots(prev => [...prev,chat])
+                }
+
+                if(id === chat.operador?.id){
+                    setAsignadas(prev => [...prev,chat])
+                }
+            })
+
+            setChats1(chatos.chats)
+            setFiltrados(chatos.chats)
+            setLoading(false)
             
             setUsers([...users,...respUsers.users]);
         
@@ -71,11 +96,11 @@ const ListaChats = () => {
       
     },[,path])
 
-    useEffect(() => {
+   /*  useEffect(() => {
 
         try {
             dispatch(connectSocket())
-            socket = getSocket()
+            // socket = getSocket()
             setLoading(true)
             
             
@@ -84,21 +109,21 @@ const ListaChats = () => {
                 if(!socket?.connected){
                   
                 }
-                dispatch(disconnectSocket())
+                // dispatch(disconnectSocket())
             }
         } catch (error) {
             console.log(error);
         }
         
        
-    },[dispatch])
+    },[dispatch]) */
 
     useEffect(()=>{
 
         
         if(!socket) return
         
-        const handleChats = (data: ChatState[]) => {
+       /*  const handleChats = (data: ChatState[]) => {
             //TENGO QUE PONER UNA CONDICION PARA UN SPINNER
             // const arreglo = dividirArrayEnTres(data)
             
@@ -122,7 +147,7 @@ const ListaChats = () => {
             // setChats3(arreglo[2])
             
             setLoading(false)
-        }
+        } */
 
         const handleNuevoChat = (chat: ChatState) => {
             setChats1(prevChats => [chat, ...prevChats])
@@ -145,20 +170,19 @@ const ListaChats = () => {
             alert('Su sesión ha caducado')
             navigate('/auth/signin')
             return
-        } */
-        
-        // socket.on('disconnect', handleDisconnect)
+        }
+        socket?.on('disconnect', handleDisconnect) */
 
-        socket.on('nuevo-chat',handleNuevoChat)
+        socket?.on('nuevo-chat',handleNuevoChat)
 
-        socket.on('error',handleError)
+        socket?.on('error',handleError)
 
-        socket.on('chats',handleChats)
+        // socket?.on('chats',handleChats)
 
         return () => {
             socket!.off('nuevo-chat', handleNuevoChat)
             socket!.off('error', handleError)
-            socket!.off('chats', handleChats)
+            // socket!.off('chats', handleChats)
         }
     },[socket]) 
 

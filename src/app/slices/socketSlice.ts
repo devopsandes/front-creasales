@@ -66,6 +66,7 @@ const socketSlice = createSlice({
 export const { connectSocket, disconnectSocket, emitEvent } = socketSlice.actions;
 export default socketSlice.reducer; */
 
+
 const SOCKET_URL = `${import.meta.env.VITE_URL_BACK}`; // URL de tu backend con Socket.IO
 
 

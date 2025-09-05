@@ -58,3 +58,39 @@ export interface Mensaje {
     updatedAt:   Date;
 }
 
+export interface ChatsResponse {
+    statcusCode: number;
+    chats:       ChatState[];
+}
+
+export interface Chat {
+    id:        string;
+    thread_id: string;
+    archivar:  boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    cliente:   Cliente;
+    operador:  Operador | null;
+}
+
+
+
+export interface Operador {
+    id:         string;
+    nombre:     string;
+    apellido:   string;
+    nacimiento: Date;
+    telefono:   string;
+    tipo_doc:   string;
+    nro_doc:    number;
+    cuil:       null;
+    email:      string;
+    createdAt:  Date;
+    updatedAt:  Date;
+    verificado: boolean;
+    token:      string;
+    role:       string;
+    activo:     boolean;
+}
+
+

@@ -1,6 +1,6 @@
 import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
-import { ChatResponse } from "../../interfaces/chats.interface"
+import { ChatResponse, ChatsResponse } from "../../interfaces/chats.interface"
 import { DataUser } from "../../interfaces/action.interface"
 
 
@@ -43,5 +43,26 @@ const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse>=
 }
 
 
+const getChats = async (token: string, page: string, limit: string): Promise< ChatsResponse & ErrorResponse> => {
+    try {
+        const url = `https://sales.createch.com.ar/api/v1/chats?page=${page}&limit=${limit}`
 
-export {  findChatById, getUserData }
+        const headers = {
+            authorization: `Bearer ${token}`
+        }
+
+        const { data } = await axios.get<ChatsResponse & ErrorResponse>(url,{ headers })
+
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            const objeto: ChatsResponse & ErrorResponse = error.response.data
+            return objeto
+        }
+        throw error; // Lanza el error si no es del tipo esperado
+    }
+}
+
+
+
+export {  findChatById, getUserData, getChats }
