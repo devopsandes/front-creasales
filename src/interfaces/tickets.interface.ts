@@ -1,3 +1,4 @@
+import { Estado } from './chats.interface';
 export interface QueryParams {
     page: string
     limit: string
@@ -20,6 +21,7 @@ export interface Ticket {
     createdAt:   Date;
     updatedAt:   Date;
     chat:        Chat;
+    estado:     Estado;
 }
 
 export interface Chat {
