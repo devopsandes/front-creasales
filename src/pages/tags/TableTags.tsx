@@ -11,9 +11,10 @@ import { RootState } from "../../app/store";
 
 
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 15;
 
 const TableTags = () => {
+  const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState(1);
   const [tags, setTags] = useState<Tag[]>([]);
   const totalPages = Math.ceil(tags!.length / ITEMS_PER_PAGE);
@@ -29,6 +30,7 @@ const TableTags = () => {
     const ejecucion = async () => {
       const resp = await getTags(token);
       setTags(resp.tags);
+      setLoading(false)
     }
     ejecucion();
   },[])
@@ -43,37 +45,44 @@ const TableTags = () => {
  
   return (
     <div className="p-4 w-full h-full">
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse">
-          <thead>
-            <tr className="bg-slate-600 text-left text-sm font-bold text-white grid grid-cols-5">
-              <th className="p-2">ID Etiqueta</th>
-              <th className="p-2">Nombre de la Etiqueta</th>
-              <th className="p-2">Empresa</th>
-              <th><CiSquarePlus size={45} onClick={() => dispatch(openModalTag())} className="cursor-pointer"/></th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentTags.map((tag, index) => (
-              <tr key={tag.id} className="border-b hover:bg-slate-100 grid grid-cols-5 items-center">
-                <td className="p-2 text-sm font-semibold text-gray-800 text-left">{index+1}</td>
-                <td className="p-2 text-sm text-gray-700 text-left">{tag.nombre}</td>
-                <td className="p-2 text-sm text-gray-700 text-left">{capitalizeWords(tag.empresa.nombre)}</td>
-                <td className="p-2 flex justify-end">
-                  <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                    Editar
-                  </button>
-                </td>
-                <td className="p-2">
-                  <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
-                    Eliminar
-                  </button>
-                </td>
+      {loading ? (
+        <div className="spinner-lista">
+          <div className="loader2"></div>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse">
+            <thead>
+              <tr className="bg-slate-600 text-left text-sm font-bold text-white grid grid-cols-5">
+                <th className="p-2">ID Etiqueta</th>
+                <th className="p-2">Nombre de la Etiqueta</th>
+                <th className="p-2">Empresa</th>
+                <th><CiSquarePlus size={45} onClick={() => dispatch(openModalTag())} className="cursor-pointer"/></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {currentTags.map((tag, index) => (
+                <tr key={tag.id} className="border-b hover:bg-slate-100 grid grid-cols-5 items-center">
+                  <td className="p-2 text-sm font-semibold text-gray-800 text-left">{index+1}</td>
+                  <td className="p-2 text-sm text-gray-700 text-left">{tag.nombre.toUpperCase()}</td>
+                  <td className="p-2 text-sm text-gray-700 text-left">{capitalizeWords(tag.empresa.nombre)}</td>
+                  <td className="p-2 flex justify-end">
+                    <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                      Editar
+                    </button>
+                  </td>
+                  <td className="p-2">
+                    <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+     
 
       {/* Paginación */}
       <div className="flex justify-end mt-4 space-x-2">
