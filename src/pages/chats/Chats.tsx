@@ -137,15 +137,15 @@ const Chats = () => {
     const handleClickBtn = (e: FormEvent<HTMLFormElement>) => {
         try {
             e.preventDefault()
-            setMensaje('')
             socket = getSocket()
             if (socket && socket.connected) {
-               const objMsj = {
-                mensaje,
-                chatId: id,
-                telefono,
-                token
-               }
+                const objMsj = {
+                    mensaje,
+                    chatId: id,
+                    telefono,
+                    token
+                }
+                setMensaje('')
                 socket.emit("enviar-mensaje", objMsj);
             } else {
                 console.warn("Socket desconectado, enviando por HTTP...");
@@ -161,6 +161,12 @@ const Chats = () => {
         const conf = confirm('¿Quiere archivar el siguiente chat?');
         if(!conf) return
         try {
+            const msj: Mensaje = {
+                msg_salida: mensaje,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }
+            setMensajes(prevChats => [...prevChats,msj])            
             socket = getSocket()
             if (socket && socket.connected) {
                const objMsj = {

@@ -61,6 +61,12 @@ const ListaChats = () => {
     // let socket: Socket | null = null
 
 
+    useEffect(() => {
+        console.log(dataUser);
+        
+    },[])
+
+
     useEffect(()=>{
         
         const ejecucion = async () => {

@@ -49,11 +49,11 @@ export interface Chat {
 }
 
 export interface Mensaje {
-    id:          string;
-    msg_id:      string;
-    msg_entrada: null | string;
-    msg_salida:  null | string;
-    nota:        null;
+    id?:          string;
+    msg_id?:      string;
+    msg_entrada?: null | string;
+    msg_salida?:  null | string;
+    nota?:        null;
     createdAt:   Date;
     updatedAt:   Date;
 }
