@@ -19,7 +19,7 @@ import FormModulos from '../pages/modulos/FormModulos'
 import FormUsuarios from '../pages/usuarios/FormUsuarios'
 import FormCategorias from '../pages/categorias/FormCategorias'
 import Chats from '../pages/chats/Chats'
-import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navTareas, navUsuarios, navTickets, navTags } from '../utils/navegacion'
+import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import LogoFondo from '../components/logo/LogoFondo'
 import TableUsers from '../pages/usuarios/TableUsers'
@@ -122,9 +122,8 @@ const AppRouter = () => {
           )}
 
           {(role === 'ROOT' || role === 'ADMIN') && (
-            <Route path='acciones' element={<NavTag tags={navTareas} />}>
+            <Route path='acciones' element={<NavTag tags={navAcciones} />}>
               <Route index element={<TableAcciones />}/>
-              <Route path='datos' element={<DatosEmpresa/>}/>
             </Route>
           )}
         

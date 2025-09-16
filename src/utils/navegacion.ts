@@ -13,6 +13,15 @@ const navEmpresa: Tag[] = [
     }
   ]
 
+  const navAcciones: Tag[] = [
+     {
+      id: 1,
+      name: "Acciones",
+      path: "/dashboard/acciones"
+    },
+   
+  ]
+
   const navEstados: Tag[] = [
     {
       id: 1,
@@ -128,5 +137,6 @@ export {
     navTareas,
     navUsuarios,
     navTickets,
-    navTags
+    navTags,
+    navAcciones
 }
