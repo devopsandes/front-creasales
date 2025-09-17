@@ -33,7 +33,7 @@ const DashSidebar = ({ role }: Props) => {
             <DashItem icon={HiClipboardDocumentList} path='/dashboard/empresa' titulo="Empresa"/>
             <DashItem icon={FaComments} path='/dashboard/chats' titulo="Chats"/>
             <DashItem icon={HiMiniTicket} path='/dashboard/tickets' titulo="Tickets"/>
-            <DashItem icon={FaAddressBook} path='' titulo="Clientes"/>
+            <DashItem icon={FaAddressBook} path='/dashboard/clientes' titulo="Clientes"/>
             <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta"/>
             <DashItem icon={HiMiniUsers} path='/dashboard/usuarios' titulo="Usuarios"/>
             <DashItem icon={FaThList} path='/dashboard/estados' titulo="Estados"/>

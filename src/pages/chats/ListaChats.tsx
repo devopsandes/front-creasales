@@ -64,7 +64,7 @@ const ListaChats = () => {
     useEffect(() => {
         console.log(dataUser);
         
-    },[])
+    },[dataUser])
 
 
     useEffect(()=>{
