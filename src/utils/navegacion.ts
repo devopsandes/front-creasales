@@ -63,15 +63,15 @@ const navEmpresa: Tag[] = [
   ]
 
   const navUsuarios: Tag[] = [
-    {
+   /*  {
       id: 1,
       name: "Form",
       path: "/dashboard/usuarios"
-    },
+    }, */
     {
-      id: 2,
+      id: 1,
       name: "Usuarios",
-      path: "/dashboard/usuarios/lista"
+      path: "/dashboard/usuarios"
     }
   ]
 

@@ -4,10 +4,13 @@ import Switch from "../../components/switch/Switch";
 import { usuariosXRole } from "../../services/auth/auth.services";
 import {   Usuario } from "../../interfaces/auth.interface";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import {  openModalUser } from "../../app/slices/actionSlice";
+import CrearUsuarioModal from "../../components/modal/CrearUsuarioModal";
 
 
 
-const ITEMS_PER_PAGE = 7;
+const ITEMS_PER_PAGE = 15;
 
 const TableUsers = () => {
   const [page, setPage] = useState(1);
@@ -17,6 +20,7 @@ const TableUsers = () => {
   const token  = localStorage.getItem('token') || '';
   let role = localStorage.getItem('role') || '';
   const navigate = useNavigate();
+  const dispatch = useDispatch()
 
 
 
@@ -118,6 +122,12 @@ const TableUsers = () => {
 
       {/* Pagination */}
       <div className="flex justify-end mt-4 space-x-2">
+        <button 
+          onClick={() => dispatch(openModalUser())}
+          className="btn flex ml-5 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+        >
+          Crear Usuario
+        </button>
         <button
           onClick={() => setPage((p) => Math.max(p - 1, 1))}
           disabled={page === 1}
@@ -134,6 +144,8 @@ const TableUsers = () => {
           Siguiente
         </button>
       </div>
+      <CrearUsuarioModal />
+
     </div>
   );
 };

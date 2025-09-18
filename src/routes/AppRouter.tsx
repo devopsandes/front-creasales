@@ -16,7 +16,6 @@ import FormEstados from '../pages/estados/FormEstados'
 import NavTag from '../components/navs/NavTag'
 import FormMeta from '../pages/meta/FormMeta'
 import FormModulos from '../pages/modulos/FormModulos'
-import FormUsuarios from '../pages/usuarios/FormUsuarios'
 import FormCategorias from '../pages/categorias/FormCategorias'
 import Chats from '../pages/chats/Chats'
 import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes } from '../utils/navegacion'
@@ -110,8 +109,9 @@ const AppRouter = () => {
 
           {(role === 'ROOT' || role === 'ADMIN') && (
             <Route path='usuarios' element={<NavTag tags={navUsuarios} />}>
-              <Route index element={<FormUsuarios />}/>
-              <Route path='lista' element={<TableUsers/>}/>
+              {/* <Route index element={<FormUsuarios />}/> */}
+              {/* <Route path='lista' element={<TableUsers/>}/> */}
+              <Route index element={<TableUsers/>}/>
             </Route>
           )}
 

@@ -5,6 +5,7 @@ const initialState : ActionState = {
     modal: false,
     modalTag: false,
     modalTicket: false,
+    modalUser: false,
     msg: '',
     alerta: false,
     newTag: null, // Initialize newTag with an empty Tag object
@@ -49,10 +50,29 @@ const actionSlice = createSlice({
         },
         closeModalTicket: (state) => {
             state.modalTicket = false
+        },
+         openModalUser: (state) => {
+            state.modalUser = true
+        },
+        closeModalUser: (state) => {
+            state.modalUser = false
         }
     }
 })
 
-export const {  openModal, closeModal, closeModalTag, openModalTag, throwAlert, setNewTag, setUserData, setViewSide, openModalTicket, closeModalTicket } = actionSlice.actions
+export const {  
+    openModal, 
+    closeModal, 
+    closeModalTag, 
+    openModalTag, 
+    throwAlert, 
+    setNewTag, 
+    setUserData, 
+    setViewSide, 
+    openModalTicket, 
+    closeModalTicket,
+    openModalUser,
+    closeModalUser 
+} = actionSlice.actions
 export default actionSlice.reducer
 

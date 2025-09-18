@@ -3,6 +3,7 @@ export interface ActionState  {
    modal: boolean;
    modalTag: boolean;
    modalTicket: boolean;
+   modalUser: boolean;
    msg: string;
    alerta: boolean;
    newTag: string | null;

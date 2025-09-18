@@ -9,68 +9,10 @@ import { getTickets } from "../../services/tickets/tickets.services";
 import { Ticket } from "../../interfaces/tickets.interface";
 import { formatCreatedAt } from "../../utils/functions";
 
-/* interface Ticket {
-  id: number;
-  asunto: string;
-  solicitante: string;
-  hora: string;
-  estado: "Open" | "Closed" | "En Proceso" | "On Hold";
-  respuestas: number;
-  comentarios: number;
-} */
 
-/* const mockTickets: Ticket[] = [
-  {
-    id: 248031,
-    asunto: "MEDICACION",
-    solicitante: "MERELLES CASTRO ORIANA ARAMI",
-    hora: "08:42 AM",
-    estado: "Open",
-    respuestas: 1,
-    comentarios: 1,
-  },
-  {
-    id: 248026,
-    asunto: "PROBLEMAS AL UTILIZAR EL SERVICIO: PRESTADOR",
-    solicitante: "TAVERA MARCELO ANTONIO",
-    hora: "hace 27 minutos",
-    estado: "Open",
-    respuestas: 1,
-    comentarios: 2,
-  },
-  {
-    id: 248010,
-    asunto: "ANTICONCEPTIVOS",
-    solicitante: "CUELLO GABRIELA JUDITH",
-    hora: "05:48 AM",
-    estado: "Closed",
-    respuestas: 1,
-    comentarios: 1,
-  },
-  {
-    id: 247950,
-    asunto: "PROBLEMAS AL UTILIZAR SERVICIO: PRESTADOR",
-    solicitante: "PARDO MARIANA IVON",
-    hora: "hace 17 horas",
-    estado: "Open",
-    respuestas: 2,
-    comentarios: 3,
-  },
-  {
-    id: 247940,
-    asunto: "CRONICIDAD",
-    solicitante: "LEIVA OLIVIA FRANCISCA",
-    hora: "08:46 AM",
-    estado: "Closed",
-    respuestas: 0,
-    comentarios: 1,
-  },
-];
- */
 const estadoColor = {
   abierto: "bg-green-500",
   cerrado: "bg-gray-500",
-  // "En Proceso": "bg-orange-500",
   pendiente: "bg-yellow-500",
 };
 
