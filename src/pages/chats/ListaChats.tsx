@@ -62,7 +62,6 @@ const ListaChats = () => {
 
 
     useEffect(() => {
-        console.log(dataUser);
         
     },[dataUser])
 
@@ -156,7 +155,8 @@ const ListaChats = () => {
         } */
 
         const handleNuevoChat = (chat: ChatState) => {
-            setChats1(prevChats => [chat, ...prevChats])
+            
+            setFiltrados(prevChats => [chat, ...prevChats])
         }
 
         const handleError = (error: any) => {

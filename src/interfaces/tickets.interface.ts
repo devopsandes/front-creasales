@@ -1,4 +1,5 @@
 import { Estado } from './chats.interface';
+
 export interface QueryParams {
     page: string
     limit: string

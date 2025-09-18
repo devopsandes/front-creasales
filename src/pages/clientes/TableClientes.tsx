@@ -6,7 +6,7 @@ import { Cliente } from "../../interfaces/cliente.interface";
 
 
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 15;
 
 const TableClientes = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -22,7 +22,6 @@ const TableClientes = () => {
   useEffect(()=>{
     const ejecucion = async () => {
       const resp = await getClientes(token, {limit: '10', page: '1'})
-      console.log(resp.clientes);
       setClientes(resp.clientes);
       setLoading(false)
     }
