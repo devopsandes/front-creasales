@@ -46,6 +46,7 @@ const ListaChats = () => {
     const dataUser = useSelector((state: RootState) => state.action.dataUser);
     const viewSide = useSelector((state: RootState) => state.action.viewSide);
 
+
     const socket = getSocket()
 
     const token  = localStorage.getItem('token') || '';
@@ -99,7 +100,7 @@ const ListaChats = () => {
             ejecucion();
         }
       
-    },[,path])
+    },[])
 
   
 

@@ -6,6 +6,7 @@ const initialState : ActionState = {
     modalTag: false,
     modalTicket: false,
     modalUser: false,
+    modalPlantilla: false,
     msg: '',
     alerta: false,
     newTag: null, // Initialize newTag with an empty Tag object
@@ -66,6 +67,9 @@ const actionSlice = createSlice({
         closeModalTeca: (state) => {
             state.modalTeca = false
         },
+        switchModalPlantilla: (state) => {
+            state.modalPlantilla = !state.modalPlantilla
+        }
     }
 })
 
@@ -83,7 +87,8 @@ export const {
     openModalUser,
     closeModalUser,
     openModalTeca,
-    closeModalTeca
+    closeModalTeca,
+    switchModalPlantilla
 } = actionSlice.actions
 export default actionSlice.reducer
 

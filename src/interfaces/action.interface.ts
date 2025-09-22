@@ -5,6 +5,7 @@ export interface ActionState  {
    modalTicket: boolean;
    modalUser: boolean;
    modalTeca: boolean;
+   modalPlantilla: boolean;
    msg: string;
    alerta: boolean;
    newTag: string | null;

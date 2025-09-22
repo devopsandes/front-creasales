@@ -10,8 +10,9 @@ import { useDispatch } from 'react-redux'
 import UserSearchModal from '../../components/modal/UserSearchModal'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
-import { openModal, setUserData, setViewSide } from '../../app/slices/actionSlice'
+import { openModal, setUserData, setViewSide, switchModalPlantilla } from '../../app/slices/actionSlice'
 import './chats.css'
+import ModalPlantilla from '../../components/modal/ModalPlantilla'
 
 
 
@@ -24,6 +25,7 @@ const Chats = () => {
 
     const location = useLocation()
     const token = localStorage.getItem('token')
+    
    
     const id = useParams().id 
     const queryParams = new URLSearchParams(location.search);
@@ -256,12 +258,19 @@ const Chats = () => {
                             </form>
                         ) : (
                             <div className='no-chat'>
-                                <p className='no-chat-text'>No se pueden enviar mensajes</p>
+                                {/* <p className='no-chat-text'>No se pueden enviar mensajes</p> */}
+                                <button
+                                    onClick={() => dispatch(switchModalPlantilla())}
+                                    className="btn flex gap-2 rounded-xl cursor-pointer bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+                                >
+                                    Enviar plantilla
+                                </button>
+                               
                             </div>
                         )}
                         
                     </div>
-
+                    <ModalPlantilla />
                     <UserSearchModal  />
                 </div>
             )}
