@@ -4,11 +4,13 @@ export interface ActionState  {
    modalTag: boolean;
    modalTicket: boolean;
    modalUser: boolean;
+   modalTeca: boolean;
    msg: string;
    alerta: boolean;
    newTag: string | null;
    dataUser:  DataUser | null;
    viewSide: boolean;
+   ticketId: string;
 };
 
 export interface DataUser {

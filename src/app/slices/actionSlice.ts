@@ -10,7 +10,9 @@ const initialState : ActionState = {
     alerta: false,
     newTag: null, // Initialize newTag with an empty Tag object
     dataUser: null,
-    viewSide: false
+    viewSide: false,
+    modalTeca: false,
+    ticketId: ''
 }
 
 const actionSlice = createSlice({
@@ -56,7 +58,14 @@ const actionSlice = createSlice({
         },
         closeModalUser: (state) => {
             state.modalUser = false
-        }
+        },
+        openModalTeca: (state,action) => {
+            state.modalTeca = true
+            state.ticketId = action.payload
+        },
+        closeModalTeca: (state) => {
+            state.modalTeca = false
+        },
     }
 })
 
@@ -72,7 +81,9 @@ export const {
     openModalTicket, 
     closeModalTicket,
     openModalUser,
-    closeModalUser 
+    closeModalUser,
+    openModalTeca,
+    closeModalTeca
 } = actionSlice.actions
 export default actionSlice.reducer
 

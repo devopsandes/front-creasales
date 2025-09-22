@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { FaRegClock, FaCheck,  FaRegCommentDots } from "react-icons/fa";
-import { openModalTicket } from "../../app/slices/actionSlice";
+import { openModalTeca, openModalTicket } from "../../app/slices/actionSlice";
 import { useDispatch } from "react-redux";
 import CrearTicketModal from "../../components/modal/CrearTicketModal";
 import { getTickets } from "../../services/tickets/tickets.services";
 import { Ticket } from "../../interfaces/tickets.interface";
 import { formatCreatedAt } from "../../utils/functions";
+import TicketModal from "../../components/modal/TicketModal";
 
 
 const estadoColor = {
@@ -16,7 +17,7 @@ const estadoColor = {
   pendiente: "bg-yellow-500",
 };
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 7;
 
 const TableTickets = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -33,12 +34,15 @@ const TableTickets = () => {
   useEffect(()=>{
     const ejecucion = async () => {
       const resp = await getTickets(token, {limit: '10', page: '1'})
-      console.log(resp.tickets);
       setTickets(resp.tickets);
       setLoading(false)
     }
     ejecucion()
   },[])
+
+  const handleOpenTicket = (id: string) => {
+    dispatch(openModalTeca(id))
+  }
 
   return (
     <div className="p-4 w-full h-full">
@@ -62,7 +66,7 @@ const TableTickets = () => {
               </thead>
               <tbody>
                 {currentTickets.map((ticket, index) => (
-                  <tr key={ticket.id} className="border-b hover:bg-slate-400 grid grid-cols-9 h-full">
+                  <tr key={ticket.id} className="border-b hover:bg-slate-400 grid grid-cols-9 h-full cursor-pointer" onClick={() => handleOpenTicket(ticket.id)}>
                     <td className="p-2 h-full text-sm font-semibold text-gray-800 text-left col-span-1">{index + 1}</td>
                     <td className="p-2 h-full text-sm text-left col-span-2">{ticket.nombre}</td>
                     <td className="p-2 text-sm text-left col-span-2">{ticket.prioridad}</td>
@@ -119,6 +123,7 @@ const TableTickets = () => {
         </button>
       </div>
       <CrearTicketModal />
+      <TicketModal />
     </div>
   );
 };

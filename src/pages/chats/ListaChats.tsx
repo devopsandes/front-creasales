@@ -45,7 +45,6 @@ const ListaChats = () => {
 
     const dataUser = useSelector((state: RootState) => state.action.dataUser);
     const viewSide = useSelector((state: RootState) => state.action.viewSide);
-    // const socket = useSelector((state: RootState) => state.socket);
 
     const socket = getSocket()
 
@@ -58,12 +57,9 @@ const ListaChats = () => {
     const location = useLocation()
     const path = location.pathname
     const dispatch = useDispatch()
-    // let socket: Socket | null = null
 
 
-    useEffect(() => {
-        
-    },[dataUser])
+    
 
 
     useEffect(()=>{
@@ -95,64 +91,24 @@ const ListaChats = () => {
             setUsers([...users,...respUsers.users]);
         
         }
-        ejecucion();
+        
         dispatch(setUserData(null))
         dispatch(setViewSide(false))
+
+        return () => {
+            ejecucion();
+        }
       
     },[,path])
 
-   /*  useEffect(() => {
-
-        try {
-            dispatch(connectSocket())
-            // socket = getSocket()
-            setLoading(true)
-            
-            
-            
-            return () => {
-                if(!socket?.connected){
-                  
-                }
-                // dispatch(disconnectSocket())
-            }
-        } catch (error) {
-            console.log(error);
-        }
-        
-       
-    },[dispatch]) */
+  
 
     useEffect(()=>{
 
         
         if(!socket) return
         
-       /*  const handleChats = (data: ChatState[]) => {
-            //TENGO QUE PONER UNA CONDICION PARA UN SPINNER
-            // const arreglo = dividirArrayEnTres(data)
-            
-            data.map(chat => {
-                if(chat.archivar){
-                    setArchivadas(prev => [...prev,chat])
-                }
-
-                if(!chat.operador){
-                    setBots(prev => [...prev,chat])
-                }
-
-                if(id === chat.operador?.id){
-                    setAsignadas(prev => [...prev,chat])
-                }
-            })
-            
-            setChats1(data)
-            setFiltrados(data)
-            // setChats2(arreglo[1])
-            // setChats3(arreglo[2])
-            
-            setLoading(false)
-        } */
+      
 
         const handleNuevoChat = (chat: ChatState) => {
             
@@ -170,25 +126,16 @@ const ListaChats = () => {
             return
         }
 
-       /*  const handleDisconnect = () => {
-            console.log('Se ha desconectado del socket');
-            
-            alert('Su sesión ha caducado')
-            navigate('/auth/signin')
-            return
-        }
-        socket?.on('disconnect', handleDisconnect) */
+      
 
         socket?.on('nuevo-chat',handleNuevoChat)
 
         socket?.on('error',handleError)
 
-        // socket?.on('chats',handleChats)
 
         return () => {
             socket!.off('nuevo-chat', handleNuevoChat)
             socket!.off('error', handleError)
-            // socket!.off('chats', handleChats)
         }
     },[socket]) 
 
@@ -229,23 +176,7 @@ const ListaChats = () => {
                     </button>
                     
                 </div>
-               {/*  <div className="header-item">
-                    <div>
-                        <select
-                            id="operador-select"
-                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                            onChange={handleChangeSelect}
-                        >
-                            <option value="" className="bg-gray-500">Selecciona un operador</option>
-                            {users.map(user => (
-                                <option value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
-                            ))}
-                           
-                        </select>
-                    </div>
-                
-                   
-                </div> */}
+              
                 <div className="header-item">
                     <button 
                         onClick={handlerArchivadas} 
@@ -336,22 +267,7 @@ const ListaChats = () => {
                 </div>
                 <div className="col-lista">
                     <Outlet />
-            {/*  {loading && (
-                        <div className="spinner-lista">
-                            <div className="loader2"></div>
-                        </div>
-                    )}
-                    {!loading && chats1.length === 0 && (
-                        <p className="msg-error">No hay chats disponibles</p>
-                    )}
-                    {!loading && chats2.length > 0 && 
-                        chats2.map(chat => (
-                            <Link to={`/dashboard/chats/id=${chat.id}&telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} className="item-lista" key={chat.id}>
-                                {chat.cliente.nombre} - {chat.cliente.telefono}
-                            </Link>
-                        ))
-                    }
-                    */}
+           
                 
                 </div>
                 <div className="col-lista">
@@ -401,21 +317,7 @@ const ListaChats = () => {
 
 
 
-                {/* {loading && (
-                        <div className="spinner-lista">
-                            <div className="loader2"></div>
-                        </div>
-                    )}
-                    {!loading && chats1.length === 0 && (
-                        <p className="msg-error">No hay chats disponibles</p>
-                    )}
-                    {!loading && chats3.length > 0 && 
-                        chats3.map(chat => (
-                            <Link to={`/dashboard/chats/id=${chat.id}&telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} className="item-lista" key={chat.id}>
-                                {chat.cliente.nombre} - {chat.cliente.telefono}
-                            </Link>
-                        ))
-                    } */}
+               
                 
                 </div>
             </div>
