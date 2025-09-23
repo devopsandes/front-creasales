@@ -69,6 +69,9 @@ const actionSlice = createSlice({
         },
         switchModalPlantilla: (state) => {
             state.modalPlantilla = !state.modalPlantilla
+        },
+        eraseDataUser: (state) => {
+            state.dataUser = null
         }
     }
 })
@@ -88,7 +91,8 @@ export const {
     closeModalUser,
     openModalTeca,
     closeModalTeca,
-    switchModalPlantilla
+    switchModalPlantilla,
+    eraseDataUser
 } = actionSlice.actions
 export default actionSlice.reducer
 

@@ -1,14 +1,16 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { NavTagProps } from '../../interfaces/common.interface';
 import './navtag.css'
+import { useDispatch } from 'react-redux';
+import {  setViewSide } from '../../app/slices/actionSlice';
 
 const NavTag: React.FC<NavTagProps> = (elements) => {
 
-    useEffect(()=>{
-        
-    },[])
-    
+
+  const dispatch = useDispatch()
+
+  
     return (
         <div className='dash-container'>
             <nav className='dash-navbar'>
@@ -16,6 +18,7 @@ const NavTag: React.FC<NavTagProps> = (elements) => {
                     {elements.tags.map(tag => (
                         <li key={tag.id} >
                             <Link 
+                                onClick={() => dispatch(setViewSide(false))}
                                 key={tag.id}
                                 to={`${tag.path}`} 
                                 className='dash-link'

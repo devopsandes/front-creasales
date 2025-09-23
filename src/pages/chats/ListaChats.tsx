@@ -76,7 +76,11 @@ const ListaChats = () => {
                 }
 
                 if(!chat.operador){
-                    setBots(prev => [...prev,chat])
+                    const cond = bots.includes(chat)
+                    
+                    
+                    if(!cond)
+                        setBots(prev => [...prev,chat])
                 }
 
                 if(id === chat.operador?.id){
@@ -98,6 +102,7 @@ const ListaChats = () => {
         return () => {
             ejecucion();
         }
+       
       
     },[])
 

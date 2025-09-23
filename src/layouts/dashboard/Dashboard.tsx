@@ -6,7 +6,7 @@ import { empresaXUser } from "../../services/empresas/empresa.services";
 import './dashboard.css'
 import { useDispatch  } from "react-redux";
 import { Socket } from "socket.io-client";
-import { connectSocket, disconnectSocket, getSocket } from "../../app/slices/socketSlice";
+import { connectSocket,  getSocket } from "../../app/slices/socketSlice";
 import { setEmpresa } from "../../app/slices/authSlice";
 // import { RootState } from "../../app/store";
 
@@ -41,11 +41,9 @@ const Dashboard = () => {
               
               return () => {
                   if(!socket?.connected){
-                      /* alert('Su sesión ha caducado, por favor inicie sesión nuevamente');
-                      navigate('/auth/signin')
-                      return */
+                  
                   }
-                  dispatch(disconnectSocket())
+                  // dispatch(disconnectSocket())
               }
           } catch (error) {
               console.log(error);
