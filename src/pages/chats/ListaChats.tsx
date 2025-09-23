@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
+import { Link, Outlet, useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
@@ -55,8 +55,6 @@ const ListaChats = () => {
     
 
     const navigate = useNavigate()
-    const location = useLocation()
-    const path = location.pathname
     const dispatch = useDispatch()
 
 
@@ -97,8 +95,8 @@ const ListaChats = () => {
         dispatch(setUserData(null))
         dispatch(setViewSide(false))
 
-        ejecucion();
         return () => {
+            ejecucion();
         }
       
     },[])
