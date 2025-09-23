@@ -66,6 +66,7 @@ const ListaChats = () => {
     useEffect(()=>{
         
         const ejecucion = async () => {
+            
             const respUsers = await usuariosXRole('USER', token);
             const chatos = await getChats(token,'1','100')
 
@@ -96,8 +97,8 @@ const ListaChats = () => {
         dispatch(setUserData(null))
         dispatch(setViewSide(false))
 
+        ejecucion();
         return () => {
-            ejecucion();
         }
       
     },[])
