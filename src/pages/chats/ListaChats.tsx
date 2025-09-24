@@ -22,6 +22,7 @@ const ListaChats = () => {
     const [archivadas,setArchivadas] = useState<ChatState[]>([])
     const [asignadas,setAsignadas] = useState<ChatState[]>([])
     const [bots,setBots] = useState<ChatState[]>([])
+    const [styleBtn, setStyleBtn] = useState<string>('')
 
     const [loading, setLoading] = useState<boolean>(true)
     const [users, setUsers] = useState<Usuario[]>([{
@@ -99,9 +100,10 @@ const ListaChats = () => {
         dispatch(setUserData(null))
         dispatch(setViewSide(false))
 
-       
+       return () => {
+           ejecucion();
+       }
         
-        ejecucion();
       
     },[])
 
@@ -158,13 +160,13 @@ const ListaChats = () => {
         setFiltrados(filtrados)
     }
 
-    const handlerArchivadas = () => {
-        setFiltrados(archivadas)
-    }
+  
 
     const handleClickLink = () => {
         dispatch(setViewSide(true))
     }
+
+    
 
   return (
      <div className="chats-container">
@@ -172,8 +174,8 @@ const ListaChats = () => {
             <div className="header-lista">
                 <div className="header-item">
                     <button 
-                        onClick={() => setFiltrados(asignadas)} 
-                        className="btn-item"
+                        onClick={() => {setFiltrados(asignadas),setStyleBtn("asig")}} 
+                        className={`btn-item ${styleBtn === "asig" && "border-1 p-1 border-red-600"}`}
                     >
                         Asignadas a mí
                         <span>{asignadas.length}</span>
@@ -183,8 +185,8 @@ const ListaChats = () => {
               
                 <div className="header-item">
                     <button 
-                        onClick={handlerArchivadas} 
-                        className="btn-item"
+                        onClick={() => {setFiltrados(archivadas),setStyleBtn("archi")}} 
+                        className={`btn-item ${styleBtn === "archi" && "border-1 p-1 border-red-600"}`}
                     >
                         Archivadas
                         <span>{archivadas.length}</span>
@@ -193,8 +195,8 @@ const ListaChats = () => {
                 </div>
                  <div className="header-item">
                      <button 
-                        onClick={() => setFiltrados(chats1)} 
-                        className="btn-item"
+                        onClick={() => {setFiltrados(chats1),setStyleBtn("todas")}} 
+                        className={`btn-item ${styleBtn === "todas" && "border-1 p-1 border-red-600"}`}
                     >
                         Todas
                         <span>{chats1.length}</span>
@@ -203,8 +205,8 @@ const ListaChats = () => {
                 </div>
                  <div className="header-item">
                      <button 
-                        onClick={() => setFiltrados(bots)} 
-                        className="btn-item"
+                        onClick={() => {setFiltrados(bots), setStyleBtn('bots')}} 
+                        className={`btn-item ${styleBtn === "bots" && "border-1 p-1 border-red-600"}`}
                     >
                         Bots
                         <span>{bots.length}</span>

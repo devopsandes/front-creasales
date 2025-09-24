@@ -11,8 +11,10 @@ import UserSearchModal from '../../components/modal/UserSearchModal'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
 import { openModal, setUserData, setViewSide, switchModalPlantilla } from '../../app/slices/actionSlice'
-import './chats.css'
+import { IoIosAttach } from "react-icons/io";
+import { FaMicrophone } from "react-icons/fa";
 import ModalPlantilla from '../../components/modal/ModalPlantilla'
+import './chats.css'
 
 
 
@@ -246,7 +248,7 @@ const Chats = () => {
                     </div>
                     <div className='footer-chat'>
                         {condChat ? (
-                            <form action="" className='enviar-msj' onSubmit={handleClickBtn}>
+                            <form action="" className='enviar-msj gap-1' onSubmit={handleClickBtn}>
                                 <input 
                                     type="text" 
                                     placeholder='Escriba un mensaje' 
@@ -254,10 +256,23 @@ const Chats = () => {
                                     value={mensaje}
                                     onChange={(e) => setMensaje(e.target.value)}
                                 />
-                                <button type='submit' className='btn-msg'>Enviar</button>
+                                <button
+                                    onClick={() => alert('no implentado')}
+                                >
+                                    <IoIosAttach size={25} className='text-gray-700 cursor-pointer'/>
+                                </button>
+                                <button
+                                    onClick={() => alert('no implentado')}
+                                >
+                                    <FaMicrophone size={25} className='text-gray-700 cursor-pointer'/>
+                                </button>
+                                <button type='submit' className='btn-msg'>
+                                    Enviar
+                                </button>
                             </form>
                         ) : (
                             <div className='no-chat'>
+                               
                                 {/* <p className='no-chat-text'>No se pueden enviar mensajes</p> */}
                                 <button
                                     onClick={() => dispatch(switchModalPlantilla())}
