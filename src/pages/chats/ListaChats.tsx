@@ -100,9 +100,8 @@ const ListaChats = () => {
         dispatch(setUserData(null))
         dispatch(setViewSide(false))
 
-       return () => {
-           ejecucion();
-       }
+        ejecucion();
+     
         
       
     },[])
