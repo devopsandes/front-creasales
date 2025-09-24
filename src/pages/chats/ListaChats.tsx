@@ -22,7 +22,7 @@ const ListaChats = () => {
     const [archivadas,setArchivadas] = useState<ChatState[]>([])
     const [asignadas,setAsignadas] = useState<ChatState[]>([])
     const [bots,setBots] = useState<ChatState[]>([])
-    const [styleBtn, setStyleBtn] = useState<string>('')
+    const [styleBtn, setStyleBtn] = useState<string>('todas')
 
     const [loading, setLoading] = useState<boolean>(true)
     const [users, setUsers] = useState<Usuario[]>([{
