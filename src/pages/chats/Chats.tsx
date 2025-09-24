@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState, useRef } from 'react'
+import React, { FormEvent, useEffect, useState, useRef } from 'react'
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
 import { findChatById, getUserData } from '../../services/chats/chats.services'
@@ -15,6 +15,7 @@ import { IoIosAttach } from "react-icons/io";
 import { FaMicrophone } from "react-icons/fa";
 import ModalPlantilla from '../../components/modal/ModalPlantilla'
 import './chats.css'
+import { toast } from 'react-toastify'
 
 
 
@@ -23,6 +24,7 @@ const Chats = () => {
     const [mensaje, setMensaje] = useState<string>('')
     const [condChat, setCondChat] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
+    const [archivo, setArchivo] = useState<File | null>(null);
 
 
     const location = useLocation()
@@ -147,9 +149,11 @@ const Chats = () => {
                     mensaje,
                     chatId: id,
                     telefono,
-                    token
+                    token,
+                    archivo
                 }
                 setMensaje('')
+                setArchivo(null)
                 socket.emit("enviar-mensaje", objMsj);
             } else {
                 console.warn("Socket desconectado, enviando por HTTP...");
@@ -190,7 +194,38 @@ const Chats = () => {
         }
     }
 
+    const handleClickFile = () => {
+        document.getElementById("fileInput")?.click()
+    }
+
     
+    // El tipo correcto para el evento de input tipo file es React.ChangeEvent<HTMLInputElement></HTMLInputElement>
+    const handleAddFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files![0];
+        
+       
+
+        const tipos = [
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        ]
+
+        if(file.size >= 5242880 ){
+
+            toast.error(`El archivo debe pesar menos de 5MB`);
+            return
+        }
+
+        // if (regex.test(file.name)) {
+        if (tipos.includes(file.type)) {
+            setArchivo(file);
+        } else {
+            toast.error(`Solo se permiten archivos pdf, jpeg, png`);
+        }
+    };
+
+   
 
     return (
         <div className='chats-container'>
@@ -247,7 +282,11 @@ const Chats = () => {
                         ))}
                     </div>
                     <div className='footer-chat'>
+                        {archivo && (
+                            <p className='w-full p-1 text-red-600 text-center text-sm'>{archivo.name}</p>
+                        )}
                         {condChat ? (
+                            
                             <form action="" className='enviar-msj gap-1' onSubmit={handleClickBtn}>
                                 <input 
                                     type="text" 
@@ -257,9 +296,18 @@ const Chats = () => {
                                     onChange={(e) => setMensaje(e.target.value)}
                                 />
                                 <button
-                                    onClick={() => alert('no implentado')}
+                                    onClick={handleClickFile}
                                 >
                                     <IoIosAttach size={25} className='text-gray-700 cursor-pointer'/>
+                                    {/* Elimina cualquier texto o estilos extra, solo el input oculto */}
+                                    <input
+                                        type="file"
+                                        accept="application/pdf, image/jpeg, image/png"
+                                        id="fileInput"
+                                        style={{ display: "none" }}
+                                        onChange={handleAddFile}
+                                    />
+                                   
                                 </button>
                                 <button
                                     onClick={() => alert('no implentado')}

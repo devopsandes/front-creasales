@@ -44,6 +44,7 @@
     padding: 0;
     background-color: inherit;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
 }
