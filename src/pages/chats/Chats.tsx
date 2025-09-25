@@ -26,6 +26,9 @@ const Chats = () => {
     const [loading, setLoading] = useState<boolean>(true)
     const [archivo, setArchivo] = useState<File | null>(null);
 
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+
 
     const location = useLocation()
     const token = localStorage.getItem('token')
@@ -194,9 +197,7 @@ const Chats = () => {
         }
     }
 
-    const handleClickFile = () => {
-        document.getElementById("fileInput")?.click()
-    }
+    
 
     
     // El tipo correcto para el evento de input tipo file es React.ChangeEvent<HTMLInputElement></HTMLInputElement>
@@ -223,6 +224,10 @@ const Chats = () => {
         } else {
             toast.error(`Solo se permiten archivos pdf, jpeg, png`);
         }
+    };
+
+    const handleClickFile = () => {
+        fileInputRef.current?.click(); // dispara el file picker
     };
 
    
@@ -296,20 +301,25 @@ const Chats = () => {
                                     onChange={(e) => setMensaje(e.target.value)}
                                 />
                                 <button
+                                    type='button'
                                     onClick={handleClickFile}
                                 >
                                     <IoIosAttach size={25} className='text-gray-700 cursor-pointer'/>
                                     {/* Elimina cualquier texto o estilos extra, solo el input oculto */}
-                                    <input
-                                        type="file"
-                                        accept="application/pdf, image/jpeg, image/png"
-                                        id="fileInput"
-                                        style={{ display: "none" }}
-                                        onChange={handleAddFile}
-                                    />
+                                   
                                    
                                 </button>
+
+                                <input
+                                    type="file"
+                                    accept="application/pdf, image/jpeg, image/png"
+                                    id="fileInput"
+                                    ref={fileInputRef}
+                                    style={{ display: "none" }}
+                                    onChange={handleAddFile}
+                                />
                                 <button
+                                    type='button'
                                     onClick={() => alert('no implentado')}
                                 >
                                     <FaMicrophone size={25} className='text-gray-700 cursor-pointer'/>
