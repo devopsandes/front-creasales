@@ -146,6 +146,10 @@ const Chats = () => {
     const handleClickBtn = (e: FormEvent<HTMLFormElement>) => {
         try {
             e.preventDefault()
+            console.log(archivo == null);
+            
+            if(mensaje.length === 0 && archivo == null)
+                return alert('Debe escribir un mensaje')
             socket = getSocket()
             if (socket && socket.connected) {
                 const objMsj = {
@@ -153,7 +157,8 @@ const Chats = () => {
                     chatId: id,
                     telefono,
                     token,
-                    archivo
+                    archivo,
+                    ext: archivo?.type.split('/')[1]
                 }
                 setMensaje('')
                 setArchivo(null)
@@ -203,8 +208,7 @@ const Chats = () => {
     // El tipo correcto para el evento de input tipo file es React.ChangeEvent<HTMLInputElement></HTMLInputElement>
     const handleAddFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files![0];
-        
-       
+
 
         const tipos = [
         "application/pdf",
