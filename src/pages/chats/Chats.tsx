@@ -158,6 +158,7 @@ const Chats = () => {
                     telefono,
                     token,
                     archivo,
+                    fileName: archivo?.name,
                     ext: archivo?.type.split('/')[1]
                 }
                 setMensaje('')
