@@ -1,72 +1,151 @@
-import { useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {  closeModalUser, throwAlert } from '../../app/slices/actionSlice';
+import {  closeModalUser } from '../../app/slices/actionSlice';
 import { RootState } from '../../app/store';
-import { createTag } from '../../services/tags/tags.services';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { ROLES, TIPOS_DOC } from '../../utils/constans';
-
-
+import Spinner23 from '../spinners/Spinner23';
+import { empresaXUser } from '../../services/empresas/empresa.services';
+import { authRegister } from '../../services/auth/auth.services';
 
 
 
 
 
 const CrearTicketModal = () => {
-  const [nombre, setNombre] = useState('');
-  const [showPassword, setShowPassword] = useState<boolean>(false)
+    const [showPassword, setShowPassword] = useState<boolean>(false)
+    const [nombre, setNombre] = useState<string>('')
+    const [apellido, setApellido] = useState<string>('')
+    const [email, setEmail] = useState<string>('')
+    const [nacimiento, setNacimiento] = useState<string>('')
+    const [telefono, setTelefono] = useState<string>('')
+    const [pass, setPass] = useState<string>('')
+    const [hidden, setHidden] = useState<boolean>(false)
+    const [tipo, setTipo] = useState({
+      id: 0,
+      valor: ''
+    })
+    const [role, setRole] = useState<string>('')
+    const [numero, setNumero] = useState<string>('')
+    const [showSpinner, setShowSpinner] = useState(false)
+    const [errores, setErrores] = useState<string[]>([])
  
-  const dispatch = useDispatch();
-  const modalUser = useSelector((state: RootState) => state.action.modalUser);
-  const token  = localStorage.getItem('token') || '';
-  const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const modalUser = useSelector((state: RootState) => state.action.modalUser);
+    const token  = localStorage.getItem('token') || '';
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    const ejecucion = async () => {
-        setNombre('');
+    useEffect(() => {
+        const ejecucion = async () => {
+            setNombre('');
       
       
-    }
-    ejecucion();
+        }
+        ejecucion();
    
-  },[])
+    },[])
 
   
 
  
   if (!modalUser) return null;
 
+  const limpiarForm = () => {
+    setNombre('')
+    setApellido('')
+    setEmail('')
+    setNacimiento('')
+    setTelefono('')
+    setPass('')
+    setTipo({
+      id: 0,
+      valor: ''
+    })
+    setNumero('')
+    setRole('')
+  }
+
  
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setShowSpinner(true)
 
-    alert('Hubo un error')
-    return
-    // Aquí puedes manejar la creación de la etiqueta
-    const resp = await createTag(token, nombre)
-
-    if(resp.statusCode === 201){
-        dispatch(closeModalUser());
-        // dispatch(setNewTag(nombre));
-        toast.success(`Etiqueta creada correctamente`);
-    }
-
-    if(resp.statusCode === 401){
-        dispatch(throwAlert({msg: resp.message, alerta: true}));
-        alert('Su sesión ha caducado, por favor inicie sesión nuevamente');
-        localStorage.removeItem('token');
-        navigate('/auth/signin');
+    
+    const empresa = await empresaXUser(token!)
+    
+    
+    
+        
+    
+     if(nombre.trim() === '' || apellido.trim() === '' || nacimiento.trim() === '' || email.trim() === '' || telefono.trim() === '' || pass.trim() === '' || numero.trim() === '' || role.trim() === '' ) {
+        alert('Todos los campos son obligatorios')
+        return
     }
     
+    if(!token){
+        setShowSpinner(false)
+        alert('Debe iniciar sesión')
+        navigate('/auth/signin')
+        return
+    }
+    console.log(`role ${role}`);
+    
+    const resp = await authRegister({
+            nombre,
+            apellido,
+            nacimiento,
+            email,
+            telefono,
+            password: pass,
+            tipo_doc: tipo.valor,
+            nro_doc: +numero,
+            role,
+            empresa_id: empresa ? empresa.empresa.id : undefined
+    })
+    
+       
+    
+        setShowSpinner(false)
+    
+        if(resp.statusCode === 201){
+          setShowSpinner(false)
+          limpiarForm()
+          setErrores([])
+          toast.success(resp.msg)
+          // limpiar el formulario
+        }else if(resp.statusCode === 401){
+          console.log(resp.message);
+          alert('El token ha expirado debe iniciar sesión nuevamente')
+          navigate('/auth/signin')
+    
+        }else if(resp.statusCode === 500){
+          setShowSpinner(false)
+          setErrores([`${resp.message}`])
+          toast.error('Error al cargar los datos')
+        }else {
+          console.log(resp.message);
+          setShowSpinner(false)
+          setErrores(resp.message)
+          toast.error('Error al cargar los datos')
+        }
     
 }
 
 const handleClose = () => {
     dispatch(closeModalUser());
-    setNombre('');
+    limpiarForm()
+    setErrores([])
   }
+
+    const handleChangeTipo = (e: ChangeEvent<HTMLSelectElement>) => {
+      // console.log(e.target.selectedOptions[0].text);
+      setTipo({
+        id: +e.target.value,
+        valor: e.target.selectedOptions[0].text
+      })
+    }
 
   
 
@@ -74,7 +153,10 @@ const handleClose = () => {
 
   return (
     <div className="fixed inset-0 bg-white/65 flex items-center justify-center z-50 w-full">
-      <div className="bg-white rounded-lg   p-6 shadow-lg w-full max-w-1/2">
+        {showSpinner ? (
+            <Spinner23 />
+        ) : (
+        <div className="bg-white rounded-lg   p-6 shadow-lg w-full max-w-1/2">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Buscar Usuario</h2>
           <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-2xl cursor-pointer">x</button>
@@ -104,11 +186,11 @@ const handleClose = () => {
                         <label htmlFor="apellido" className='text-gray-600'>Apellido</label>
                         <input 
                             type="text" 
-                            id="nombre" 
+                            id="apellido" 
                             placeholder='Ingrese un apellido' 
                             className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
-                            value={nombre}
-                            onChange={(e) => setNombre(e.target.value)}
+                            value={apellido}
+                            onChange={(e) => setApellido(e.target.value)}
                         />
                     </div>
                     <div className='flex justify-between w-full'>
@@ -118,8 +200,8 @@ const handleClose = () => {
                             id="email" 
                             placeholder='Ingrese un email' 
                             className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
-                            value={nombre}
-                            onChange={(e) => setNombre(e.target.value)}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
                     <div className='flex justify-between w-full'>
@@ -128,8 +210,8 @@ const handleClose = () => {
                             type="date" 
                             id="nacimiento" 
                             className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
-                            value={nombre}
-                            onChange={(e) => setNombre(e.target.value)}
+                            value={nacimiento}
+                            onChange={(e) => setNacimiento(e.target.value)}
                         />
                     </div>
                     <div className='flex justify-between w-full'>
@@ -139,8 +221,8 @@ const handleClose = () => {
                             id="telefono" 
                             placeholder='Ej: 5492615345678' 
                             className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
-                            value={nombre}
-                            onChange={(e) => setNombre(e.target.value)}
+                            value={telefono}
+                            onChange={(e) => setTelefono(e.target.value)}
                         />
                     </div>
                 </div>
@@ -151,6 +233,8 @@ const handleClose = () => {
                             id='pass'
                             type={showPassword ? "text" : "password"}
                             placeholder="Ingrese su contraseña"
+                            value={pass}
+                            onChange={(e) => setPass(e.target.value)}
                             // className="w-full rounded-lg border border-gray-300 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             className="w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600"
                         />
@@ -172,8 +256,8 @@ const handleClose = () => {
                             name="tipo"
                             id="tipo"
                             className="w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600"
-                            value={nombre}
-                            onChange={() => {}}
+                            value={tipo.id}
+                            onChange={handleChangeTipo}
                         >
                             <option value="" className="text-gray-400 bg-amber-50">Seleccione</option>
                             {TIPOS_DOC.map((tipo) => (
@@ -195,8 +279,8 @@ const handleClose = () => {
                             id="numero" 
                             placeholder='33265987' 
                             className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
-                            value={nombre}
-                            onChange={(e) => setNombre(e.target.value)}
+                            value={numero}
+                            onChange={(e) => setNumero(e.target.value)}
                         />
                     </div>
                     <div className='flex justify-between w-full'>
@@ -205,13 +289,13 @@ const handleClose = () => {
                             name="role"
                             id="role"
                             className="w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600"
-                            value={nombre}
-                            onChange={() => {}}
+                            value={role}
+                            onChange={(e) => setRole(e.target.value)}
                         >
                             <option value="" className="text-gray-400 bg-amber-50">Seleccione</option>
                             {ROLES.map((role) => (
                                 <option
-                                    value={role.id}
+                                    value={role.nombre}
                                     key={role.id}
                                     className="text-gray-600 bg-amber-50"
                                 >
@@ -242,6 +326,8 @@ const handleClose = () => {
 
         
       </div>
+        )}
+     
     </div>
   );
 };

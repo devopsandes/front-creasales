@@ -67,7 +67,7 @@ const TableTickets = () => {
               <tbody>
                 {currentTickets.map((ticket, index) => (
                   <tr key={ticket.id} className="border-b hover:bg-slate-400 grid grid-cols-9 h-full cursor-pointer" onClick={() => handleOpenTicket(ticket.id)}>
-                    <td className="p-2 h-full text-sm font-semibold text-gray-800 text-left col-span-1">{index + 1}</td>
+                    <td className="p-2 h-full text-sm font-semibold text-gray-800 text-left col-span-1">{index + 1} / #{ticket.nro}</td>
                     <td className="p-2 h-full text-sm text-left col-span-2">{ticket.nombre}</td>
                     <td className="p-2 text-sm text-left col-span-2">{ticket.prioridad}</td>
                     <td className="p-2 text-sm flex flex-col items-start gap-2">
