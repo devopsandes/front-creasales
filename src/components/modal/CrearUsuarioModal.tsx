@@ -22,7 +22,7 @@ const CrearTicketModal = () => {
     const [nacimiento, setNacimiento] = useState<string>('')
     const [telefono, setTelefono] = useState<string>('')
     const [pass, setPass] = useState<string>('')
-    const [hidden, setHidden] = useState<boolean>(false)
+    // const [hidden, setHidden] = useState<boolean>(false)
     const [tipo, setTipo] = useState({
       id: 0,
       valor: ''
@@ -30,7 +30,7 @@ const CrearTicketModal = () => {
     const [role, setRole] = useState<string>('')
     const [numero, setNumero] = useState<string>('')
     const [showSpinner, setShowSpinner] = useState(false)
-    const [errores, setErrores] = useState<string[]>([])
+    // const [errores, setErrores] = useState<string[]>([])
  
     const dispatch = useDispatch();
     const modalUser = useSelector((state: RootState) => state.action.modalUser);
@@ -112,7 +112,7 @@ const CrearTicketModal = () => {
         if(resp.statusCode === 201){
           setShowSpinner(false)
           limpiarForm()
-          setErrores([])
+        //   setErrores([])
           toast.success(resp.msg)
           // limpiar el formulario
         }else if(resp.statusCode === 401){
@@ -122,12 +122,12 @@ const CrearTicketModal = () => {
     
         }else if(resp.statusCode === 500){
           setShowSpinner(false)
-          setErrores([`${resp.message}`])
+        //   setErrores([`${resp.message}`])
           toast.error('Error al cargar los datos')
         }else {
           console.log(resp.message);
           setShowSpinner(false)
-          setErrores(resp.message)
+        //   setErrores(resp.message)
           toast.error('Error al cargar los datos')
         }
     
@@ -136,7 +136,7 @@ const CrearTicketModal = () => {
 const handleClose = () => {
     dispatch(closeModalUser());
     limpiarForm()
-    setErrores([])
+    // setErrores([])
   }
 
     const handleChangeTipo = (e: ChangeEvent<HTMLSelectElement>) => {
