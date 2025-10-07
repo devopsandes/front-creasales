@@ -26,6 +26,7 @@ import TableTickets from '../pages/tickets/TableTickets'
 import TableTags from '../pages/tags/TableTags'
 import TableAcciones from '../pages/acciones/TableAcciones'
 import TableClientes from '../pages/clientes/TableClientes'
+import Terminos from '../pages/legal/Terminos'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -153,6 +154,12 @@ const AppRouter = () => {
 
 
 
+
+        </Route>
+
+        <Route path='/legal'>
+
+          <Route path='terminos' element={<Terminos/>} />
 
         </Route>
        

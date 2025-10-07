@@ -69,6 +69,9 @@ const ListaChats = () => {
             const respUsers = await usuariosXRole('USER', token);
             const chatos = await getChats(token,'1','100')
 
+            console.log(chatos);
+            
+
            
 
             chatos.chats.map(chat => {
@@ -252,8 +255,19 @@ const ListaChats = () => {
                                     key={chat.id}
                                     onClick={handleClickLink}
                                 >
-                                    {chat.cliente.nombre} - {chat.cliente.telefono}
+                                    <div className="flex justify-between px-2">
+                                        <p>
+                                            {chat.cliente.nombre} - {chat.cliente.telefono}
+                                        </p>
+                                        {chat.mensajes.filter(m => m.leido === false).length > 0 && (
+                                            <p className="ml-auto bg-cyan-900  rounded-full text-red w-6 h-6 text-center">
+                                                {chat.mensajes.filter(m => m.leido === false).length}
+                                            </p>
+                                        )}
+                                        
+                                    </div>
                                     <div className="flex justify-start gap-2 w-full pt-2">
+                                       
                                         <input
                                             type="checkbox"
                                             className="checkbox"

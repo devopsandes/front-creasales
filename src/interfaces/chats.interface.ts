@@ -8,6 +8,7 @@ export interface ChatState {
     operador: Usuario;
     thread_id: string;
     updatedAt: Date;
+    mensajes:  Mensaje[];
 }
 
 export interface Cliente {
@@ -54,6 +55,7 @@ export interface Mensaje {
     msg_entrada?: null | string;
     msg_salida?:  null | string;
     nota?:        null;
+    leido?:       boolean;
     createdAt:   Date;
     updatedAt:   Date;
 }
