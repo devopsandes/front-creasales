@@ -1,14 +1,15 @@
 import { useState } from 'react'
+import { toast, ToastContainer } from 'react-toastify';
 
 const Terminos = () => {
     const [accepted, setAccepted] = useState(false);
 
     const handleSubmit = () => {
         if (!accepted) {
-            alert("Debes aceptar los términos y condiciones para continuar.");
+            toast.error("Debes aceptar los términos y condiciones para continuar.");
             return;
         }
-        alert("Términos aceptados correctamente ✅");
+        toast.success("Términos aceptados correctamente");
     };
 
     return (
@@ -97,6 +98,13 @@ const Terminos = () => {
 
        
       </div>
+      <ToastContainer
+        autoClose={3000} 
+        closeButton 
+        pauseOnHover
+        draggable
+        limit={1}
+      />     
     </div>
     )
 }

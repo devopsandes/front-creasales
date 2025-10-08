@@ -27,6 +27,7 @@ import TableTags from '../pages/tags/TableTags'
 import TableAcciones from '../pages/acciones/TableAcciones'
 import TableClientes from '../pages/clientes/TableClientes'
 import Terminos from '../pages/legal/Terminos'
+import EliminarDatos from '../pages/legal/EliminarDatos'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -160,6 +161,8 @@ const AppRouter = () => {
         <Route path='/legal'>
 
           <Route path='terminos' element={<Terminos/>} />
+          <Route path='eliminar' element={<EliminarDatos/>} />
+
 
         </Route>
        
