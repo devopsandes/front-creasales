@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate } from "react-router-dom"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
 // import {  getSocket, connectSocket } from "../../app/slices/socketSlice"
@@ -44,6 +44,9 @@ const ListaChats = () => {
     }]);
     const [filtrados, setFiltrados] = useState<ChatState[]>([])
 
+    const audioRef = useRef(new Audio("/audio/audio1.mp3"));
+
+
     const dataUser = useSelector((state: RootState) => state.action.dataUser);
     const viewSide = useSelector((state: RootState) => state.action.viewSide);
 
@@ -58,6 +61,7 @@ const ListaChats = () => {
     const navigate = useNavigate()
     const dispatch = useDispatch()
 
+   
 
     
 
@@ -69,7 +73,6 @@ const ListaChats = () => {
             const respUsers = await usuariosXRole('USER', token);
             const chatos = await getChats(token,'1','100')
 
-            console.log(chatos);
             
 
            
@@ -106,21 +109,21 @@ const ListaChats = () => {
         ejecucion();
      
         
-      
+        
     },[])
-
-  
-
+    
+    
+    
     useEffect(()=>{
-
+        
         
         if(!socket) return
         
-      
-
+        
+        
         const handleNuevoChat = (chat: ChatState) => {
-            
             setFiltrados(prevChats => [chat, ...prevChats])
+            audioRef.current.play()
         }
 
         const handleError = (error: any) => {
@@ -248,7 +251,7 @@ const ListaChats = () => {
                                     </select>
                                 </div>
                             </div>
-                            {filtrados.map(chat => (
+                            {filtrados != undefined && filtrados.map(chat => (
                                 <Link 
                                     to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} 
                                     className="item-lista text-left" 
@@ -259,7 +262,7 @@ const ListaChats = () => {
                                         <p>
                                             {chat.cliente.nombre} - {chat.cliente.telefono}
                                         </p>
-                                        {chat.mensajes.filter(m => m.leido === false).length > 0 && (
+                                        {chat?.mensajes?.filter(m => m.leido === false).length > 0 && (
                                             <p className="ml-auto bg-cyan-900  rounded-full text-red w-6 h-6 text-center">
                                                 {chat.mensajes.filter(m => m.leido === false).length}
                                             </p>

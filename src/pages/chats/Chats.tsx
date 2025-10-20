@@ -16,22 +16,31 @@ import { FaMicrophone } from "react-icons/fa";
 import ModalPlantilla from '../../components/modal/ModalPlantilla'
 import './chats.css'
 import { toast } from 'react-toastify'
+import { usuariosXRole } from '../../services/auth/auth.services'
+import { Usuario } from '../../interfaces/auth.interface'
+
+
+
 
 
 
 const Chats = () => {
+    const [usuarios,setUsuarios] = useState<Usuario[]>([])
     const [mensajes, setMensajes] = useState<Mensaje[]>([])
     const [mensaje, setMensaje] = useState<string>('')
     const [condChat, setCondChat] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
     const [archivo, setArchivo] = useState<File | null>(null);
+    const [showList, setShowList] = useState(false);
+    const [filteredUsers, setFilteredUsers] = useState<Usuario[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
 
 
+    const token = localStorage.getItem('token') || ''
+
     const location = useLocation()
-    const token = localStorage.getItem('token')
     
    
     const id = useParams().id 
@@ -47,6 +56,14 @@ const Chats = () => {
     const navigate = useNavigate()
 
     let socket: Socket | null = null
+
+    useEffect(() => {
+        const ejecucion = async () => {
+            const respUsers = await usuariosXRole('USER', token);
+            setUsuarios(respUsers.users);
+        }
+        ejecucion();
+    }, [])
 
 
     useEffect(() => {
@@ -235,6 +252,31 @@ const Chats = () => {
         fileInputRef.current?.click(); // dispara el file picker
     };
 
+
+    const handleChangeText = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setMensaje(value);
+
+        const match = mensaje.match(/@(\w*)$/);
+        if (match) {
+        const query = match[1].toLowerCase();
+        const results = usuarios.filter((u) =>
+            u.nombre.toLowerCase().startsWith(query)
+        );
+        setFilteredUsers(results);
+        setShowList(true);
+        } else {
+        setShowList(false);
+        }
+    }
+
+    const handleSelectUser = (user: any) => {
+        const newText = mensaje.replace(/@\w*$/, `@${user.name} `);
+        setMensaje(newText);
+        setShowList(false);
+        // textareaRef.current!.focus();
+    };
+
    
 
     return (
@@ -297,13 +339,13 @@ const Chats = () => {
                         )}
                         {condChat ? (
                             
-                            <form action="" className='enviar-msj gap-1' onSubmit={handleClickBtn}>
+                            <form action="" className='enviar-msj gap-1 relative w-full ' onSubmit={handleClickBtn}>
                                 <input 
                                     type="text" 
                                     placeholder='Escriba un mensaje' 
                                     className='input-msg'
                                     value={mensaje}
-                                    onChange={(e) => setMensaje(e.target.value)}
+                                    onChange={handleChangeText}
                                 />
                                 <button
                                     type='button'
@@ -323,6 +365,24 @@ const Chats = () => {
                                     style={{ display: "none" }}
                                     onChange={handleAddFile}
                                 />
+
+                                {showList && (
+                                    <ul className="absolute bottom-12 left-2 bg-white border rounded-md shadow-md w-48 max-h-40 overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden ">
+                                    {filteredUsers.length ? (
+                                        filteredUsers.map((user) => (
+                                        <li
+                                            key={user.id}
+                                            onClick={() => handleSelectUser(user)}
+                                            className="px-3 py-2 hover:bg-blue-100 cursor-pointer text-gray-700 text-left"
+                                        >
+                                            @{user.nombre}
+                                        </li>
+                                        ))
+                                    ) : (
+                                        <li className="px-3 py-2 text-gray-400">No hay coincidencias</li>
+                                    )}
+                                    </ul>
+                                )}
                                 <button
                                     type='button'
                                     onClick={() => alert('no implentado')}
