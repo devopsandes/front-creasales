@@ -134,6 +134,14 @@ const navEmpresa: Tag[] = [
     },
   ]
 
+  const navIntegraciones: Tag[] = [
+    {
+      id: 1,
+      name: "Integraciones",
+      path: "/dashboard/integraciones"
+    },
+  ]
+
 
 export {
     navCategorias,
@@ -147,5 +155,6 @@ export {
     navTickets,
     navTags,
     navAcciones,
-    navClientes
+    navClientes,
+    navIntegraciones
 }

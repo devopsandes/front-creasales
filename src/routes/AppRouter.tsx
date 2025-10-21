@@ -18,7 +18,7 @@ import FormMeta from '../pages/meta/FormMeta'
 import FormModulos from '../pages/modulos/FormModulos'
 import FormCategorias from '../pages/categorias/FormCategorias'
 import Chats from '../pages/chats/Chats'
-import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes } from '../utils/navegacion'
+import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import LogoFondo from '../components/logo/LogoFondo'
 import TableUsers from '../pages/usuarios/TableUsers'
@@ -29,6 +29,7 @@ import TableClientes from '../pages/clientes/TableClientes'
 import Terminos from '../pages/legal/Terminos'
 import EliminarDatos from '../pages/legal/EliminarDatos'
 import MainView from '../pages/main/MainView'
+import TableIntegraciones from '../pages/integraciones/TableIntegraciones'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -153,6 +154,9 @@ const AppRouter = () => {
             <Route index element={<TableTags/>}/>
           </Route>
 
+          <Route path='integraciones' element={<NavTag tags={navIntegraciones} />}>
+            <Route index element={<TableIntegraciones/>}/>
+          </Route>
 
 
 
