@@ -65,15 +65,16 @@ const ChannelsTable = ({ type, searchValue }: ChannelsTableProps) => {
     }
   ]);
 
-  const filteredData = type === 'canales' 
-    ? channels.filter(channel => 
-        channel.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        channel.assignedTo.includes(searchValue)
-      )
-    : templates.filter(template => 
-        template.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        template.category.toLowerCase().includes(searchValue.toLowerCase())
-      );
+  // Filtrar datos según el tipo
+  const filteredChannels = channels.filter(channel => 
+    channel.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+    channel.assignedTo.includes(searchValue)
+  );
+
+  const filteredTemplates = templates.filter(template => 
+    template.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+    template.category.toLowerCase().includes(searchValue.toLowerCase())
+  );
 
   if (type === 'canales') {
     return (
@@ -91,7 +92,7 @@ const ChannelsTable = ({ type, searchValue }: ChannelsTableProps) => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((channel) => (
+              {filteredChannels.map((channel) => (
                 <tr key={channel.id} className="channels-table-row">
                   <td className="channels-table-cell">
                     <div className="channels-table-channel-name">
@@ -141,7 +142,7 @@ const ChannelsTable = ({ type, searchValue }: ChannelsTableProps) => {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((template) => (
+            {filteredTemplates.map((template) => (
               <tr key={template.id} className="channels-table-row">
                 <td className="channels-table-cell">{template.name}</td>
                 <td className="channels-table-cell">{template.category}</td>
