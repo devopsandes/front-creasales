@@ -1,14 +1,139 @@
+import { useState } from 'react';
+import ChannelsTabs from './components/ChannelsTabs';
+import WhatsappHeader from './components/WhatsappHeader';
+import WhatsappSubtabs from './components/WhatsappSubtabs';
+import ChannelsToolbar from './components/ChannelsToolbar';
+import ChannelsTable from './components/ChannelsTable';
+import './components/channels.css';
+
 const TableIntegraciones = () => {
+  const [activeTab, setActiveTab] = useState('whatsapp');
+  const [activeSubtab, setActiveSubtab] = useState('canales');
+  const [searchValue, setSearchValue] = useState('');
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Reset subtab when changing main tab
+    if (tab === 'whatsapp') {
+      setActiveSubtab('canales');
+    }
+  };
+
+  const handleSubtabChange = (subtab: string) => {
+    setActiveSubtab(subtab);
+  };
+
+  const handleAddNumber = () => {
+    console.log('Agregar número de WhatsApp');
+    // TODO: Implementar modal o navegación para agregar número
+  };
+
+  const handleCreateChannel = () => {
+    console.log('Crear nuevo canal');
+    // TODO: Implementar modal o navegación para crear canal
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'whatsapp':
+        return (
+          <div className="integraciones-content">
+            <ChannelsToolbar
+              searchValue={searchValue}
+              onSearchChange={handleSearchChange}
+              onCreateChannel={handleCreateChannel}
+            />
+            <WhatsappHeader onAddNumber={handleAddNumber} />
+            <WhatsappSubtabs 
+              activeSubtab={activeSubtab} 
+              onSubtabChange={handleSubtabChange} 
+            />
+            <ChannelsTable 
+              type={activeSubtab as 'canales' | 'plantillas'} 
+              searchValue={searchValue}
+            />
+          </div>
+        );
+      case 'website':
+        return (
+          <div className="integraciones-content">
+            <div className="integraciones-placeholder">
+              <h3 className="integraciones-placeholder-title">Website</h3>
+              <p className="integraciones-placeholder-text">
+                Configuración de canal Website en desarrollo.
+              </p>
+            </div>
+          </div>
+        );
+      case 'email':
+        return (
+          <div className="integraciones-content">
+            <div className="integraciones-placeholder">
+              <h3 className="integraciones-placeholder-title">Email</h3>
+              <p className="integraciones-placeholder-text">
+                Configuración de canal Email en desarrollo.
+              </p>
+            </div>
+          </div>
+        );
+      case 'facebook':
+        return (
+          <div className="integraciones-content">
+            <div className="integraciones-placeholder">
+              <h3 className="integraciones-placeholder-title">Facebook</h3>
+              <p className="integraciones-placeholder-text">
+                Configuración de canal Facebook en desarrollo.
+              </p>
+            </div>
+          </div>
+        );
+      case 'instagram':
+        return (
+          <div className="integraciones-content">
+            <div className="integraciones-placeholder">
+              <h3 className="integraciones-placeholder-title">Instagram</h3>
+              <p className="integraciones-placeholder-text">
+                Configuración de canal Instagram en desarrollo.
+              </p>
+            </div>
+          </div>
+        );
+      case 'telegram':
+        return (
+          <div className="integraciones-content">
+            <div className="integraciones-placeholder">
+              <h3 className="integraciones-placeholder-title">Telegram</h3>
+              <p className="integraciones-placeholder-text">
+                Configuración de canal Telegram en desarrollo.
+              </p>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="integraciones-content">
+            <div className="integraciones-placeholder">
+              <h3 className="integraciones-placeholder-title">Selecciona un canal</h3>
+              <p className="integraciones-placeholder-text">
+                Elige un canal de comunicación para configurar.
+              </p>
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
-    <div className="p-4 w-full h-full">
-      <div className="flex flex-col items-center justify-center h-full">
-        <h2 className="text-2xl font-bold text-gray-700 mb-4">
-          Integraciones
-        </h2>
-        <p className="text-gray-500 text-center">
-          Esta sección está en desarrollo. Próximamente podrás gestionar las integraciones de tu sistema.
-        </p>
-      </div>
+    <div className="integraciones-container">
+      <ChannelsTabs 
+        activeTab={activeTab} 
+        onTabChange={handleTabChange} 
+      />
+      {renderTabContent()}
     </div>
   );
 };

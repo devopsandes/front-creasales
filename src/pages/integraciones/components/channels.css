@@ -1,0 +1,545 @@
+/* 
+  Estilos para componentes de Channels/Integraciones
+  Prefijo: channels-* y whatsapp-* para evitar colisiones
+  Usando CSS nativo para compatibilidad con Tailwind v4
+*/
+
+/* ChannelsTabs Styles */
+.channels-tabs-container {
+  width: 100%;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.channels-tabs-description {
+  padding: 1rem 1.5rem;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.channels-description-text {
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.625;
+  text-align: left;
+}
+
+.channels-tabs-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+}
+
+.channels-tabs-list {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.channels-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.channels-tab:hover {
+  background-color: #f9fafb;
+}
+
+.channels-tab:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.channels-tab-active {
+  background-color: #f8fafc;
+  color: #1f2937;
+  border-bottom-color: transparent;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.channels-tab-inactive {
+  color: #4b5563;
+}
+
+.channels-tab-inactive:hover {
+  color: #1f2937;
+}
+
+.channels-tab-label {
+  white-space: nowrap;
+}
+
+.channels-tab-underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #2563eb;
+  border-radius: 1px 1px 0 0;
+}
+
+.channels-settings-btn {
+  padding: 0.5rem;
+  color: #4b5563;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.channels-settings-btn:hover {
+  color: #1f2937;
+  background-color: #f3f4f6;
+}
+
+.channels-settings-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* WhatsappHeader Styles */
+.whatsapp-header-container {
+  background-color: white;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.whatsapp-header-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.whatsapp-header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex: 1;
+}
+
+.whatsapp-header-icon {
+  flex-shrink: 0;
+  width: 2.8rem;
+  height: 2.8rem;
+  background-color: #10b981;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.whatsapp-header-text {
+  flex: 1;
+}
+
+.whatsapp-header-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.whatsapp-header-description {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-bottom: 1rem;
+  line-height: 1.625;
+  text-align: left;
+}
+
+.whatsapp-add-button {
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.whatsapp-add-button:hover {
+  background-color: #1d4ed8;
+}
+
+.whatsapp-add-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* WhatsappSubtabs Styles */
+.whatsapp-subtabs-container {
+  background-color: white;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.whatsapp-subtabs-list {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.whatsapp-subtab {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.whatsapp-subtab:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.whatsapp-subtab-active {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+}
+
+.whatsapp-subtab-inactive {
+  color: #4b5563;
+}
+
+.whatsapp-subtab-inactive:hover {
+  color: #1f2937;
+  background-color: #f9fafb;
+}
+
+.whatsapp-subtab-disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.whatsapp-subtab-todo {
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  background-color: #fed7aa;
+  color: #ea580c;
+  border-radius: 9999px;
+}
+
+/* ChannelsToolbar Styles */
+.channels-toolbar-container {
+  background-color: white;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.channels-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 2;
+  min-width: 0;
+}
+
+.channels-credits-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.channels-toolbar-links {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.channels-link {
+  font-size: 0.875rem;
+  color: #2563eb;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.channels-link:hover {
+  color: #1e40af;
+  text-decoration: underline;
+}
+
+.channels-link:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.channels-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.channels-search-container {
+  position: relative;
+}
+
+.channels-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+.channels-search-input {
+  padding-left: 2.5rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  width: 180px;
+}
+
+.channels-search-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.channels-create-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.channels-create-button:hover {
+  background-color: #1d4ed8;
+}
+
+.channels-create-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* ChannelsTable Styles */
+.channels-table-container {
+  background-color: white;
+  padding: 1.5rem;
+}
+
+.channels-table-wrapper {
+  overflow-x: auto;
+}
+
+.channels-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.channels-table-header {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.channels-table-header-cell {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
+.channels-table-row {
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 0.15s;
+}
+
+.channels-table-row:hover {
+  background-color: #f9fafb;
+}
+
+.channels-table-cell {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.channels-table-channel-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.channels-table-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.channels-toggle-button {
+  padding: 0.25rem;
+  border: none;
+  background: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.channels-toggle-button:hover {
+  background-color: #f3f4f6;
+}
+
+.channels-toggle-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.channels-status-badge {
+  display: inline-flex;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.channels-status-approved {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.channels-status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.channels-status-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.channels-action-button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  color: #2563eb;
+  background: none;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.channels-action-button:hover {
+  color: #1e40af;
+  background-color: #eff6ff;
+}
+
+.channels-action-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Integraciones Container Styles */
+.integraciones-container {
+  width: 100%;
+  height: 100%;
+  background-color: #f9fafb;
+}
+
+.integraciones-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.integraciones-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1.5rem;
+  background-color: white;
+}
+
+.integraciones-placeholder-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.integraciones-placeholder-text {
+  color: #6b7280;
+  text-align: center;
+  max-width: 28rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .channels-tabs-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .channels-toolbar-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .channels-toolbar-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .channels-toolbar-links {
+    gap: 1rem;
+  }
+  
+  .channels-toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .channels-search-input {
+    width: 100%;
+    min-width: 0;
+  }
+}
