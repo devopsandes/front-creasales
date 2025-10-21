@@ -48,64 +48,84 @@ const Login = () => {
     {showSpinner ? (
       <Spinner />
     ) : (
-      <div className="login-container">
-          {/* <h1 className='text-3xl font-bold text-blue-500'>esto es una prueba</h1> */}
-          <form className="login-form" onSubmit={handleSubmit}>
-            <h2>Login</h2>
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input 
-                type="email" 
-                id="email" 
-                name="email"  
-                placeholder="Ingrese su email" 
-                onChange={(e) => setEmail(e.target.value)}
-                // required 
+      <div className="signin-wrapper">
+        <div className="signin-container">
+          <div className="signin-content">
+            {/* Logo con cohete */}
+            <div className="signin-logo-container">
+              <img 
+                src="/images/CreaTechRocket.png" 
+                alt="CreaSales - Despega tus ventas" 
+                className="signin-logo"
               />
             </div>
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <div className="input-container">
+
+            {/* Título */}
+            <h1 className="signin-title">Iniciar Sesión</h1>
+            <p className="signin-subtitle">Accede a tu cuenta CreaSales</p>
+
+            {/* Formulario */}
+            <form className="signin-form" onSubmit={handleSubmit}>
+              <div className="signin-form-group">
+                <label htmlFor="email" className="signin-label">Email</label>
                 <input 
-                  type={hidden ? "password": "text"}
-                  id="password" 
-                  name="password"  
-                  placeholder="Ingrese su password" 
-                  onChange={(e) => setPassword(e.target.value)}
-                  // required
+                  type="email" 
+                  id="email" 
+                  name="email"  
+                  placeholder="tu@email.com" 
+                  className="signin-input"
+                  onChange={(e) => setEmail(e.target.value)}
                 />
-                <button 
-                  className='btn-eye' 
-                  type='button' 
-                  onClick={() => setHidden(!hidden)}
-                >
-                  {hidden ? (
-                      <Eye />
-                  ):(
-                    <EyeSlash />
-                  )}
-                </button>
-               
               </div>
-            </div>
-            <button type="submit" className="login-button">Iniciar Sesión</button>
-            
-            <p className="signup-link">
-              <Link to={'/auth/signup'}>Registrarse</Link> / <Link to={'/auth/recuperar-pass'}>Recuperar Contraseña</Link>
-            </p>
-          
-            {msgError.length > 0 && (
-              <p className="msg-error">
-                {msgError}
-              </p>
-            )}
-           
-          </form>
+
+              <div className="signin-form-group">
+                <label htmlFor="password" className="signin-label">Contraseña</label>
+                <div className="signin-input-wrapper">
+                  <input 
+                    type={hidden ? "password" : "text"}
+                    id="password" 
+                    name="password"  
+                    placeholder="••••••••" 
+                    className="signin-input signin-input-password"
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button 
+                    className="signin-btn-eye" 
+                    type="button" 
+                    onClick={() => setHidden(!hidden)}
+                    aria-label={hidden ? "Mostrar contraseña" : "Ocultar contraseña"}
+                  >
+                    {hidden ? <Eye /> : <EyeSlash />}
+                  </button>
+                </div>
+              </div>
+
+              {msgError.length > 0 && (
+                <div className="signin-error">
+                  {msgError}
+                </div>
+              )}
+
+              <button type="submit" className="signin-button">
+                Iniciar Sesión
+              </button>
+
+              <div className="signin-links">
+                <Link to="/auth/signup" className="signin-link">Crear cuenta</Link>
+                <span className="signin-separator">•</span>
+                <Link to="/auth/recuperar-pass" className="signin-link">Recuperar contraseña</Link>
+              </div>
+            </form>
+
+            {/* Footer */}
+            <footer className="signin-footer">
+              <p className="signin-brand">Una creación de CreaTech</p>
+            </footer>
+          </div>
         </div>
+      </div>
       )}
     </>
-
-     
   )
 }
 

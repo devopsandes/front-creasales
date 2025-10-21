@@ -28,6 +28,7 @@ import TableAcciones from '../pages/acciones/TableAcciones'
 import TableClientes from '../pages/clientes/TableClientes'
 import Terminos from '../pages/legal/Terminos'
 import EliminarDatos from '../pages/legal/EliminarDatos'
+import MainView from '../pages/main/MainView'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -157,6 +158,8 @@ const AppRouter = () => {
 
 
         </Route>
+
+        <Route path='/' element={<MainView />} />
 
         <Route path='/legal'>
 
