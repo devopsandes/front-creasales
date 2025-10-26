@@ -37,6 +37,12 @@ const TableIntegraciones = () => {
     setSearchValue(value);
   };
 
+  const handleSignupComplete = () => {
+    // Aquí podrías refrescar la lista de canales si fuera necesario
+    console.log('WhatsApp signup completed, refreshing channels...');
+    // TODO: Implementar refresh de la lista de canales
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'whatsapp':
@@ -47,7 +53,10 @@ const TableIntegraciones = () => {
               onSearchChange={handleSearchChange}
               onCreateChannel={handleCreateChannel}
             />
-            <WhatsappHeader onAddNumber={handleAddNumber} />
+            <WhatsappHeader 
+              onAddNumber={handleAddNumber} 
+              onSignupComplete={handleSignupComplete}
+            />
             <WhatsappSubtabs 
               activeSubtab={activeSubtab} 
               onSubtabChange={handleSubtabChange} 

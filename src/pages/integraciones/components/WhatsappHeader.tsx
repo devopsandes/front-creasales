@@ -1,8 +1,73 @@
+import { useWhatsAppSignup } from '../../../hooks/useWhatsAppSignup';
+import { useWhatsAppSocket } from '../../../hooks/useWhatsAppSocket';
+
 interface WhatsappHeaderProps {
-  onAddNumber: () => void;
+  onAddNumber?: () => void;
+  onSignupComplete?: () => void;
 }
 
-const WhatsappHeader = ({ onAddNumber }: WhatsappHeaderProps) => {
+const WhatsappHeader = ({ onSignupComplete }: WhatsappHeaderProps) => {
+  // Hook para manejar el signup con polling
+  const { signupStatus, isProcessing, startSignup, stopPolling } = useWhatsAppSignup(onSignupComplete);
+  
+  // Hook para manejar eventos de Socket.io
+  useWhatsAppSocket({
+    onSignupCompleted: onSignupComplete,
+    onSignupFailed: () => {
+      // El toast ya se maneja en el hook de socket
+    }
+  });
+
+  // Función para manejar el click del botón
+  const handleAddNumber = async () => {
+    if (isProcessing) {
+      // Si está en proceso, permitir cancelar
+      stopPolling();
+      return;
+    }
+    
+    try {
+      await startSignup({
+        tenantId: undefined, // El backend puede obtenerlo del token
+        locale: 'es'
+      });
+    } catch (error) {
+      console.error('Error starting WhatsApp signup:', error);
+    }
+  };
+
+  // Función para obtener el texto del botón
+  const getButtonText = () => {
+    switch (signupStatus) {
+      case 'starting':
+        return 'Iniciando...';
+      case 'in_progress':
+        return 'En proceso de vinculación...';
+      case 'completed':
+        return 'Vinculación completada';
+      case 'failed':
+        return 'Reintentar vinculación';
+      default:
+        return 'Agregar Número';
+    }
+  };
+
+  // Función para obtener la clase del botón
+  const getButtonClass = () => {
+    const baseClass = 'whatsapp-add-button';
+    
+    switch (signupStatus) {
+      case 'in_progress':
+        return `${baseClass} whatsapp-button-processing`;
+      case 'completed':
+        return `${baseClass} whatsapp-button-success`;
+      case 'failed':
+        return `${baseClass} whatsapp-button-error`;
+      default:
+        return baseClass;
+    }
+  };
+
   return (
     <div className="whatsapp-header-container">
       <div className="whatsapp-header-content">
@@ -27,10 +92,11 @@ const WhatsappHeader = ({ onAddNumber }: WhatsappHeaderProps) => {
         </div>
         
         <button 
-          onClick={onAddNumber}
-          className="whatsapp-add-button"
+          onClick={handleAddNumber}
+          className={getButtonClass()}
+          disabled={signupStatus === 'completed'}
         >
-          Agregar Número
+          {getButtonText()}
         </button>
       </div>
     </div>

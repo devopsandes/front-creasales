@@ -1,7 +1,5 @@
 /* 
   Estilos para componentes de Channels/Integraciones
-  Prefijo: channels-* y whatsapp-* para evitar colisiones
-  Usando CSS nativo para compatibilidad con Tailwind v4
 */
 
 /* ChannelsTabs Styles */
@@ -182,6 +180,41 @@
 .whatsapp-add-button:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Estados del botón de WhatsApp */
+.whatsapp-button-processing {
+  background-color: #f59e0b;
+  color: white;
+  cursor: not-allowed;
+}
+
+.whatsapp-button-processing:hover {
+  background-color: #d97706;
+}
+
+.whatsapp-button-success {
+  background-color: #10b981;
+  color: white;
+  cursor: not-allowed;
+}
+
+.whatsapp-button-success:hover {
+  background-color: #059669;
+}
+
+.whatsapp-button-error {
+  background-color: #ef4444;
+  color: white;
+}
+
+.whatsapp-button-error:hover {
+  background-color: #dc2626;
+}
+
+.whatsapp-add-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* WhatsappSubtabs Styles */
