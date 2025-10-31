@@ -1,0 +1,179 @@
+/*
+  Estilos específicos para el modal de Crear Etiqueta
+  Inspirado en el diseño moderno de Integraciones
+*/
+
+.tag-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(0.5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.tag-modal-container {
+  background-color: white;
+  border-radius: 0.75rem;
+  width: 100%;
+  max-width: 28rem;
+  padding: 0;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tag-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.tag-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.tag-modal-close-button {
+  padding: 0.25rem;
+  color: #6b7280;
+  background: none;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.tag-modal-close-button:hover {
+  color: #111827;
+  background-color: #f3f4f6;
+}
+
+.tag-modal-close-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.tag-modal-content {
+  padding: 1.5rem;
+  background-color: #f9fafb;
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+}
+
+.tag-modal-inner-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.tag-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.tag-modal-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tag-modal-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.tag-modal-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #111827;
+  transition: all 0.2s;
+}
+
+.tag-modal-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.tag-modal-input::placeholder {
+  color: #9ca3af;
+}
+
+.tag-modal-submit-button {
+  padding: 0.625rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.tag-modal-submit-button:hover {
+  background-color: #1d4ed8;
+}
+
+.tag-modal-submit-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.tag-modal-submit-button:active {
+  background-color: #1e40af;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .tag-modal-container {
+    max-width: 95%;
+    margin: 1rem;
+  }
+  
+  .tag-modal-header {
+    padding: 1rem;
+  }
+  
+  .tag-modal-content {
+    padding: 1rem;
+  }
+}
+

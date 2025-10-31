@@ -1,0 +1,185 @@
+/*
+  Estilos específicos para la sección de Etiquetas
+  Basado en el diseño de Integraciones
+*/
+
+/* Tabla de Tags */
+.tags-container {
+  width: 100%;
+  height: 100%;
+  background-color: #f9fafb;
+  padding: 1rem;
+}
+
+.tags-table-wrapper {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.tags-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tags-table-header {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tags-table-header-cell {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tags-table-row {
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 0.15s;
+}
+
+.tags-table-row:hover {
+  background-color: #f9fafb;
+}
+
+.tags-table-cell {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.tags-table-cell-id {
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.tags-table-cell-nombre {
+  color: #111827;
+  font-weight: 500;
+}
+
+.tags-table-cell-empresa {
+  color: #4b5563;
+}
+
+/* Botones de acción */
+.tags-button-edit {
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tags-button-edit:hover {
+  background-color: #1d4ed8;
+}
+
+.tags-button-edit:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.tags-button-delete {
+  padding: 0.5rem 1rem;
+  background-color: #ef4444;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tags-button-delete:hover {
+  background-color: #dc2626;
+}
+
+.tags-button-delete:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5);
+}
+
+.tags-button-add {
+  color: #2563eb;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.tags-button-add:hover {
+  color: #1d4ed8;
+  background-color: #eff6ff;
+}
+
+/* Paginación */
+.tags-pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tags-pagination-button {
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tags-pagination-button:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.tags-pagination-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.tags-pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #9ca3af;
+}
+
+.tags-pagination-button:disabled:hover {
+  background-color: #9ca3af;
+}
+
+.tags-pagination-info {
+  padding: 0.5rem 1rem;
+  background-color: white;
+  color: #111827;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* Spinner */
+.tags-spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+  background-color: white;
+  border-radius: 0.5rem;
+}
+

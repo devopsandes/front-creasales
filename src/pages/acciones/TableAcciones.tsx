@@ -3,6 +3,7 @@ import { CiSquarePlus } from "react-icons/ci";
 import CrearTagModal from "../../components/modal/CrearTagModal";
 import { useDispatch } from "react-redux";
 import { openModalTag } from "../../app/slices/actionSlice";
+import "./acciones.css";
 // import { getTags } from "../../services/tags/tags.services";
 // import { Tag } from "../../interfaces/tags.interface";
 // import { RootState } from "../../app/store";
@@ -66,46 +67,46 @@ const TableAcciones = () => {
   }, [newTag]); */
 
   return (
-    <div className="p-4 w-full h-full">
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse">
+    <div className="acciones-container">
+      <div className="acciones-table-wrapper overflow-x-auto">
+        <table className="acciones-table">
           <thead>
-            <tr className="bg-slate-600 text-left text-sm font-bold text-white grid grid-cols-5">
-              <th className="p-2">ID</th>
-              <th className="p-2">Nombre</th>
-              <th className="p-2">Descripción</th>
-              <th className="p-2">
+            <tr className="acciones-table-header grid grid-cols-5">
+              <th className="acciones-table-header-cell">ID</th>
+              <th className="acciones-table-header-cell">Nombre</th>
+              <th className="acciones-table-header-cell">Descripción</th>
+              <th className="acciones-table-header-cell">
                 <CiSquarePlus
                   size={35}
                   onClick={() => dispatch(openModalTag())}
-                  className="cursor-pointer"
+                  className="acciones-button-add"
                 />
               </th>
-              <th></th>
+              <th className="acciones-table-header-cell"></th>
             </tr>
           </thead>
           <tbody>
             {currentTags.map((tag, index) => (
               <tr
                 key={tag.id}
-                className="border-b hover:bg-slate-100 grid grid-cols-5 items-center"
+                className="acciones-table-row grid grid-cols-5 items-center"
               >
-                <td className="p-2 text-sm font-semibold text-gray-800 text-left">
+                <td className="acciones-table-cell acciones-table-cell-id">
                   {index + 1}
                 </td>
-                <td className="p-2 text-sm text-gray-700 text-left">
+                <td className="acciones-table-cell acciones-table-cell-nombre">
                   {tag.nombre}
                 </td>
-                <td className="p-2 text-sm text-gray-700 text-left">
+                <td className="acciones-table-cell acciones-table-cell-descripcion">
                   {tag.descripcion || "Sin descripción"}
                 </td>
-                <td className="p-2 flex justify-center">
-                  <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                <td className="acciones-table-cell flex justify-center">
+                  <button className="acciones-button-edit">
                     Editar
                   </button>
                 </td>
-                <td className="p-2 flex justify-center">
-                  <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
+                <td className="acciones-table-cell flex justify-center">
+                  <button className="acciones-button-delete">
                     Eliminar
                   </button>
                 </td>
@@ -116,21 +117,21 @@ const TableAcciones = () => {
       </div>
 
       {/* Paginación */}
-      <div className="flex justify-end mt-4 space-x-2">
+      <div className="acciones-pagination-container">
         <button
           onClick={() => setPage((p) => Math.max(p - 1, 1))}
           disabled={page === 1}
-          className="px-3 py-1 border bg-gray-700 text-white rounded disabled:opacity-50"
+          className="acciones-pagination-button"
         >
           Anterior
         </button>
-        <span className="px-3 py-1 border rounded bg-gray-700 text-white">
+        <span className="acciones-pagination-info">
           {page} / {totalPages}
         </span>
         <button
           onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
           disabled={page === totalPages}
-          className="px-3 py-1 border bg-gray-700 text-white rounded disabled:opacity-50"
+          className="acciones-pagination-button"
         >
           Siguiente
         </button>

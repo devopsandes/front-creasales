@@ -1,0 +1,210 @@
+/*
+  Estilos específicos para la sección de Acciones
+  Basado en el diseño de Integraciones y Etiquetas
+*/
+
+/* Contenedor principal */
+.acciones-container {
+  width: 100%;
+  height: 100%;
+  background-color: #f9fafb;
+  padding: 1rem;
+}
+
+/* Wrapper de la tabla */
+.acciones-table-wrapper {
+  background-color: #f5f7fa;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+/* Tabla */
+.acciones-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Header de la tabla */
+.acciones-table-header {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.acciones-table-header-cell {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Filas de la tabla */
+.acciones-table-row {
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 0.15s;
+}
+
+.acciones-table-row:hover {
+  background-color: #f9fafb;
+}
+
+/* Celdas de la tabla */
+.acciones-table-cell {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+  text-align: left;
+}
+
+.acciones-table-cell-id {
+  font-weight: 600;
+  color: #4b5563;
+  text-align: left;
+}
+
+.acciones-table-cell-nombre {
+  color: #111827;
+  font-weight: 500;
+  text-transform: capitalize;
+  text-align: left;
+}
+
+.acciones-table-cell-descripcion {
+  color: #4b5563;
+  font-style: normal;
+  text-align: left;
+}
+
+/* Botones de acción */
+.acciones-button-add {
+  color: #2563eb;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.acciones-button-add:hover {
+  color: #1d4ed8;
+  background-color: #eff6ff;
+}
+
+.acciones-button-edit {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.acciones-button-edit:hover {
+  background-color: #2563eb;
+}
+
+.acciones-button-edit:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.acciones-button-delete {
+  padding: 0.5rem 1rem;
+  background-color: #f87171;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.acciones-button-delete:hover {
+  background-color: #ef4444;
+}
+
+.acciones-button-delete:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5);
+}
+
+/* Paginación */
+.acciones-pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.acciones-pagination-button {
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.acciones-pagination-button:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.acciones-pagination-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.acciones-pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #9ca3af;
+}
+
+.acciones-pagination-button:disabled:hover {
+  background-color: #9ca3af;
+}
+
+.acciones-pagination-info {
+  padding: 0.5rem 1rem;
+  background-color: #f5f7fa;
+  color: #111827;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .acciones-container {
+    padding: 0.5rem;
+  }
+  
+  .acciones-table-header-cell,
+  .acciones-table-cell {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .acciones-pagination-container {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  
+  .acciones-pagination-button,
+  .acciones-pagination-info {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+}
+

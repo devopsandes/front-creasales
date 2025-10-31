@@ -7,6 +7,7 @@ import { getTags } from "../../services/tags/tags.services";
 import { Tag } from "../../interfaces/tags.interface";
 import { capitalizeWords } from "../../utils/functions";
 import { RootState } from "../../app/store";
+import "./tags.css";
 
 
 
@@ -44,35 +45,41 @@ const TableTags = () => {
 
  
   return (
-    <div className="p-4 w-full h-full">
+    <div className="tags-container">
       {loading ? (
-        <div className="spinner-lista">
+        <div className="tags-spinner-container">
           <div className="loader2"></div>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse">
+        <div className="tags-table-wrapper overflow-x-auto">
+          <table className="tags-table">
             <thead>
-              <tr className="bg-slate-600 text-left text-sm font-bold text-white grid grid-cols-5">
-                <th className="p-2">ID Etiqueta</th>
-                <th className="p-2">Nombre de la Etiqueta</th>
-                <th className="p-2">Empresa</th>
-                <th><CiSquarePlus size={45} onClick={() => dispatch(openModalTag())} className="cursor-pointer"/></th>
+              <tr className="tags-table-header grid grid-cols-5">
+                <th className="tags-table-header-cell">ID Etiqueta</th>
+                <th className="tags-table-header-cell">Nombre de la Etiqueta</th>
+                <th className="tags-table-header-cell">Empresa</th>
+                <th className="tags-table-header-cell">
+                  <CiSquarePlus 
+                    size={45} 
+                    onClick={() => dispatch(openModalTag())} 
+                    className="tags-button-add"
+                  />
+                </th>
               </tr>
             </thead>
             <tbody>
               {currentTags.map((tag, index) => (
-                <tr key={tag.id} className="border-b hover:bg-slate-100 grid grid-cols-5 items-center">
-                  <td className="p-2 text-sm font-semibold text-gray-800 text-left">{index+1}</td>
-                  <td className="p-2 text-sm text-gray-700 text-left">{tag.nombre.toUpperCase()}</td>
-                  <td className="p-2 text-sm text-gray-700 text-left">{capitalizeWords(tag.empresa.nombre)}</td>
-                  <td className="p-2 flex justify-end">
-                    <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                <tr key={tag.id} className="tags-table-row grid grid-cols-5 items-center">
+                  <td className="tags-table-cell tags-table-cell-id">{index+1}</td>
+                  <td className="tags-table-cell tags-table-cell-nombre">{tag.nombre.toUpperCase()}</td>
+                  <td className="tags-table-cell tags-table-cell-empresa">{capitalizeWords(tag.empresa.nombre)}</td>
+                  <td className="tags-table-cell flex justify-end">
+                    <button className="tags-button-edit">
                       Editar
                     </button>
                   </td>
-                  <td className="p-2">
-                    <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
+                  <td className="tags-table-cell">
+                    <button className="tags-button-delete">
                       Eliminar
                     </button>
                   </td>
@@ -85,21 +92,21 @@ const TableTags = () => {
      
 
       {/* Paginación */}
-      <div className="flex justify-end mt-4 space-x-2">
+      <div className="tags-pagination-container">
         <button
           onClick={() => setPage((p) => Math.max(p - 1, 1))}
           disabled={page === 1}
-          className="px-3 py-1 border bg-gray-700 text-white rounded disabled:opacity-50"
+          className="tags-pagination-button"
         >
           Anterior
         </button>
-        <span className="px-3 py-1 border rounded bg-gray-700 text-white">
+        <span className="tags-pagination-info">
           {page} / {totalPages}
         </span>
         <button
           onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
           disabled={page === totalPages}
-          className="px-3 py-1 border bg-gray-700 text-white rounded disabled:opacity-50"
+          className="tags-pagination-button"
         >
           Siguiente
         </button>

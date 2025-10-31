@@ -5,6 +5,8 @@ import { RootState } from '../../app/store';
 import { createTag } from '../../services/tags/tags.services';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import XMark from '../icons/XMark';
+import './tag-modal.css';
 
 
 
@@ -67,36 +69,39 @@ const handleClose = () => {
  
 
   return (
-    <div className="fixed inset-0 bg-white/65 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md p-6 shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Buscar Usuario</h2>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-2xl cursor-pointer">x</button>
+    <div className="tag-modal-overlay">
+      <div className="tag-modal-container">
+        <div className="tag-modal-header">
+          <h2 className="tag-modal-title">Crear Etiqueta</h2>
+          <button onClick={handleClose} className="tag-modal-close-button">
+            <XMark />
+          </button>
         </div>
 
-        <div className="relative p-2 flex flex-col justify-center items-center bg-gray-300 rounded-lg">
-            <h3 className='w-full text-center text-gray-600 text-lg'>Crear Etiqueta</h3>
+        <div className="tag-modal-content">
+            <h3 className='tag-modal-inner-title'>Nueva Etiqueta</h3>
             <form 
                 action="" 
                 onSubmit={handleSubmit}
-                className='flex flex-col gap-4 w-full p-4'
+                className='tag-modal-form'
             >
-                <div className='flex justify-between w-full'>
-                    <label htmlFor="nombre" className='text-gray-600'>Nombre</label>
+                <div className='tag-modal-form-group'>
+                    <label htmlFor="nombre" className='tag-modal-label'>Nombre de la etiqueta</label>
                     <input 
                         type="text" 
                         id="nombre" 
-                        placeholder='Nombre de la etiqueta' 
-                        className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                        placeholder='Ingrese el nombre de la etiqueta' 
+                        className='tag-modal-input'
                         value={nombre}
                         onChange={(e) => setNombre(e.target.value)}
+                        required
                     />
                 </div>
                 <button 
                     type='submit' 
-                    className="btn text-center items-center flex gap-2 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+                    className="tag-modal-submit-button"
                 >
-                    <span className='w-full text-center'>Crear Etiqueta</span>
+                    Crear Etiqueta
                 </button>
             </form>
         </div>
