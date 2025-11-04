@@ -129,7 +129,16 @@ const FormEmpresa = () => {
         {showSpinner ? (
           <Spinner23 />
         ) : (
-          <form action="" className="form-empresa" onSubmit={handleSubmit}>
+          <div className="empresa-wrapper">
+            {/* Header */}
+            <div className="empresa-header">
+              <h2 className="empresa-header-title">Configuración de Empresa</h2>
+              <p className="empresa-header-description">
+                Complete la información de su empresa para personalizar el sistema y mejorar la experiencia de sus clientes.
+              </p>
+            </div>
+
+            <form action="" className="form-empresa" onSubmit={handleSubmit}>
               {errores.length > 0 && (
                 <div className="form-errores">
                 {
@@ -146,6 +155,7 @@ const FormEmpresa = () => {
                 </div>
               )}
             <div className="form-col">
+              <h3 className="form-col-title">Información General</h3>
               <div>
                 <label htmlFor="nombre">Nombre:</label>
                 <input 
@@ -221,6 +231,7 @@ const FormEmpresa = () => {
             </div>
 
             <div className="form-col">
+              <h3 className="form-col-title">Ubicación y Clasificación</h3>
               <div>
                 <label htmlFor="telefono">Pais:</label>
                 <select 
@@ -306,10 +317,13 @@ const FormEmpresa = () => {
           
            
 
-            <button type="submit" className="btn-empresa">
-              Cargar datos
-            </button>
+            <div className="form-button-container">
+              <button type="submit" className="btn-empresa">
+                Guardar Datos
+              </button>
+            </div>
           </form>
+          </div>
          
         )}
         <ToastContainer

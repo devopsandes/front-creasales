@@ -1,9 +1,9 @@
 .dash-container {
     width: 100%;
     height: 100%;
-    background-color: rgba(255, 216, 203, 0.4);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Leve sombra */
-    border-radius: 8px; /* Esquinas redondeadas */
+    background-color: #f9fafb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
 }
 
 /* .main-empresa {
@@ -17,17 +17,15 @@
 
 .dash-navbar {
     width: 100%;
-    /* background-color: blueviolet; */
-   
+    background-color: white;
     text-align: left;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-    /* padding: 3px 12px; */
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .dash-nav-listado {
-    padding: 3px 6px 0 6px;
+    padding: 0.5rem 1rem 0 1rem;
     display: flex;
-    gap: 5px;
+    gap: 0.5rem;
 }
 
 .dash-nav-listado ul {
@@ -37,104 +35,36 @@
 
 .dash-nav-listado li {
     list-style: none;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    background-color: rgb(134 108 99 / .6);
-    padding: 3px 12px;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    background-color: #e5e7eb;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s;
+}
+
+.dash-nav-listado li:hover {
+    background-color: #d1d5db;
 }
 
 .dash-link {
-    color: white;
+    color: #374151;
     text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.2s;
 }
 
-.form-empresa {
+.dash-link:hover {
+    color: #111827;
+}
+
+/* Los estilos de form-empresa ahora están en empresa.css */
+
+.main-empresa {
     width: 100%;
-    height: 100%;
-    background-color: #768593;
-    display: flex;
-    /* flex-direction: column; */
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    position: relative;
-    border-radius: 0 0 8px 8px;
-}
-
-.form-empresa div {
-    /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); */
-    padding: 8px;
-    border-radius: 8px;
-    width: 90%;
-    display: flex;
-    justify-content: space-between;
-}
-
-.form-errores {
-    background-color: white;
-    border-radius: 8px;
-    padding: 8px;
-    width: 200px;
-    position: absolute;
-    top: 0;
+    height: calc(100% - 80px);
     display: flex;
     flex-direction: column;
 }
-
-.input-empresa {
-    width: 60%;
-    border: none;
-    background-color: white;
-    margin-left: 5px;
-    outline: none;
-    border-radius: 8px;
-    color: black;
-    padding: 4px;
-}
-
-.btn-empresa {
-    border-radius: 8px;
-    padding: 10px;
-    margin-top: 8px;
-    color: white;
-    background-color: rgb(20 23 220 /0.6);
-    border: none;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: all;
-    display: block;
-    position: absolute;
-    bottom: 30px;
-}
-
-.btn-empresa:hover {
-    background-color: rgb(20, 23, 220);
-}
-
-.select-empresa {
-    width: 60%;
-    border: none;
-    background-color: white;
-    margin-left: 5px;
-    outline: none;
-    border-radius: 8px;
-    color: black;
-    padding: 4px;
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    scrollbar-width: none;  /* Firefox */
-}
-
-.select-empresa::-webkit-scrollbar {
-    display: none;  /* Safari and Chrome */
-}
-
-.form-col {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 55%;
-}
-
 
 

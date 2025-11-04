@@ -158,22 +158,23 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(26, 29, 77, 0.6);
-  transition: color 0.2s ease;
+  color: rgba(75, 85, 99, 0.8);
+  transition: all 0.2s ease;
+  border-radius: 4px;
 }
 
 .signin-btn-eye:hover {
   color: #0073ff;
+  background-color: rgba(0, 115, 255, 0.1);
 }
 
 .signin-btn-eye:focus {
-  outline: 2px solid #0073ff;
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 115, 255, 0.3);
 }
 
 /* Mensaje de error */
