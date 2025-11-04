@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from "react-router-dom"
+import { Link, Outlet, useNavigate, useParams } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
@@ -15,9 +15,18 @@ import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
 import { getChats } from "../../services/chats/chats.services"
 
-
+// Función auxiliar para capitalizar correctamente el texto
+const capitalizeText = (text: string): string => {
+    return text
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
 
 const ListaChats = () => {
+    const { id: activeChatId } = useParams();
+    
     const [chats1,setChats1] = useState<ChatState[]>([])
     const [archivadas,setArchivadas] = useState<ChatState[]>([])
     const [asignadas,setAsignadas] = useState<ChatState[]>([])
@@ -221,15 +230,10 @@ const ListaChats = () => {
             </div>
             <div className="lista-main">
                 <div className="col-lista">
-                    {loading && (
-                        <div className="spinner-lista">
-                            <div className="loader2"></div>
-                        </div>
-                    )}
-                    {!loading && chats1.length === 0 && (
+                    {chats1.length === 0 && !loading && (
                         <p className="msg-error">No hay chats disponibles</p>
                     )}
-                    {!loading && chats1.length > 0 && (
+                    {chats1.length > 0 && (
                         <>
                             <div className="w-full flex justify-between px-2 items-center mb-4 py-2">
                                 <div className="border border-white rounded-none p-2">
@@ -254,32 +258,29 @@ const ListaChats = () => {
                             {filtrados != undefined && filtrados.map(chat => (
                                 <Link 
                                     to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} 
-                                    className="item-lista text-left" 
+                                    className={`item-lista text-left ${chat.id === activeChatId ? 'active' : ''}`}
                                     key={chat.id}
                                     onClick={handleClickLink}
                                 >
                                     <div className="flex justify-between px-2">
-                                        <p>
-                                            {chat.cliente.nombre} - {chat.cliente.telefono}
+                                        <p className="chat-client-info">
+                                            {capitalizeText(chat.cliente.nombre)} - {chat.cliente.telefono}
                                         </p>
                                         {chat?.mensajes?.filter(m => m.leido === false).length > 0 && (
-                                            <p className="ml-auto bg-cyan-900  rounded-full text-red w-6 h-6 text-center">
+                                            <p className="chat-badge-count">
                                                 {chat.mensajes.filter(m => m.leido === false).length}
                                             </p>
                                         )}
                                         
                                     </div>
-                                    <div className="flex justify-start gap-2 w-full pt-2">
-                                       
+                                    <div className="chat-tags-container">
                                         <input
                                             type="checkbox"
                                             className="checkbox"
                                         />
-                                        <p className="p-0.5 bg-gray-600  text-center">AC <span className="font-bold text-gray-400" >X</span></p>
-                                        <p className="p-0.5 bg-gray-600 text-center">BLACK <span className="font-bold text-gray-400" >X</span></p>
-                                        <p className="p-0.5 bg-gray-600 text-center">DEUDA <span className="font-bold text-gray-400" >X</span></p>
-
-                                        
+                                        <p className="chat-tag">ac <span className="chat-tag-close">×</span></p>
+                                        <p className="chat-tag">black <span className="chat-tag-close">×</span></p>
+                                        <p className="chat-tag">deuda <span className="chat-tag-close">×</span></p>
                                     </div>
                                 </Link>
                             ))}
@@ -288,22 +289,23 @@ const ListaChats = () => {
                 
                 </div>
                 <div className="col-lista">
-                    <Outlet />
-           
-                
+                    {loading ? (
+                        <div className="chat-loader-center">
+                            <div className="loader2"></div>
+                        </div>
+                    ) : (
+                        <Outlet />
+                    )}
                 </div>
                 <div className="col-lista">
                     {viewSide && (
                         <>
                             <div className="w-full">
-                                <p className="text-left text-gray-700 font-bold">&#9658;Etiquetas:</p>
-                                <div className="bg-white h-20 w-full p-2 flex flex-col justify-start gap-2">
-                                    <div className="flex gap-2">
-                                        <p className="p-0.5 bg-gray-600  text-center">AC <span className="font-bold text-gray-400" >X</span></p>
-                                        <p className="p-0.5 bg-gray-600 text-center">BLACK <span className="font-bold text-gray-400" >X</span></p>
-                                        <p className="p-0.5 bg-gray-600 text-center">DEUDA <span className="font-bold text-gray-400" >X</span></p>
-                                    </div>
-                                
+                                <p className="chat-info-label">Etiquetas</p>
+                                <div className="chat-tags-panel">
+                                    <p className="chat-tag">ac <span className="chat-tag-close">×</span></p>
+                                    <p className="chat-tag">black <span className="chat-tag-close">×</span></p>
+                                    <p className="chat-tag">deuda <span className="chat-tag-close">×</span></p>
                                 </div>
                             </div>
                             <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Canal: </span> Whatsapp</p>

@@ -300,14 +300,14 @@ const Chats = () => {
                         <div className='ml-96 w-full flex justify-end p-14 gap-6'>
                             <button
                                 onClick={() => dispatch(openModal())}
-                                className="btn flex gap-2 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+                                className="chat-action-button chat-button-assign"
                             >
                                 <IoPersonAdd />
                                 <span>Asignar</span>
                             </button>
                             <button
                                 onClick={handleArchivar}
-                                className="btn flex gap-2 rounded-xl cursor-pointer bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+                                className="chat-action-button chat-button-archive"
                             >
                                 <FaFileArrowDown />
                                 <span>Archivar</span>
