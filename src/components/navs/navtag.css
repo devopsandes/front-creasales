@@ -58,6 +58,21 @@
     color: #111827;
 }
 
+/* Fecha en el extremo superior derecho */
+.date-display {
+    border: 1px solid rgba(0, 0, 0, 0.5);
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    color: rgba(31, 41, 55, 0.8);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1;
+    height: fit-content;
+}
+
 /* Los estilos de form-empresa ahora están en empresa.css */
 
 .main-empresa {

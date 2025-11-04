@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import {  openModalUser } from "../../app/slices/actionSlice";
 import CrearUsuarioModal from "../../components/modal/CrearUsuarioModal";
+import './usuarios.css';
 
 
 
@@ -55,62 +56,57 @@ const TableUsers = () => {
     }
 
   return (
-
-    <div className="p-4 w-full h-full">
+    <div className="usuarios-container">
        {loading ? (
-          <div className="spinner-lista">
+          <div className="usuarios-loader">
             <div className="loader2"></div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse">
-              <thead className="">
-                <tr className="bg-slate-600 text-left text-sm font-bold w-full">
-                  <th className="p-2">ID</th>
-                  <th className="p-2">Usuario</th>
-                  <th className="p-2">Nombre</th>
-                  <th className="p-2">Acceso</th>
-                  <th className="p-2">Departamentos</th>
-                  <th className="p-2">Estado</th>
-                  <th className="p-2">Chats</th>
-                  <th></th>
-
+          <div className="usuarios-table-wrapper">
+            <table className="usuarios-table">
+              <thead className="usuarios-table-header">
+                <tr>
+                  <th className="usuarios-table-header-cell">ID</th>
+                  <th className="usuarios-table-header-cell">Usuario</th>
+                  <th className="usuarios-table-header-cell">Nombre</th>
+                  <th className="usuarios-table-header-cell">Acceso</th>
+                  <th className="usuarios-table-header-cell">Departamentos</th>
+                  <th className="usuarios-table-header-cell">Estado</th>
+                  <th className="usuarios-table-header-cell">Chats</th>
+                  <th className="usuarios-table-header-cell"></th>
                 </tr>
               </thead>
               <tbody>
                 {currentUsers.map((user,index) => (
-                  <tr key={user.id} className="border-b hover:bg-slate-400 h-full">
-                    <td className="p-2 flex flex-col items-start">
-                      {/* {user.id} */}
+                  <tr key={user.id} className="usuarios-table-row">
+                    <td className="usuarios-table-cell usuarios-table-cell-id">
                       {index + 1}
                     </td>
-                    <td className="p-2">
-                      <FaUser className="pl-4" size={35}/>
-                      
-                      {/* <img src={user.avatar} alt={user.name} className="rounded-full w-10 h-10" /> */}
+                    <td className="usuarios-table-cell">
+                      <FaUser className="usuarios-icon-user" size={35}/>
                     </td>
-                    <td className="p-2 flex flex-col items-start justify-center h-full">
-                      <p className="font-medium">{user.nombre} {user.apellido}</p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+                    <td className="usuarios-table-cell usuarios-table-cell-nombre">
+                      <p className="usuarios-nombre">{user.nombre} {user.apellido}</p>
+                      <p className="usuarios-email">{user.email}</p>
                     </td>
-                    <td className="p-2 text-left capitalize">{user.role}</td>
-                    <td className="p-2 text-left capitalize">{user.telefono}</td>
-                    <td className="p-2 text-left capitalize">
+                    <td className="usuarios-table-cell">{user.role}</td>
+                    <td className="usuarios-table-cell">{user.telefono}</td>
+                    <td className="usuarios-table-cell">
                       <Switch checked={user.activo} label={''} id={user.id} />
                     </td>
                     
-                    <td className="p-2 text-center ">
+                    <td className="usuarios-table-cell">
                         <button
-                          className="text-white  cursor-pointer" 
+                          className="usuarios-button-chats" 
                           onClick={() => handleClickChats(user)}
                         >
                           2 {'\t'} 
-                          <FaRegCommentDots className="inline mr-1 text-blue-600" />
+                          <FaRegCommentDots className="usuarios-chat-icon" />
                         </button>
                     </td>
-                    <td className="p-2 flex  justify-center items-center gap-8 ">
-                      <button className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 cursor-pointer">Editar</button>
-                      <button className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 cursor-pointer">Eliminar</button>
+                    <td className="usuarios-actions-cell">
+                      <button className="usuarios-button-edit">Editar</button>
+                      <button className="usuarios-button-delete">Eliminar</button>
                     </td>
                   </tr>
                 ))}
@@ -119,33 +115,31 @@ const TableUsers = () => {
           </div>
         )}
       
-
       {/* Pagination */}
-      <div className="flex justify-end mt-4 space-x-2">
+      <div className="usuarios-pagination-container">
         <button 
           onClick={() => dispatch(openModalUser())}
-          className="btn flex ml-5 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+          className="usuarios-button-create"
         >
           Crear Usuario
         </button>
         <button
           onClick={() => setPage((p) => Math.max(p - 1, 1))}
           disabled={page === 1}
-          className="px-3 py-1 border bg-gray-700 rounded disabled:opacity-50"
+          className="usuarios-pagination-button"
         >
           Anterior
         </button>
-        <span className="px-3 py-1 border rounded bg-gray-700">{page} / {totalPages}</span>
+        <span className="usuarios-pagination-info">{page} / {totalPages}</span>
         <button
           onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
           disabled={page === totalPages}
-          className="px-3 py-1 border bg-gray-700 rounded disabled:opacity-50"
+          className="usuarios-pagination-button"
         >
           Siguiente
         </button>
       </div>
       <CrearUsuarioModal />
-
     </div>
   );
 };

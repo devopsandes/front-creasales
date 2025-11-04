@@ -28,7 +28,7 @@ const NavTag: React.FC<NavTagProps> = (elements) => {
                         </li>
                     ))}
                    
-                     <div className="border border-black/50 rounded-lg px-3 py-1 text-gray-800/80 inline-block ml-3">
+                     <div className="date-display">
                             {new Date().toLocaleDateString('es-AR', {
                                 weekday: 'long',
                                 year: 'numeric',

@@ -17,6 +17,8 @@ import NavTag from '../components/navs/NavTag'
 import FormMeta from '../pages/meta/FormMeta'
 import FormModulos from '../pages/modulos/FormModulos'
 import FormCategorias from '../pages/categorias/FormCategorias'
+import Configuracion from '../pages/configuracion/Configuracion'
+import BotIA from '../pages/bot/BotIA'
 import Chats from '../pages/chats/Chats'
 import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
@@ -83,6 +85,14 @@ const AppRouter = () => {
           
           }
         >
+          {(role === 'ROOT' || role === 'ADMIN') && (
+            <Route path='configuracion' element={<Configuracion />} />
+          )}
+          
+          {(role === 'ROOT' || role === 'ADMIN') && (
+            <Route path='bot' element={<BotIA />} />
+          )}
+          
           {(role === 'ROOT' || role === 'ADMIN') && (
             <Route path='empresa' element={<NavTag tags={navEmpresa} />}>
               <Route index element={<FormEmpresa/>}/>

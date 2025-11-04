@@ -87,6 +87,15 @@
   text-align: left;
 }
 
+/* Párrafos dentro de form-col */
+.form-col p {
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.6;
+  text-align: left;
+  margin: 0;
+}
+
 /* Inputs */
 .input-empresa {
   width: 100%;
@@ -140,7 +149,7 @@
   width: 100%;
   display: flex;
   justify-content: flex-end;
-  padding: 0 2rem 1rem 0;
+  padding: 0 4rem 1rem 0;
 }
 
 /* Botón de submit */

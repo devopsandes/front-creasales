@@ -44,11 +44,13 @@
 /* Filas de la tabla */
 .acciones-table-row {
   border-bottom: 1px solid #f3f4f6;
-  transition: all 0.15s;
+  transition: all 0.2s;
 }
 
 .acciones-table-row:hover {
-  background-color: #f9fafb;
+  background-color: #e0f2fe;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transform: scale(1.002);
 }
 
 /* Celdas de la tabla */

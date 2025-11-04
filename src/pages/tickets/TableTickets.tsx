@@ -9,12 +9,12 @@ import { getTickets } from "../../services/tickets/tickets.services";
 import { Ticket } from "../../interfaces/tickets.interface";
 import { formatCreatedAt } from "../../utils/functions";
 import TicketModal from "../../components/modal/TicketModal";
+import './tickets.css';
 
-
-const estadoColor = {
-  abierto: "bg-green-500",
-  cerrado: "bg-gray-500",
-  pendiente: "bg-yellow-500",
+const estadoClase = {
+  abierto: "tickets-estado-abierto",
+  cerrado: "tickets-estado-cerrado",
+  pendiente: "tickets-estado-pendiente",
 };
 
 const ITEMS_PER_PAGE = 7;
@@ -45,48 +45,53 @@ const TableTickets = () => {
   }
 
   return (
-    <div className="p-4 w-full h-full">
+    <div className="tickets-container">
        {loading ? (
-          <div className="spinner-lista">
+          <div className="tickets-loader">
             <div className="loader2"></div>
           </div>
       ): (
-        <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse">
-              <thead>
-                <tr className="bg-slate-600 text-left text-sm font-bold text-white grid grid-cols-9">
-                  <th className="p-2 col-span-1 flex">#</th>
-                  <th className="p-2 col-span-2">Asunto</th>
-                  <th className="p-2 col-span-2">Prioridad</th>
-                  <th className="p-2 col-span-1">Hora</th>
-                  <th className="p-2 col-span-1">Estado</th>
-                  <th className="p-2 col-span-1 text-center">Respuestas</th>
-                  <th className="p-2 col-span-1 text-center">Comentarios</th>
+        <div className="tickets-table-wrapper">
+            <table className="tickets-table">
+              <thead className="tickets-table-header">
+                <tr className="grid grid-cols-9">
+                  <th className="tickets-table-header-cell col-span-1">#</th>
+                  <th className="tickets-table-header-cell col-span-2">Asunto</th>
+                  <th className="tickets-table-header-cell col-span-2">Prioridad</th>
+                  <th className="tickets-table-header-cell col-span-1">Hora</th>
+                  <th className="tickets-table-header-cell col-span-1">Estado</th>
+                  <th className="tickets-table-header-cell tickets-table-header-cell-center col-span-1">Respuestas</th>
+                  <th className="tickets-table-header-cell tickets-table-header-cell-center col-span-1">Comentarios</th>
                 </tr>
               </thead>
               <tbody>
                 {currentTickets.map((ticket, index) => (
-                  <tr key={ticket.id} className="border-b hover:bg-slate-400 grid grid-cols-9 h-full cursor-pointer" onClick={() => handleOpenTicket(ticket.id)}>
-                    <td className="p-2 h-full text-sm font-semibold text-gray-800 text-left col-span-1">{index + 1} / #{ticket.nro}</td>
-                    <td className="p-2 h-full text-sm text-left col-span-2">{ticket.nombre}</td>
-                    <td className="p-2 text-sm text-left col-span-2">{ticket.prioridad}</td>
-                    <td className="p-2 text-sm flex flex-col items-start gap-2">
-                      <FaRegClock /> {formatCreatedAt(ticket.createdAt.toString())}
+                  <tr key={ticket.id} className="tickets-table-row grid grid-cols-9" onClick={() => handleOpenTicket(ticket.id)}>
+                    <td className="tickets-table-cell tickets-table-cell-numero col-span-1">
+                      {index + 1} / #{ticket.nro}
                     </td>
-                    <td className="p-2 text-sm flex items-start">
-                      <span
-                        className={`text-white text-xs px-2 py-1 rounded ${estadoColor[ticket.estado.nombre.toLowerCase() as keyof typeof estadoColor] || 'bg-gray-500'}`}
-                      >
+                    <td className="tickets-table-cell tickets-table-cell-asunto col-span-2">
+                      {ticket.nombre}
+                    </td>
+                    <td className="tickets-table-cell tickets-table-cell-prioridad col-span-2">
+                      {ticket.prioridad}
+                    </td>
+                    <td className="tickets-table-cell tickets-table-cell-hora col-span-1">
+                      <FaRegClock className="tickets-icon-clock" />
+                      {formatCreatedAt(ticket.createdAt.toString())}
+                    </td>
+                    <td className="tickets-table-cell col-span-1">
+                      <span className={`tickets-estado-badge ${estadoClase[ticket.estado.nombre.toLowerCase() as keyof typeof estadoClase] || 'tickets-estado-cerrado'}`}>
                         {ticket.estado.nombre}
                       </span> 
                     </td>
-                    <td className="p-2 text-center">
-                      <FaCheck className="inline mr-1 text-green-600" />
-                      {ticket.comentarios}
+                    <td className="tickets-table-cell tickets-table-cell-center col-span-1">
+                      <FaCheck className="tickets-icon-check" />
+                      <span className="tickets-count">{ticket.comentarios}</span>
                     </td>
-                    <td className="p-2 text-center">
-                      <FaRegCommentDots className="inline mr-1 text-blue-600" />
-                      {ticket.comentarios}
+                    <td className="tickets-table-cell tickets-table-cell-center col-span-1">
+                      <FaRegCommentDots className="tickets-icon-comment" />
+                      <span className="tickets-count">{ticket.comentarios}</span>
                     </td>
                   </tr>
                 ))}
@@ -95,29 +100,28 @@ const TableTickets = () => {
           </div>
       )}
       
-
       {/* Pagination */}
-      <div className="flex justify-end mt-4 space-x-2">
+      <div className="tickets-pagination-container">
         <button 
           onClick={() => dispatch(openModalTicket())}
-          className="btn flex ml-5 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+          className="tickets-button-create"
         >
           Crear Ticket
         </button>
         <button
           onClick={() => setPage((p) => Math.max(p - 1, 1))}
           disabled={page === 1}
-          className="px-3 py-1 border bg-gray-700 text-white rounded disabled:opacity-50"
+          className="tickets-pagination-button"
         >
           Anterior
         </button>
-        <span className="px-3 py-1 border rounded bg-gray-700 text-white">
+        <span className="tickets-pagination-info">
           {page} / {totalPages}
         </span>
         <button
           onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
           disabled={page === totalPages}
-          className="px-3 py-1 border bg-gray-700 text-white rounded disabled:opacity-50"
+          className="tickets-pagination-button"
         >
           Siguiente
         </button>

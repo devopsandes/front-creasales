@@ -5,6 +5,8 @@ import { RootState } from '../../app/store';
 import { createTag } from '../../services/tags/tags.services';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import XMark from '../icons/XMark';
+import './ticket-modal.css';
 
 
 
@@ -82,85 +84,84 @@ const handleClose = () => {
  
 
   return (
-    <div className="fixed inset-0 bg-white/65 flex items-center justify-center z-50 w-full">
-      <div className="bg-white rounded-lg   p-6 shadow-lg w-full max-w-1/2">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Buscar Usuario</h2>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-2xl cursor-pointer">x</button>
+    <div className="ticket-modal-overlay">
+      <div className="ticket-modal-container">
+        <div className="ticket-modal-header">
+          <h2 className="ticket-modal-title">Crear Ticket</h2>
+          <button onClick={handleClose} className="ticket-modal-close-button">
+            <XMark />
+          </button>
         </div>
 
-        <div className="relative p-2 flex flex-col justify-center items-center bg-gray-300 rounded-lg">
-            <h3 className='w-full text-center text-gray-600 text-lg'>Crear Ticket</h3>
+        <div className="ticket-modal-content">
+            <h3 className='ticket-modal-inner-title'>Nuevo Ticket de Soporte</h3>
             <form 
                 action="" 
                 onSubmit={handleSubmit}
-                className='flex flex-col gap-4 w-full p-4'
+                className='ticket-modal-form'
             >
-                <div className='flex justify-between w-full'>
-                    <label htmlFor="nombre" className='text-gray-600'>Título</label>
+                <div className='ticket-modal-form-group'>
+                    <label htmlFor="titulo" className='ticket-modal-label'>Título</label>
                     <input 
                         type="text" 
-                        id="nombre" 
+                        id="titulo" 
                         placeholder='Título del ticket' 
-                        className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                        className='ticket-modal-input'
                         value={nombre}
                         onChange={(e) => setNombre(e.target.value)}
                     />
                 </div>
-                <div className='flex justify-between w-full'>
-                    <label htmlFor="nombre" className='text-gray-600'>Descripcion</label>
+                <div className='ticket-modal-form-group'>
+                    <label htmlFor="descripcion" className='ticket-modal-label'>Descripción</label>
                     <textarea
-                        id="nombre" 
+                        id="descripcion" 
                         placeholder='Descripción del ticket' 
-                        cols={45}
-                        className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                        className='ticket-modal-textarea'
                         value={nombre}
                         onChange={(e) => setNombre(e.target.value)}
                     />
                 </div>
-                <div className='flex justify-between w-full'>
-                    <label htmlFor="nombre" className='text-gray-600'>Departamentos</label>
+                <div className='ticket-modal-form-group'>
+                    <label htmlFor="departamento" className='ticket-modal-label'>Departamento</label>
                     <select
-                        id="nombre" 
-                        className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                        id="departamento" 
+                        className='ticket-modal-select'
                     >
-                        <option value="">-- Seleccione un Departamento --</option>
+                        <option value="">-- Seleccione --</option>
                         {Departamentos.map((dep) => (
                             <option key={dep.id} value={dep.nombre}>{dep.nombre}</option>
                         ))}
                     </select>
                 </div>
-                <div className='flex justify-between w-full'>
-                    <label htmlFor="nombre" className='text-gray-600'>Tipificación</label>
+                <div className='ticket-modal-form-group'>
+                    <label htmlFor="tipificacion" className='ticket-modal-label'>Tipificación</label>
                     <select
-                        id="nombre" 
-                        className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                        id="tipificacion" 
+                        className='ticket-modal-select'
                     >
-                        <option value="">-- Seleccione un Tipificación --</option>
-                        {Tipificaciones.map((dep) => (
-                            <option key={dep.id} value={dep.nombre}>{dep.nombre}</option>
+                        <option value="">-- Seleccione --</option>
+                        {Tipificaciones.map((tip) => (
+                            <option key={tip.id} value={tip.nombre}>{tip.nombre}</option>
                         ))}
                     </select>
                 </div>
-                 <div className='flex justify-between w-full'>
-                    <label htmlFor="nombre" className='text-gray-600'>Adjuntos</label>
+                <div className='ticket-modal-form-group'>
+                    <label htmlFor="adjuntos" className='ticket-modal-label'>Adjuntos</label>
                     <input
                         type="file"
                         id="adjuntos"
-                        className="block w-2/3 p-2 bg-amber-50 rounded-lg shadow-2xl text-gray-600 border border-gray-300 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                        className="ticket-modal-file-input"
                     />
                 </div>
 
                 <button 
                     type='submit' 
-                    className="btn text-center items-center flex gap-2 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
+                    className="ticket-modal-submit-button"
                 >
-                    <span className='w-full text-center'>Crear Ticket</span>
+                    Crear Ticket
                 </button>
             </form>
         </div>
-
-        
       </div>
     </div>
   );

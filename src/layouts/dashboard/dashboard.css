@@ -1,25 +1,31 @@
 .dash-layout {
     width: 100%;
     display: grid;
-    height: 100%;
+    height: calc(100vh - 60px);
+    margin-top: 60px;
     grid:
       "sidebar body" 1fr
-      / 0.2fr 6.8fr;
+      / 80px 1fr;
+    overflow: hidden;
 }
 
 
 .dash-sidebar { 
     grid-area: sidebar; 
-    background-color: #2c3e50;
+    background-color: #ffffff;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    overflow: hidden;
+    height: 100%;
 }
 
 
-/* To enable sidebar hover to affect layout, toggle a class on .dash-layout via JS, or use :has() if supported: */
-.dash-layout:has(.dash-sidebar:hover) {
+/* To enable sidebar expand on click, toggle a class on .dash-layout via JS */
+.dash-layout:has(.dash-sidebar.expanded) {
     grid:
         "sidebar body" 1fr
-        / 0.7fr 6.3fr;
+        / 200px 1fr;
 }
 
 
@@ -28,8 +34,8 @@
 .dash-body { 
     padding: 1rem;
     grid-area: body; 
-    background-color: #4b7e93;
-    overflow: hidden;
-    /* background-color: rgb(134 108 99 / .8); */
-
+    background-color: #f3f4f6;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
 }

@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import DashSidebar from "../../components/sidebars/DashSidebar";
+import Topbar from "../../components/topbar/Topbar";
 import { empresaXUser } from "../../services/empresas/empresa.services";
 import './dashboard.css'
 import { useDispatch  } from "react-redux";
@@ -16,6 +17,7 @@ const Dashboard = () => {
 
   let role: string | null = localStorage.getItem('role')
   const dispatch = useDispatch()
+  const [sidebarExpanded, setSidebarExpanded] = useState(false)
   /* const alerta = useSelector((state: RootState) => state.action.alerta);
   const mensaje = useSelector((state: RootState) => state.action.msg); */
   
@@ -110,23 +112,32 @@ const Dashboard = () => {
       },[socket]) 
   
   
-  return (
-    <section className="dash-layout">
-        <div className="dash-sidebar">
-          <DashSidebar role={role!}/>
+  const handleSidebarClick = () => {
+    setSidebarExpanded(!sidebarExpanded)
+  }
 
+  return (
+    <>
+      <Topbar />
+      <section className="dash-layout">
+        <div 
+          className={`dash-sidebar ${sidebarExpanded ? 'expanded' : ''}`}
+          onClick={handleSidebarClick}
+        >
+          <DashSidebar role={role!}/>
         </div>
         <div className="dash-body">
           <Outlet />
         </div>
-         <ToastContainer
+        <ToastContainer
           autoClose={3000} 
           closeButton 
           pauseOnHover
           draggable
           limit={1}
         />     
-    </section>
+      </section>
+    </>
   )
 }
 

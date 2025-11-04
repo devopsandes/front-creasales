@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { formatCreatedAt } from "../../utils/functions";
 import { getClientes } from "../../services/clientes/clientes.services";
 import { Cliente } from "../../interfaces/cliente.interface";
+import './clientes.css';
 
 
 
@@ -29,47 +30,66 @@ const TableClientes = () => {
   },[])
 
   return (
-    <div className="p-4 w-full h-full">
+    <div className="clientes-container">
        {loading ? (
-          <div className="spinner-lista">
+          <div className="clientes-loader">
             <div className="loader2"></div>
           </div>
       ): (
-        <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse">
-              <thead>
-                <tr className="bg-slate-600 text-left text-sm font-bold text-white grid grid-cols-9">
-                  <th className="p-2 col-span-1 flex">#</th>
-                  <th className="p-2 col-span-2">Nombre</th>
-                  <th className="p-2 col-span-2">Teléfono</th>
-                  <th className="p-2 col-span-1">Email</th>
-                  <th className="p-2 col-span-1">Tipo</th>
-                  <th className="p-2 col-span-1 text-center">Número</th>
-                  <th className="p-2 col-span-1 text-center">CreatedAt</th>
+        <div className="clientes-table-wrapper">
+            <table className="clientes-table">
+              <thead className="clientes-table-header">
+                <tr className="grid grid-cols-9">
+                  <th className="clientes-table-header-cell col-span-1">#</th>
+                  <th className="clientes-table-header-cell col-span-2">Nombre</th>
+                  <th className="clientes-table-header-cell col-span-2">Teléfono</th>
+                  <th className="clientes-table-header-cell col-span-1">Email</th>
+                  <th className="clientes-table-header-cell col-span-1">Tipo</th>
+                  <th className="clientes-table-header-cell clientes-table-header-cell-center col-span-1">Número</th>
+                  <th className="clientes-table-header-cell clientes-table-header-cell-center col-span-1">Fecha</th>
                 </tr>
               </thead>
               <tbody>
                 {currentClientes.map((cliente, index) => (
-                  <tr key={cliente.id} className="border-b hover:bg-slate-400 grid grid-cols-9 h-full">
-                    <td className="p-2 h-full text-sm font-semibold text-gray-800 text-left col-span-1">{index + 1}</td>
-                    <td className="p-2 h-full text-sm text-left col-span-2">{cliente.nombre}</td>
-                    <td className="p-2 text-sm text-left col-span-2">{cliente.telefono}</td>
-                   
-                    <td className="p-2 text-sm flex items-start">
-                      <span
-                        className={`text-white text-xs px-2 py-1 rounded bg-gray-500`}
-                      >
-                        {cliente.email ?? "no email"}
-                      </span> 
+                  <tr key={cliente.id} className="clientes-table-row grid grid-cols-9">
+                    <td className="clientes-table-cell clientes-table-cell-id col-span-1">
+                      {index + 1}
                     </td>
-                    <td className="p-2 text-center">
-                      {cliente.tipo_doc ?? "sin tipo"}
+                    <td className="clientes-table-cell clientes-table-cell-nombre col-span-2">
+                      {cliente.nombre}
                     </td>
-                    <td className="p-2 text-center">
-                      {cliente.nro_doc ?? "sin nro"}
+                    <td className="clientes-table-cell clientes-table-cell-telefono col-span-2">
+                      {cliente.telefono}
                     </td>
-                    <td className="p-2 text-sm flex  items-start gap-2">
-                      {formatCreatedAt(cliente.createdAt.toString())}
+                    <td className="clientes-table-cell clientes-table-cell-email col-span-1">
+                      {cliente.email ? (
+                        <span className="clientes-email-badge">
+                          {cliente.email}
+                        </span>
+                      ) : (
+                        <span className="clientes-no-email">
+                          sin email
+                        </span>
+                      )}
+                    </td>
+                    <td className="clientes-table-cell clientes-table-cell-center col-span-1">
+                      {cliente.tipo_doc ? (
+                        <span className="clientes-tipo-doc">{cliente.tipo_doc}</span>
+                      ) : (
+                        <span className="clientes-sin-dato">sin tipo</span>
+                      )}
+                    </td>
+                    <td className="clientes-table-cell clientes-table-cell-center col-span-1">
+                      {cliente.nro_doc ? (
+                        <span className="clientes-nro-doc">{cliente.nro_doc}</span>
+                      ) : (
+                        <span className="clientes-sin-dato">sin nro</span>
+                      )}
+                    </td>
+                    <td className="clientes-table-cell clientes-table-cell-center col-span-1">
+                      <span className="clientes-fecha">
+                        {formatCreatedAt(cliente.createdAt.toString())}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -78,34 +98,26 @@ const TableClientes = () => {
           </div>
       )}
       
-
       {/* Pagination */}
-      <div className="flex justify-end mt-4 space-x-2">
-       {/*  <button 
-          onClick={() => dispatch(openModalTicket())}
-          className="btn flex ml-5 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
-        >
-          Crear Ticket
-        </button> */}
+      <div className="clientes-pagination-container">
         <button
           onClick={() => setPage((p) => Math.max(p - 1, 1))}
           disabled={page === 1}
-          className="px-3 py-1 border bg-gray-700 text-white rounded disabled:opacity-50"
+          className="clientes-pagination-button"
         >
           Anterior
         </button>
-        <span className="px-3 py-1 border rounded bg-gray-700 text-white">
+        <span className="clientes-pagination-info">
           {page} / {totalPages}
         </span>
         <button
           onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
           disabled={page === totalPages}
-          className="px-3 py-1 border bg-gray-700 text-white rounded disabled:opacity-50"
+          className="clientes-pagination-button"
         >
           Siguiente
         </button>
       </div>
-      {/* <CrearTicketModal /> */}
     </div>
   );
 };

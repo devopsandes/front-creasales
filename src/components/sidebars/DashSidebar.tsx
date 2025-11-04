@@ -1,7 +1,20 @@
-import { HiCog, HiCpuChip, HiClipboardDocumentList, HiMiniUsers, HiMiniTicket } from "react-icons/hi2";
-import { FaComments, FaMeta } from "react-icons/fa6";
-import { IoMdLogOut } from "react-icons/io";
-import { FaTasks, FaAddressBook, FaThList, FaCodepen, FaTable, FaTags, FaPlug } from "react-icons/fa";
+import { 
+  Settings, 
+  Bot, 
+  Building2, 
+  MessageSquare, 
+  TicketCheck, 
+  UserCircle2, 
+  UsersRound,
+  ListChecks,
+  Boxes,
+  Grid3x3,
+  CheckSquare,
+  Tag,
+  Plug2,
+  LogOut
+} from "lucide-react";
+import { FaMeta } from "react-icons/fa6";
 import DashItem from '../items/DashItem'
 import './dashsidebar.css'
 import { useNavigate } from "react-router-dom";
@@ -28,31 +41,31 @@ const DashSidebar = ({ role }: Props) => {
     <div className='dashsidebar-container'>
         {(role === 'ROOT' || role === 'ADMIN')  && (
           <>
-            <DashItem icon={HiCog} path='' titulo="Configuración"/>
-            <DashItem icon={HiCpuChip} path='' titulo="BOT/IA"/>
-            <DashItem icon={HiClipboardDocumentList} path='/dashboard/empresa' titulo="Empresa"/>
-            <DashItem icon={FaComments} path='/dashboard/chats' titulo="Chats"/>
-            <DashItem icon={HiMiniTicket} path='/dashboard/tickets' titulo="Tickets"/>
-            <DashItem icon={FaAddressBook} path='/dashboard/clientes' titulo="Clientes"/>
+            <DashItem icon={Settings} path='/dashboard/configuracion' titulo="Configuración"/>
+            <DashItem icon={Bot} path='/dashboard/bot' titulo="BOT/IA"/>
+            <DashItem icon={Building2} path='/dashboard/empresa' titulo="Empresa"/>
+            <DashItem icon={MessageSquare} path='/dashboard/chats' titulo="Chats"/>
+            <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
+            <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes"/>
             <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta"/>
-            <DashItem icon={HiMiniUsers} path='/dashboard/usuarios' titulo="Usuarios"/>
-            <DashItem icon={FaThList} path='/dashboard/estados' titulo="Estados"/>
-            <DashItem icon={FaCodepen} path='/dashboard/modulos' titulo="Modulos"/>
-            <DashItem icon={FaTable} path='/dashboard/categorias' titulo="Categorias"/>
-            <DashItem icon={FaTasks} path='/dashboard/acciones' titulo="Acciones"/>
-            <DashItem icon={FaTags} path='/dashboard/tags' titulo="Etiquetas"/>
-            <DashItem icon={FaPlug} path='/dashboard/integraciones' titulo="Integraciones"/>
+            <DashItem icon={UsersRound} path='/dashboard/usuarios' titulo="Usuarios"/>
+            <DashItem icon={ListChecks} path='/dashboard/estados' titulo="Estados"/>
+            <DashItem icon={Boxes} path='/dashboard/modulos' titulo="Modulos"/>
+            <DashItem icon={Grid3x3} path='/dashboard/categorias' titulo="Categorias"/>
+            <DashItem icon={CheckSquare} path='/dashboard/acciones' titulo="Acciones"/>
+            <DashItem icon={Tag} path='/dashboard/tags' titulo="Etiquetas"/>
+            <DashItem icon={Plug2} path='/dashboard/integraciones' titulo="Integraciones"/>
 
             <div className="dashsidebar-logout" onClick={handleLogout}>
-              <IoMdLogOut size={25}/>
+              <LogOut size={25} strokeWidth={1.5}/>
             </div>
           </>
         )}
         {role === 'USER' && (
           <>
-            <DashItem icon={FaComments} path='/dashboard/chats' titulo="Chats"/>
-            <DashItem icon={HiMiniTicket} path='/dashboard/tickets' titulo="Tickets"/>
-            <DashItem icon={FaAddressBook} path='' titulo="Clientes"/>
+            <DashItem icon={MessageSquare} path='/dashboard/chats' titulo="Chats"/>
+            <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
+            <DashItem icon={UserCircle2} path='' titulo="Clientes"/>
           </>
         )}
         

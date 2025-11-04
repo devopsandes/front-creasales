@@ -1,0 +1,215 @@
+/*
+  Estilos específicos para la sección de Usuarios
+  Siguiendo el diseño profesional del proyecto
+*/
+
+/* Contenedor principal */
+.usuarios-container {
+  width: 100%;
+  height: 100%;
+  background-color: #f9fafb;
+  padding: 1rem;
+}
+
+/* Wrapper de la tabla */
+.usuarios-table-wrapper {
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+
+/* Tabla */
+.usuarios-table {
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+/* Header de la tabla */
+.usuarios-table-header {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.usuarios-table-header-cell {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Filas de la tabla */
+.usuarios-table-row {
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 0.2s;
+}
+
+.usuarios-table-row:hover {
+  background-color: #e0f2fe;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Celdas de la tabla */
+.usuarios-table-cell {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+  text-align: left;
+}
+
+.usuarios-table-cell-id {
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.usuarios-table-cell-nombre {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.usuarios-nombre {
+  font-weight: 500;
+  color: #111827;
+}
+
+.usuarios-email {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.usuarios-icon-user {
+  color: #6b7280;
+  padding-left: 1rem;
+}
+
+/* Botón de chats */
+.usuarios-button-chats {
+  color: #111827;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.usuarios-button-chats:hover {
+  color: #3b82f6;
+}
+
+.usuarios-chat-icon {
+  color: #3b82f6;
+}
+
+/* Botones de acción */
+.usuarios-actions-cell {
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.usuarios-button-edit {
+  padding: 0.5rem 1rem;
+  background-color: #60a5fa;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.usuarios-button-edit:hover {
+  background-color: #3b82f6;
+}
+
+.usuarios-button-delete {
+  padding: 0.5rem 1rem;
+  background-color: #f87171;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.usuarios-button-delete:hover {
+  background-color: #ef4444;
+}
+
+/* Paginación */
+.usuarios-pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.usuarios-button-create {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-right: auto;
+}
+
+.usuarios-button-create:hover {
+  background-color: #2563eb;
+}
+
+.usuarios-pagination-button {
+  padding: 0.5rem 1rem;
+  background-color: #e5e7eb;
+  color: #111827;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.usuarios-pagination-button:hover:not(:disabled) {
+  background-color: #d1d5db;
+}
+
+.usuarios-pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.usuarios-pagination-info {
+  padding: 0.5rem 1rem;
+  background-color: #f9fafb;
+  color: #111827;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* Loader */
+.usuarios-loader {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
