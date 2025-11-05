@@ -19,6 +19,7 @@ import FormModulos from '../pages/modulos/FormModulos'
 import FormCategorias from '../pages/categorias/FormCategorias'
 import Configuracion from '../pages/configuracion/Configuracion'
 import BotIA from '../pages/bot/BotIA'
+import DashboardHome from '../pages/dashboard-home/DashboardHome'
 import Chats from '../pages/chats/Chats'
 import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
@@ -85,6 +86,8 @@ const AppRouter = () => {
           
           }
         >
+          <Route index element={<DashboardHome />} />
+          
           {(role === 'ROOT' || role === 'ADMIN') && (
             <Route path='configuracion' element={<Configuracion />} />
           )}

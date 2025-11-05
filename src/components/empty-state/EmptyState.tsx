@@ -8,7 +8,7 @@ const EmptyState = ({ message }: EmptyStateProps) => {
   return (
     <div className="empty-state-container">
       <img 
-        src="/images/logoCreaTechDefinicion1.png" 
+        src="/images/LogoCreaTechWhite.png" 
         alt="CreaTech Logo" 
         className="empty-state-logo"
       />

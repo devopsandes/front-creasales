@@ -1,16 +1,19 @@
 import React, { FormEvent, useEffect, useState, useRef } from 'react'
-import { useLocation, useNavigate, useParams } from "react-router-dom"
+import { useLocation, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
 import { findChatById, getUserData } from '../../services/chats/chats.services'
 import { Mensaje } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { Socket } from 'socket.io-client'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
+import { RootState } from '../../app/store'
 import UserSearchModal from '../../components/modal/UserSearchModal'
+import ArchiveModal from '../../components/modal/ArchiveModal'
+import ChatInfoDropdown from '../../components/dropdown/ChatInfoDropdown'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
-import { openModal, setUserData, setViewSide, switchModalPlantilla } from '../../app/slices/actionSlice'
+import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired } from '../../app/slices/actionSlice'
 import { IoIosAttach } from "react-icons/io";
 import { FaMicrophone } from "react-icons/fa";
 import ModalPlantilla from '../../components/modal/ModalPlantilla'
@@ -33,6 +36,7 @@ const Chats = () => {
     const [archivo, setArchivo] = useState<File | null>(null);
     const [showList, setShowList] = useState(false);
     const [filteredUsers, setFilteredUsers] = useState<Usuario[]>([]);
+    const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -53,7 +57,7 @@ const Chats = () => {
     // Referencia para el contenedor de mensajes
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
     const dispatch = useDispatch()
-    const navigate = useNavigate()
+    const dataUser = useSelector((state: RootState) => state.action.dataUser)
 
     let socket: Socket | null = null
 
@@ -73,8 +77,8 @@ const Chats = () => {
             dispatch(setViewSide(true))
             
             if (resp.statusCode === 401) {
-                alert('Su sesión ha caducado')
-                return navigate('/auth/signin')
+                dispatch(openSessionExpired())
+                return
             }
         }
         ejecucion();
@@ -110,8 +114,7 @@ const Chats = () => {
         const handleError = (error: any) => {
             console.log(error);
             if (error.name === 'TokenExpiredError') {
-                alert('Su sesión ha caducado')
-                navigate('/auth/signin')
+                dispatch(openSessionExpired())
                 return
             }
         }
@@ -136,8 +139,8 @@ const Chats = () => {
         const inicio = async () => {
             const data = await findChatById(token!, id!)
             if(data.statusCode === 401) {
-                alert('Su sesión ha caducado')
-                return navigate('/auth/signin')
+                dispatch(openSessionExpired())
+                return
             }
             
             setMensajes(data.chat.mensajes)
@@ -191,9 +194,11 @@ const Chats = () => {
      
     }
 
-    const handleArchivar = () => {
-        const conf = confirm('¿Quiere archivar el siguiente chat?');
-        if(!conf) return
+    const handleArchivarClick = () => {
+        setIsArchiveModalOpen(true);
+    }
+
+    const handleArchivarConfirm = () => {
         try {
             const msj: Mensaje = {
                 msg_salida: mensaje,
@@ -215,9 +220,14 @@ const Chats = () => {
                 console.warn("Socket desconectado, enviando por HTTP...");
                 //await axios.post("/api/mensajes", { contenido: mensaje, usuarioId: "12345", chatId: "67890" });
             }
+            setIsArchiveModalOpen(false);
         } catch (error) {
             console.log(error);
         }
+    }
+
+    const handleArchivarCancel = () => {
+        setIsArchiveModalOpen(false);
     }
 
     
@@ -297,7 +307,7 @@ const Chats = () => {
                             <span className=''>+{telefono}</span>
                             <span className=''>{nombre}</span>
                         </p>
-                        <div className='ml-96 w-full flex justify-end p-14 gap-6'>
+                        <div className='header-chat-actions'>
                             <button
                                 onClick={() => dispatch(openModal())}
                                 className="chat-action-button chat-button-assign"
@@ -306,12 +316,13 @@ const Chats = () => {
                                 <span>Asignar</span>
                             </button>
                             <button
-                                onClick={handleArchivar}
+                                onClick={handleArchivarClick}
                                 className="chat-action-button chat-button-archive"
                             >
                                 <FaFileArrowDown />
                                 <span>Archivar</span>
                             </button>
+                            <ChatInfoDropdown dataUser={dataUser} />
                         </div>
                     </div>
                     <div className='body-chat' ref={mensajesContainerRef}>
@@ -410,6 +421,11 @@ const Chats = () => {
                     </div>
                     <ModalPlantilla />
                     <UserSearchModal  />
+                    <ArchiveModal 
+                        isOpen={isArchiveModalOpen}
+                        onClose={handleArchivarCancel}
+                        onConfirm={handleArchivarConfirm}
+                    />
                 </div>
             )}
            

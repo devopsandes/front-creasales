@@ -13,7 +13,8 @@ const initialState : ActionState = {
     dataUser: null,
     viewSide: false,
     modalTeca: false,
-    ticketId: ''
+    ticketId: '',
+    sessionExpired: false
 }
 
 const actionSlice = createSlice({
@@ -72,6 +73,12 @@ const actionSlice = createSlice({
         },
         eraseDataUser: (state) => {
             state.dataUser = null
+        },
+        openSessionExpired: (state) => {
+            state.sessionExpired = true
+        },
+        closeSessionExpired: (state) => {
+            state.sessionExpired = false
         }
     }
 })
@@ -92,7 +99,9 @@ export const {
     openModalTeca,
     closeModalTeca,
     switchModalPlantilla,
-    eraseDataUser
+    eraseDataUser,
+    openSessionExpired,
+    closeSessionExpired
 } = actionSlice.actions
 export default actionSlice.reducer
 

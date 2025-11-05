@@ -2,7 +2,7 @@ import {
   Settings, 
   Bot, 
   Building2, 
-  MessageSquare, 
+  MessageCircle, 
   TicketCheck, 
   UserCircle2, 
   UsersRound,
@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { FaMeta } from "react-icons/fa6";
 import DashItem from '../items/DashItem'
+import LogoutModal from '../modal/LogoutModal'
 import './dashsidebar.css'
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 type Props = {
   role: string  
@@ -28,14 +30,20 @@ type Props = {
 const DashSidebar = ({ role }: Props) => {
 
   const navigate = useNavigate();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
-  const handleLogout = () => {
-  // Implement logout functionality here
-  const cond = confirm("¿Estás seguro de que quieres cerrar sesión?");
-    if(cond){
-      localStorage.clear();
-      navigate('/auth/signin');
-    }
+  const handleLogoutClick = () => {
+    setIsLogoutModalOpen(true);
+  }
+
+  const handleLogoutConfirm = () => {
+    localStorage.clear();
+    navigate('/auth/signin');
+    setIsLogoutModalOpen(false);
+  }
+
+  const handleLogoutCancel = () => {
+    setIsLogoutModalOpen(false);
   }
   return (
     <div className='dashsidebar-container'>
@@ -44,7 +52,7 @@ const DashSidebar = ({ role }: Props) => {
             <DashItem icon={Settings} path='/dashboard/configuracion' titulo="Configuración"/>
             <DashItem icon={Bot} path='/dashboard/bot' titulo="BOT/IA"/>
             <DashItem icon={Building2} path='/dashboard/empresa' titulo="Empresa"/>
-            <DashItem icon={MessageSquare} path='/dashboard/chats' titulo="Chats"/>
+            <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
             <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
             <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes"/>
             <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta"/>
@@ -56,19 +64,24 @@ const DashSidebar = ({ role }: Props) => {
             <DashItem icon={Tag} path='/dashboard/tags' titulo="Etiquetas"/>
             <DashItem icon={Plug2} path='/dashboard/integraciones' titulo="Integraciones"/>
 
-            <div className="dashsidebar-logout" onClick={handleLogout}>
+            <div className="dashsidebar-logout" onClick={handleLogoutClick}>
               <LogOut size={25} strokeWidth={1.5}/>
             </div>
           </>
         )}
         {role === 'USER' && (
           <>
-            <DashItem icon={MessageSquare} path='/dashboard/chats' titulo="Chats"/>
+            <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
             <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
             <DashItem icon={UserCircle2} path='' titulo="Clientes"/>
           </>
         )}
         
+        <LogoutModal 
+          isOpen={isLogoutModalOpen}
+          onClose={handleLogoutCancel}
+          onConfirm={handleLogoutConfirm}
+        />
     </div>
   )
 }

@@ -12,6 +12,7 @@ export interface ActionState  {
    dataUser:  DataUser | null;
    viewSide: boolean;
    ticketId: string;
+   sessionExpired: boolean;
 };
 
 export interface DataUser {

@@ -6,7 +6,14 @@
     gap: 0.25rem;
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.dashsidebar-container::-webkit-scrollbar {
+    display: none;
 }
 
 
@@ -29,6 +36,6 @@
 
 .dashsidebar-logout:hover {
     background-color: #e5e7eb;
-    color: #dc2626;
+    color: #f31b1e;
 }
 

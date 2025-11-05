@@ -3,13 +3,15 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import DashSidebar from "../../components/sidebars/DashSidebar";
 import Topbar from "../../components/topbar/Topbar";
+import SessionExpiredModal from "../../components/modal/SessionExpiredModal";
 import { empresaXUser } from "../../services/empresas/empresa.services";
 import './dashboard.css'
-import { useDispatch  } from "react-redux";
+import { useDispatch, useSelector  } from "react-redux";
 import { Socket } from "socket.io-client";
 import { connectSocket,  getSocket } from "../../app/slices/socketSlice";
 import { setEmpresa } from "../../app/slices/authSlice";
-// import { RootState } from "../../app/store";
+import { openSessionExpired, closeSessionExpired } from "../../app/slices/actionSlice";
+import { RootState } from "../../app/store";
 
 
 
@@ -18,8 +20,7 @@ const Dashboard = () => {
   let role: string | null = localStorage.getItem('role')
   const dispatch = useDispatch()
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
-  /* const alerta = useSelector((state: RootState) => state.action.alerta);
-  const mensaje = useSelector((state: RootState) => state.action.msg); */
+  const sessionExpired = useSelector((state: RootState) => state.action.sessionExpired)
   
   let socket: Socket | null = null
   
@@ -89,12 +90,10 @@ const Dashboard = () => {
   
           const handleError = (error: any) => {
               if (error.name === 'TokenExpiredError') {
-                  alert('Su sesión ha caducado')
-                  navigate('/auth/signin')
+                  dispatch(openSessionExpired())
                   return
               }
-              alert('Su sesión ha caducado')
-              navigate('/auth/signin')
+              dispatch(openSessionExpired())
               return
           }
   
@@ -135,7 +134,42 @@ const Dashboard = () => {
           pauseOnHover
           draggable
           limit={1}
-        />     
+        />
+        <SessionExpiredModal 
+          isOpen={sessionExpired}
+          onClose={() => dispatch(closeSessionExpired())}
+        />
+        
+        {/* <button 
+          onClick={() => dispatch(openSessionExpired())}
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            padding: '12px 24px',
+            background: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontFamily: 'Poppins, sans-serif',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+            zIndex: 9998,
+            transition: 'all 0.2s'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = '#dc2626'
+            e.currentTarget.style.transform = 'scale(1.05)'
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = '#ef4444'
+            e.currentTarget.style.transform = 'scale(1)'
+          }}
+        >
+          🧪 Probar Modal Sesión
+        </button> */}
       </section>
     </>
   )

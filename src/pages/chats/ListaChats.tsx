@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate, useParams } from "react-router-dom"
+import { Link, Outlet, useParams } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
@@ -9,7 +9,7 @@ import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine } from "react-icons/lu";
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
@@ -67,7 +67,6 @@ const ListaChats = () => {
 
     
 
-    const navigate = useNavigate()
     const dispatch = useDispatch()
 
    
@@ -137,12 +136,10 @@ const ListaChats = () => {
 
         const handleError = (error: any) => {
             if (error.name === 'TokenExpiredError') {
-                alert('Su sesión ha caducado')
-                navigate('/auth/signin')
+                dispatch(openSessionExpired())
                 return
             }
-            alert('Su sesión ha caducado')
-            navigate('/auth/signin')
+            dispatch(openSessionExpired())
             return
         }
 
@@ -293,8 +290,12 @@ const ListaChats = () => {
                         <div className="chat-loader-center">
                             <div className="loader2"></div>
                         </div>
-                    ) : (
+                    ) : activeChatId ? (
                         <Outlet />
+                    ) : (
+                        <div className="chat-empty-prompt">
+                            <p className="chat-empty-text">Presiona en un chat para comenzar</p>
+                        </div>
                     )}
                 </div>
                 <div className="col-lista">

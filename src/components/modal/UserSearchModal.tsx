@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {  useParams } from 'react-router-dom';
 import { closeModal } from '../../app/slices/actionSlice';
-import {  UserCircle2 } from 'lucide-react';
+import {  UserCircle2, X, UserPlus, Search } from 'lucide-react';
 import { asignarOperador, usuariosXRole } from '../../services/auth/auth.services';
 import { RootState } from '../../app/store';
 import {  Usuario } from '../../interfaces/auth.interface';
+import './user-search-modal.css';
 
 
 
@@ -63,11 +64,16 @@ const UserSearchModal = ( ) => {
     console.log(resp);
 
     if(resp.statusCode === 200) {
-      // Aquí puedes manejar la lógica después de asignar el usuario, como actualizar el estado global o redirigir
       dispatch(closeModal());
-      alert('Usuario asignado correctamente');
+      // Podrías mostrar un toast aquí en lugar de alert
     }
     
+  }
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      dispatch(closeModal());
+    }
   }
 
   
@@ -75,44 +81,44 @@ const UserSearchModal = ( ) => {
  
 
   return (
-    <div className="fixed inset-0 bg-white/65 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md p-6 shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Buscar Usuario</h2>
-          <button onClick={() => dispatch(closeModal())} className="text-gray-400 hover:text-gray-600">×</button>
+    <div className="assign-modal-overlay" onClick={handleOverlayClick}>
+      <div className="assign-modal-container">
+        <button className="assign-modal-close" onClick={() => dispatch(closeModal())}>
+          <X size={20} />
+        </button>
+        
+        <div className="assign-modal-icon">
+          <UserPlus size={32} />
         </div>
 
-        <div className="relative p-2 flex justify-center items-center">
-         {/*  <div>
-            <Search className="absolute left-3 top-2.5 text-gray-400 w-5 h-5" />
-          </div> */}
+        <h2 className="assign-modal-title">Asignar Chat</h2>
+        <p className="assign-modal-subtitle">Selecciona un usuario para asignar este chat</p>
+
+        <div className="assign-modal-search">
+          <Search className="assign-modal-search-icon" size={18} />
           <input
             type="text"
             placeholder="Buscar usuarios..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-gray-300 rounded  py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 bg-white text-gray-950"
+            className="assign-modal-search-input"
           />
         </div>
 
-        <ul className="divide-y divide-gray-200 max-h-60 overflow-y-auto mt-4">
+        <ul className="assign-modal-user-list">
           {filteredUsers.length > 0 ? (
             filteredUsers.map(user => (
               <li 
                 key={user.id} 
-                className="flex items-center gap-3 py-2 cursor-pointer"
+                className="assign-modal-user-item"
                 onClick={() => handleAsignar(user.id)}
               >
-               {/*  {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
-                ) : (
-                )} */}
-                <UserCircle2 className="w-8 h-8 text-gray-400" />
-                <span className="text-sm text-gray-800">{user.nombre} {user.apellido}</span>
+                <UserCircle2 className="assign-modal-user-avatar" size={32} />
+                <span className="assign-modal-user-name">{user.nombre} {user.apellido}</span>
               </li>
             ))
           ) : (
-            <li className="text-sm text-gray-500 py-2">No se encontraron usuarios.</li>
+            <li className="assign-modal-empty">No se encontraron usuarios.</li>
           )}
         </ul>
       </div>

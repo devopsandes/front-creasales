@@ -15,6 +15,8 @@
     width: 100%;
     height: 100%;
     background-color: white;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-chat {
@@ -27,12 +29,23 @@
 
 .header-chat {
     width: 100%;
-    height: 15%;
+    min-height: 70px;
+    max-height: 70px;
     background-color: white;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     border-bottom: 1px solid #e5e7eb;
     padding: 0 1.5rem;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.header-chat-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
 }
 
 .body-chat {
@@ -41,7 +54,7 @@
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none;  /* Internet Explorer 10+ */
     width: 100%;
-    height: 70%;
+    flex: 1;
     background-color: #f9fafb;
     background-image: url('/images/fondoChatsCreaSales.png');
     background-size: contain;
@@ -53,7 +66,8 @@
 
 .footer-chat {
     width: 100%;
-    height: 15%;
+    min-height: 80px;
+    max-height: 80px;
     padding: 1rem 1.5rem;
     background-color: white;
     border-top: 1px solid #e5e7eb;
@@ -61,6 +75,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .contenedor-salida {
@@ -264,14 +279,15 @@
 }
 
 .col-lista:nth-child(even) {
-    width: 55%;
+    width: 80%;
     background-color: #f9fafb;
     padding: 0;
 }
 
 .col-lista:last-child {
+    display: none;
     padding: 1.5rem;
-    width: 25%;
+    width: 0;
     background-color: white;
     border-left: 1px solid #e5e7eb;
 }
@@ -542,5 +558,45 @@
     font-weight: 700;
 }
 
+.chat-empty-prompt {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 3rem;
+    background-color: white;
+}
+
+.chat-empty-text {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #6b7280;
+    letter-spacing: 0.3px;
+    margin: 0;
+    padding: 1rem 2rem;
+    border-bottom: 2px solid #e5e7eb;
+    animation: fadeInPrompt 0.4s ease-in-out;
+}
+
+@keyframes fadeInPrompt {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .chat-empty-text {
+        font-size: 1rem;
+        padding: 0.75rem 1.5rem;
+    }
+}
 
 

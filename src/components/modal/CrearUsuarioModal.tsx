@@ -1,14 +1,14 @@
 import { ChangeEvent, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {  closeModalUser } from '../../app/slices/actionSlice';
+import {  closeModalUser, openSessionExpired } from '../../app/slices/actionSlice';
 import { RootState } from '../../app/store';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { UserPlus, X, Eye, EyeOff } from 'lucide-react';
 import { ROLES, TIPOS_DOC } from '../../utils/constans';
 import Spinner23 from '../spinners/Spinner23';
 import { empresaXUser } from '../../services/empresas/empresa.services';
 import { authRegister } from '../../services/auth/auth.services';
+import './crear-usuario-modal.css';
 
 
 
@@ -35,7 +35,6 @@ const CrearTicketModal = () => {
     const dispatch = useDispatch();
     const modalUser = useSelector((state: RootState) => state.action.modalUser);
     const token  = localStorage.getItem('token') || '';
-    const navigate = useNavigate();
 
     useEffect(() => {
         const ejecucion = async () => {
@@ -86,8 +85,7 @@ const CrearTicketModal = () => {
     
     if(!token){
         setShowSpinner(false)
-        alert('Debe iniciar sesión')
-        navigate('/auth/signin')
+        dispatch(openSessionExpired())
         return
     }
     console.log(`role ${role}`);
@@ -112,22 +110,17 @@ const CrearTicketModal = () => {
         if(resp.statusCode === 201){
           setShowSpinner(false)
           limpiarForm()
-        //   setErrores([])
           toast.success(resp.msg)
-          // limpiar el formulario
+          dispatch(closeModalUser())
         }else if(resp.statusCode === 401){
           console.log(resp.message);
-          alert('El token ha expirado debe iniciar sesión nuevamente')
-          navigate('/auth/signin')
-    
+          dispatch(openSessionExpired())
         }else if(resp.statusCode === 500){
           setShowSpinner(false)
-        //   setErrores([`${resp.message}`])
           toast.error('Error al cargar los datos')
         }else {
           console.log(resp.message);
           setShowSpinner(false)
-        //   setErrores(resp.message)
           toast.error('Error al cargar los datos')
         }
     
@@ -151,183 +144,173 @@ const handleClose = () => {
 
  
 
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      handleClose()
+    }
+  }
+
   return (
-    <div className="fixed inset-0 bg-white/65 flex items-center justify-center z-50 w-full">
+    <div className="create-user-modal-overlay" onClick={handleOverlayClick}>
         {showSpinner ? (
             <Spinner23 />
         ) : (
-        <div className="bg-white rounded-lg   p-6 shadow-lg w-full max-w-1/2">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Buscar Usuario</h2>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-2xl cursor-pointer">x</button>
-        </div>
+        <div className="create-user-modal-container">
+          <button className="create-user-modal-close" onClick={handleClose}>
+            <X size={20} />
+          </button>
+          
+          <div className="create-user-modal-icon">
+            <UserPlus size={32} />
+          </div>
 
-        <div className="relative p-2 flex flex-col justify-center items-center bg-gray-300 rounded-lg">
-            <h3 className='w-full text-center text-gray-600 text-lg'>Crear Usuario</h3>
-            <form 
-                action="" 
-                onSubmit={handleSubmit}
-                className='flex flex-col w-full'
-            >
-                <div className='flex w-full'>
-                <div className='flex flex-col gap-4 w-full p-4'>
-                    <div className='flex justify-between w-full'>
-                        <label htmlFor="nombre" className='text-gray-600'>Nombre</label>
+          <h2 className="create-user-modal-title">Crear Usuario</h2>
+          <p className="create-user-modal-subtitle">Complete los datos del nuevo usuario</p>
+
+          <form 
+              action="" 
+              onSubmit={handleSubmit}
+              className='create-user-modal-form'
+          >
+                <div className='create-user-modal-columns'>
+                  <div className='create-user-modal-column'>
+                    <div className='create-user-modal-field'>
+                        <label htmlFor="nombre">Nombre</label>
                         <input 
                             type="text" 
                             id="nombre" 
                             placeholder='Ingrese un nombre' 
-                            className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                            className='create-user-modal-input'
                             value={nombre}
                             onChange={(e) => setNombre(e.target.value)}
                         />
                     </div>
-                   <div className='flex justify-between w-full'>
-                        <label htmlFor="apellido" className='text-gray-600'>Apellido</label>
+                    <div className='create-user-modal-field'>
+                        <label htmlFor="apellido">Apellido</label>
                         <input 
                             type="text" 
                             id="apellido" 
                             placeholder='Ingrese un apellido' 
-                            className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                            className='create-user-modal-input'
                             value={apellido}
                             onChange={(e) => setApellido(e.target.value)}
                         />
                     </div>
-                    <div className='flex justify-between w-full'>
-                        <label htmlFor="email" className='text-gray-600'>Email</label>
+                    <div className='create-user-modal-field'>
+                        <label htmlFor="email">Email</label>
                         <input 
                             type="email" 
                             id="email" 
                             placeholder='Ingrese un email' 
-                            className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                            className='create-user-modal-input'
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
-                    <div className='flex justify-between w-full'>
-                        <label htmlFor="nacimiento" className='text-gray-600'>Nacimiento</label>
+                    <div className='create-user-modal-field'>
+                        <label htmlFor="nacimiento">Nacimiento</label>
                         <input 
                             type="date" 
                             id="nacimiento" 
-                            className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                            className='create-user-modal-input'
                             value={nacimiento}
                             onChange={(e) => setNacimiento(e.target.value)}
                         />
                     </div>
-                    <div className='flex justify-between w-full'>
-                        <label htmlFor="telefono" className='text-gray-600'>Teléfono</label>
+                    <div className='create-user-modal-field'>
+                        <label htmlFor="telefono">Teléfono</label>
                         <input 
                             type="text" 
                             id="telefono" 
                             placeholder='Ej: 5492615345678' 
-                            className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                            className='create-user-modal-input'
                             value={telefono}
                             onChange={(e) => setTelefono(e.target.value)}
                         />
                     </div>
-                </div>
-                <div className='flex flex-col gap-4 w-full p-4'>
-                    <div className="flex justify-between w-full relative">
-                        <label htmlFor="pass" className='text-gray-600'>Contraseña</label>
-                        <input
-                            id='pass'
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Ingrese su contraseña"
-                            value={pass}
-                            onChange={(e) => setPass(e.target.value)}
-                            // className="w-full rounded-lg border border-gray-300 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            className="w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
-                        >
-                            {showPassword ? (
-                            <FaEyeSlash className="h-5 w-5" />
-                            ) : (
-                            <FaEye className="h-5 w-5" />
-                            )}
-                        </button>
+                  </div>
+                  <div className='create-user-modal-column'>
+                    <div className="create-user-modal-field create-user-modal-field-password">
+                        <label htmlFor="pass">Contraseña</label>
+                        <div className="create-user-modal-password-wrapper">
+                          <input
+                              id='pass'
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Ingrese su contraseña"
+                              value={pass}
+                              onChange={(e) => setPass(e.target.value)}
+                              className="create-user-modal-input"
+                          />
+                          <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="create-user-modal-password-toggle"
+                          >
+                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
                     </div>
-                    <div className='flex justify-between w-full'>
-                        <label htmlFor="tipo" className='text-gray-600'>Tipo Documento</label>
+                    <div className='create-user-modal-field'>
+                        <label htmlFor="tipo">Tipo Documento</label>
                         <select
                             name="tipo"
                             id="tipo"
-                            className="w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600"
+                            className="create-user-modal-input"
                             value={tipo.id}
                             onChange={handleChangeTipo}
                         >
-                            <option value="" className="text-gray-400 bg-amber-50">Seleccione</option>
+                            <option value="">Seleccione</option>
                             {TIPOS_DOC.map((tipo) => (
-                                <option
-                                    value={tipo.id}
-                                    key={tipo.id}
-                                    className="text-gray-600 bg-amber-50"
-                                >
+                                <option value={tipo.id} key={tipo.id}>
                                     {tipo.nombre}
                                 </option>
                             ))}
                         </select>
-                       
                     </div>
-                    <div className='flex justify-between w-full'>
-                        <label htmlFor="numero" className='text-gray-600'>Número</label>
+                    <div className='create-user-modal-field'>
+                        <label htmlFor="numero">Número</label>
                         <input 
                             type="text" 
                             id="numero" 
                             placeholder='33265987' 
-                            className='w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600'
+                            className='create-user-modal-input'
                             value={numero}
                             onChange={(e) => setNumero(e.target.value)}
                         />
                     </div>
-                    <div className='flex justify-between w-full'>
-                        <label htmlFor="role" className='text-gray-600'>Rol Usuario</label>
+                    <div className='create-user-modal-field'>
+                        <label htmlFor="role">Rol Usuario</label>
                         <select
                             name="role"
                             id="role"
-                            className="w-2/3 p-1 bg-amber-50 rounded-lg shadow-2xl text-gray-600"
+                            className="create-user-modal-input"
                             value={role}
                             onChange={(e) => setRole(e.target.value)}
                         >
-                            <option value="" className="text-gray-400 bg-amber-50">Seleccione</option>
+                            <option value="">Seleccione</option>
                             {ROLES.map((role) => (
-                                <option
-                                    value={role.nombre}
-                                    key={role.id}
-                                    className="text-gray-600 bg-amber-50"
-                                >
+                                <option value={role.nombre} key={role.id}>
                                     {role.nombre}
                                 </option>
                             ))}
                         </select>
-                       
                     </div>
-                    
+                  </div>
                 </div>
                 
-                </div>
-                <div className='flex w-full justify-center'>
-                    <button 
-                        type='submit' 
-                        className="btn text-center w-1/2 items-center flex gap-2 rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 shadow transition duration-200"
-                    >
-                        <span className='w-full text-center'>Crear Usuario</span>
-                    </button>
-                </div>
+                <button 
+                    type='submit' 
+                    className="create-user-modal-submit"
+                >
+                    Crear Usuario
+                </button>
                
                
                
                
-            </form>
+          </form>
         </div>
-
-        
-      </div>
         )}
-     
     </div>
   );
 };

@@ -230,94 +230,92 @@ const FormEmpresa = () => {
               </div>
             </div>
 
-            <div className="form-col">
-              <h3 className="form-col-title">Ubicación y Clasificación</h3>
-              <div>
-                <label htmlFor="telefono">Pais:</label>
-                <select 
-                  name="" 
-                  id="" 
-                  className="select-empresa"
-                  value={pais}
-                  onChange={e => setPais(e.target.value)}
-                >
-                  <option value="">-- Seleccione --</option>
-                  <option value="ar">Argentina</option>
-                </select>
+            <div className="form-col-wrapper">
+              <div className="form-col">
+                <h3 className="form-col-title">Ubicación y Clasificación</h3>
+                <div>
+                  <label htmlFor="telefono">Pais:</label>
+                  <select 
+                    name="" 
+                    id="" 
+                    className="select-empresa"
+                    value={pais}
+                    onChange={e => setPais(e.target.value)}
+                  >
+                    <option value="">-- Seleccione --</option>
+                    <option value="ar">Argentina</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="telefono">Provincia:</label>
+                  <select 
+                    name="" 
+                    id="" 
+                    className="select-empresa" 
+                    // value={provincia}
+                    onChange={handleSelectProvincia}
+                  >
+                    <option value="">-- Seleccione --</option>
+                    {provincias?.length > 0 && (
+                      provincias.map( prov => (
+                        <option value={prov.id} key={prov.id}>{prov.nombre}</option>
+                      ))
+                    )}
+                  
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="telefono">Ciudad:</label>
+                  <select 
+                    name="" 
+                    id="" 
+                    className="select-empresa"
+                    value={municipio}
+                    onChange={e => setMunicipio(e.target.value)}
+                  >
+                    <option value="">-- Seleccione --</option>
+                    {municipios?.length > 0 && (
+                      municipios.map( muni => (
+                        <option value={muni.nombre} key={muni.id}>{muni.nombre}</option>
+                      ))
+                    )}
+                  
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="telefono">Sector:</label>
+                  <select 
+                    name="" 
+                    id="" 
+                    className="select-empresa" 
+                    value={sector}
+                    onChange={e => setSector(e.target.value)}
+                  >
+                    <option value="">-- Seleccione --</option>
+                    {sectores.map(sector => (
+                      <option value={sector.value} key={sector.value}>{sector.label}</option>
+                    ))}
+                  
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="telefono">Tamaño:</label>
+                  <select 
+                    name="" 
+                    id="" 
+                    className="select-empresa"
+                    value={tamano} 
+                    onChange={e => setTamano(e.target.value)}
+                  >
+                    <option value="">-- Seleccione --</option>
+                    {tamanos.map(sector => (
+                      <option value={sector.value} key={sector.value}>{sector.label}</option>
+                    ))}
+                  
+                  </select>
+                </div>
               </div>
-              <div>
-                <label htmlFor="telefono">Provincia:</label>
-                <select 
-                  name="" 
-                  id="" 
-                  className="select-empresa" 
-                  // value={provincia}
-                  onChange={handleSelectProvincia}
-                >
-                  <option value="">-- Seleccione --</option>
-                  {provincias?.length > 0 && (
-                    provincias.map( prov => (
-                      <option value={prov.id} key={prov.id}>{prov.nombre}</option>
-                    ))
-                  )}
-                
-                </select>
-              </div>
-              <div>
-                <label htmlFor="telefono">Ciudad:</label>
-                <select 
-                  name="" 
-                  id="" 
-                  className="select-empresa"
-                  value={municipio}
-                  onChange={e => setMunicipio(e.target.value)}
-                >
-                  <option value="">-- Seleccione --</option>
-                  {municipios?.length > 0 && (
-                    municipios.map( muni => (
-                      <option value={muni.nombre} key={muni.id}>{muni.nombre}</option>
-                    ))
-                  )}
-                
-                </select>
-              </div>
-              <div>
-                <label htmlFor="telefono">Sector:</label>
-                <select 
-                  name="" 
-                  id="" 
-                  className="select-empresa" 
-                  value={sector}
-                  onChange={e => setSector(e.target.value)}
-                >
-                  <option value="">-- Seleccione --</option>
-                  {sectores.map(sector => (
-                    <option value={sector.value} key={sector.value}>{sector.label}</option>
-                  ))}
-                
-                </select>
-              </div>
-              <div>
-                <label htmlFor="telefono">Tamaño:</label>
-                <select 
-                  name="" 
-                  id="" 
-                  className="select-empresa"
-                  value={tamano} 
-                  onChange={e => setTamano(e.target.value)}
-                >
-                  <option value="">-- Seleccione --</option>
-                  {tamanos.map(sector => (
-                    <option value={sector.value} key={sector.value}>{sector.label}</option>
-                  ))}
-                
-                </select>
-              </div>
-            </div>
-          
-           
-
-            <div className="form-button-container">
+              
               <button type="submit" className="btn-empresa">
                 Guardar Datos
               </button>
