@@ -15,6 +15,7 @@ import DatosEmpresa from '../pages/empresa/DatosEmpresa'
 import FormEstados from '../pages/estados/FormEstados'
 import NavTag from '../components/navs/NavTag'
 import FormMeta from '../pages/meta/FormMeta'
+import DatosMeta from '../pages/meta/DatosMeta'
 import FormModulos from '../pages/modulos/FormModulos'
 import FormCategorias from '../pages/categorias/FormCategorias'
 import Configuracion from '../pages/configuracion/Configuracion'
@@ -98,8 +99,8 @@ const AppRouter = () => {
           
           {(role === 'ROOT' || role === 'ADMIN') && (
             <Route path='empresa' element={<NavTag tags={navEmpresa} />}>
-              <Route index element={<FormEmpresa/>}/>
-              <Route path='datos' element={<DatosEmpresa/>}/>
+              <Route index element={<DatosEmpresa/>}/>
+              <Route path='form' element={<FormEmpresa/>}/>
             </Route>
           )}
         
@@ -120,7 +121,7 @@ const AppRouter = () => {
           {(role === 'ROOT' || role === 'ADMIN') && (
             <Route path='meta' element={<NavTag tags={navMeta} />}>
               <Route index element={<FormMeta />}/>
-              <Route path='datos' element={<DatosEmpresa/>}/>
+              <Route path='datos' element={<DatosMeta/>}/>
             </Route>
           )}
 

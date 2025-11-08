@@ -67,7 +67,19 @@ const TableAcciones = () => {
   }, [newTag]); */
 
   return (
-    <div className="acciones-container">
+    <div className="acciones-wrapper">
+      {/* Header */}
+      <div className="acciones-header">
+        <h2 className="acciones-header-title">Gestión de Acciones</h2>
+        <p className="acciones-header-description">
+          Visualice y administre todas las acciones disponibles en su sistema. Las acciones son operaciones que pueden 
+          ejecutarse dentro de los chats, como asignar un chat a un operador, mencionar a un usuario, archivar conversaciones 
+          o crear tickets. Cada acción pertenece a su empresa, puede ser ejecutada por un usuario específico, tener múltiples 
+          usuarios responsables y estar asociada a uno o varios chats.
+        </p>
+      </div>
+
+      <div className="acciones-container">
       <div className="acciones-table-wrapper overflow-x-auto">
         <table className="acciones-table">
           <thead>
@@ -138,6 +150,7 @@ const TableAcciones = () => {
       </div>
 
       <CrearTagModal />
+      </div>
     </div>
   );
 };

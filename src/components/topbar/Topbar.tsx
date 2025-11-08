@@ -1,9 +1,14 @@
 import { Bell } from 'lucide-react'
+import { useSelector } from 'react-redux'
+import { RootState } from '../../app/store'
+import { capitalizeWords } from '../../utils/functions'
 import './topbar.css'
 
 const Topbar = () => {
-  // Obtener nombre de usuario del localStorage o estado global
-  const userName = localStorage.getItem('userName') || 'Usuario'
+  // Obtener nombre de usuario del estado global
+  const user = useSelector((state: RootState) => state.auth.user)
+  const userName = capitalizeWords(user?.name || 'Usuario')
+  const empresa = useSelector((state: RootState) => state.auth.empresa)
   
   return (
     <div className="topbar-container">
@@ -20,6 +25,12 @@ const Topbar = () => {
       <div className="topbar-center"></div>
       
       <div className="topbar-right">
+        {empresa && (
+          <>
+            <span className="topbar-empresa">{capitalizeWords(empresa.nombre)}</span>
+            <div className="topbar-divider"></div>
+          </>
+        )}
         <button className="topbar-notifications" aria-label="Notificaciones">
           <Bell size={20} strokeWidth={1.5} />
           <span className="topbar-notification-badge">3</span>

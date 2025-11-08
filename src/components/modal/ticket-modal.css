@@ -212,6 +212,9 @@
   transition: all 0.2s;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-top: 0.5rem;
+  width: 70%;
+  max-width: 300px;
+  align-self: center;
 }
 
 .ticket-modal-submit-button:hover {

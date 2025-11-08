@@ -5,11 +5,12 @@ import DashSidebar from "../../components/sidebars/DashSidebar";
 import Topbar from "../../components/topbar/Topbar";
 import SessionExpiredModal from "../../components/modal/SessionExpiredModal";
 import { empresaXUser } from "../../services/empresas/empresa.services";
+import { usuariosXRole } from "../../services/auth/auth.services";
 import './dashboard.css'
 import { useDispatch, useSelector  } from "react-redux";
 import { Socket } from "socket.io-client";
 import { connectSocket,  getSocket } from "../../app/slices/socketSlice";
-import { setEmpresa } from "../../app/slices/authSlice";
+import { setEmpresa, setUser } from "../../app/slices/authSlice";
 import { openSessionExpired, closeSessionExpired } from "../../app/slices/actionSlice";
 import { RootState } from "../../app/store";
 
@@ -58,23 +59,61 @@ const Dashboard = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
+    const userId = localStorage.getItem('userId')
+    
+    console.log('Dashboard useEffect - token:', token)
+    console.log('Dashboard useEffect - userId:', userId)
+    
     if(token){
+      // Obtener empresa
       empresaXUser(token)
         .then(data => {
           if(data.statusCode === 401){
             localStorage.removeItem('token')
             localStorage.removeItem('role')
+            localStorage.removeItem('userId')
             return navigate('/auth/signin')
           }
-          if(data?.empresa === null){
+          if(!data?.empresa){
             return toast.warn('llenar los datos de su empresa')
           }
-          dispatch(setEmpresa(data.empresa.nombre))
-          
+          dispatch(setEmpresa(data.empresa))
         })
         .catch(error => {
           console.log(error);
-        })  
+        })
+      
+      // Obtener usuario actual
+      if(userId){
+        console.log('Obteniendo usuarios...')
+        usuariosXRole('', token)
+          .then(data => {
+            console.log('Respuesta usuariosXRole:', data)
+            if(data.users){
+              console.log('Usuarios encontrados:', data.users.length)
+              const currentUser = data.users.find(u => u.id === userId)
+              console.log('Usuario actual encontrado:', currentUser)
+              if(currentUser){
+                const userData = {
+                  id: currentUser.id,
+                  name: `${currentUser.nombre} ${currentUser.apellido}`,
+                  email: currentUser.email
+                }
+                console.log('Despachando setUser con:', userData)
+                dispatch(setUser(userData))
+              } else {
+                console.log('No se encontró usuario con id:', userId)
+              }
+            } else {
+              console.log('No hay users en la respuesta')
+            }
+          })
+          .catch(error => {
+            console.log('Error obteniendo usuarios:', error);
+          })
+      } else {
+        console.log('No hay userId en localStorage')
+      }
     }
   },[])
 

@@ -60,4 +60,18 @@ function capitalizeWords(str: string): string {
     .join(" "); // vuelve a unir
 }
 
-export { dividirArrayEnTres, formatCreatedAt, menos24hs, capitalizeWords };
+function formatShortDate(createdAt: string): string {
+  const date = new Date(createdAt);
+  if (date.getHours() > 21) {
+    date.setDate(date.getDate() - 1);
+  } 
+  date.setHours(date.getHours() - 3);
+  
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2); // Solo últimos 2 dígitos
+  
+  return `${day}/${month}/${year}`;
+}
+
+export { dividirArrayEnTres, formatCreatedAt, menos24hs, capitalizeWords, formatShortDate };

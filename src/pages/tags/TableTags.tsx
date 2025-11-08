@@ -24,7 +24,7 @@ const TableTags = () => {
   const newTag = useSelector((state: RootState) => state.action.newTag);
   const dispatch = useDispatch();
   const token = localStorage.getItem('token') || '';
-  const nombreEmpresa = useSelector((state: RootState) => state.auth.empresa);
+  const empresa = useSelector((state: RootState) => state.auth.empresa);
 
 
   useEffect(()=>{
@@ -37,15 +37,27 @@ const TableTags = () => {
   },[])
 
   useEffect(() => {
-    if(newTag) {
-      setTags((prevTags) => [...prevTags, {id: `${tags.length}`, nombre: newTag, empresa: {nombre: nombreEmpresa!}}]);
+    if(newTag && empresa) {
+      setTags((prevTags) => [...prevTags, {id: `${tags.length}`, nombre: newTag, empresa }]);
     }
     
   },[ newTag])
 
  
   return (
-    <div className="tags-container">
+    <div className="tags-wrapper">
+      {/* Header */}
+      <div className="tags-header">
+        <h2 className="tags-header-title">Gestión de Etiquetas</h2>
+        <p className="tags-header-description">
+          Visualice y administre todas las etiquetas creadas en su sistema. Las etiquetas son etiquetas personalizadas 
+          que permiten clasificar y organizar las conversaciones de chat de manera flexible. Cada etiqueta pertenece 
+          a su empresa y puede ser asignada a múltiples chats para facilitar la búsqueda y el seguimiento de conversaciones 
+          relacionadas.
+        </p>
+      </div>
+
+      <div className="tags-container">
       {loading ? (
         <div className="tags-spinner-container">
           <div className="loader2"></div>
@@ -112,7 +124,7 @@ const TableTags = () => {
         </button>
       </div>
       <CrearTagModal  />
-      
+      </div>
     </div>
   );
 };

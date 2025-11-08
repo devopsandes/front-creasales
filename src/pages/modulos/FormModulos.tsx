@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { ToastContainer, toast } from 'react-toastify';
 import Spinner23 from "../../components/spinners/Spinner23"
 import { createModulo } from "../../services/modulos/modulos.services";
+import '../empresa/empresa.css';
 
 
 
@@ -69,7 +70,18 @@ const FormModulos = () => {
   }
 
   return (
-      <>
+      <div className="empresa-wrapper">
+        {/* Header */}
+        <div className="empresa-header">
+          <h2 className="empresa-header-title">Gestión de Módulos</h2>
+          <p className="empresa-header-description">
+            Defina los módulos de atención que utilizará su empresa. Un módulo es un sistema especializado de gestión 
+            que puede ser de atención al cliente, comercial o asistencia. Cada empresa puede tener múltiples módulos 
+            activos, y cada módulo puede contener varias categorías que organizan los diferentes procesos y funciones 
+            dentro de ese módulo.
+          </p>
+        </div>
+
         {showSpinner ? (
           <Spinner23 />
         ) : (
@@ -148,7 +160,7 @@ const FormModulos = () => {
           draggable
           limit={1}
         />
-      </>
+      </div>
   )
 }
 

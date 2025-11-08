@@ -96,11 +96,19 @@ const FormMeta = () => {
   }
 
   return (
-      <>
+      <div className="empresa-wrapper">
+        {/* Header */}
+        <div className="empresa-header">
+          <h2 className="empresa-header-title">Configuración de Servicios Meta</h2>
+          <p className="empresa-header-description">
+            Configure su integración con Meta para WhatsApp Business API y servicios de marketing. Complete los campos requeridos con las credenciales de su cuenta Meta Business.
+          </p>
+        </div>
+
         {showSpinner ? (
           <Spinner23 />
         ) : (
-          <form action="" className="form-empresa" onSubmit={handleSubmit}>
+          <form action="" className="form-meta" onSubmit={handleSubmit}>
               {errores.length > 0 && (
                 <div className="form-errores">
                 {
@@ -113,79 +121,115 @@ const FormMeta = () => {
                 </div>
               )}
 
-            <div className="form-col">
-              <div>
-                <label htmlFor="graph_api_token">Access Token:</label>
-                <input 
-                  type="password" 
-                  id="graph_api_token" 
-                  name="graph_api_token" 
-                  className="input-empresa"
-                  placeholder="Ej: EAAHOruLPcz8BO4oovHMz4ikEJT3jpZ..."
-                  value={accessToken}
-                  onChange={e => setAccessToken(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="user_token">User Token:</label>
-                <input 
-                  type="password" 
-                  id="user_token" 
-                  name="user_token" 
-                  className="input-empresa"
-                  placeholder="Ej: EAAHOruLPcz8BO4oovHMz4ikEJT3jpZ..."
-                  value={userToken}
-                  onChange={e => setUserToken(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="id_phone_number">ID Phone Number:</label>
-                <input 
-                  type="text" 
-                  id="id_phone_number" 
-                  name="id_phone_number" 
-                  className="input-empresa"
-                  placeholder="Ej: 271558629387548"
-                  value={idPhoneNumber}
-                  onChange={e => setIdPhoneNumber(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="servicios">Servicios:</label>
-                <select 
-                  name="servicios" 
-                  id="servicios" 
-                  className="select-empresa"
-                  value={servicios}
-                  onChange={(e) => setServicios(e.target.value)}
-                >
-                  {SERVICIOS.map(ref => (
-                    <option value={ref.nombre} key={ref.id}>{ref.nombre}</option>
-                  ))}
-                </select>
-              </div>
-             
-             
-            
-            
-             
-             
-            </div>
-
-            <div className="form-col-wrapper">
-              <div className="form-col">
-               
-               <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Nisi facilis quis expedita, ratione voluptatum doloribus quas blanditiis. Maiores quam corporis pariatur excepturi corrupti debitis ab ea praesentium ipsum, vel cum?</p>
-               <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Nisi facilis quis expedita, ratione voluptatum doloribus quas blanditiis. Maiores quam corporis pariatur excepturi corrupti debitis ab ea praesentium ipsum, vel cum?</p>
-               <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Nisi facilis quis expedita, ratione voluptatum doloribus quas blanditiis. Maiores quam corporis pariatur excepturi corrupti debitis ab ea praesentium ipsum, vel cum?</p>
-              </div>
+            <div className="meta-form-container">
+              <h3 className="meta-section-title">Credenciales de acceso</h3>
               
-              <button type="submit" className="btn-empresa">
-                Cargar datos
-              </button>
+              {/* Access Token */}
+              <div className="meta-field-row">
+                <div className="meta-field-input">
+                  <label htmlFor="graph_api_token">Access Token (Obligatorio)</label>
+                  <input 
+                    type="password" 
+                    id="graph_api_token" 
+                    name="graph_api_token" 
+                    className="input-empresa"
+                    placeholder="Ej: EAAHOruLPcz8BO4oovHMz4ikEJT3jpZ..."
+                    value={accessToken}
+                    onChange={e => setAccessToken(e.target.value)}
+                  />
+                </div>
+                <div className="meta-field-info">
+                  <p className="meta-info-text">
+                    <strong>¿Qué es?</strong> Token de acceso de la aplicación Meta para autenticar las peticiones a la API.
+                  </p>
+                  <p className="meta-info-text">
+                    <strong>¿Dónde obtenerlo?</strong> Meta for Developers → Su aplicación → Configuración → Básica → Tokens de acceso.
+                  </p>
+                </div>
+              </div>
+
+              {/* User Token */}
+              <div className="meta-field-row">
+                <div className="meta-field-input">
+                  <label htmlFor="user_token">User Token (Requerido para Marketing)</label>
+                  <input 
+                    type="password" 
+                    id="user_token" 
+                    name="user_token" 
+                    className="input-empresa"
+                    placeholder="Ej: EAAHOruLPcz8BO4oovHMz4ikEJT3jpZ..."
+                    value={userToken}
+                    onChange={e => setUserToken(e.target.value)}
+                  />
+                </div>
+                <div className="meta-field-info">
+                  <p className="meta-info-text">
+                    <strong>¿Cuándo es necesario?</strong> Solo si va a utilizar servicios de marketing de Meta. Opcional para WhatsApp únicamente.
+                  </p>
+                  <p className="meta-info-text">
+                    <strong>¿Dónde obtenerlo?</strong> Meta Business Suite → Configuración → Usuarios del sistema → Generar token.
+                  </p>
+                </div>
+              </div>
+
+              {/* ID Phone Number */}
+              <div className="meta-field-row">
+                <div className="meta-field-input">
+                  <label htmlFor="id_phone_number">ID Phone Number (Obligatorio)</label>
+                  <input 
+                    type="text" 
+                    id="id_phone_number" 
+                    name="id_phone_number" 
+                    className="input-empresa"
+                    placeholder="Ej: 271558629387548"
+                    value={idPhoneNumber}
+                    onChange={e => setIdPhoneNumber(e.target.value)}
+                  />
+                </div>
+                <div className="meta-field-info">
+                  <p className="meta-info-text">
+                    <strong>¿Qué es?</strong> Identificador único de su número de teléfono de WhatsApp Business (15 dígitos aprox).
+                  </p>
+                  <p className="meta-info-text">
+                    <strong>¿Dónde encontrarlo?</strong> Meta Business Suite → WhatsApp → Números de teléfono → Phone Number ID.
+                  </p>
+                </div>
+              </div>
+
+              {/* Servicios */}
+              <div className="meta-field-row">
+                <div className="meta-field-input">
+                  <label htmlFor="servicios">Servicios</label>
+                  <select 
+                    name="servicios" 
+                    id="servicios" 
+                    className="select-empresa"
+                    value={servicios}
+                    onChange={(e) => setServicios(e.target.value)}
+                  >
+                    {SERVICIOS.map(ref => (
+                      <option value={ref.nombre} key={ref.id}>{ref.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="meta-field-info">
+                  <p className="meta-info-text">
+                    <strong>WHATSAPP:</strong> Solo mensajería de WhatsApp Business API.
+                  </p>
+                  <p className="meta-info-text">
+                    <strong>MARKETING:</strong> Solo servicios de marketing (requiere User Token).
+                  </p>
+                  <p className="meta-info-text">
+                    <strong>AMBAS:</strong> Integración completa (requiere User Token).
+                  </p>
+                </div>
+              </div>
+
+              <div className="meta-form-actions">
+                <button type="submit" className="btn-empresa">
+                  Guardar Configuración
+                </button>
+              </div>
             </div>
           </form>
          
@@ -197,7 +241,7 @@ const FormMeta = () => {
           draggable
           limit={1}
         />
-      </>
+      </div>
   )
 }
 

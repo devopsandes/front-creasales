@@ -56,7 +56,18 @@ const TableUsers = () => {
     }
 
   return (
-    <div className="usuarios-container">
+    <div className="usuarios-wrapper">
+      {/* Header */}
+      <div className="usuarios-header">
+        <h2 className="usuarios-header-title">Usuarios del Sistema</h2>
+        <p className="usuarios-header-description">
+          Administre los usuarios de su sistema. Cada usuario puede tener diferentes roles y permisos, 
+          estar asociado a departamentos específicos y gestionar chats con clientes. 
+          Active o desactive usuarios según sea necesario.
+        </p>
+      </div>
+
+      <div className="usuarios-container">
        {loading ? (
           <div className="usuarios-loader">
             <div className="loader2"></div>
@@ -140,6 +151,7 @@ const TableUsers = () => {
         </button>
       </div>
       <CrearUsuarioModal />
+      </div>
     </div>
   );
 };

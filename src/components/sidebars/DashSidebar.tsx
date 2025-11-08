@@ -49,19 +49,19 @@ const DashSidebar = ({ role }: Props) => {
     <div className='dashsidebar-container'>
         {(role === 'ROOT' || role === 'ADMIN')  && (
           <>
-            <DashItem icon={Settings} path='/dashboard/configuracion' titulo="Configuración"/>
-            <DashItem icon={Bot} path='/dashboard/bot' titulo="BOT/IA"/>
             <DashItem icon={Building2} path='/dashboard/empresa' titulo="Empresa"/>
             <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
             <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
             <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes"/>
             <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta"/>
             <DashItem icon={UsersRound} path='/dashboard/usuarios' titulo="Usuarios"/>
+            <DashItem icon={Bot} path='/dashboard/bot' titulo="BOT/IA"/>
             <DashItem icon={ListChecks} path='/dashboard/estados' titulo="Estados"/>
             <DashItem icon={Boxes} path='/dashboard/modulos' titulo="Modulos"/>
             <DashItem icon={Grid3x3} path='/dashboard/categorias' titulo="Categorias"/>
             <DashItem icon={CheckSquare} path='/dashboard/acciones' titulo="Acciones"/>
             <DashItem icon={Tag} path='/dashboard/tags' titulo="Etiquetas"/>
+            <DashItem icon={Settings} path='/dashboard/configuracion' titulo="Configuración"/>
             <DashItem icon={Plug2} path='/dashboard/integraciones' titulo="Integraciones"/>
 
             <div className="dashsidebar-logout" onClick={handleLogoutClick}>

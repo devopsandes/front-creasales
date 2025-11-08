@@ -5,6 +5,7 @@ import Spinner23 from "../../components/spinners/Spinner23"
 import { Modulo } from "../../interfaces/modulos.interface";
 import { findAllModulos } from "../../services/modulos/modulos.services";
 import { createCategoria } from "../../services/categorias/categorias.services";
+import '../empresa/empresa.css';
 
 
 const FormCategorias = () => {
@@ -90,7 +91,18 @@ const FormCategorias = () => {
   }
 
   return (
-      <>
+      <div className="empresa-wrapper">
+        {/* Header */}
+        <div className="empresa-header">
+          <h2 className="empresa-header-title">Gestión de Categorías</h2>
+          <p className="empresa-header-description">
+            Defina las categorías que organizan los diferentes procesos dentro de cada módulo. Las categorías funcionan 
+            como departamentos especializados (por ejemplo: Fiscalización, Atención, Ventas, Afiliaciones) que agrupan 
+            y clasifican las conversaciones de chat según su tipo o función. Cada categoría pertenece a un módulo específico 
+            y puede recibir múltiples chats relacionados con esa área de trabajo.
+          </p>
+        </div>
+
         {showSpinner ? (
           <Spinner23 />
         ) : (
@@ -175,7 +187,7 @@ const FormCategorias = () => {
           draggable
           limit={1}
         />
-      </>
+      </div>
   )
 }
 

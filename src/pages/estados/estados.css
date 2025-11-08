@@ -1,13 +1,24 @@
 .textarea-empresa {
-    width: 60%;
+    width: 100%;
     height: 150px; /* Altura inicial */
     min-height: 100px; /* Altura mínima */
-    border: none;
-    background-color: white;
-    margin-left: 5px;
+    border: 1px solid #d1d5db;
+    background-color: #f9fafb;
     outline: none;
-    border-radius: 8px;
-    color: black;
-    padding: 4px;
-    resize: none;
+    border-radius: 0.5rem;
+    color: #111827;
+    padding: 0.625rem 0.875rem;
+    resize: vertical;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.textarea-empresa:focus {
+    border-color: #3b82f6;
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.textarea-empresa::placeholder {
+    color: #9ca3af;
 }

@@ -1,4 +1,6 @@
 
+import { Empresa } from "./empresa.interface";
+
 export interface DataLogin {
     email: string
     password: string
@@ -77,7 +79,7 @@ export interface AuthState  {
     isAuthenticated: boolean;
     isLoading: boolean;
     message: string;
-    empresa: string | null; 
+    empresa: Empresa | null; 
 };
 
 

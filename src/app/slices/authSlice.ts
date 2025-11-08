@@ -1,5 +1,6 @@
-import { createSlice } from "@reduxjs/toolkit"
-import { AuthState } from "../../interfaces/auth.interface";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit"
+import { AuthState, User } from "../../interfaces/auth.interface";
+import { Empresa } from "../../interfaces/empresa.interface";
 
 const initialState: AuthState = {
     user: null, // Guardará la información del usuario autenticado
@@ -19,11 +20,14 @@ const authSlice = createSlice({
         accessGranted: (state) => {
             state.isAuthenticated = true
         },
-        setEmpresa:(state, action) => {
+        setEmpresa:(state, action: PayloadAction<Empresa | null>) => {
             state.empresa = action.payload
+        },
+        setUser:(state, action: PayloadAction<User | null>) => {
+            state.user = action.payload
         }
     }
 })
 
-export const { addMessage, accessGranted, setEmpresa } = authSlice.actions
+export const { addMessage, accessGranted, setEmpresa, setUser } = authSlice.actions
 export default authSlice.reducer

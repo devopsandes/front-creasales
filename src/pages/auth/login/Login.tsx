@@ -20,6 +20,24 @@ const Login = () => {
   const dispatch = useDispatch()
   // const [ login ] = useLoginMutation()
 
+  // Función para decodificar el JWT y extraer el ID
+  const decodeToken = (token: string): string | null => {
+    try {
+      const base64Url = token.split('.')[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      )
+      const decoded = JSON.parse(jsonPayload)
+      return decoded.id || null
+    } catch (error) {
+      console.error('Error decodificando token:', error)
+      return null
+    }
+  }
   
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -28,13 +46,23 @@ const Login = () => {
     // let respuesta = await login({email, password})
     let respuesta = await authLogin({email, password})
 
-    
+    console.log('Respuesta completa del login:', respuesta)
     
     if(respuesta.token){
+      // Extraer el ID del token JWT
+      const userId = decodeToken(respuesta.token)
+      console.log('Login exitoso - ID extraído del token:', userId)
+      
       dispatch(accessGranted())
       localStorage.setItem('token', respuesta.token)
       localStorage.setItem('role', respuesta.role)
-      navigate('/dashboard')
+      
+      if(userId){
+        localStorage.setItem('userId', userId)
+        console.log('userId guardado en localStorage:', localStorage.getItem('userId'))
+      }
+      
+      navigate('/dashboard/empresa')
     }else {
       setMsgError(respuesta.message[0])
     }

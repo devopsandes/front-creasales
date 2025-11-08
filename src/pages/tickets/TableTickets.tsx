@@ -45,7 +45,18 @@ const TableTickets = () => {
   }
 
   return (
-    <div className="tickets-container">
+    <div className="tickets-wrapper">
+      {/* Header */}
+      <div className="tickets-header">
+        <h2 className="tickets-header-title">Gestión de Tickets</h2>
+        <p className="tickets-header-description">
+          Visualice y administre todos los tickets creados en su sistema. Cada ticket está vinculado a una conversación 
+          de chat específica, puede estar asignado a un usuario responsable y tiene un estado que refleja su progreso 
+          (Abierto, Pendiente, Cerrado). Los tickets se generan automáticamente durante el flujo de procesos dentro de las conversaciones.
+        </p>
+      </div>
+
+      <div className="tickets-container">
        {loading ? (
           <div className="tickets-loader">
             <div className="loader2"></div>
@@ -128,6 +139,7 @@ const TableTickets = () => {
       </div>
       <CrearTicketModal />
       <TicketModal />
+      </div>
     </div>
   );
 };

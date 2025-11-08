@@ -3,13 +3,13 @@ import { Tag } from "../interfaces/common.interface"
 const navEmpresa: Tag[] = [
     {
       id: 1,
-      name: "Form",
+      name: "Datos",
       path: "/dashboard/empresa"
     },
     {
       id: 2,
-      name: "Datos",
-      path: "/dashboard/empresa/datos"
+      name: "Form",
+      path: "/dashboard/empresa/form"
     }
   ]
 
@@ -43,7 +43,7 @@ const navEmpresa: Tag[] = [
     },
     {
       id: 2,
-      name: "Datos",
+      name: "Guía",
       path: "/dashboard/meta/datos"
     }
   ]

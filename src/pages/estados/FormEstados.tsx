@@ -86,7 +86,15 @@ const FormEstados = () => {
   }
 
   return (
-      <>
+      <div className="empresa-wrapper">
+        {/* Header */}
+        <div className="empresa-header">
+          <h2 className="empresa-header-title">Gestión de Estados</h2>
+          <p className="empresa-header-description">
+            Cree y administre estados personalizados para organizar el seguimiento de usuarios, clientes y tickets.
+          </p>
+        </div>
+
         {showSpinner ? (
           <Spinner23 />
         ) : (
@@ -147,31 +155,35 @@ const FormEstados = () => {
                     value={descripcion}
                     onChange={e => setDescripcion(e.target.value)}
                     className="textarea-empresa"
+                    placeholder="Escriba una breve descripción del estado. Por ejemplo: 'Cliente que ha realizado su primera compra' o 'Ticket en espera de respuesta del cliente'."
                 >
 
                 </textarea>
-              {/*   <input 
-                  type="text" 
-                  id="desccripcion" 
-                  name="desccripcion" 
-                  className="input-empresa"
-                  placeholder="Ej: Calle 123"
-                  value={direccion}
-                  onChange={e => setDireccion(e.target.value)}
-                /> */}
               </div>
-            
-            
-             
-             
             </div>
 
             <div className="form-col-wrapper">
               <div className="form-col">
-               
-               <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Nisi facilis quis expedita, ratione voluptatum doloribus quas blanditiis. Maiores quam corporis pariatur excepturi corrupti debitis ab ea praesentium ipsum, vel cum?</p>
-               <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Nisi facilis quis expedita, ratione voluptatum doloribus quas blanditiis. Maiores quam corporis pariatur excepturi corrupti debitis ab ea praesentium ipsum, vel cum?</p>
-               <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Nisi facilis quis expedita, ratione voluptatum doloribus quas blanditiis. Maiores quam corporis pariatur excepturi corrupti debitis ab ea praesentium ipsum, vel cum?</p>
+                <h3 className="form-col-title">¿Cómo funcionan los estados?</h3>
+                <p>
+                  Los estados le permiten clasificar y organizar diferentes elementos de su sistema según su situación actual.
+                </p>
+                <p>
+                  <strong>Estados de Usuarios:</strong> Evalúan el desempeño o rendimiento de sus operadores 
+                  (Excelente, Muy Bueno, Bueno, Regular, Bajo, Insuficiente).
+                </p>
+                <p>
+                  <strong>Estados de Clientes:</strong> Controlan el ciclo de vida de sus clientes desde que ingresan 
+                  hasta su situación actual (Nuevo, Activo, Inactivo, Reactivado, Baja).
+                </p>
+                <p>
+                  <strong>Estados de Tickets:</strong> Gestionan el progreso de las solicitudes o casos de soporte 
+                  (En Proceso, Pendiente, Resuelto, Cerrado, Reabierto).
+                </p>
+                <p>
+                  💡 <strong>Importante:</strong> Varios registros pueden compartir el mismo estado. Por ejemplo, 
+                  múltiples tickets pueden estar "Pendientes" o varios clientes pueden estar "Activos" al mismo tiempo.
+                </p>
               </div>
               
               <button type="submit" className="btn-empresa">
@@ -188,7 +200,7 @@ const FormEstados = () => {
           draggable
           limit={1}
         />
-      </>
+      </div>
   )
 }
 
