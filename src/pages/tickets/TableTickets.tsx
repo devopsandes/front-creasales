@@ -125,7 +125,7 @@ const TableTickets = () => {
                         onMouseEnter={(e) => handleMouseEnter(e, ticket.id)}
                         onMouseLeave={handleMouseLeave}
                       >
-                        <FaRegCommentDots className="tickets-icon-comment" />
+                        <FaRegCommentDots className="tickets-icon-comment" size={18} />
                         <span className="tickets-count">{ticket.comentarios}</span>
                         {showTooltip === ticket.id && (
                           <div 

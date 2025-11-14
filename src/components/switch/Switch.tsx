@@ -49,7 +49,7 @@ const Switch = ({ checked, label, id, onChange}: SwitchProps) => {
           type="button"
           onClick={handleChange}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300  ${
-            isActive ? "bg-blue-600" : "bg-gray-300"
+            isActive ? "bg-blue-400" : "bg-gray-300"
           }`}
         >
           <span

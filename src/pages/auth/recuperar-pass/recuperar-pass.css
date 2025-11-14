@@ -1,5 +1,5 @@
 /* 
-  Estilos para Register - importa los estilos base de login
+  Estilos para RecuperarPass - importa los estilos base de login
 */
 
 @import '../login/login.css';
@@ -19,3 +19,4 @@
     padding: 0.5rem 0.875rem;
   }
 }
+

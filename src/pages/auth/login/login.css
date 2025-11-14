@@ -267,6 +267,56 @@
   letter-spacing: 0.025em;
 }
 
+/* Mensaje de contacto (usado en Register y RecuperarPass) */
+.signin-contact-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  max-width: 100%;
+  animation: signin-fadeIn 1s ease-in-out 0.4s both;
+}
+
+.signin-contact-text {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.signin-contact-email {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #60a5fa;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background-color: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.signin-contact-email:hover {
+  color: #93c5fd;
+  background-color: rgba(96, 165, 250, 0.15);
+  border-color: rgba(96, 165, 250, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.2);
+}
+
+.signin-contact-email:focus {
+  outline: 2px solid rgba(96, 165, 250, 0.5);
+  outline-offset: 2px;
+}
+
 /* Animaciones */
 @keyframes signin-fadeIn {
   from {
@@ -360,5 +410,18 @@
 
   .signin-separator {
     display: none;
+  }
+
+  .signin-contact-message {
+    padding: 1.25rem;
+  }
+
+  .signin-contact-text {
+    font-size: 0.875rem;
+  }
+
+  .signin-contact-email {
+    font-size: 0.9375rem;
+    padding: 0.5rem 0.875rem;
   }
 }

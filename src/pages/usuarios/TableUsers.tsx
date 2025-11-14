@@ -7,6 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import {  openModalUser } from "../../app/slices/actionSlice";
 import CrearUsuarioModal from "../../components/modal/CrearUsuarioModal";
+import { getChats } from "../../services/chats/chats.services";
+import { ChatState } from "../../interfaces/chats.interface";
 import './usuarios.css';
 
 
@@ -19,6 +21,7 @@ const TableUsers = () => {
   const [loading, setLoading] = useState<boolean>();
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [chatsCounts, setChatsCounts] = useState<{ [userId: string]: number }>({});
   const tooltipRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   const token  = localStorage.getItem('token') || '';
@@ -44,9 +47,35 @@ const TableUsers = () => {
         if (respUsers.statusCode === 401) {
           alert('Su sesión ha expirado, por favor inicie sesión nuevamente');
           navigate('/auth/signin');
+          return;
         }
         
         setUsers(respUsers.users);
+        
+        // Obtener todos los chats para contar los asignados a cada usuario
+        try {
+          const respChats = await getChats(token, '1', '1000'); // Obtener muchos chats para contar todos
+          
+          // Contar chats asignados a cada usuario
+          const counts: { [userId: string]: number } = {};
+          
+          respUsers.users.forEach(user => {
+            counts[user.id] = respChats.chats.filter((chat: ChatState) => 
+              chat.operador?.id === user.id
+            ).length;
+          });
+          
+          setChatsCounts(counts);
+        } catch (error) {
+          console.error('Error al obtener chats:', error);
+          // Si falla, inicializar todos en 0
+          const counts: { [userId: string]: number } = {};
+          respUsers.users.forEach(user => {
+            counts[user.id] = 0;
+          });
+          setChatsCounts(counts);
+        }
+        
         setLoading(false);
         
       }
@@ -151,8 +180,8 @@ const TableUsers = () => {
                             onMouseEnter={(e) => handleMouseEnter(e, user.id)}
                             onMouseLeave={handleMouseLeave}
                           >
-                            2 {'\t'} 
-                            <FaRegCommentDots className="usuarios-chat-icon" />
+                            {chatsCounts[user.id] !== undefined ? chatsCounts[user.id] : 0} {'\t'} 
+                            <FaRegCommentDots className="usuarios-chat-icon" size={18} />
                           </button>
                           {showTooltip === user.id && (
                             <div 
