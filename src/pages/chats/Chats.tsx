@@ -10,9 +10,11 @@ import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '../../app/store'
 import UserSearchModal from '../../components/modal/UserSearchModal'
 import ArchiveModal from '../../components/modal/ArchiveModal'
+import DeleteModal from '../../components/modal/DeleteModal'
 import ChatInfoDropdown from '../../components/dropdown/ChatInfoDropdown'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
+import { Trash2 } from "lucide-react";
 import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired } from '../../app/slices/actionSlice'
 import { IoIosAttach } from "react-icons/io";
 import { FaMicrophone } from "react-icons/fa";
@@ -37,6 +39,7 @@ const Chats = () => {
     const [showList, setShowList] = useState(false);
     const [filteredUsers, setFilteredUsers] = useState<Usuario[]>([]);
     const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -230,6 +233,36 @@ const Chats = () => {
         setIsArchiveModalOpen(false);
     }
 
+    const handleDeleteClick = () => {
+        setIsDeleteModalOpen(true);
+    }
+
+    const handleDeleteConfirm = () => {
+        try {
+            socket = getSocket()
+            if (socket && socket.connected) {
+               const objMsj = {
+                chatId: id,
+                telefono,
+                token
+               }
+               
+                socket.emit("eliminar", objMsj);
+                toast.success('Chat eliminado correctamente');
+            } else {
+                console.warn("Socket desconectado, enviando por HTTP...");
+            }
+            setIsDeleteModalOpen(false);
+        } catch (error) {
+            console.log(error);
+            toast.error('Error al eliminar el chat');
+        }
+    }
+
+    const handleDeleteCancel = () => {
+        setIsDeleteModalOpen(false);
+    }
+
     
 
     
@@ -321,6 +354,13 @@ const Chats = () => {
                             >
                                 <FaFileArrowDown />
                                 <span>Archivar</span>
+                            </button>
+                            <button
+                                onClick={handleDeleteClick}
+                                className="chat-action-button chat-button-delete"
+                            >
+                                <Trash2 size={16} />
+                                <span>Eliminar</span>
                             </button>
                             <ChatInfoDropdown dataUser={dataUser} />
                         </div>
@@ -425,6 +465,11 @@ const Chats = () => {
                         isOpen={isArchiveModalOpen}
                         onClose={handleArchivarCancel}
                         onConfirm={handleArchivarConfirm}
+                    />
+                    <DeleteModal 
+                        isOpen={isDeleteModalOpen}
+                        onClose={handleDeleteCancel}
+                        onConfirm={handleDeleteConfirm}
                     />
                 </div>
             )}

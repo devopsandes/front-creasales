@@ -23,6 +23,8 @@ const TableTickets = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState(1);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [showTooltip, setShowTooltip] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const totalPages = Math.ceil(tickets.length / ITEMS_PER_PAGE);
   const startIndex = (page - 1) * ITEMS_PER_PAGE;
   const currentTickets = tickets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -40,8 +42,24 @@ const TableTickets = () => {
     ejecucion()
   },[])
 
-  const handleOpenTicket = (id: string) => {
+  const handleOpenTicket = (id: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     dispatch(openModalTeca(id))
+  }
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>, ticketId: string) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setTooltipPosition({
+      top: rect.top + rect.height / 2,
+      left: rect.right + 10
+    })
+    setShowTooltip(ticketId)
+  }
+
+  const handleMouseLeave = () => {
+    setShowTooltip(null)
   }
 
   return (
@@ -68,8 +86,8 @@ const TableTickets = () => {
                 <tr className="grid grid-cols-9">
                   <th className="tickets-table-header-cell col-span-1">#</th>
                   <th className="tickets-table-header-cell col-span-2">Asunto</th>
-                  <th className="tickets-table-header-cell col-span-2">Prioridad</th>
-                  <th className="tickets-table-header-cell col-span-1">Hora</th>
+                  <th className="tickets-table-header-cell col-span-1">Prioridad</th>
+                  <th className="tickets-table-header-cell col-span-2">Hora</th>
                   <th className="tickets-table-header-cell col-span-1">Estado</th>
                   <th className="tickets-table-header-cell tickets-table-header-cell-center col-span-1">Respuestas</th>
                   <th className="tickets-table-header-cell tickets-table-header-cell-center col-span-1">Comentarios</th>
@@ -79,15 +97,15 @@ const TableTickets = () => {
                 {currentTickets.map((ticket, index) => (
                   <tr key={ticket.id} className="tickets-table-row grid grid-cols-9" onClick={() => handleOpenTicket(ticket.id)}>
                     <td className="tickets-table-cell tickets-table-cell-numero col-span-1">
-                      {index + 1} / #{ticket.nro}
+                      {startIndex + index + 1} / #{ticket.nro}
                     </td>
                     <td className="tickets-table-cell tickets-table-cell-asunto col-span-2">
                       {ticket.nombre}
                     </td>
-                    <td className="tickets-table-cell tickets-table-cell-prioridad col-span-2">
+                    <td className="tickets-table-cell tickets-table-cell-prioridad col-span-1">
                       {ticket.prioridad}
                     </td>
-                    <td className="tickets-table-cell tickets-table-cell-hora col-span-1">
+                    <td className="tickets-table-cell tickets-table-cell-hora col-span-2">
                       <FaRegClock className="tickets-icon-clock" />
                       {formatCreatedAt(ticket.createdAt.toString())}
                     </td>
@@ -101,8 +119,26 @@ const TableTickets = () => {
                       <span className="tickets-count">{ticket.comentarios}</span>
                     </td>
                     <td className="tickets-table-cell tickets-table-cell-center col-span-1">
-                      <FaRegCommentDots className="tickets-icon-comment" />
-                      <span className="tickets-count">{ticket.comentarios}</span>
+                      <div 
+                        className="tickets-comment-container"
+                        onClick={(e) => handleOpenTicket(ticket.id, e)}
+                        onMouseEnter={(e) => handleMouseEnter(e, ticket.id)}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        <FaRegCommentDots className="tickets-icon-comment" />
+                        <span className="tickets-count">{ticket.comentarios}</span>
+                        {showTooltip === ticket.id && (
+                          <div 
+                            className="tickets-tooltip"
+                            style={{
+                              top: `${tooltipPosition.top}px`,
+                              left: `${tooltipPosition.left}px`
+                            }}
+                          >
+                            Ver comentarios
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -113,13 +149,20 @@ const TableTickets = () => {
       
       {/* Pagination */}
       <div className="tickets-pagination-container">
-        <button 
-          onClick={() => dispatch(openModalTicket())}
-          className="tickets-button-create"
-        >
-          Crear Ticket
-        </button>
-        <button
+        <div className="tickets-pagination-left">
+          <button 
+            onClick={() => dispatch(openModalTicket())}
+            className="tickets-button-create"
+          >
+            Crear Ticket
+          </button>
+          <div className="tickets-total-indicator">
+            <span className="tickets-total-label">Total de Tickets:</span>
+            <span className="tickets-total-number">{tickets.length}</span>
+          </div>
+        </div>
+        <div className="tickets-pagination-right">
+          <button
           onClick={() => setPage((p) => Math.max(p - 1, 1))}
           disabled={page === 1}
           className="tickets-pagination-button"
@@ -136,6 +179,7 @@ const TableTickets = () => {
         >
           Siguiente
         </button>
+        </div>
       </div>
       <CrearTicketModal />
       <TicketModal />

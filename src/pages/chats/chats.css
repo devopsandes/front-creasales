@@ -477,6 +477,16 @@
     color: white;
 }
 
+.chat-button-delete {
+    background-color: #fca5a5;
+    color: white;
+}
+
+.chat-button-delete:hover {
+    background-color: #ef4444;
+    color: white;
+}
+
 /* Badge contador de mensajes no leídos */
 .chat-badge-count {
     margin-left: auto;
@@ -529,6 +539,10 @@
     flex-wrap: wrap;
     width: 100%;
     padding-top: 0.5rem;
+}
+
+.chat-tags-container > .checkbox {
+    margin-right: 0.5rem;
 }
 
 /* Contenedor de tags en el panel lateral */

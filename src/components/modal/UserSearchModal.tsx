@@ -114,7 +114,12 @@ const UserSearchModal = ( ) => {
                 onClick={() => handleAsignar(user.id)}
               >
                 <UserCircle2 className="assign-modal-user-avatar" size={32} />
-                <span className="assign-modal-user-name">{user.nombre} {user.apellido}</span>
+                <div className="assign-modal-user-info">
+                  <span className="assign-modal-user-name">{user.nombre} {user.apellido}</span>
+                  <span className={`assign-modal-user-status ${user.activo ? 'assign-modal-user-status--active' : 'assign-modal-user-status--inactive'}`}>
+                    {user.activo ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
               </li>
             ))
           ) : (

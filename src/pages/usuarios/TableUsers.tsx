@@ -1,5 +1,5 @@
 import { FaRegCommentDots, FaUser } from "react-icons/fa";
-import  { useEffect, useState } from "react";
+import  { useEffect, useState, useRef } from "react";
 import Switch from "../../components/switch/Switch";
 import { usuariosXRole } from "../../services/auth/auth.services";
 import {   Usuario } from "../../interfaces/auth.interface";
@@ -17,6 +17,9 @@ const TableUsers = () => {
   const [page, setPage] = useState(1);
   const [users, setUsers] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState<boolean>();
+  const [showTooltip, setShowTooltip] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const tooltipRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   const token  = localStorage.getItem('token') || '';
   let role = localStorage.getItem('role') || '';
@@ -52,7 +55,30 @@ const TableUsers = () => {
     },[])
 
     const handleClickChats = (user: Usuario) => {
-      navigate(`/dashboard/chats?id=${user.id}&nombre=${user.nombre} ${user.apellido}`);
+      navigate(`/dashboard/chats?userId=${user.id}`);
+    }
+
+    const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>, userId: string) => {
+      const rect = e.currentTarget.getBoundingClientRect()
+      setTooltipPosition({
+        top: rect.top + rect.height / 2,
+        left: rect.right + 10
+      })
+      setShowTooltip(userId)
+    }
+
+    const handleMouseLeave = () => {
+      setShowTooltip(null)
+    }
+
+    const handleSwitchChange = (userId: string, newActiveState: boolean) => {
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userId 
+            ? { ...user, activo: newActiveState }
+            : user
+        )
+      );
     }
 
   return (
@@ -103,17 +129,43 @@ const TableUsers = () => {
                     <td className="usuarios-table-cell">{user.role}</td>
                     <td className="usuarios-table-cell">{user.telefono}</td>
                     <td className="usuarios-table-cell">
-                      <Switch checked={user.activo} label={''} id={user.id} />
+                      <div className="usuarios-estado-container">
+                        <Switch 
+                          checked={user.activo} 
+                          label={''} 
+                          id={user.id}
+                          onChange={(checked) => handleSwitchChange(user.id, checked)}
+                        />
+                        <span className={`usuarios-estado-text ${user.activo ? 'usuarios-estado-text--active' : 'usuarios-estado-text--inactive'}`}>
+                          {user.activo ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
                     </td>
                     
                     <td className="usuarios-table-cell">
-                        <button
-                          className="usuarios-button-chats" 
-                          onClick={() => handleClickChats(user)}
-                        >
-                          2 {'\t'} 
-                          <FaRegCommentDots className="usuarios-chat-icon" />
-                        </button>
+                        <div className="usuarios-chats-container">
+                          <button
+                            ref={(el) => tooltipRefs.current[user.id] = el}
+                            className="usuarios-button-chats" 
+                            onClick={() => handleClickChats(user)}
+                            onMouseEnter={(e) => handleMouseEnter(e, user.id)}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            2 {'\t'} 
+                            <FaRegCommentDots className="usuarios-chat-icon" />
+                          </button>
+                          {showTooltip === user.id && (
+                            <div 
+                              className="usuarios-tooltip"
+                              style={{
+                                top: `${tooltipPosition.top}px`,
+                                left: `${tooltipPosition.left}px`
+                              }}
+                            >
+                              Ver chats
+                            </div>
+                          )}
+                        </div>
                     </td>
                     <td className="usuarios-actions-cell">
                       <button className="usuarios-button-edit">Editar</button>

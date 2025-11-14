@@ -1,4 +1,4 @@
-import { Link, Outlet, useParams } from "react-router-dom"
+import { Link, Outlet, useParams, useSearchParams } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
@@ -26,6 +26,8 @@ const capitalizeText = (text: string): string => {
 
 const ListaChats = () => {
     const { id: activeChatId } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const selectRef = useRef<HTMLSelectElement>(null);
     
     const [chats1,setChats1] = useState<ChatState[]>([])
     const [archivadas,setArchivadas] = useState<ChatState[]>([])
@@ -34,23 +36,7 @@ const ListaChats = () => {
     const [styleBtn, setStyleBtn] = useState<string>('todas')
 
     const [loading, setLoading] = useState<boolean>(true)
-    const [users, setUsers] = useState<Usuario[]>([{
-        id: 'BOT',
-        nombre: 'OPERADOR',
-        apellido: 'BOT',
-        nacimiento: new Date(),
-        telefono: '',
-        tipo_doc: '',
-        nro_doc: 0,
-        cuil: null,
-        email: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        verificado: false,
-        token: '',
-        role: '',
-        activo: false
-    }]);
+    const [users, setUsers] = useState<Usuario[]>([]);
     const [filtrados, setFiltrados] = useState<ChatState[]>([])
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
@@ -81,33 +67,46 @@ const ListaChats = () => {
             const respUsers = await usuariosXRole('USER', token);
             const chatos = await getChats(token,'1','100')
 
-            
+            const archivadasTemp: ChatState[] = []
+            const botsTemp: ChatState[] = []
+            const asignadasTemp: ChatState[] = []
+            const botsIds = new Set<string>()
 
-           
-
-            chatos.chats.map(chat => {
+            chatos.chats.forEach(chat => {
                 if(chat.archivar){
-                    setArchivadas(prev => [...prev,chat])
+                    archivadasTemp.push(chat)
                 }
 
                 if(!chat.operador){
-                    const cond = bots.includes(chat)
-                    
-                    
-                    if(!cond)
-                        setBots(prev => [...prev,chat])
+                    if(!botsIds.has(chat.id)){
+                        botsTemp.push(chat)
+                        botsIds.add(chat.id)
+                    }
                 }
 
                 if(id === chat.operador?.id){
-                    setAsignadas(prev => [...prev,chat])
+                    asignadasTemp.push(chat)
                 }
             })
 
+            setArchivadas(archivadasTemp)
+            setBots(botsTemp)
+            setAsignadas(asignadasTemp)
             setChats1(chatos.chats)
             setFiltrados(chatos.chats)
             setLoading(false)
             
-            setUsers([...users,...respUsers.users]);
+            const usersIds = new Set<string>()
+            const uniqueUsers: Usuario[] = []
+            
+            respUsers.users.forEach(user => {
+                if(!usersIds.has(user.id)){
+                    uniqueUsers.push(user)
+                    usersIds.add(user.id)
+                }
+            })
+            
+            setUsers(uniqueUsers)
         
         }
         
@@ -161,7 +160,7 @@ const ListaChats = () => {
         let filtrados: ChatState[] = []
 
         
-        if(selectedValue === ""){
+        if(selectedValue === "" || selectedValue === "TODOS"){
             filtrados = [...chats1]
         }else if(selectedValue === 'BOT'){
             filtrados = chats1.filter(chat => chat.operador === null)
@@ -169,7 +168,24 @@ const ListaChats = () => {
             filtrados = chats1.filter(chat => chat.operador?.id === selectedValue)
         }
         setFiltrados(filtrados)
+        
+        const newSearchParams = new URLSearchParams(searchParams);
+        if (selectedValue && selectedValue !== "TODOS" && selectedValue !== "BOT") {
+            newSearchParams.set('userId', selectedValue);
+        } else {
+            newSearchParams.delete('userId');
+        }
+        setSearchParams(newSearchParams);
     }
+
+    useEffect(() => {
+        const userId = searchParams.get('userId');
+        if (userId && selectRef.current && users.length > 1 && chats1.length > 0) {
+            selectRef.current.value = userId;
+            const filtrados: ChatState[] = chats1.filter(chat => chat.operador?.id === userId);
+            setFiltrados(filtrados);
+        }
+    }, [users, chats1, searchParams, loading])
 
   
 
@@ -240,11 +256,14 @@ const ListaChats = () => {
                                
                                 <div>
                                     <select
+                                        ref={selectRef}
                                         id="operador-select"
                                         className="block w-30 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                                         onChange={handleChangeSelect}
                                     >
                                         <option value="" className="bg-gray-500">Seleccione</option>
+                                        <option value="TODOS" className="bg-gray-500">TODOS</option>
+                                        <option value="BOT" className="bg-gray-500">BOT OPERADOR</option>
                                         {users.map(user => (
                                             <option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
                                         ))}
@@ -275,9 +294,9 @@ const ListaChats = () => {
                                             type="checkbox"
                                             className="checkbox"
                                         />
-                                        <p className="chat-tag">ac <span className="chat-tag-close">×</span></p>
-                                        <p className="chat-tag">black <span className="chat-tag-close">×</span></p>
-                                        <p className="chat-tag">deuda <span className="chat-tag-close">×</span></p>
+                                        <p className="chat-tag">ac</p>
+                                        <p className="chat-tag">black</p>
+                                        <p className="chat-tag">deuda</p>
                                     </div>
                                 </Link>
                             ))}
