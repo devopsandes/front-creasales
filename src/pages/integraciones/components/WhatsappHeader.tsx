@@ -8,7 +8,7 @@ interface WhatsappHeaderProps {
 
 const WhatsappHeader = ({ onSignupComplete }: WhatsappHeaderProps) => {
   // Hook para manejar el signup con polling
-  const { signupStatus, isProcessing, startSignup, stopPolling } = useWhatsAppSignup(onSignupComplete);
+  const { signupStatus, isProcessing, visualStatus, errorMessage, startSignup, stopPolling, clearError } = useWhatsAppSignup(onSignupComplete);
   
   // Hook para manejar eventos de Socket.io
   useWhatsAppSocket({
@@ -42,7 +42,9 @@ const WhatsappHeader = ({ onSignupComplete }: WhatsappHeaderProps) => {
       case 'starting':
         return 'Iniciando...';
       case 'in_progress':
-        return 'En proceso de vinculación...';
+        return 'En proceso...';
+      case 'completing':
+        return 'Completando...';
       case 'completed':
         return 'Vinculación completada';
       case 'failed':
@@ -68,6 +70,15 @@ const WhatsappHeader = ({ onSignupComplete }: WhatsappHeaderProps) => {
     }
   };
 
+  // Función para obtener la clase del estado visual
+  const getStatusClass = () => {
+    if (visualStatus.startsWith('✅')) return 'whatsapp-status-success';
+    if (visualStatus.startsWith('❌')) return 'whatsapp-status-error';
+    if (visualStatus.startsWith('⚠️')) return 'whatsapp-status-warning';
+    if (visualStatus !== 'idle') return 'whatsapp-status-processing';
+    return '';
+  };
+
   return (
     <div className="whatsapp-header-container">
       <div className="whatsapp-header-content">
@@ -88,6 +99,44 @@ const WhatsappHeader = ({ onSignupComplete }: WhatsappHeaderProps) => {
               Configure un canal de WhatsApp en el módulo de mensajería instantánea del escritorio 
               y comuníquese con sus clientes las 24 horas.
             </p>
+            {/* Estado visual del proceso */}
+            {visualStatus !== 'idle' && (
+              <div className={`whatsapp-status-indicator ${getStatusClass()}`}>
+                <div className="whatsapp-status-header">
+                  <span className="whatsapp-status-text">{visualStatus}</span>
+                  {(visualStatus.startsWith('❌') || visualStatus.startsWith('⚠️')) && (
+                    <button
+                      className="whatsapp-status-close"
+                      onClick={clearError}
+                      aria-label="Cerrar mensaje"
+                      type="button"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M12 4L4 12M4 4l8 8"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {errorMessage && (
+                  <div className="whatsapp-error-details">
+                    <span className="whatsapp-error-label">Detalles:</span>
+                    <span className="whatsapp-error-message">{errorMessage}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
         

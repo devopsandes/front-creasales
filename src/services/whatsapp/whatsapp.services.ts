@@ -71,9 +71,33 @@ export const completeEmbeddedSignup = async (
   request: EmbeddedSignupCompleteRequest
 ): Promise<EmbeddedSignupCompleteResponse> => {
   try {
+    // Validar que todos los campos requeridos estén presentes
+    if (!request.state) {
+      throw new Error('El campo "state" es requerido para completar el signup');
+    }
+    if (!request.phoneNumberId) {
+      throw new Error('El campo "phoneNumberId" es requerido para completar el signup');
+    }
+    if (!request.wabaId) {
+      throw new Error('El campo "wabaId" es requerido para completar el signup');
+    }
+
+    console.log('[WhatsApp Service] Llamando a /complete con:', {
+      state: request.state,
+      phoneNumberId: request.phoneNumberId,
+      wabaId: request.wabaId,
+      displayName: request.displayName || 'Sin nombre',
+      endpoint: `${WHATSAPP_API_BASE}/embedded-signup/complete`
+    });
+
     const response = await axios.post<EmbeddedSignupCompleteResponse>(
       `${WHATSAPP_API_BASE}/embedded-signup/complete`,
-      request,
+      {
+        state: request.state,
+        phone_number_id: request.phoneNumberId,
+        waba_id: request.wabaId,
+        display_name: request.displayName || ''
+      },
       {
         headers: {
           'Content-Type': 'application/json',
@@ -81,9 +105,21 @@ export const completeEmbeddedSignup = async (
       }
     );
     
+    console.log('[WhatsApp Service] Respuesta de /complete:', response.data);
     return response.data;
-  } catch (error) {
-    console.error('Error completing embedded signup:', error);
+  } catch (error: any) {
+    console.error('[WhatsApp Service] Error completando embedded signup:', {
+      error,
+      message: error?.message,
+      response: error?.response?.data,
+      status: error?.response?.status,
+      request: {
+        state: request.state,
+        phoneNumberId: request.phoneNumberId,
+        wabaId: request.wabaId,
+        displayName: request.displayName
+      }
+    });
     throw error;
   }
 };
