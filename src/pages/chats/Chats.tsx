@@ -23,6 +23,7 @@ import './chats.css'
 import { toast } from 'react-toastify'
 import { usuariosXRole } from '../../services/auth/auth.services'
 import { Usuario } from '../../interfaces/auth.interface'
+import axios from 'axios'
 
 
 
@@ -237,25 +238,64 @@ const Chats = () => {
         setIsDeleteModalOpen(true);
     }
 
-    const handleDeleteConfirm = () => {
+    // Función original comentada temporalmente
+    // const handleDeleteConfirm = () => {
+    //     try {
+    //         socket = getSocket()
+    //         if (socket && socket.connected) {
+    //            const objMsj = {
+    //             chatId: id,
+    //             telefono,
+    //             token
+    //            }
+    //            
+    //             socket.emit("eliminar", objMsj);
+    //             toast.success('Chat eliminado correctamente');
+    //         } else {
+    //             console.warn("Socket desconectado, enviando por HTTP...");
+    //         }
+    //         setIsDeleteModalOpen(false);
+    //     } catch (error) {
+    //         console.log(error);
+    //         toast.error('Error al eliminar el chat');
+    //     }
+    // }
+
+    const handleDeleteConfirm = async () => {
         try {
-            socket = getSocket()
-            if (socket && socket.connected) {
-               const objMsj = {
+            const url = `https://sales.createch.com.ar/api/v1/chats/${id}/messages`
+            
+            const headers = {
+                authorization: `Bearer ${token}`
+            }
+
+            const body = {
                 chatId: id,
                 telefono,
                 token
-               }
-               
-                socket.emit("eliminar", objMsj);
-                toast.success('Chat eliminado correctamente');
-            } else {
-                console.warn("Socket desconectado, enviando por HTTP...");
             }
-            setIsDeleteModalOpen(false);
+
+            const response = await axios.delete(url, {
+                headers,
+                data: body
+            })
+
+            if (response.status === 200 || response.status === 204) {
+                toast.success('Chat eliminado correctamente');
+                setIsDeleteModalOpen(false);
+            }
         } catch (error) {
             console.log(error);
-            toast.error('Error al eliminar el chat');
+            if (axios.isAxiosError(error) && error.response) {
+                if (error.response.status === 401) {
+                    dispatch(openSessionExpired());
+                } else {
+                    toast.error('Error al eliminar el chat');
+                }
+            } else {
+                toast.error('Error al eliminar el chat');
+            }
+            setIsDeleteModalOpen(false);
         }
     }
 
