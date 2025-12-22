@@ -7,7 +7,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { openModalTag, openSessionExpired } from "../../app/slices/actionSlice";
 import { getTags } from "../../services/tags/tags.services";
 import { Tag } from "../../interfaces/tags.interface";
-import { capitalizeWords } from "../../utils/functions";
 import { RootState } from "../../app/store";
 import "./tags.css";
 

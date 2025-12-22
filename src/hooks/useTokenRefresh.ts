@@ -13,7 +13,7 @@ export const useTokenRefresh = (
   warningMinutes: number = 5
 ) => {
   const dispatch = useDispatch()
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const checkToken = () => {
