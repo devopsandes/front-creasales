@@ -294,9 +294,9 @@ const ListaChats = () => {
                                             type="checkbox"
                                             className="checkbox"
                                         />
-                                        <p className="chat-tag">ac</p>
                                         <p className="chat-tag">black</p>
                                         <p className="chat-tag">deuda</p>
+                                        <p className="chat-tag">pendiente</p>
                                     </div>
                                 </Link>
                             ))}

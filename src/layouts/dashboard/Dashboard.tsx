@@ -13,6 +13,8 @@ import { connectSocket,  getSocket } from "../../app/slices/socketSlice";
 import { setEmpresa, setUser } from "../../app/slices/authSlice";
 import { openSessionExpired, closeSessionExpired } from "../../app/slices/actionSlice";
 import { RootState } from "../../app/store";
+import { setupAxiosInterceptors } from "../../utils/axiosInterceptor";
+import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 
 
 
@@ -25,6 +27,13 @@ const Dashboard = () => {
   
   let socket: Socket | null = null
   
+  // Configurar interceptores de axios para manejo de tokens
+  useEffect(() => {
+    setupAxiosInterceptors()
+  }, [])
+
+  // Verificar periódicamente el estado del token
+  useTokenRefresh(2, 5) // Verifica cada 2 minutos, alerta 5 minutos antes de expirar
 
   useEffect(() => {
     role = role ? localStorage.getItem('role') : null

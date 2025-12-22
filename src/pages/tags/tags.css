@@ -66,6 +66,15 @@
   color: #111827;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tags-table-header-cell-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tags-table-row {
@@ -100,7 +109,7 @@
 /* Botones de acción */
 .tags-button-edit {
   padding: 0.5rem 1rem;
-  background-color: #2563eb;
+  background-color: #60a5fa;
   color: white;
   font-size: 0.875rem;
   font-weight: 500;
@@ -111,17 +120,18 @@
 }
 
 .tags-button-edit:hover {
-  background-color: #1d4ed8;
+  background-color: #3b82f6;
+  color: white;
 }
 
 .tags-button-edit:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.5);
 }
 
 .tags-button-delete {
   padding: 0.5rem 1rem;
-  background-color: #ef4444;
+  background-color: #f87171;
   color: white;
   font-size: 0.875rem;
   font-weight: 500;
@@ -132,12 +142,13 @@
 }
 
 .tags-button-delete:hover {
-  background-color: #dc2626;
+  background-color: #ef4444;
+  color: white;
 }
 
 .tags-button-delete:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.5);
 }
 
 .tags-button-add {
@@ -146,11 +157,44 @@
   transition: all 0.2s;
   padding: 0.25rem;
   border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
 }
 
 .tags-button-add:hover {
   color: #1d4ed8;
   background-color: #eff6ff;
+}
+
+.tags-tooltip {
+  position: fixed;
+  background-color: white;
+  color: #4b5563;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  z-index: 99999;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  animation: tooltipFadeIn 0.2s ease;
+  margin-top: -0.5rem;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 4px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
 }
 
 /* Paginación */
@@ -164,7 +208,7 @@
 
 .tags-pagination-button {
   padding: 0.5rem 1rem;
-  background-color: #2563eb;
+  background-color: #3b82f6;
   color: white;
   font-size: 0.875rem;
   font-weight: 500;
@@ -175,7 +219,7 @@
 }
 
 .tags-pagination-button:hover:not(:disabled) {
-  background-color: #1d4ed8;
+  background-color: #2563eb;
 }
 
 .tags-pagination-button:focus {
