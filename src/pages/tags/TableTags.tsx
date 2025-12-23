@@ -152,11 +152,11 @@ const TableTags = () => {
                     onMouseLeave={handleAddIconMouseLeave}
                     style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <CiSquarePlus 
+                  <CiSquarePlus 
                       size={32} 
-                      onClick={() => dispatch(openModalTag())} 
-                      className="tags-button-add"
-                    />
+                    onClick={() => dispatch(openModalTag())} 
+                    className="tags-button-add"
+                  />
                   </div>
                   {showAddTooltip && (
                     <div className="tags-tooltip" style={addTooltipStyle}>

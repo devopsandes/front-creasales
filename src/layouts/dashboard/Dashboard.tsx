@@ -59,7 +59,7 @@ const Dashboard = () => {
                   // dispatch(disconnectSocket())
               }
           } catch (error) {
-              console.log(error);
+              console.error('Error conectando socket:', error);
           }
     },[dispatch])
   
@@ -69,9 +69,6 @@ const Dashboard = () => {
   useEffect(() => {
     const token = localStorage.getItem('token')
     const userId = localStorage.getItem('userId')
-    
-    console.log('Dashboard useEffect - token:', token)
-    console.log('Dashboard useEffect - userId:', userId)
     
     if(token){
       // Obtener empresa
@@ -89,39 +86,28 @@ const Dashboard = () => {
           dispatch(setEmpresa(data.empresa))
         })
         .catch(error => {
-          console.log(error);
+          console.error('Error obteniendo empresa:', error);
         })
       
       // Obtener usuario actual
       if(userId){
-        console.log('Obteniendo usuarios...')
         usuariosXRole('', token)
           .then(data => {
-            console.log('Respuesta usuariosXRole:', data)
             if(data.users){
-              console.log('Usuarios encontrados:', data.users.length)
               const currentUser = data.users.find(u => u.id === userId)
-              console.log('Usuario actual encontrado:', currentUser)
               if(currentUser){
                 const userData = {
                   id: currentUser.id,
                   name: `${currentUser.nombre} ${currentUser.apellido}`,
                   email: currentUser.email
                 }
-                console.log('Despachando setUser con:', userData)
                 dispatch(setUser(userData))
-              } else {
-                console.log('No se encontró usuario con id:', userId)
               }
-            } else {
-              console.log('No hay users en la respuesta')
             }
           })
           .catch(error => {
-            console.log('Error obteniendo usuarios:', error);
+            console.error('Error obteniendo usuarios:', error);
           })
-      } else {
-        console.log('No hay userId en localStorage')
       }
     }
   },[])

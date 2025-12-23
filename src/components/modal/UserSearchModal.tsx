@@ -57,11 +57,7 @@ const UserSearchModal = ( ) => {
   if (!modalView) return null;
 
   const handleAsignar = async (user_id: string) => {
-  
-    console.log(`chat_id ${chat_id} user_id ${user_id} token ${token}`);
-    
     const resp = await asignarOperador(chat_id,user_id ,token); 
-    console.log(resp);
 
     if(resp.statusCode === 200) {
       dispatch(closeModal());
