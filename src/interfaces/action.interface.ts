@@ -1,4 +1,6 @@
 
+import { ChatState } from './chats.interface';
+
 export interface ActionState  {
    modal: boolean;
    modalTag: boolean;
@@ -13,6 +15,7 @@ export interface ActionState  {
    viewSide: boolean;
    ticketId: string;
    sessionExpired: boolean;
+   chats: ChatState[];
 };
 
 export interface DataUser {

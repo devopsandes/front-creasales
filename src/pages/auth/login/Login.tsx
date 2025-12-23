@@ -45,13 +45,10 @@ const Login = () => {
     
     // let respuesta = await login({email, password})
     let respuesta = await authLogin({email, password})
-
-    console.log('Respuesta completa del login:', respuesta)
     
     if(respuesta.token){
       // Extraer el ID del token JWT
       const userId = decodeToken(respuesta.token)
-      console.log('Login exitoso - ID extraído del token:', userId)
       
       dispatch(accessGranted())
       localStorage.setItem('token', respuesta.token)
@@ -59,7 +56,6 @@ const Login = () => {
       
       if(userId){
         localStorage.setItem('userId', userId)
-        console.log('userId guardado en localStorage:', localStorage.getItem('userId'))
       }
       
       navigate('/dashboard/empresa')

@@ -9,12 +9,13 @@ const initialState : ActionState = {
     modalPlantilla: false,
     msg: '',
     alerta: false,
-    newTag: null, // Initialize newTag with an empty Tag object
+    newTag: null,
     dataUser: null,
     viewSide: false,
     modalTeca: false,
     ticketId: '',
-    sessionExpired: false
+    sessionExpired: false,
+    chats: []
 }
 
 const actionSlice = createSlice({
@@ -79,6 +80,9 @@ const actionSlice = createSlice({
         },
         closeSessionExpired: (state) => {
             state.sessionExpired = false
+        },
+        setChats: (state, action) => {
+            state.chats = action.payload
         }
     }
 })
@@ -101,7 +105,8 @@ export const {
     switchModalPlantilla,
     eraseDataUser,
     openSessionExpired,
-    closeSessionExpired
+    closeSessionExpired,
+    setChats
 } = actionSlice.actions
 export default actionSlice.reducer
 

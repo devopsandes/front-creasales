@@ -16,6 +16,7 @@ import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
 import { Trash2 } from "lucide-react";
 import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired } from '../../app/slices/actionSlice'
+import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
 import { FaMicrophone } from "react-icons/fa";
 import ModalPlantilla from '../../components/modal/ModalPlantilla'
@@ -62,6 +63,9 @@ const Chats = () => {
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
     const dispatch = useDispatch()
     const dataUser = useSelector((state: RootState) => state.action.dataUser)
+    const chats = useSelector((state: RootState) => state.action.chats)
+    const currentChat = chats.find(chat => chat.id === id)
+    const chatTags: ChatTag[] = currentChat?.tags || []
 
     let socket: Socket | null = null
 
@@ -402,7 +406,7 @@ const Chats = () => {
                                 <Trash2 size={16} />
                                 <span>Eliminar</span>
                             </button>
-                            <ChatInfoDropdown dataUser={dataUser} />
+                            <ChatInfoDropdown dataUser={dataUser} tags={chatTags} />
                         </div>
                     </div>
                     <div className='body-chat' ref={mensajesContainerRef}>

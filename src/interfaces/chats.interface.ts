@@ -1,5 +1,12 @@
 import { Usuario } from "./auth.interface";
 
+export interface ChatTag {
+    id:        string;
+    nombre:    string;
+    createdAt: Date | string;
+    updatedAt: Date | string;
+}
+
 export interface ChatState {
     archivar: boolean;
     cliente:   Cliente;
@@ -9,6 +16,7 @@ export interface ChatState {
     thread_id: string;
     updatedAt: Date;
     mensajes:  Mensaje[];
+    tags?:     ChatTag[];
 }
 
 export interface Cliente {

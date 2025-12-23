@@ -114,7 +114,6 @@ const AddTagModal = ({ isOpen, onClose, onConfirm, chatId }: AddTagModalProps) =
           message: successMessage
         })
         setShowResultModal(true)
-        onConfirm(selectedTagId)
       } else {
         const errorMessage = Array.isArray(response.message)
           ? response.message.join(', ')
@@ -151,6 +150,7 @@ const AddTagModal = ({ isOpen, onClose, onConfirm, chatId }: AddTagModalProps) =
     const wasSuccess = resultModalData?.isSuccess
     setResultModalData(null)
     if (wasSuccess) {
+      onConfirm(selectedTagId)
       onClose()
     }
   }
@@ -159,68 +159,68 @@ const AddTagModal = ({ isOpen, onClose, onConfirm, chatId }: AddTagModalProps) =
 
   return (
     <>
-      <div className="add-tag-modal-overlay" onClick={handleOverlayClick}>
-        <div className="add-tag-modal-container">
-          <button className="add-tag-modal-close" onClick={onClose}>
-            <X size={20} />
-          </button>
-          
-          <div className="add-tag-modal-icon">
-            <TagIcon size={32} />
-          </div>
-
-          <h2 className="add-tag-modal-title">Asignar Etiqueta</h2>
-          <p className="add-tag-modal-subtitle">
-            Selecciona una etiqueta para asignar a este chat
-          </p>
-
-          {loading ? (
-            <div className="add-tag-modal-loading">
-              <div className="loader2"></div>
-              <p>Cargando etiquetas...</p>
-            </div>
-          ) : error ? (
-            <div className="add-tag-modal-error">
-              <p>{error}</p>
-            </div>
-          ) : (
-            <div className="add-tag-modal-select-container">
-              <select
-                className="add-tag-modal-select"
-                value={selectedTagId}
-                onChange={(e) => setSelectedTagId(e.target.value)}
-                disabled={isAssigning}
-              >
-                <option value="">Selecciona una etiqueta</option>
-                {tags.map((tag) => (
-                  <option key={tag.id} value={tag.id}>
-                    {tag.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {!loading && (
-            <div className="add-tag-modal-actions">
-              <button 
-                className="add-tag-modal-button add-tag-modal-cancel"
-                onClick={onClose}
-                disabled={isAssigning}
-              >
-                Cancelar
-              </button>
-              <button 
-                className="add-tag-modal-button add-tag-modal-confirm"
-                onClick={handleConfirm}
-                disabled={!selectedTagId || !!error || isAssigning}
-              >
-                {isAssigning ? 'Asignando...' : 'Asignar'}
-              </button>
-            </div>
-          )}
+    <div className="add-tag-modal-overlay" onClick={handleOverlayClick}>
+      <div className="add-tag-modal-container">
+        <button className="add-tag-modal-close" onClick={onClose}>
+          <X size={20} />
+        </button>
+        
+        <div className="add-tag-modal-icon">
+          <TagIcon size={32} />
         </div>
+
+        <h2 className="add-tag-modal-title">Asignar Etiqueta</h2>
+        <p className="add-tag-modal-subtitle">
+          Selecciona una etiqueta para asignar a este chat
+        </p>
+
+        {loading ? (
+          <div className="add-tag-modal-loading">
+            <div className="loader2"></div>
+            <p>Cargando etiquetas...</p>
+          </div>
+        ) : error ? (
+          <div className="add-tag-modal-error">
+            <p>{error}</p>
+          </div>
+        ) : (
+          <div className="add-tag-modal-select-container">
+            <select
+              className="add-tag-modal-select"
+              value={selectedTagId}
+              onChange={(e) => setSelectedTagId(e.target.value)}
+                disabled={isAssigning}
+            >
+              <option value="">Selecciona una etiqueta</option>
+              {tags.map((tag) => (
+                <option key={tag.id} value={tag.id}>
+                  {tag.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {!loading && (
+          <div className="add-tag-modal-actions">
+            <button 
+              className="add-tag-modal-button add-tag-modal-cancel"
+              onClick={onClose}
+                disabled={isAssigning}
+            >
+              Cancelar
+            </button>
+            <button 
+              className="add-tag-modal-button add-tag-modal-confirm"
+              onClick={handleConfirm}
+                disabled={!selectedTagId || !!error || isAssigning}
+            >
+                {isAssigning ? 'Asignando...' : 'Asignar'}
+            </button>
+          </div>
+        )}
       </div>
+    </div>
 
       {resultModalData && (
         <TagResultModal
