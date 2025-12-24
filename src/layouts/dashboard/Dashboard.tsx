@@ -13,6 +13,11 @@ import { connectSocket,  getSocket } from "../../app/slices/socketSlice";
 import { setEmpresa, setUser } from "../../app/slices/authSlice";
 import { openSessionExpired, closeSessionExpired } from "../../app/slices/actionSlice";
 import { RootState } from "../../app/store";
+<<<<<<< HEAD
+=======
+import { setupAxiosInterceptors } from "../../utils/axiosInterceptor";
+import { useTokenRefresh } from "../../hooks/useTokenRefresh";
+>>>>>>> 2e0844f41bf16653730d55dfef7847e2c8a9a256
 
 
 
@@ -25,6 +30,16 @@ const Dashboard = () => {
   
   let socket: Socket | null = null
   
+<<<<<<< HEAD
+=======
+  // Configurar interceptores de axios para manejo de tokens
+  useEffect(() => {
+    setupAxiosInterceptors()
+  }, [])
+
+  // Verificar periódicamente el estado del token
+  useTokenRefresh(2, 5) // Verifica cada 2 minutos, alerta 5 minutos antes de expirar
+>>>>>>> 2e0844f41bf16653730d55dfef7847e2c8a9a256
 
   useEffect(() => {
     role = role ? localStorage.getItem('role') : null
@@ -50,7 +65,11 @@ const Dashboard = () => {
                   // dispatch(disconnectSocket())
               }
           } catch (error) {
+<<<<<<< HEAD
               console.log(error);
+=======
+              console.error('Error conectando socket:', error);
+>>>>>>> 2e0844f41bf16653730d55dfef7847e2c8a9a256
           }
     },[dispatch])
   
@@ -61,9 +80,12 @@ const Dashboard = () => {
     const token = localStorage.getItem('token')
     const userId = localStorage.getItem('userId')
     
+<<<<<<< HEAD
     console.log('Dashboard useEffect - token:', token)
     console.log('Dashboard useEffect - userId:', userId)
     
+=======
+>>>>>>> 2e0844f41bf16653730d55dfef7847e2c8a9a256
     if(token){
       // Obtener empresa
       empresaXUser(token)
@@ -80,11 +102,16 @@ const Dashboard = () => {
           dispatch(setEmpresa(data.empresa))
         })
         .catch(error => {
+<<<<<<< HEAD
           console.log(error);
+=======
+          console.error('Error obteniendo empresa:', error);
+>>>>>>> 2e0844f41bf16653730d55dfef7847e2c8a9a256
         })
       
       // Obtener usuario actual
       if(userId){
+<<<<<<< HEAD
         console.log('Obteniendo usuarios...')
         usuariosXRole('', token)
           .then(data => {
@@ -93,12 +120,19 @@ const Dashboard = () => {
               console.log('Usuarios encontrados:', data.users.length)
               const currentUser = data.users.find(u => u.id === userId)
               console.log('Usuario actual encontrado:', currentUser)
+=======
+        usuariosXRole('', token)
+          .then(data => {
+            if(data.users){
+              const currentUser = data.users.find(u => u.id === userId)
+>>>>>>> 2e0844f41bf16653730d55dfef7847e2c8a9a256
               if(currentUser){
                 const userData = {
                   id: currentUser.id,
                   name: `${currentUser.nombre} ${currentUser.apellido}`,
                   email: currentUser.email
                 }
+<<<<<<< HEAD
                 console.log('Despachando setUser con:', userData)
                 dispatch(setUser(userData))
               } else {
@@ -113,6 +147,15 @@ const Dashboard = () => {
           })
       } else {
         console.log('No hay userId en localStorage')
+=======
+                dispatch(setUser(userData))
+              }
+            }
+          })
+          .catch(error => {
+            console.error('Error obteniendo usuarios:', error);
+          })
+>>>>>>> 2e0844f41bf16653730d55dfef7847e2c8a9a256
       }
     }
   },[])

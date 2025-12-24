@@ -1,18 +1,35 @@
 import { useState, useRef, useEffect } from 'react'
-import { MoreVertical, X } from 'lucide-react'
+import { MoreVertical, X, Plus } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
+import AddTagModal from '../modal/AddTagModal'
+import RemoveTagFromChatModal from '../modal/RemoveTagFromChatModal'
+import { ChatTag } from '../../interfaces/chats.interface'
+import { setChats } from '../../app/slices/actionSlice'
+import { getChats } from '../../services/chats/chats.services'
 import './chat-info-dropdown.css'
 
 interface ChatInfoDropdownProps {
   dataUser: any
+  tags?: ChatTag[]
 }
 
-const ChatInfoDropdown = ({ dataUser }: ChatInfoDropdownProps) => {
+const ChatInfoDropdown = ({ dataUser, tags = [] }: ChatInfoDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
+  const [showAddTagTooltip, setShowAddTagTooltip] = useState(false)
+  const [addTagTooltipStyle, setAddTagTooltipStyle] = useState<React.CSSProperties>({})
+  const [isAddTagModalOpen, setIsAddTagModalOpen] = useState(false)
+  const [isRemoveTagModalOpen, setIsRemoveTagModalOpen] = useState(false)
+  const [tagToRemove, setTagToRemove] = useState<ChatTag | null>(null)
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({})
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const addTagButtonRef = useRef<HTMLButtonElement>(null)
+  const { id: chatId } = useParams()
+  const dispatch = useDispatch()
+  const token = localStorage.getItem('token') || ''
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -74,6 +91,59 @@ const ChatInfoDropdown = ({ dataUser }: ChatInfoDropdownProps) => {
     setShowTooltip(false)
   }
 
+  const handleAddTagMouseEnter = () => {
+    if (addTagButtonRef.current) {
+      const rect = addTagButtonRef.current.getBoundingClientRect()
+      const tooltipWidth = 150
+      const viewportWidth = window.innerWidth
+      
+      let leftPosition = rect.left + rect.width / 2
+      
+      if (leftPosition + tooltipWidth / 2 > viewportWidth - 10) {
+        leftPosition = viewportWidth - tooltipWidth / 2 - 20
+      }
+      
+      setAddTagTooltipStyle({
+        top: `${rect.top - 10}px`,
+        left: `${leftPosition}px`,
+      })
+      setShowAddTagTooltip(true)
+    }
+  }
+
+  const handleAddTagMouseLeave = () => {
+    setShowAddTagTooltip(false)
+  }
+
+  const handleAddTagClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    setIsAddTagModalOpen(true)
+  }
+
+  const handleTagConfirm = async (_tagId: string) => {
+    try {
+      const chatos = await getChats(token, '1', '100')
+      dispatch(setChats(chatos.chats))
+    } catch (error) {
+      console.error('Error refreshing chats after tag assignment:', error)
+    }
+  }
+
+  const handleTagRemoveClick = (e: React.MouseEvent<HTMLSpanElement>, tag: ChatTag) => {
+    e.stopPropagation()
+    setTagToRemove(tag)
+    setIsRemoveTagModalOpen(true)
+  }
+
+  const handleRemoveTagSuccess = async () => {
+    try {
+      const chatos = await getChats(token, '1', '100')
+      dispatch(setChats(chatos.chats))
+    } catch (error) {
+      console.error('Error refreshing chats:', error)
+    }
+  }
+
   return (
     <div className="chat-info-dropdown" ref={dropdownRef}>
       <button 
@@ -107,11 +177,39 @@ const ChatInfoDropdown = ({ dataUser }: ChatInfoDropdownProps) => {
 
           <div className="chat-info-dropdown-content">
             <div className="w-full">
-              <p className="chat-info-label">Etiquetas</p>
+              <div className="chat-info-label-container">
+                <p className="chat-info-label">Etiquetas</p>
+                <button
+                  ref={addTagButtonRef}
+                  className="chat-info-add-tag-button"
+                  onClick={handleAddTagClick}
+                  onMouseEnter={handleAddTagMouseEnter}
+                  onMouseLeave={handleAddTagMouseLeave}
+                  aria-label="Agregar etiqueta"
+                >
+                  <Plus size={12} />
+                </button>
+                {showAddTagTooltip && (
+                  <div className="chat-info-tooltip" style={addTagTooltipStyle}>
+                    Agregar etiqueta
+                  </div>
+                )}
+              </div>
               <div className="chat-tags-panel">
-                <p className="chat-tag">ac <span className="chat-tag-close">×</span></p>
-                <p className="chat-tag">black <span className="chat-tag-close">×</span></p>
-                <p className="chat-tag">deuda <span className="chat-tag-close">×</span></p>
+                {tags && tags.length > 0 ? (
+                  tags.map(tag => (
+                    <p key={tag.id} className="chat-tag">
+                      {tag.nombre} 
+                      <span 
+                        className="chat-tag-close" 
+                        onClick={(e) => handleTagRemoveClick(e, tag)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        ×
+                      </span>
+                    </p>
+                  ))
+                ) : null}
               </div>
             </div>
 
@@ -229,6 +327,23 @@ const ChatInfoDropdown = ({ dataUser }: ChatInfoDropdownProps) => {
           </div>
         </div>
       )}
+      
+      <AddTagModal
+        isOpen={isAddTagModalOpen}
+        onClose={() => setIsAddTagModalOpen(false)}
+        onConfirm={handleTagConfirm}
+        chatId={chatId}
+      />
+      <RemoveTagFromChatModal
+        isOpen={isRemoveTagModalOpen}
+        onClose={() => {
+          setIsRemoveTagModalOpen(false)
+          setTagToRemove(null)
+        }}
+        tag={tagToRemove}
+        chatId={chatId}
+        onSuccess={handleRemoveTagSuccess}
+      />
     </div>
   )
 }

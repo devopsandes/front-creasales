@@ -9,7 +9,7 @@ import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine } from "react-icons/lu";
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
@@ -44,6 +44,7 @@ const ListaChats = () => {
 
     const dataUser = useSelector((state: RootState) => state.action.dataUser);
     const viewSide = useSelector((state: RootState) => state.action.viewSide);
+    const chatsFromRedux = useSelector((state: RootState) => state.action.chats);
 
 
     const socket = getSocket()
@@ -94,6 +95,7 @@ const ListaChats = () => {
             setAsignadas(asignadasTemp)
             setChats1(chatos.chats)
             setFiltrados(chatos.chats)
+            dispatch(setChats(chatos.chats))
             setLoading(false)
             
             const usersIds = new Set<string>()
@@ -186,6 +188,49 @@ const ListaChats = () => {
             setFiltrados(filtrados);
         }
     }, [users, chats1, searchParams, loading])
+
+    useEffect(() => {
+        if (chatsFromRedux.length > 0) {
+            const archivadasTemp: ChatState[] = []
+            const botsTemp: ChatState[] = []
+            const asignadasTemp: ChatState[] = []
+            const botsIds = new Set<string>()
+
+            chatsFromRedux.forEach(chat => {
+                if(chat.archivar){
+                    archivadasTemp.push(chat)
+                }
+
+                if(!chat.operador){
+                    if(!botsIds.has(chat.id)){
+                        botsTemp.push(chat)
+                        botsIds.add(chat.id)
+                    }
+                }
+
+                if(id === chat.operador?.id){
+                    asignadasTemp.push(chat)
+                }
+            })
+
+            setArchivadas(archivadasTemp)
+            setBots(botsTemp)
+            setAsignadas(asignadasTemp)
+            setChats1(chatsFromRedux)
+            
+            if (styleBtn === "todas") {
+                setFiltrados(chatsFromRedux)
+            } else if (styleBtn === "asig") {
+                setFiltrados(asignadasTemp)
+            } else if (styleBtn === "archi") {
+                setFiltrados(archivadasTemp)
+            } else if (styleBtn === "bots") {
+                setFiltrados(botsTemp)
+            } else {
+                setFiltrados(chatsFromRedux)
+            }
+        }
+    }, [chatsFromRedux, id, styleBtn])
 
   
 
@@ -294,9 +339,11 @@ const ListaChats = () => {
                                             type="checkbox"
                                             className="checkbox"
                                         />
-                                        <p className="chat-tag">ac</p>
-                                        <p className="chat-tag">black</p>
-                                        <p className="chat-tag">deuda</p>
+                                        {chat.tags && chat.tags.length > 0 ? (
+                                            chat.tags.map(tag => (
+                                                <p key={tag.id} className="chat-tag">{tag.nombre}</p>
+                                            ))
+                                        ) : null}
                                     </div>
                                 </Link>
                             ))}
