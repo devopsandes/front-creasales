@@ -226,3 +226,74 @@
   transform: scale(0.98);
 }
 
+/* Agregar a ticket-modal.css */
+
+.ticket-modal-container-wide {
+  width: 90%;
+  max-width: 1200px;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.ticket-modal-content-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.ticket-modal-left-column,
+.ticket-modal-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ticket-modal-search-group {
+  display: flex;
+  gap: 8px;
+}
+
+.ticket-modal-search-button {
+  padding: 8px 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ticket-modal-afiliado-info {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.info-row span:first-child {
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.ticket-modal-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ticket-modal-btn-secondary {
+  flex: 1;
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
