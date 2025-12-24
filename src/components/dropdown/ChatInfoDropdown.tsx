@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { MoreVertical, X, Plus } from 'lucide-react'
 import { useParams } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import AddTagModal from '../modal/AddTagModal'
 import RemoveTagFromChatModal from '../modal/RemoveTagFromChatModal'
 import { ChatTag } from '../../interfaces/chats.interface'
 import { setChats } from '../../app/slices/actionSlice'
 import { getChats } from '../../services/chats/chats.services'
+import { RootState } from '../../app/store'
 import './chat-info-dropdown.css'
 
 interface ChatInfoDropdownProps {
@@ -30,6 +31,9 @@ const ChatInfoDropdown = ({ dataUser, tags = [] }: ChatInfoDropdownProps) => {
   const { id: chatId } = useParams()
   const dispatch = useDispatch()
   const token = localStorage.getItem('token') || ''
+  const chats = useSelector((state: RootState) => state.action.chats)
+  const currentChat = chats.find(chat => chat.id === chatId)
+  const operador = currentChat?.operador
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -235,7 +239,11 @@ const ChatInfoDropdown = ({ dataUser, tags = [] }: ChatInfoDropdownProps) => {
 
             <div className="chat-info-item">
               <span className="chat-info-label-inline">Asignado:</span>
-              <span className="chat-info-value">John Doe</span>
+              <span className="chat-info-value">
+                {operador 
+                  ? `${operador.nombre} ${operador.apellido}` 
+                  : 'Sin asignar'}
+              </span>
             </div>
 
             {dataUser?.mail && (

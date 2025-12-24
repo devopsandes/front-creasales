@@ -162,21 +162,28 @@ const switchActivo = async (userId: string | undefined, token: string, activo: b
 
 const asignarOperador = async (chat_id: string, user_id: string, token: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `https://sales.createch.com.ar/api/v1/auth/usuarios/operador?chat_id=${chat_id}&user_id=${user_id}`
+        const url = `https://sales.createch.com.ar/api/v1/auth/usuarios/operador?chat_id=${chat_id}&user_id=${user_id}&token=${encodeURIComponent(token)}`
 
         const headers = {
             authorization: `Bearer ${token}`
         }
 
-        const { data } = await axios<SuccessResponse & ErrorResponse>(url, {headers})
+        const { data } = await axios.get<SuccessResponse & ErrorResponse>(url, {headers})
 
         return data
     } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-            const objeto: ErrorResponse & SuccessResponse  = error.response.data
-            return objeto
+        if (axios.isAxiosError(error)) {
+            if (error.response) {
+                const objeto: ErrorResponse & SuccessResponse  = error.response.data
+                return objeto
+            }
         }
-        throw error; // Lanza el error si no es del tipo esperado
+        
+        // Si no hay respuesta, retornar un error genérico
+        return {
+            statusCode: 500,
+            message: 'Error de conexión. Por favor, intenta nuevamente.'
+        } as ErrorResponse & SuccessResponse
     }
 }
 
