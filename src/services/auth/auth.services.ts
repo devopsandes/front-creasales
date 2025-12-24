@@ -182,7 +182,8 @@ const asignarOperador = async (chat_id: string, user_id: string, token: string):
         // Si no hay respuesta, retornar un error genérico
         return {
             statusCode: 500,
-            message: 'Error de conexión. Por favor, intenta nuevamente.'
+            message: ['Error de conexión. Por favor, intenta nuevamente.'],
+            error: 'Connection Error'
         } as ErrorResponse & SuccessResponse
     }
 }

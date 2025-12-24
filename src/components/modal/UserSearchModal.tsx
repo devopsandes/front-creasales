@@ -112,7 +112,9 @@ const UserSearchModal = ( ) => {
         }, 100);
       } else {
         // Mostrar modal de error
-        const errorMsg = resp.message || 'Error al asignar el chat. Por favor, intenta nuevamente.';
+        const errorMsg = Array.isArray(resp.message) 
+          ? resp.message.join(', ') 
+          : (resp.message || 'Error al asignar el chat. Por favor, intenta nuevamente.');
         setErrorMessage(errorMsg);
         setShowErrorModal(true);
       }
