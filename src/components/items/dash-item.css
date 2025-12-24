@@ -1,0 +1,83 @@
+.di-container {
+    padding: 0.5rem;
+    background-color: #f3f4f6;
+    width: 90%;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    text-decoration: none;
+    color: #4b5563;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    position: relative;
+}
+
+.di-container svg {
+    flex-shrink: 0;
+}
+
+.di-container p{
+    display: none;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.di-tooltip {
+    position: fixed;
+    transform: translateY(-50%);
+    background-color: white;
+    color: #4b5563;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 99999;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    animation: tooltipSlideIn 0.2s ease;
+}
+
+@keyframes tooltipSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+.di-container:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Cuando el sidebar está expandido (clase .expanded) */
+.dash-sidebar.expanded .di-container {
+    justify-content: flex-start;
+}
+
+.dash-sidebar.expanded .di-container p {
+    display: block;
+}
+
+.dash-sidebar.expanded .di-tooltip {
+    display: none;
+}
+
+.di-container-active {
+    color: #f31b1e;
+}
+
+.di-container-active:hover {
+    background-color: #e5e7eb;
+    color: #f31b1e;
+}

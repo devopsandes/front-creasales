@@ -1,0 +1,224 @@
+/* 
+  Estilos aislados para MainView 
+  Prefijo: mainview-* para evitar colisiones con otros componentes
+*/
+
+/* Wrapper principal - ocupa toda la viewport */
+.mainview-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  background-color: #1a1d4d;
+  background: linear-gradient(135deg, #1a1d4d 0%, #2a2d6a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Container con max-width para contenido */
+.mainview-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Contenido centrado */
+.mainview-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2rem;
+}
+
+/* Logo */
+.mainview-logo-container {
+  width: 180px;
+  height: 180px;
+  margin-bottom: 1rem;
+  animation: mainview-fadeIn 0.8s ease-in-out;
+  cursor: pointer;
+  transition: transform 0.4s ease;
+}
+
+.mainview-logo-container:hover {
+  transform: scale(1.08);
+}
+
+.mainview-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+  box-shadow: 0 8px 32px rgba(0, 115, 255, 0.2);
+  transition: box-shadow 0.4s ease;
+}
+
+.mainview-logo-container:hover .mainview-logo {
+  box-shadow: 0 12px 48px rgba(0, 115, 255, 0.35);
+}
+
+/* Título principal */
+.mainview-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.2;
+  animation: mainview-fadeIn 1s ease-in-out 0.2s both;
+}
+
+/* Subtítulo */
+.mainview-subtitle {
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  line-height: 1.6;
+  max-width: 480px;
+  animation: mainview-fadeIn 1s ease-in-out 0.4s both;
+}
+
+/* Container del CTA */
+.mainview-cta-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  animation: mainview-fadeIn 1s ease-in-out 0.6s both;
+}
+
+/* Botón CTA principal */
+.mainview-cta {
+  display: inline-block;
+  padding: 0.875rem 2.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #0073ff;
+  background: linear-gradient(135deg, #0073ff 0%, #0056cc 100%);
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 115, 255, 0.3);
+}
+
+.mainview-cta:hover {
+  background: linear-gradient(135deg, #0056cc 0%, #003d99 100%);
+  box-shadow: 0 6px 24px rgba(0, 115, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.mainview-cta:focus {
+  outline: 3px solid rgba(0, 115, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.mainview-cta:active {
+  transform: translateY(0);
+}
+
+/* Texto de ayuda */
+.mainview-help-text {
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+/* Footer con leyenda de marca */
+.mainview-footer {
+  margin-top: 2rem;
+  animation: mainview-fadeIn 1s ease-in-out 0.8s both;
+}
+
+.mainview-brand {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: 0.025em;
+}
+
+/* Animación de fade-in */
+@keyframes mainview-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive - Tablets */
+@media (max-width: 768px) {
+  .mainview-wrapper {
+    padding: 1.5rem;
+  }
+
+  .mainview-logo-container {
+    width: 140px;
+    height: 140px;
+  }
+
+  .mainview-title {
+    font-size: 2rem;
+  }
+
+  .mainview-subtitle {
+    font-size: 1rem;
+  }
+
+  .mainview-cta {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+  }
+}
+
+/* Responsive - Móviles */
+@media (max-width: 480px) {
+  .mainview-wrapper {
+    padding: 1rem;
+  }
+
+  .mainview-content {
+    gap: 1.5rem;
+  }
+
+  .mainview-logo-container {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 0.5rem;
+  }
+
+  .mainview-title {
+    font-size: 1.75rem;
+  }
+
+  .mainview-subtitle {
+    font-size: 0.9375rem;
+  }
+
+  .mainview-cta {
+    padding: 0.75rem 1.75rem;
+    font-size: 1rem;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .mainview-help-text {
+    font-size: 0.875rem;
+  }
+
+  .mainview-brand {
+    font-size: 0.8125rem;
+  }
+}
+

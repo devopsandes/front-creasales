@@ -1,0 +1,427 @@
+/* 
+  Estilos aislados para SignIn/Login
+  Prefijo: signin-* para evitar colisiones con otros componentes
+*/
+
+/* Wrapper principal - ocupa toda la viewport del Auth layout */
+.signin-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: #1a1d4d;
+  background: linear-gradient(135deg, #1a1d4d 0%, #2a2d6a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  overflow-y: auto;
+}
+
+/* Container con max-width para contenido */
+.signin-container {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Contenido centrado */
+.signin-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+}
+
+/* Logo del cohete */
+.signin-logo-container {
+  width: 140px;
+  height: 140px;
+  margin-bottom: 0.5rem;
+  animation: signin-fadeIn 0.8s ease-in-out;
+  cursor: pointer;
+  transition: transform 0.4s ease;
+}
+
+.signin-logo-container:hover {
+  transform: scale(1.08);
+}
+
+.signin-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+  box-shadow: 0 8px 32px rgba(0, 115, 255, 0.2);
+  transition: box-shadow 0.4s ease;
+}
+
+.signin-logo-container:hover .signin-logo {
+  box-shadow: 0 12px 48px rgba(0, 115, 255, 0.35);
+}
+
+/* Título */
+.signin-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.2;
+  animation: signin-fadeIn 1s ease-in-out 0.2s both;
+}
+
+/* Subtítulo */
+.signin-subtitle {
+  font-size: 1rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.5;
+  animation: signin-fadeIn 1s ease-in-out 0.3s both;
+}
+
+/* Formulario */
+.signin-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: signin-fadeIn 1s ease-in-out 0.4s both;
+}
+
+/* Grupo de formulario */
+.signin-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+/* Label */
+.signin-label {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+}
+
+/* Input wrapper para password con icono */
+.signin-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Inputs */
+.signin-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  color: #1a1d4d;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.signin-input::placeholder {
+  color: rgba(26, 29, 77, 0.5);
+}
+
+.signin-input:focus {
+  border-color: #0073ff;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 115, 255, 0.1);
+}
+
+.signin-input:hover {
+  border-color: rgba(0, 115, 255, 0.3);
+}
+
+/* Input de password con botón del ojo */
+.signin-input-password {
+  padding-right: 3rem;
+}
+
+/* Botón para mostrar/ocultar password */
+.signin-btn-eye {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(75, 85, 99, 0.8);
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.signin-btn-eye:hover {
+  color: #0073ff;
+  background-color: rgba(0, 115, 255, 0.1);
+}
+
+.signin-btn-eye:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 115, 255, 0.3);
+}
+
+/* Mensaje de error */
+.signin-error {
+  padding: 0.75rem 1rem;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #fecaca;
+  font-size: 0.875rem;
+  text-align: center;
+  animation: signin-shake 0.3s ease-in-out;
+}
+
+/* Botón principal */
+.signin-button {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #0073ff;
+  background: linear-gradient(135deg, #0073ff 0%, #0056cc 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 115, 255, 0.3);
+  margin-top: 0.5rem;
+}
+
+.signin-button:hover {
+  background: linear-gradient(135deg, #0056cc 0%, #003d99 100%);
+  box-shadow: 0 6px 24px rgba(0, 115, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.signin-button:focus {
+  outline: 3px solid rgba(0, 115, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.signin-button:active {
+  transform: translateY(0);
+}
+
+/* Links de registro y recuperación */
+.signin-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.signin-link {
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.signin-link:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+.signin-link:focus {
+  outline: 2px solid rgba(96, 165, 250, 0.5);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.signin-separator {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.875rem;
+}
+
+/* Footer con leyenda de marca */
+.signin-footer {
+  margin-top: 1.5rem;
+  animation: signin-fadeIn 1s ease-in-out 0.6s both;
+}
+
+.signin-brand {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: 0.025em;
+}
+
+/* Mensaje de contacto (usado en Register y RecuperarPass) */
+.signin-contact-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding: 1.5rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  max-width: 100%;
+  animation: signin-fadeIn 1s ease-in-out 0.4s both;
+}
+
+.signin-contact-text {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.signin-contact-email {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #60a5fa;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background-color: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.signin-contact-email:hover {
+  color: #93c5fd;
+  background-color: rgba(96, 165, 250, 0.15);
+  border-color: rgba(96, 165, 250, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.2);
+}
+
+.signin-contact-email:focus {
+  outline: 2px solid rgba(96, 165, 250, 0.5);
+  outline-offset: 2px;
+}
+
+/* Animaciones */
+@keyframes signin-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes signin-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(10px);
+  }
+}
+
+/* Responsive - Tablets */
+@media (max-width: 768px) {
+  .signin-wrapper {
+    padding: 1.5rem 1rem;
+  }
+
+  .signin-container {
+    max-width: 420px;
+  }
+
+  .signin-logo-container {
+    width: 120px;
+    height: 120px;
+  }
+
+  .signin-title {
+    font-size: 1.75rem;
+  }
+
+  .signin-subtitle {
+    font-size: 0.9375rem;
+  }
+}
+
+/* Responsive - Móviles */
+@media (max-width: 480px) {
+  .signin-wrapper {
+    padding: 1rem;
+  }
+
+  .signin-content {
+    gap: 1.25rem;
+  }
+
+  .signin-logo-container {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 0.25rem;
+  }
+
+  .signin-title {
+    font-size: 1.5rem;
+  }
+
+  .signin-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .signin-form {
+    gap: 1rem;
+  }
+
+  .signin-input {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.9375rem;
+  }
+
+  .signin-button {
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+  }
+
+  .signin-links {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .signin-separator {
+    display: none;
+  }
+
+  .signin-contact-message {
+    padding: 1.25rem;
+  }
+
+  .signin-contact-text {
+    font-size: 0.875rem;
+  }
+
+  .signin-contact-email {
+    font-size: 0.9375rem;
+    padding: 0.5rem 0.875rem;
+  }
+}

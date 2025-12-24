@@ -1,0 +1,299 @@
+/*
+  Estilos para el modal de Crear Ticket
+  Siguiendo el diseño profesional del proyecto
+*/
+
+/* Overlay del modal */
+.ticket-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(0.5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  width: 100%;
+}
+
+/* Contenedor del modal */
+.ticket-modal-container {
+  background-color: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 600px;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Header del modal */
+.ticket-modal-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.ticket-modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.ticket-modal-close-button {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ticket-modal-close-button:hover {
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+.ticket-modal-close-button svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Contenido del modal */
+.ticket-modal-content {
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.ticket-modal-inner-title {
+  width: 100%;
+  text-align: center;
+  color: #374151;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+/* Formulario */
+.ticket-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.ticket-modal-form-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
+
+.ticket-modal-label {
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-width: 120px;
+  text-align: left;
+}
+
+/* Inputs y selects */
+.ticket-modal-input,
+.ticket-modal-select,
+.ticket-modal-textarea {
+  width: 66.666%;
+  padding: 0.625rem 0.875rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  color: #111827;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.ticket-modal-input:focus,
+.ticket-modal-select:focus,
+.ticket-modal-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.ticket-modal-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Select específico con flecha personalizada */
+.ticket-modal-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.25rem;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.ticket-modal-select:hover {
+  border-color: #9ca3af;
+}
+
+/* Input de archivo */
+.ticket-modal-file-input {
+  display: block;
+  width: 66.666%;
+  padding: 0.5rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  color: #111827;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ticket-modal-file-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.ticket-modal-file-input::file-selector-button {
+  margin-right: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: #3b82f6;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ticket-modal-file-input::file-selector-button:hover {
+  background-color: #2563eb;
+}
+
+/* Botón de submit */
+.ticket-modal-submit-button {
+  padding: 0.625rem 1.5rem;
+  background-color: #3b82f6;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 0.5rem;
+  width: 70%;
+  max-width: 300px;
+  align-self: center;
+}
+
+.ticket-modal-submit-button:hover {
+  background-color: #2563eb;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.ticket-modal-submit-button:active {
+  transform: scale(0.98);
+}
+
+/* Agregar a ticket-modal.css */
+
+.ticket-modal-container-wide {
+  width: 90%;
+  max-width: 1200px;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.ticket-modal-content-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.ticket-modal-left-column,
+.ticket-modal-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ticket-modal-search-group {
+  display: flex;
+  gap: 8px;
+}
+
+.ticket-modal-search-button {
+  padding: 8px 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ticket-modal-afiliado-info {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.info-row span:first-child {
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.ticket-modal-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ticket-modal-btn-secondary {
+  flex: 1;
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+}
+

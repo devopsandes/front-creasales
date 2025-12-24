@@ -1,0 +1,15 @@
+.msg-register{
+    padding: 20px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.69);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    color: rgb(43, 43, 43);
+    font-size: 18px;
+    width: fit-content;
+    text-align: left;
+}
+
+.title-error {
+    color: red;
+    font-size: large;
+}

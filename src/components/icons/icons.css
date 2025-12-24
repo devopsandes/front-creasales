@@ -1,0 +1,12 @@
+.icon-eye{
+    width: 20px;
+    height: 20px;
+    color: inherit; /* Hereda el color del contenedor padre */
+}
+
+.icon-x {
+    cursor: pointer; /* Opcional: para que sea clickeable */
+    color: rgba(48, 48, 48, 0.69);
+    width: 20px;
+    height: 20px;
+}

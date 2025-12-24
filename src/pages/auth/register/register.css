@@ -1,0 +1,21 @@
+/* 
+  Estilos para Register - importa los estilos base de login
+*/
+
+@import '../login/login.css';
+
+/* Responsive adicional para mensaje de contacto en móviles */
+@media (max-width: 480px) {
+  .signin-contact-message {
+    padding: 1.25rem;
+  }
+
+  .signin-contact-text {
+    font-size: 0.875rem;
+  }
+
+  .signin-contact-email {
+    font-size: 0.9375rem;
+    padding: 0.5rem 0.875rem;
+  }
+}
