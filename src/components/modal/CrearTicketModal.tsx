@@ -26,7 +26,8 @@ const DEPARTAMENTOS_TIPIFICACIONES: Record<DepartamentoId, DepartamentoData> = {
             'Problemas al utilizar servicio',
             'Medicamentos',
             'Estudio o Práctica Médica',
-            'Anticonceptivos'
+            'Anticonceptivos',
+            'Fertilización'
         ]
     },
     '564264000000179032': {
