@@ -39,7 +39,7 @@ const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
-  let role = localStorage.getItem('role')
+  const role = localStorage.getItem('role')
   useEffect(() => {},[])
 
  

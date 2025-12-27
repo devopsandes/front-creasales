@@ -14,7 +14,7 @@ const FormPass = () => {
     const navigate = useNavigate()
     const dispatch = useDispatch()
     const [searchParams] = useSearchParams()
-    let token = searchParams.get('token')
+    const token = searchParams.get('token')
 
     useEffect(() => {
         setMsgError('')

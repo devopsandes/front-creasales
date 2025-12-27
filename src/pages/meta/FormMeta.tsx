@@ -37,7 +37,7 @@ const FormMeta = () => {
     console.log(servicios);
     
 
-    let token = localStorage.getItem('token')
+    const token = localStorage.getItem('token')
 
     if(!token){
       setShowSpinner(false)

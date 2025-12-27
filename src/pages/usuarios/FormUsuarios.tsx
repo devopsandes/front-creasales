@@ -51,7 +51,7 @@ const FormUsuarios = () => {
     e.preventDefault()
     setShowSpinner(true)
 
-    let token = localStorage.getItem('token')
+    const token = localStorage.getItem('token')
 
     const empresa = await empresaXUser(token!)
 

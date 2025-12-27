@@ -15,7 +15,7 @@ const FormModulos = () => {
 
   const navigate = useNavigate()
 
-  let token = localStorage.getItem('token')
+  const token = localStorage.getItem('token')
 
  
 

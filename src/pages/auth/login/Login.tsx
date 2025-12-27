@@ -44,7 +44,7 @@ const Login = () => {
     setShowSpinner(true)
     
     // let respuesta = await login({email, password})
-    let respuesta = await authLogin({email, password})
+    const respuesta = await authLogin({email, password})
     
     if(respuesta.token){
       // Extraer el ID del token JWT

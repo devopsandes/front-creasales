@@ -25,7 +25,7 @@ const TableUsers = () => {
   const tooltipRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   const token  = localStorage.getItem('token') || '';
-  let role = localStorage.getItem('role') || '';
+  const role = localStorage.getItem('role') || '';
   const navigate = useNavigate();
   const dispatch = useDispatch()
 
