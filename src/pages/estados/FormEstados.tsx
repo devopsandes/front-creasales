@@ -45,7 +45,7 @@ const FormEstados = () => {
     setErrores([])
     setShowSpinner(true)
 
-    let token = localStorage.getItem('token')
+    const token = localStorage.getItem('token')
 
     if(!token){
       setShowSpinner(false)

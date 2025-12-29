@@ -60,7 +60,7 @@ const FormEmpresa = () => {
     e.preventDefault()
     setShowSpinner(true)
 
-    let token = localStorage.getItem('token')
+    const token = localStorage.getItem('token')
 
     const regex = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:[0-9]{1,5})?(\/.*)?$/
 

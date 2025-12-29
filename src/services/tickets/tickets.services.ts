@@ -96,4 +96,25 @@ const createTicket = async (
     }
 }
 
-export { getTickets, getTicketById, createTicket, buscarAfiliado }
+const deleteTicket = async (token: string, id: string): Promise<any> => {
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/tickets/${id}`
+
+        const headers = {
+            authorization: `Bearer ${token}`
+        }
+      
+        const { data } = await axios.delete(url, { headers })
+
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data
+        }
+        throw error;
+    }
+}
+
+export { getTickets, getTicketById, createTicket, buscarAfiliado, deleteTicket }
+
+

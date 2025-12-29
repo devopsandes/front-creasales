@@ -330,3 +330,16 @@
   align-items: center;
 }
 
+.tickets-delete-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px 8px;
+  transition: transform 0.2s;
+}
+
+.tickets-delete-button:hover {
+  transform: scale(1.2);
+}
+
