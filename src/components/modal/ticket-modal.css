@@ -297,3 +297,34 @@
   cursor: pointer;
 }
 
+/* Optimización de espacio - letra más chica */
+.ticket-modal-afiliado-info .info-row {
+    padding: 4px 0;  /* Reducir padding vertical */
+    font-size: 0.8125rem;  /* Letra más chica */
+}
+
+.ticket-modal-afiliado-info .info-row span:first-child {
+    font-size: 0.75rem;  /* Labels aún más chicos */
+}
+
+.ticket-modal-inner-title {
+    font-size: 0.9375rem;  /* Títulos más chicos */
+    margin-bottom: 0.75rem;
+}
+
+.ticket-modal-label {
+    font-size: 0.8125rem;  /* Labels más chicos */
+}
+
+.ticket-modal-input,
+.ticket-modal-select,
+.ticket-modal-textarea {
+    font-size: 0.8125rem;  /* Inputs más chicos */
+    padding: 0.5rem 0.75rem;  /* Menos padding */
+}
+
+.ticket-modal-container-wide {
+    max-height: 90vh;  /* Limitar altura máxima */
+    overflow-y: auto;  /* Scroll si es necesario */
+}
+

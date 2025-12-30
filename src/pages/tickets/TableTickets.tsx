@@ -125,7 +125,7 @@ const TableTickets = () => {
                       {startIndex + index + 1} / #{ticket.nro}
                     </td>
                     <td className="tickets-table-cell tickets-table-cell-asunto col-span-2">
-                      {ticket.nombre}
+                      {ticket.canal === 'SEDE' ? ticket.tipificacion : ticket.nombre}
                     </td>
                     <td className="tickets-table-cell tickets-table-cell-prioridad col-span-1">
                       {ticket.prioridad}
@@ -220,7 +220,7 @@ const TableTickets = () => {
       </div>
     </div>
   );
-  
+
 };
 
 

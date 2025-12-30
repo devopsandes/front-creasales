@@ -23,6 +23,9 @@ export interface Ticket {
     updatedAt:   Date;
     chat:        Chat;
     estado:     Estado;
+    departamento?: string;    
+    tipificacion?: string;    
+    afiliadoData?: any; 
 }
 
 /* export interface Chat {
