@@ -11,8 +11,7 @@ import DepartamentosTipificaciones from './DepartamentosTipificaciones';
 
 
 const CrearTicketModal = () => {
-    const [titulo, setTitulo] = useState('');
-    const [descripcion, setDescripcion] = useState('');
+
     const [departamento, setDepartamento] = useState('');
     const [tipificacion, setTipificacion] = useState('');
     const [busquedaAfiliado, setBusquedaAfiliado] = useState('');
@@ -60,7 +59,7 @@ const CrearTicketModal = () => {
         e.preventDefault();
 
         // Validación básica
-        if (!titulo || !descripcion || !departamento || !tipificacion) {
+        if (!departamento || !tipificacion) {
             toast.error('Por favor complete todos los campos');
             return;
         }
@@ -74,8 +73,8 @@ const CrearTicketModal = () => {
 
         try {
             const ticketData: any = {
-                nombre: titulo,
-                descripcion: descripcion,
+                nombre: tipificacion,
+                descripcion: tipificacion,
                 departamento: departamento,
                 tipificacion: tipificacion,
                 afiliadoData: afiliadoData,
@@ -99,8 +98,6 @@ const CrearTicketModal = () => {
 
     const handleClose = () => {
         dispatch(closeModalTicket());
-        setTitulo('');
-        setDescripcion('');
         setDepartamento('');
         setTipificacion('');
         setBusquedaAfiliado('');
@@ -209,30 +206,11 @@ const CrearTicketModal = () => {
                         <h3 className="ticket-modal-inner-title">Nuevo Ticket de Soporte</h3>
 
                         <form onSubmit={handleSubmit} className="ticket-modal-form">
-                            <div className="ticket-modal-form-group">
-                                <label htmlFor="titulo" className="ticket-modal-label">Título</label>
-                                <input
-                                    type="text"
-                                    id="titulo"
-                                    placeholder="Título del ticket"
-                                    className="ticket-modal-input"
-                                    value={titulo}
-                                    onChange={(e) => setTitulo(e.target.value)}
-                                />
-                            </div>
 
-                            <div className="ticket-modal-form-group">
-                                <label htmlFor="descripcion" className="ticket-modal-label">Descripción</label>
-                                <textarea
-                                    id="descripcion"
-                                    placeholder="Descripción del ticket"
-                                    className="ticket-modal-textarea"
-                                    value={descripcion}
-                                    onChange={(e) => setDescripcion(e.target.value)}
-                                />
-                            </div>
-
-                            <DepartamentosTipificaciones onDataChange={handleTipificacionDataChange} />
+                            <DepartamentosTipificaciones
+                                onDataChange={handleTipificacionDataChange}
+                                afiliadoData={afiliadoData}  // 👈 AGREGAR
+                            />
 
                             <button
                                 type="submit"

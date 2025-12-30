@@ -2,12 +2,13 @@ import { useState } from 'react';
 
 interface DepartamentosTipificacionesProps {
     onDataChange: (data: any) => void;
+    afiliadoData: any;
 }
 
-const DepartamentosTipificaciones = ({ onDataChange }: DepartamentosTipificacionesProps) => {
+const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: DepartamentosTipificacionesProps) => {
     const [departamento, setDepartamento] = useState('');
     const [tipificacion, setTipificacion] = useState('');
-    
+
     // Estados para campos específicos de Prestaciones Médicas
     const [diagnostico, setDiagnostico] = useState('');
     const [tipoReintegro, setTipoReintegro] = useState('');
@@ -17,6 +18,12 @@ const DepartamentosTipificaciones = ({ onDataChange }: DepartamentosTipificacion
     const [tipoGestion, setTipoGestion] = useState('');
     const [medicamento, setMedicamento] = useState('');
     const [tipoAnticonceptivo, setTipoAnticonceptivo] = useState('');
+
+    // ESTADOS PARA FISCALIZACIÓN
+    const [periodo, setPeriodo] = useState('');
+    const [descripcionCampo, setDescripcionCampo] = useState('');
+    const [medioDePago, setMedioDePago] = useState('');
+    const [tipoReintegroFiscalizacion, setTipoReintegroFiscalizacion] = useState('');
 
     // Configuración de departamentos
     const DEPARTAMENTOS = {
@@ -123,13 +130,28 @@ const DepartamentosTipificaciones = ({ onDataChange }: DepartamentosTipificacion
         'Otro'
     ];
 
+    // CONSTANTES PARA FISCALIZACIÓN
+    const PERIODOS = [
+        'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+        'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE', 'OTRO'
+    ];
+
+    const MEDIOS_DE_PAGO = [
+        'Mercado Pago',
+        'Transferencia'
+    ];
+
+    const TIPOS_REINTEGRO_FISCALIZACION = [
+        'Cobranza erronea'
+    ];
+
     // Handler para cambio de departamento
     const handleDepartamentoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newDepartamento = e.target.value;
         setDepartamento(newDepartamento);
         setTipificacion(''); // Reset tipificación
         resetCamposEspecificos();
-        
+
         onDataChange({
             departamento: newDepartamento,
             tipificacion: '',
@@ -141,7 +163,7 @@ const DepartamentosTipificaciones = ({ onDataChange }: DepartamentosTipificacion
         const newTipificacion = e.target.value;
         setTipificacion(newTipificacion);
         resetCamposEspecificos();
-        
+
         onDataChange({
             departamento,
             tipificacion: newTipificacion,
@@ -158,6 +180,11 @@ const DepartamentosTipificaciones = ({ onDataChange }: DepartamentosTipificacion
         setTipoGestion('');
         setMedicamento('');
         setTipoAnticonceptivo('');
+
+        setPeriodo('');
+        setDescripcionCampo('');
+        setMedioDePago('');
+        setTipoReintegroFiscalizacion('');
     };
 
     // Actualizar datos cuando cambian los campos específicos
@@ -389,6 +416,215 @@ const DepartamentosTipificaciones = ({ onDataChange }: DepartamentosTipificacion
                         ))}
                     </select>
                 </div>
+            )}
+
+            {/* FISCALIZACIÓN */}
+            {departamento === '564264000000179032' && tipificacion === 'Ya Pague' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="periodo" className="ticket-modal-label">Periodo</label>
+                        <select
+                            id="periodo"
+                            className="ticket-modal-select"
+                            value={periodo}
+                            onChange={(e) => {
+                                setPeriodo(e.target.value);
+                                updateData({ periodo: e.target.value });
+                            }}
+                        >
+                            <option value="">-- Seleccione Periodo --</option>
+                            {PERIODOS.map(p => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    </div>
+                </>
+            )}
+
+            {departamento === '564264000000179032' && tipificacion === 'Plan de Pago' && (
+                <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                        DESCRIPCIÓN
+                    </p>
+                </div>
+            )}
+
+            {departamento === '564264000000179032' && tipificacion === 'Diferencias Cobranza' && (
+                <div className="ticket-modal-form-group">
+                    <label htmlFor="descripcionCampo" className="ticket-modal-label">Descripción</label>
+                    <input
+                        type="text"
+                        id="descripcionCampo"
+                        placeholder="Ingrese descripción"
+                        className="ticket-modal-input"
+                        value={descripcionCampo}
+                        onChange={(e) => {
+                            setDescripcionCampo(e.target.value);
+                            updateData({ descripcionCampo: e.target.value });
+                        }}
+                    />
+                </div>
+            )}
+
+            {departamento === '564264000000179032' && tipificacion === 'Adherir Debito Automático' && (
+                <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                        AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA ADHESIÓN AL DÉBITO AUTOMÁTICO
+                    </p>
+                </div>
+            )}
+
+            {departamento === '564264000000179032' && tipificacion === 'Quiero mi Factura' && (
+                <div className="ticket-modal-form-group">
+                    <label htmlFor="periodo" className="ticket-modal-label">Periodo</label>
+                    <select
+                        id="periodo"
+                        className="ticket-modal-select"
+                        value={periodo}
+                        onChange={(e) => {
+                            setPeriodo(e.target.value);
+                            updateData({ periodo: e.target.value });
+                        }}
+                    >
+                        <option value="">-- Seleccione Periodo --</option>
+                        {PERIODOS.map(p => (
+                            <option key={p} value={p}>{p}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {departamento === '564264000000179032' && tipificacion === 'Quiero Pagar' && (
+                <div className="ticket-modal-form-group">
+                    <label htmlFor="periodo" className="ticket-modal-label">Periodo</label>
+                    <select
+                        id="periodo"
+                        className="ticket-modal-select"
+                        value={periodo}
+                        onChange={(e) => {
+                            setPeriodo(e.target.value);
+                            updateData({ periodo: e.target.value });
+                        }}
+                    >
+                        <option value="">-- Seleccione Periodo --</option>
+                        {PERIODOS.map(p => (
+                            <option key={p} value={p}>{p}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {departamento === '564264000000179032' && tipificacion === 'Link de pago incorrecto' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="descripcionCampo" className="ticket-modal-label">Descripción</label>
+                        <input
+                            type="text"
+                            id="descripcionCampo"
+                            placeholder="Ingrese descripción"
+                            className="ticket-modal-input"
+                            value={descripcionCampo}
+                            onChange={(e) => {
+                                setDescripcionCampo(e.target.value);
+                                updateData({ descripcionCampo: e.target.value, periodo });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="periodo" className="ticket-modal-label">Periodo</label>
+                        <select
+                            id="periodo"
+                            className="ticket-modal-select"
+                            value={periodo}
+                            onChange={(e) => {
+                                setPeriodo(e.target.value);
+                                updateData({ descripcionCampo, periodo: e.target.value });
+                            }}
+                        >
+                            <option value="">-- Seleccione Periodo --</option>
+                            {PERIODOS.map(p => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                            DESCRIPCIÓN
+                        </p>
+                    </div>
+                </>
+            )}
+
+            {departamento === '564264000000179032' && tipificacion === 'Estado de cuenta' && (
+                <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                        AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA ESTADO DE CUENTA CORRIENTE SE LO CAPACITO PARA SACARLO POR PIXI
+                    </p>
+                </div>
+            )}
+
+            {departamento === '564264000000179032' && tipificacion === 'Solicitud de descuento' && (
+                <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                        AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA DESCUENTO EN SU PLAN {afiliadoData?.planPrestacional || 'NO ESPECIFICADO'}
+                    </p>
+                </div>
+            )}
+
+            {departamento === '564264000000179032' && tipificacion === 'Baja de debito automático' && (
+                <div className="ticket-modal-form-group">
+                    <label htmlFor="medioDePago" className="ticket-modal-label">Medio de Pago</label>
+                    <select
+                        id="medioDePago"
+                        className="ticket-modal-select"
+                        value={medioDePago}
+                        onChange={(e) => {
+                            setMedioDePago(e.target.value);
+                            updateData({ medioDePago: e.target.value });
+                        }}
+                    >
+                        <option value="">-- Seleccione Medio de Pago --</option>
+                        {MEDIOS_DE_PAGO.map(mp => (
+                            <option key={mp} value={mp}>{mp}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {departamento === '564264000000179032' && tipificacion === 'Reintegro' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="tipoReintegroFiscalizacion" className="ticket-modal-label">Tipo de reintegro</label>
+                        <select
+                            id="tipoReintegroFiscalizacion"
+                            className="ticket-modal-select"
+                            value={tipoReintegroFiscalizacion}
+                            onChange={(e) => {
+                                setTipoReintegroFiscalizacion(e.target.value);
+                                updateData({ tipoReintegroFiscalizacion: e.target.value, descripcionCampo });
+                            }}
+                        >
+                            <option value="">-- Seleccione Reintegro --</option>
+                            {TIPOS_REINTEGRO_FISCALIZACION.map(tr => (
+                                <option key={tr} value={tr}>{tr}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="descripcionCampo" className="ticket-modal-label">Descripción</label>
+                        <input
+                            type="text"
+                            id="descripcionCampo"
+                            placeholder="Ingrese descripción"
+                            className="ticket-modal-input"
+                            value={descripcionCampo}
+                            onChange={(e) => {
+                                setDescripcionCampo(e.target.value);
+                                updateData({ tipoReintegroFiscalizacion, descripcionCampo: e.target.value });
+                            }}
+                        />
+                    </div>
+                </>
             )}
         </div>
     );
