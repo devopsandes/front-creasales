@@ -180,7 +180,7 @@ const TicketModal = () => {
                     </div>
                 </div>
 
-                {ticket?.canal !== 'VENTANILLA' && (
+                {ticket?.canal !== 'SEDE' && (
                     <>
 
                         <div className="ticket-detail-modal-chat-section">
