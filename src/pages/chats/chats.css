@@ -219,6 +219,34 @@
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
 
+.btn-plantilla {
+    background-color: #e9d5ff;
+}
+
+.btn-plantilla:hover {
+    background-color: #d8b4fe;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-plantilla:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.5);
+}
+
+.btn-nota-privada {
+    background-color: #fde68a;
+}
+
+.btn-nota-privada:hover {
+    background-color: #fcd34d;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-nota-privada:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.5);
+}
+
 .header-icon {
     display: flex;
     justify-content: center;

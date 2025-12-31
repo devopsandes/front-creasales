@@ -18,8 +18,9 @@ import { Trash2 } from "lucide-react";
 import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired } from '../../app/slices/actionSlice'
 import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
-import { FaMicrophone } from "react-icons/fa";
+/* import { FaMicrophone } from "react-icons/fa"; */
 import ModalPlantilla from '../../components/modal/ModalPlantilla'
+import PlantillaModal from '../../components/modal/PlantillaModal'
 import './chats.css'
 import { toast } from 'react-toastify'
 import { usuariosXRole } from '../../services/auth/auth.services'
@@ -478,11 +479,21 @@ const Chats = () => {
                                     )}
                                     </ul>
                                 )}
-                                <button
+                               {/*  <button
                                     type='button'
                                     onClick={() => alert('no implentado')}
                                 >
                                     <FaMicrophone size={25} className='text-gray-700 cursor-pointer'/>
+                                </button> */}
+                                <button 
+                                    type='button' 
+                                    className='btn-msg btn-plantilla'
+                                    onClick={() => dispatch(switchModalPlantilla())}
+                                >
+                                    Plantilla
+                                </button>
+                                <button type='button' className='btn-msg btn-nota-privada'>
+                                    Nota Privada
                                 </button>
                                 <button type='submit' className='btn-msg'>
                                     Enviar
@@ -504,6 +515,7 @@ const Chats = () => {
                         
                     </div>
                     <ModalPlantilla />
+                    <PlantillaModal />
                     <UserSearchModal  />
                     <ArchiveModal 
                         isOpen={isArchiveModalOpen}
