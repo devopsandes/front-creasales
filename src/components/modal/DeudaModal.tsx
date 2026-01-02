@@ -1,12 +1,5 @@
 import './ticket-modal.css';
 
-interface Saldo {
-    id: number;
-    valor: number;
-    periodo: string;
-    linkMp: string;
-}
-
 interface DeudaModalProps {
     isOpen: boolean;
     cuilTitular: string;
