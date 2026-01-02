@@ -62,6 +62,9 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
     const [practicasSolicitadas, setPracticasSolicitadas] = useState('');
     const [horarioLlamada, setHorarioLlamada] = useState('');
 
+    // ESTADOS PARA GAPRI
+    const [montoGapri, setMontoGapri] = useState('');
+
     // Configuración de departamentos
     const DEPARTAMENTOS = {
         '564264000000175045': {
@@ -132,6 +135,23 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
         '564264000000188843': {
             nombre: 'Preexistencia',
             tipificaciones: ['Preexistencia']
+        },
+        '564264000065821073': {
+            nombre: 'GAPRI',
+            tipificaciones: [
+                'Estudio o Práctica Médica',
+                'Orden de Consulta',
+                'Estado de Trámite',
+                'Problemas al utilizar servicio',
+                'Información de coseguros',
+                'Credencial descargada',
+                'Cartilla consultada',
+                'Plan Materno',
+                'Solicitud de Plan Materno Infantil',
+                'Información de ópticas consultada',
+                'Preexistencia',
+                'Anticonceptivos'
+            ]
         }
     };
 
@@ -295,6 +315,9 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
         setIngreso('');
         setPracticasSolicitadas('');
         setHorarioLlamada('');
+
+        // Reset de campos de GAPRI
+        setMontoGapri('');
     };
 
     // Actualizar datos cuando cambian los campos específicos
@@ -1529,6 +1552,425 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                 <option key={h} value={h}>{h}</option>
                             ))}
                         </select>
+                    </div>
+                </>
+            )}
+
+            {/* GAPRI (copia de Atención al Cliente + campo Monto) */}
+
+            {/* 1. Estudio o Práctica Médica */}
+            {departamento === '564264000065821073' && tipificacion === 'Estudio o Práctica Médica' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="prestadorAtencion" className="ticket-modal-label">Prestador</label>
+                        <input
+                            type="text"
+                            id="prestadorAtencion"
+                            placeholder="Prestador preferido en la cartilla"
+                            className="ticket-modal-input"
+                            value={prestadorAtencion}
+                            onChange={(e) => {
+                                setPrestadorAtencion(e.target.value);
+                                updateData({ prestador: e.target.value, observaciones: observacionesAtencion, monto: montoGapri });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="observacionesAtencion" className="ticket-modal-label">Observaciones</label>
+                        <textarea
+                            id="observacionesAtencion"
+                            placeholder="Ingrese una observación"
+                            className="ticket-modal-textarea"
+                            value={observacionesAtencion}
+                            onChange={(e) => {
+                                setObservacionesAtencion(e.target.value);
+                                updateData({ prestador: prestadorAtencion, observaciones: e.target.value, monto: montoGapri });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ prestador: prestadorAtencion, observaciones: observacionesAtencion, monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                </>
+            )}
+
+            {/* 2. Orden de Consulta */}
+            {departamento === '564264000065821073' && tipificacion === 'Orden de Consulta' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="prestadorAtencion" className="ticket-modal-label">Prestador</label>
+                        <input
+                            type="text"
+                            id="prestadorAtencion"
+                            placeholder="Prestador preferido en la cartilla"
+                            className="ticket-modal-input"
+                            value={prestadorAtencion}
+                            onChange={(e) => {
+                                setPrestadorAtencion(e.target.value);
+                                updateData({ prestador: e.target.value, monto: montoGapri });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ prestador: prestadorAtencion, monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                </>
+            )}
+
+            {/* 3. Estado de Trámite */}
+            {departamento === '564264000065821073' && tipificacion === 'Estado de Trámite' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="numeroTramite" className="ticket-modal-label">Número de trámite</label>
+                        <input
+                            type="text"
+                            id="numeroTramite"
+                            placeholder="Indique el nro del trámite"
+                            className="ticket-modal-input"
+                            value={numeroTramite}
+                            onChange={(e) => {
+                                setNumeroTramite(e.target.value);
+                                updateData({ numeroTramite: e.target.value, monto: montoGapri });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ numeroTramite, monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                </>
+            )}
+
+            {/* 4. Problemas al utilizar servicio */}
+            {departamento === '564264000065821073' && tipificacion === 'Problemas al utilizar servicio' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="servicioSeleccionado" className="ticket-modal-label">Seleccione Servicio</label>
+                        <select
+                            id="servicioSeleccionado"
+                            className="ticket-modal-select"
+                            value={servicioSeleccionado}
+                            onChange={(e) => {
+                                setServicioSeleccionado(e.target.value);
+                                updateData({ servicioSeleccionado: e.target.value, tipoGestion: tipoGestionAtencion, monto: montoGapri });
+                            }}
+                        >
+                            <option value="">-- Seleccione Servicio --</option>
+                            {SERVICIOS.map(s => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="tipoGestionAtencion" className="ticket-modal-label">Tipo de Gestión</label>
+                        <select
+                            id="tipoGestionAtencion"
+                            className="ticket-modal-select"
+                            value={tipoGestionAtencion}
+                            onChange={(e) => {
+                                setTipoGestionAtencion(e.target.value);
+                                updateData({ servicioSeleccionado, tipoGestion: e.target.value, monto: montoGapri });
+                            }}
+                        >
+                            <option value="">-- Seleccione Gestión --</option>
+                            {TIPOS_GESTION_ATENCION.map(tg => (
+                                <option key={tg} value={tg}>{tg}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ servicioSeleccionado, tipoGestion: tipoGestionAtencion, monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                </>
+            )}
+
+            {/* 5. Información de coseguros */}
+            {departamento === '564264000065821073' && tipificacion === 'Información de coseguros' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="observacionesAtencion" className="ticket-modal-label">Observaciones</label>
+                        <input
+                            type="text"
+                            id="observacionesAtencion"
+                            placeholder="Ingrese una observación"
+                            className="ticket-modal-input"
+                            value={observacionesAtencion}
+                            onChange={(e) => {
+                                setObservacionesAtencion(e.target.value);
+                                updateData({ observaciones: e.target.value, monto: montoGapri });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ observaciones: observacionesAtencion, monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                            SE LE INFORMO AL AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} LA SITUACIÓN ACTUAL DE COSEGUROS
+                        </p>
+                    </div>
+                </>
+            )}
+
+            {/* 6. Credencial descargada */}
+            {departamento === '564264000065821073' && tipificacion === 'Credencial descargada' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="observacionesAtencion" className="ticket-modal-label">Observaciones</label>
+                        <input
+                            type="text"
+                            id="observacionesAtencion"
+                            placeholder="Ingrese una observación"
+                            className="ticket-modal-input"
+                            value={observacionesAtencion}
+                            onChange={(e) => {
+                                setObservacionesAtencion(e.target.value);
+                                updateData({ observaciones: e.target.value, monto: montoGapri });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ observaciones: observacionesAtencion, monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                </>
+            )}
+
+            {/* 7. Cartilla consultada */}
+            {departamento === '564264000065821073' && tipificacion === 'Cartilla consultada' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="especialidad" className="ticket-modal-label">Especialidad</label>
+                        <input
+                            type="text"
+                            id="especialidad"
+                            placeholder="Especialidad en la cartilla"
+                            className="ticket-modal-input"
+                            value={especialidad}
+                            onChange={(e) => {
+                                setEspecialidad(e.target.value);
+                                updateData({ especialidad: e.target.value, monto: montoGapri });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ especialidad, monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                </>
+            )}
+
+            {/* 8. Plan Materno */}
+            {departamento === '564264000065821073' && tipificacion === 'Plan Materno' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                            AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA INGRESAR A PLAN MATERNO
+                        </p>
+                    </div>
+                </>
+            )}
+
+            {/* 9. Solicitud de Plan Materno Infantil */}
+            {departamento === '564264000065821073' && tipificacion === 'Solicitud de Plan Materno Infantil' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                            AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA INGRESAR A PLAN MATERNO INFANTIL
+                        </p>
+                    </div>
+                </>
+            )}
+
+            {/* 10. Información de ópticas consultada */}
+            {departamento === '564264000065821073' && tipificacion === 'Información de ópticas consultada' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="observacionesAtencion" className="ticket-modal-label">Observaciones</label>
+                        <input
+                            type="text"
+                            id="observacionesAtencion"
+                            placeholder="Ingrese una observación"
+                            className="ticket-modal-input"
+                            value={observacionesAtencion}
+                            onChange={(e) => {
+                                setObservacionesAtencion(e.target.value);
+                                updateData({ observaciones: e.target.value, monto: montoGapri });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ observaciones: observacionesAtencion, monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                            SE LE INFORMO AL AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} LA COBERTURA ACTUAL DE ÓPTICAS
+                        </p>
+                    </div>
+                </>
+            )}
+
+            {/* 11. Preexistencia */}
+            {departamento === '564264000065821073' && tipificacion === 'Preexistencia' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="observacionesAtencion" className="ticket-modal-label">Observaciones</label>
+                        <input
+                            type="text"
+                            id="observacionesAtencion"
+                            placeholder="Ingrese una observación"
+                            className="ticket-modal-input"
+                            value={observacionesAtencion}
+                            onChange={(e) => {
+                                setObservacionesAtencion(e.target.value);
+                                updateData({ observaciones: e.target.value, monto: montoGapri });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ observaciones: observacionesAtencion, monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                            ADJUNTO (IMÁGEN) COMPROBANTE DE PREEXISTENCIA
+                        </p>
+                    </div>
+                </>
+            )}
+
+            {/* 12. Anticonceptivos */}
+            {departamento === '564264000065821073' && tipificacion === 'Anticonceptivos' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
+                        <input
+                            type="text"
+                            id="montoGapri"
+                            className="ticket-modal-input"
+                            value={montoGapri}
+                            onChange={(e) => {
+                                setMontoGapri(e.target.value);
+                                updateData({ monto: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                            AFILIADO/A SOLICITA ANTICONCEPTIVOS COMUNES
+                        </p>
                     </div>
                 </>
             )}
