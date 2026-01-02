@@ -103,7 +103,7 @@ const deleteTicket = async (token: string, id: string): Promise<any> => {
         const headers = {
             authorization: `Bearer ${token}`
         }
-      
+
         const { data } = await axios.delete(url, { headers })
 
         return data
@@ -115,6 +115,26 @@ const deleteTicket = async (token: string, id: string): Promise<any> => {
     }
 }
 
-export { getTickets, getTicketById, createTicket, buscarAfiliado, deleteTicket }
+const consultarDeuda = async (token: string, cuil: string) => {
+    try {
+        const url = `https://fiscalizacion.createch.com.ar/contratos/deuda?search=${cuil}`
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        }
+
+        const { data } = await axios.post(url, {}, { headers })
+
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data
+        }
+        throw error;
+    }
+}
+
+export { getTickets, getTicketById, createTicket, buscarAfiliado, deleteTicket, consultarDeuda }
 
 
