@@ -8,6 +8,7 @@ import XMark from '../icons/XMark';
 import './ticket-modal.css';
 import { buscarAfiliado } from '../../services/tickets/tickets.services';
 import DepartamentosTipificaciones from './DepartamentosTipificaciones';
+import TicketSuccessModal from './TicketSuccessModal.tsx';
 
 
 const CrearTicketModal = () => {
@@ -19,6 +20,9 @@ const CrearTicketModal = () => {
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
     const [tipificacionData, setTipificacionData] = useState<any>({});
+
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [ticketCreado, setTicketCreado] = useState<any>(null);
 
     const dispatch = useDispatch();
     const modalTicket = useSelector((state: RootState) => state.action.modalTicket);
@@ -84,8 +88,9 @@ const CrearTicketModal = () => {
             const resp = await createTicket(token, ticketData);
 
             if (resp.statusCode === 201) {
-                toast.success('Ticket creado correctamente');
-                handleClose();
+                // GUARDAR DATOS DEL TICKET Y MOSTRAR MODAL DE ÉXITO
+                setTicketCreado(resp.ticket);
+                setShowSuccessModal(true);
             } else {
                 toast.error('Error al crear ticket');
             }
@@ -94,6 +99,34 @@ const CrearTicketModal = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // FUNCIÓN PARA IR A ZOHO
+    const handleIrAZoho = () => {
+        if (ticketCreado?.idZoho && departamento) {
+            // Mapeo de departamentos a URLs de Zoho
+            const departamentoUrlMap: { [key: string]: string } = {
+                '564264000000175045': 'prestaciones-medicas',
+                '564264000000179032': 'fiscalizacion',
+                '564264000000181969': 'afiliaciones',
+                '564264000000184906': 'atencion-al-afiliado',
+                '564264000042384029': 'internaciones',
+                '564264000000188843': 'preexistencias'
+            };
+
+            const seccionZoho = departamentoUrlMap[departamento] || 'atencion-al-afiliado';
+            const urlZoho = `https://desk.zoho.com/agent/andessalud21/${seccionZoho}/tickets/details/${ticketCreado.idZoho}`;
+
+            window.open(urlZoho, '_blank');
+        }
+        handleCloseSuccess();
+    };
+
+    // FUNCIÓN PARA CERRAR MODAL DE ÉXITO
+    const handleCloseSuccess = () => {
+        setShowSuccessModal(false);
+        setTicketCreado(null);
+        handleClose();
     };
 
     const handleClose = () => {
@@ -106,124 +139,136 @@ const CrearTicketModal = () => {
     };
 
     return (
-        <div className="ticket-modal-overlay">
-            <div className="ticket-modal-container-wide">
-                <div className="ticket-modal-header">
-                    <h2 className="ticket-modal-title">Crear Ticket</h2>
-                    <button onClick={handleClose} className="ticket-modal-close-button">
-                        <XMark />
-                    </button>
-                </div>
-
-                <div className="ticket-modal-content-two-columns">
-                    {/* COLUMNA IZQUIERDA - Datos del Afiliado */}
-                    <div className="ticket-modal-left-column">
-                        <h3 className="ticket-modal-inner-title">Buscar Afiliado</h3>
-
-                        <div className="ticket-modal-search-group">
-                            <input
-                                type="text"
-                                placeholder="DNI, CUIL o ID Afiliado"
-                                className="ticket-modal-input"
-                                value={busquedaAfiliado}
-                                onChange={(e) => setBusquedaAfiliado(e.target.value)}
-                            />
-                            <button
-                                type="button"
-                                onClick={handleBuscarAfiliado}
-                                className="ticket-modal-search-button"
-                                disabled={searching}
-                            >
-                                {searching ? 'Buscando...' : 'Buscar'}
-                            </button>
-                        </div>
-
-                        {afiliadoData && (
-                            <div className="ticket-modal-afiliado-info">
-                                <div className="info-row">
-                                    <span>Nro Afiliado:</span>
-                                    <span>{afiliadoData.nroAfiliado}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>Nombre:</span>
-                                    <span>{afiliadoData.apellNomb}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>Edad:</span>
-                                    <span>{afiliadoData.edad}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>Género:</span>
-                                    <span>{afiliadoData.sexo}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>Obra Social:</span>
-                                    <span>{afiliadoData.obraSocial}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>DNI:</span>
-                                    <span>{afiliadoData.nroDocumento}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>Plan:</span>
-                                    <span>{afiliadoData.planPrestacional}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>Parentesco:</span>
-                                    <span>{afiliadoData.parentesco}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>Estado:</span>
-                                    <span>{afiliadoData.estadoAfiliacion}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>Email:</span>
-                                    <span>{afiliadoData.mail}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>Celular:</span>
-                                    <span>{afiliadoData.numCelular}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>CUIL:</span>
-                                    <span>{afiliadoData.cuil}</span>
-                                </div>
-                                <div className="info-row">
-                                    <span>Provincia:</span>
-                                    <span>{afiliadoData.provincia}</span>
-                                </div>
-
-                                {/* <div className="ticket-modal-buttons">
-                                    <button className="ticket-modal-btn-secondary">Ver Credencial</button>
-                                    <button className="ticket-modal-btn-secondary">No registra Deuda</button>
-                                </div> */}
-                            </div>
-                        )}
+        <>
+            <div className="ticket-modal-overlay">
+                <div className="ticket-modal-container-wide">
+                    <div className="ticket-modal-header">
+                        <h2 className="ticket-modal-title">Crear Ticket</h2>
+                        <button onClick={handleClose} className="ticket-modal-close-button">
+                            <XMark />
+                        </button>
                     </div>
 
-                    {/* COLUMNA DERECHA - Formulario */}
-                    <div className="ticket-modal-right-column">
-                        <h3 className="ticket-modal-inner-title">Nuevo Ticket de Soporte</h3>
+                    <div className="ticket-modal-content-two-columns">
+                        {/* COLUMNA IZQUIERDA - Datos del Afiliado */}
+                        <div className="ticket-modal-left-column">
+                            <h3 className="ticket-modal-inner-title">Buscar Afiliado</h3>
 
-                        <form onSubmit={handleSubmit} className="ticket-modal-form">
+                            <div className="ticket-modal-search-group">
+                                <input
+                                    type="text"
+                                    placeholder="DNI, CUIL o ID Afiliado"
+                                    className="ticket-modal-input"
+                                    value={busquedaAfiliado}
+                                    onChange={(e) => setBusquedaAfiliado(e.target.value)}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleBuscarAfiliado}
+                                    className="ticket-modal-search-button"
+                                    disabled={searching}
+                                >
+                                    {searching ? 'Buscando...' : 'Buscar'}
+                                </button>
+                            </div>
 
-                            <DepartamentosTipificaciones
-                                onDataChange={handleTipificacionDataChange}
-                                afiliadoData={afiliadoData}  // 👈 AGREGAR
-                            />
+                            {afiliadoData && (
+                                <div className="ticket-modal-afiliado-info">
+                                    <div className="info-row">
+                                        <span>Nro Afiliado:</span>
+                                        <span>{afiliadoData.nroAfiliado}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>Nombre:</span>
+                                        <span>{afiliadoData.apellNomb}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>Edad:</span>
+                                        <span>{afiliadoData.edad}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>Género:</span>
+                                        <span>{afiliadoData.sexo}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>Obra Social:</span>
+                                        <span>{afiliadoData.obraSocial}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>DNI:</span>
+                                        <span>{afiliadoData.nroDocumento}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>Plan:</span>
+                                        <span>{afiliadoData.planPrestacional}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>Parentesco:</span>
+                                        <span>{afiliadoData.parentesco}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>Estado:</span>
+                                        <span>{afiliadoData.estadoAfiliacion}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>Email:</span>
+                                        <span>{afiliadoData.mail}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>Celular:</span>
+                                        <span>{afiliadoData.numCelular}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>CUIL:</span>
+                                        <span>{afiliadoData.cuil}</span>
+                                    </div>
+                                    <div className="info-row">
+                                        <span>Provincia:</span>
+                                        <span>{afiliadoData.provincia}</span>
+                                    </div>
 
-                            <button
-                                type="submit"
-                                className="ticket-modal-submit-button"
-                                disabled={loading}
-                            >
-                                {loading ? 'Creando...' : 'Crear Ticket'}
-                            </button>
-                        </form>
+                                    <div className="ticket-modal-buttons">
+                                        <button className="ticket-modal-btn-secondary">Ver Credencial</button>
+                                        <button className="ticket-modal-btn-secondary">No registra Deuda</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* COLUMNA DERECHA - Formulario */}
+                        <div className="ticket-modal-right-column">
+                            <h3 className="ticket-modal-inner-title">Nuevo Ticket de Soporte</h3>
+
+                            <form onSubmit={handleSubmit} className="ticket-modal-form">
+
+                                <DepartamentosTipificaciones
+                                    onDataChange={handleTipificacionDataChange}
+                                    afiliadoData={afiliadoData}
+                                />
+
+                                <button
+                                    type="submit"
+                                    className="ticket-modal-submit-button"
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Creando...' : 'Crear Ticket'}
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            {/* MODAL DE ÉXITO */}
+            <TicketSuccessModal
+                isOpen={showSuccessModal}
+                nombreAfiliado={afiliadoData?.apellNomb || ''}
+                numeroTicketLocal={ticketCreado?.nro || ''}
+                idZoho={ticketCreado?.idZoho || ''}
+                onIrAZoho={handleIrAZoho}
+                onClose={handleCloseSuccess}
+            />
+        </>
     );
 };
 

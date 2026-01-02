@@ -127,7 +127,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
         },
         '564264000042384029': {
             nombre: 'Internaciones',
-            tipificaciones: []
+            tipificaciones: ['Internación']
         },
         '564264000000188843': {
             nombre: 'Preexistencia',
@@ -1253,7 +1253,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
 
             {/* INTERNACIONES (sin tipificaciones)*/}
 
-            {departamento === '564264000042384029' && (
+            {departamento === '564264000042384029' && tipificacion === 'Internación' && (
                 <>
                     <div className="ticket-modal-form-group">
                         <label htmlFor="prestadorSolicitado" className="ticket-modal-label">Prestador Solicitado</label>
@@ -1390,9 +1390,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                 </>
             )}
 
-            {/* ========================================
-    PREEXISTENCIA
-    ======================================== */}
+            {/* PREEXISTENCIA */}
 
             {departamento === '564264000000188843' && tipificacion === 'Preexistencia' && (
                 <>
