@@ -20,6 +20,7 @@ import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
 /* import { FaMicrophone } from "react-icons/fa"; */
 import ModalPlantilla from '../../components/modal/ModalPlantilla'
+import PlantillaModal from '../../components/modal/PlantillaModal'
 import './chats.css'
 import { toast } from 'react-toastify'
 import { usuariosXRole } from '../../services/auth/auth.services'
@@ -507,6 +508,7 @@ const Chats = () => {
                         
                     </div>
                     <ModalPlantilla />
+                    <PlantillaModal />
                     <UserSearchModal  />
                     <ArchiveModal 
                         isOpen={isArchiveModalOpen}
