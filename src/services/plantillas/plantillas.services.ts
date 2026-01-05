@@ -33,10 +33,15 @@ export const enviarPlantilla = async (
     
     // Si el status HTTP es 200 o 201, es exitoso
     if (httpStatus === 200 || httpStatus === 201) {
+      // Convertir message a string si es array
+      const messageStr = Array.isArray(response.message) 
+        ? response.message.join(', ') 
+        : (response.message || 'Plantilla enviada correctamente');
+      
       return {
         ...response,
         statusCode: response.statusCode || httpStatus,
-        msg: response.msg || response.message || 'Plantilla enviada correctamente'
+        msg: response.msg || messageStr
       };
     }
 
