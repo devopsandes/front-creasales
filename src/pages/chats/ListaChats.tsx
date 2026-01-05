@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from "react-redux"
 // import { Socket } from "socket.io-client"
 import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
-import { LuArrowDownFromLine } from "react-icons/lu";
+import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
 import { RootState } from "../../app/store"
 import { setUserData, setViewSide, openSessionExpired, setChats } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
@@ -33,11 +33,17 @@ const ListaChats = () => {
     const [archivadas,setArchivadas] = useState<ChatState[]>([])
     const [asignadas,setAsignadas] = useState<ChatState[]>([])
     const [bots,setBots] = useState<ChatState[]>([])
+    const [sinAsignar,setSinAsignar] = useState<ChatState[]>([])
+    const [menciones,setMenciones] = useState<ChatState[]>([])
     const [styleBtn, setStyleBtn] = useState<string>('todas')
 
     const [loading, setLoading] = useState<boolean>(true)
     const [users, setUsers] = useState<Usuario[]>([]);
     const [filtrados, setFiltrados] = useState<ChatState[]>([])
+    const [ordenFecha, setOrdenFecha] = useState<'desc' | 'asc'>('desc') // 'desc' = más reciente primero, 'asc' = más viejo primero
+    const [showFilterSelect, setShowFilterSelect] = useState<boolean>(false)
+    const [selectedTag, setSelectedTag] = useState<string>('')
+    const [allTags, setAllTags] = useState<{ id: string; nombre: string }[]>([])
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
 
@@ -71,6 +77,8 @@ const ListaChats = () => {
             const archivadasTemp: ChatState[] = []
             const botsTemp: ChatState[] = []
             const asignadasTemp: ChatState[] = []
+            const sinAsignarTemp: ChatState[] = []
+            const mencionesTemp: ChatState[] = []
             const botsIds = new Set<string>()
 
             chatos.chats.forEach(chat => {
@@ -83,16 +91,22 @@ const ListaChats = () => {
                         botsTemp.push(chat)
                         botsIds.add(chat.id)
                     }
+                    sinAsignarTemp.push(chat)
                 }
 
                 if(id === chat.operador?.id){
                     asignadasTemp.push(chat)
                 }
+
+                // Lógica para menciones (puede ser ajustada según la implementación específica)
+                // Por ahora se deja vacío para que se complete la lógica después
             })
 
             setArchivadas(archivadasTemp)
             setBots(botsTemp)
             setAsignadas(asignadasTemp)
+            setSinAsignar(sinAsignarTemp)
+            setMenciones(mencionesTemp)
             setChats1(chatos.chats)
             setFiltrados(chatos.chats)
             dispatch(setChats(chatos.chats))
@@ -109,6 +123,19 @@ const ListaChats = () => {
             })
             
             setUsers(uniqueUsers)
+
+            // Extraer tags únicos de todos los chats
+            const tagsMap = new Map<string, { id: string; nombre: string }>()
+            chatos.chats.forEach(chat => {
+                if(chat.tags && chat.tags.length > 0) {
+                    chat.tags.forEach(tag => {
+                        if(!tagsMap.has(tag.id)) {
+                            tagsMap.set(tag.id, { id: tag.id, nombre: tag.nombre })
+                        }
+                    })
+                }
+            })
+            setAllTags(Array.from(tagsMap.values()))
         
         }
         
@@ -159,17 +186,7 @@ const ListaChats = () => {
 
     const handleChangeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedValue = e.target.value
-        let filtrados: ChatState[] = []
-
-        
-        if(selectedValue === "" || selectedValue === "TODOS"){
-            filtrados = [...chats1]
-        }else if(selectedValue === 'BOT'){
-            filtrados = chats1.filter(chat => chat.operador === null)
-        }else{
-            filtrados = chats1.filter(chat => chat.operador?.id === selectedValue)
-        }
-        setFiltrados(filtrados)
+        aplicarFiltros(selectedValue, selectedTag)
         
         const newSearchParams = new URLSearchParams(searchParams);
         if (selectedValue && selectedValue !== "TODOS" && selectedValue !== "BOT") {
@@ -180,20 +197,50 @@ const ListaChats = () => {
         setSearchParams(newSearchParams);
     }
 
+    const handleChangeTagSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const tagValue = e.target.value
+        setSelectedTag(tagValue)
+        aplicarFiltros(selectRef.current?.value || '', tagValue)
+    }
+
+    const aplicarFiltros = (operadorValue: string, tagValue: string, chatsBase?: ChatState[]) => {
+        const baseChats = chatsBase || chats1
+        let filtrados: ChatState[] = []
+
+        // Filtro por operador
+        if(operadorValue === "" || operadorValue === "TODOS"){
+            filtrados = [...baseChats]
+        }else if(operadorValue === 'BOT'){
+            filtrados = baseChats.filter(chat => chat.operador === null)
+        }else{
+            filtrados = baseChats.filter(chat => chat.operador?.id === operadorValue)
+        }
+
+        // Filtro por tag
+        if(tagValue && tagValue !== ""){
+            filtrados = filtrados.filter(chat => 
+                chat.tags && chat.tags.some(tag => tag.id === tagValue)
+            )
+        }
+
+        setFiltrados(filtrados)
+    }
+
     useEffect(() => {
         const userId = searchParams.get('userId');
         if (userId && selectRef.current && users.length > 1 && chats1.length > 0) {
             selectRef.current.value = userId;
-            const filtrados: ChatState[] = chats1.filter(chat => chat.operador?.id === userId);
-            setFiltrados(filtrados);
+            aplicarFiltros(userId, selectedTag);
         }
-    }, [users, chats1, searchParams, loading])
+    }, [users, chats1, searchParams, loading, selectedTag])
 
     useEffect(() => {
         if (chatsFromRedux.length > 0) {
             const archivadasTemp: ChatState[] = []
             const botsTemp: ChatState[] = []
             const asignadasTemp: ChatState[] = []
+            const sinAsignarTemp: ChatState[] = []
+            const mencionesTemp: ChatState[] = []
             const botsIds = new Set<string>()
 
             chatsFromRedux.forEach(chat => {
@@ -206,29 +253,53 @@ const ListaChats = () => {
                         botsTemp.push(chat)
                         botsIds.add(chat.id)
                     }
+                    sinAsignarTemp.push(chat)
                 }
 
                 if(id === chat.operador?.id){
                     asignadasTemp.push(chat)
                 }
+
+                // Lógica para menciones (puede ser ajustada según la implementación específica)
+                // Por ahora se deja vacío para que se complete la lógica después
             })
 
             setArchivadas(archivadasTemp)
             setBots(botsTemp)
             setAsignadas(asignadasTemp)
+            setSinAsignar(sinAsignarTemp)
+            setMenciones(mencionesTemp)
             setChats1(chatsFromRedux)
+
+            // Extraer tags únicos de todos los chats
+            const tagsMap = new Map<string, { id: string; nombre: string }>()
+            chatsFromRedux.forEach(chat => {
+                if(chat.tags && chat.tags.length > 0) {
+                    chat.tags.forEach(tag => {
+                        if(!tagsMap.has(tag.id)) {
+                            tagsMap.set(tag.id, { id: tag.id, nombre: tag.nombre })
+                        }
+                    })
+                }
+            })
+            setAllTags(Array.from(tagsMap.values()))
             
-            if (styleBtn === "todas") {
-                setFiltrados(chatsFromRedux)
-            } else if (styleBtn === "asig") {
-                setFiltrados(asignadasTemp)
+            let chatsBase: ChatState[] = chatsFromRedux
+            if (styleBtn === "asig") {
+                chatsBase = asignadasTemp
             } else if (styleBtn === "archi") {
-                setFiltrados(archivadasTemp)
+                chatsBase = archivadasTemp
             } else if (styleBtn === "bots") {
-                setFiltrados(botsTemp)
-            } else {
-                setFiltrados(chatsFromRedux)
+                chatsBase = botsTemp
+            } else if (styleBtn === "sinAsignar") {
+                chatsBase = sinAsignarTemp
+            } else if (styleBtn === "menciones") {
+                chatsBase = mencionesTemp
             }
+
+            // Aplicar filtros de operador y tag sobre la base seleccionada
+            const operadorValue = selectRef.current?.value || ''
+            aplicarFiltros(operadorValue, selectedTag, chatsBase)
         }
     }, [chatsFromRedux, id, styleBtn])
 
@@ -236,6 +307,28 @@ const ListaChats = () => {
 
     const handleClickLink = () => {
         dispatch(setViewSide(true))
+    }
+
+    const ordenarChatsPorFecha = (chats: ChatState[], orden: 'desc' | 'asc'): ChatState[] => {
+        return [...chats].sort((a, b) => {
+            const fechaA = new Date(a.updatedAt || a.createdAt).getTime()
+            const fechaB = new Date(b.updatedAt || b.createdAt).getTime()
+            return orden === 'desc' ? fechaB - fechaA : fechaA - fechaB
+        })
+    }
+
+    const handleOrdenarPorFecha = () => {
+        const nuevoOrden = ordenFecha === 'desc' ? 'asc' : 'desc'
+        setOrdenFecha(nuevoOrden)
+    }
+
+    const handleExportarConversaciones = () => {
+        // Función para exportar conversaciones (implementar según necesidad)
+        console.log('Exportar conversaciones')
+    }
+
+    const handleToggleFilter = () => {
+        setShowFilterSelect(!showFilterSelect)
     }
 
     
@@ -246,7 +339,11 @@ const ListaChats = () => {
             <div className="header-lista">
                 <div className="header-item">
                     <button 
-                        onClick={() => {setFiltrados(asignadas),setStyleBtn("asig")}} 
+                        onClick={() => {
+                            setStyleBtn("asig")
+                            const operadorValue = selectRef.current?.value || ''
+                            aplicarFiltros(operadorValue, selectedTag, asignadas)
+                        }} 
                         className={`btn-item ${styleBtn === "asig" && "border-1 p-1 border-red-600"}`}
                     >
                         Asignadas a mí
@@ -257,7 +354,11 @@ const ListaChats = () => {
               
                 <div className="header-item">
                     <button 
-                        onClick={() => {setFiltrados(archivadas),setStyleBtn("archi")}} 
+                        onClick={() => {
+                            setStyleBtn("archi")
+                            const operadorValue = selectRef.current?.value || ''
+                            aplicarFiltros(operadorValue, selectedTag, archivadas)
+                        }} 
                         className={`btn-item ${styleBtn === "archi" && "border-1 p-1 border-red-600"}`}
                     >
                         Archivadas
@@ -267,7 +368,11 @@ const ListaChats = () => {
                 </div>
                  <div className="header-item">
                      <button 
-                        onClick={() => {setFiltrados(chats1),setStyleBtn("todas")}} 
+                        onClick={() => {
+                            setStyleBtn("todas")
+                            const operadorValue = selectRef.current?.value || ''
+                            aplicarFiltros(operadorValue, selectedTag, chats1)
+                        }} 
                         className={`btn-item ${styleBtn === "todas" && "border-1 p-1 border-red-600"}`}
                     >
                         Todas
@@ -277,11 +382,43 @@ const ListaChats = () => {
                 </div>
                  <div className="header-item">
                      <button 
-                        onClick={() => {setFiltrados(bots), setStyleBtn('bots')}} 
+                        onClick={() => {
+                            setStyleBtn('bots')
+                            const operadorValue = selectRef.current?.value || ''
+                            aplicarFiltros(operadorValue, selectedTag, bots)
+                        }} 
                         className={`btn-item ${styleBtn === "bots" && "border-1 p-1 border-red-600"}`}
                     >
                         Bots
                         <span>{bots.length}</span>
+                    </button>
+                   
+                </div>
+                 <div className="header-item">
+                     <button 
+                        onClick={() => {
+                            setStyleBtn('sinAsignar')
+                            const operadorValue = selectRef.current?.value || ''
+                            aplicarFiltros(operadorValue, selectedTag, sinAsignar)
+                        }} 
+                        className={`btn-item ${styleBtn === "sinAsignar" && "border-1 p-1 border-red-600"}`}
+                    >
+                        Sin asignar
+                        <span>{sinAsignar.length}</span>
+                    </button>
+                   
+                </div>
+                 <div className="header-item">
+                     <button 
+                        onClick={() => {
+                            setStyleBtn('menciones')
+                            const operadorValue = selectRef.current?.value || ''
+                            aplicarFiltros(operadorValue, selectedTag, menciones)
+                        }} 
+                        className={`btn-item ${styleBtn === "menciones" && "border-1 p-1 border-red-600"}`}
+                    >
+                        Menciones
+                        <span>{menciones.length}</span>
                     </button>
                    
                 </div>
@@ -294,16 +431,43 @@ const ListaChats = () => {
                     {chats1.length > 0 && (
                         <>
                             <div className="w-full flex justify-between px-2 items-center mb-4 py-2">
-                                <div className="border border-white rounded-none p-2">
-                                    {/* Contenido opcional aquí */}
-                                    <LuArrowDownFromLine />
+                                <div className="flex gap-2">
+                                    <div 
+                                        className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
+                                        onClick={handleOrdenarPorFecha}
+                                        title=""
+                                    >
+                                        {ordenFecha === 'desc' ? (
+                                            <LuArrowDownFromLine />
+                                        ) : (
+                                            <LuArrowUpFromLine />
+                                        )}
+                                        <span className="sort-tooltip">Ordenar por fecha</span>
+                                    </div>
+                                    <div 
+                                        className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
+                                        onClick={handleExportarConversaciones}
+                                        title=""
+                                    >
+                                        <LuDownload />
+                                        <span className="sort-tooltip">Exportar conversaciones</span>
+                                    </div>
+                                    <div 
+                                        className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
+                                        onClick={handleToggleFilter}
+                                        title=""
+                                    >
+                                        <LuFilter />
+                                        <span className="sort-tooltip">Filtrar conversaciones</span>
+                                    </div>
                                 </div>
-                               
-                                <div>
+                            </div>
+                            {showFilterSelect && (
+                                <div className="w-full px-2 mb-4 space-y-2">
                                     <select
                                         ref={selectRef}
                                         id="operador-select"
-                                        className="block w-30 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                                         onChange={handleChangeSelect}
                                     >
                                         <option value="" className="bg-gray-500">Seleccione</option>
@@ -314,9 +478,20 @@ const ListaChats = () => {
                                         ))}
                                     
                                     </select>
+                                    <select
+                                        id="tag-select"
+                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                        onChange={handleChangeTagSelect}
+                                        value={selectedTag}
+                                    >
+                                        <option value="" className="bg-gray-500">Todas las etiquetas</option>
+                                        {allTags.map(tag => (
+                                            <option key={tag.id} value={tag.id} className="bg-gray-500">{tag.nombre}</option>
+                                        ))}
+                                    </select>
                                 </div>
-                            </div>
-                            {filtrados != undefined && filtrados.map(chat => (
+                            )}
+                            {filtrados != undefined && ordenarChatsPorFecha(filtrados, ordenFecha).map(chat => (
                                 <Link 
                                     to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} 
                                     className={`item-lista text-left ${chat.id === activeChatId ? 'active' : ''}`}

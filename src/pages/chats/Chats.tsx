@@ -485,6 +485,13 @@ const Chats = () => {
                                 >
                                     <FaMicrophone size={25} className='text-gray-700 cursor-pointer'/>
                                 </button> */}
+                                <button 
+                                    type='button' 
+                                    className='btn-msg btn-plantilla'
+                                    onClick={() => dispatch(switchModalPlantilla())}
+                                >
+                                    Plantilla
+                                </button>
                                 <button type='button' className='btn-msg btn-nota-privada'>
                                     Nota Privada
                                 </button>

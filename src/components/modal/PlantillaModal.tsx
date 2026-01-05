@@ -40,7 +40,7 @@ const PlantillaModal = () => {
         try {
           const response = await getMeta(token);
           
-          // ✅ Verificar que la respuesta tenga los datos
+          //  Verificar que la respuesta tenga los datos
           if (response.graph_api_token && response.id_phone_number && 
               response.graph_api_token.trim() !== '' && response.id_phone_number > 0) {
             setMetaConfig({
@@ -116,11 +116,11 @@ const PlantillaModal = () => {
     setError(null);
     
     try {
-      // ✅ Preparar datos con conversión a número
+      // Preparar datos con conversión a número
       const dataEnvio = {
-        opcion: Number(opcion), // ✅ Asegurar número
+        opcion: Number(opcion), //  Asegurar número
         graph_api_token: metaConfig.graph_api_token,
-        id_phone_number: Number(metaConfig.id_phone_number), // ✅ Convertir a número
+        id_phone_number: Number(metaConfig.id_phone_number), // Convertir a número
         numero: numeroTelefono,
         afiliado: nombreAfiliado,
         operador: nombreOperador
