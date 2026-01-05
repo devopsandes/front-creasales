@@ -162,6 +162,17 @@
   white-space: pre-wrap;
 }
 
+.plantilla-modal-error {
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border: 1px solid #fecaca;
+}
+
 .plantilla-modal-actions {
   display: flex;
   gap: 0.75rem;
