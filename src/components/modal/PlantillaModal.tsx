@@ -15,6 +15,7 @@ const PlantillaModal = () => {
   const [error, setError] = useState<string | null>(null);
   const [metaConfig, setMetaConfig] = useState<{ graph_api_token: string; id_phone_number: number } | null>(null);
   const [loadingMeta, setLoadingMeta] = useState(true);
+  const [nroTicket, setNroTicket] = useState<string>('');
   
   const dispatch = useDispatch();
   const modalPlantilla = useSelector((state: RootState) => state.action.modalPlantilla);
@@ -74,6 +75,7 @@ const PlantillaModal = () => {
       setSelectedPlantilla('');
       setIsLoading(false);
       setError(null);
+      setNroTicket('');
     }
   }, [modalPlantilla]);
 
@@ -82,15 +84,27 @@ const PlantillaModal = () => {
     switch (plantillaId) {
       case 'inicio':
         return 9; // Retomar Conversación
-      case 'plantilla2':
-        return null; // Por ahora no implementado
-      case 'plantilla3':
-        return null;
-      case 'plantilla4':
-        return null;
+      case 'novedades':
+        return 5; // Novedades
+      case 'beneficio':
+        return 6; // Beneficio
+      case 'prevencion-estafas':
+        return 12; // Prevención estafas
+      case 'novedades-tramite':
+        return 10; // Novedades trámite
       default:
         return null;
     }
+  };
+
+  // Verificar si una plantilla es simple (solo requiere número, sin parámetros)
+  const isPlantillaSimple = (plantillaId: string): boolean => {
+    return plantillaId === 'novedades' || plantillaId === 'beneficio' || plantillaId === 'prevencion-estafas';
+  };
+
+  // Verificar si una plantilla requiere nroTicket
+  const requiereNroTicket = (plantillaId: string): boolean => {
+    return plantillaId === 'novedades-tramite';
   };
 
   const handleEnviar = async () => {
@@ -111,20 +125,34 @@ const PlantillaModal = () => {
       setError('No se pudo obtener el número de teléfono del chat');
       return;
     }
+
+    // Validar nroTicket si es requerido
+    if (requiereNroTicket(selectedPlantilla) && !nroTicket.trim()) {
+      setError('Por favor, ingrese el número de ticket');
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
     
     try {
       // Preparar datos con conversión a número
-      const dataEnvio = {
+      // Para plantillas simples (5, 6, 12) solo se requiere el número
+      const isSimple = isPlantillaSimple(selectedPlantilla);
+      const dataEnvio: any = {
         opcion: Number(opcion), //  Asegurar número
         graph_api_token: metaConfig.graph_api_token,
         id_phone_number: Number(metaConfig.id_phone_number), // Convertir a número
         numero: numeroTelefono,
-        afiliado: nombreAfiliado,
-        operador: nombreOperador
+        // Para plantillas simples, enviar valores vacíos ya que no se requieren
+        afiliado: isSimple ? '' : nombreAfiliado,
+        operador: isSimple ? '' : nombreOperador
       };
+
+      // Agregar nroTicket si es requerido
+      if (requiereNroTicket(selectedPlantilla)) {
+        dataEnvio.nroTicket = nroTicket.trim();
+      }
 
       const response = await enviarPlantilla(token, dataEnvio);
 
@@ -165,12 +193,45 @@ const PlantillaModal = () => {
     switch (plantillaId) {
       case 'inicio':
         return `¡Hola ${nombreAfiliado}! Mi nombre es ${nombreOperador} y tengo novedades de tu gestión iniciada. Por favor cuando respondas este mensaje podemos continuar, muchas gracias.`;
-      case 'plantilla2':
-        return '';
-      case 'plantilla3':
-        return '';
-      case 'plantilla4':
-        return '';
+      case 'novedades':
+        return `¡NOVEDADES!
+
+Queremos contarte que en Andes Salud seguimos comprometidos con vos, trabajando constantemente para mejorar tu experiencia y garantizarte un servicio de calidad.
+
+Te informamos que, a partir del 01/07/2025, renovamos nuestro servicio de Urgencias y Emergencias, el cual será brindado por EMERGENCIAS S.A.
+
+Este nuevo prestador se incorpora para ofrecerte una atención eficiente y de calidad, asegurando la asistencia médica adecuada a tus necesidades.
+
+Es muy importante que agendes que el único teléfono para solicitar el servicio es:
+📞 Línea de emergencias: 0810-666-1449
+
+Seguimos avanzando para estar más cerca tuyo, cuando más lo necesitás.`;
+      case 'beneficio':
+        return `🎉 ¡Renovamos un nuevo beneficio pensado para vos!
+A partir del 1° de julio renovamos nuestro servicio de medicina Online, vas a poder acceder desde la APP de ANDES SALUD a DR. ONLINE,  nuestro servicio de atención médica por videollamada, disponible las 24 horas, los 365 días de año, estés donde estés.
+🩺 Consultá con profesionales de la salud desde tu celular , las 24 horas.
+📲 Rápido, seguro y sin moverte de casa.
+💬 Demanda espontánea.
+👩‍⚕️ Múltiples especialidades médicas disponibles.
+📄 Recetas médicas, órdenes de estudios y constancias de atención en formato digital.
+Con DR, ONLINE, damos un paso más para estar cerca tuyo cuando más lo necesitas.
+👉 Por ahora solo en Android… ¡pero iOS llega muy pronto!
+Más conectados con tu bienestar.`;
+      case 'prevencion-estafas':
+        return `Hola, ¿cómo estás?
+
+Recordá que ANDES SALUD nunca solicita datos bancarios por teléfono, correo electrónico ni mensajes.
+Si recibís un llamado o mensaje donde te pidan información como tu número de cuenta, tarjeta o claves, no los compartas y comunicate directamente con nuestros canales oficiales.
+
+👉 Teléfono oficial: +54 9 261 330-0622
+👉 Sitio web oficial: https://andessalud.com.ar/
+👉 Dominios oficiales: andessalud.com.ar y andessalud.ar
+
+Cuidar tus datos es cuidar tu salud. Muchas gracias.`;
+      case 'novedades-tramite':
+        // Usar nroTicket si está disponible, sino mostrar placeholder
+        const ticketNum = nroTicket.trim() || '1234';
+        return `¡Hola ${nombreAfiliado}! Soy ${nombreOperador}. Necesito que me brindes información extra sobre tu trámite número ${ticketNum}. Aguardamos respuesta. ¡Muchas gracias!`;
       default:
         return '';
     }
@@ -200,11 +261,41 @@ const PlantillaModal = () => {
           >
             <option value="">Seleccionar Plantilla</option>
             <option value="inicio">Retomar Conversación</option>
-            <option value="plantilla2">Plantilla 2</option>
-            <option value="plantilla3">Plantilla 3</option>
-            <option value="plantilla4">Plantilla 4</option>
+            <option value="novedades">Novedades</option>
+            <option value="beneficio">Beneficio</option>
+            <option value="prevencion-estafas">Prevención Estafas</option>
+            <option value="novedades-tramite">Novedades Trámite</option>
           </select>
         </div>
+
+        {/* Input para nroTicket cuando se selecciona la plantilla de trámite */}
+        {requiereNroTicket(selectedPlantilla) && (
+          <div className="plantilla-modal-select-container" style={{ marginTop: '15px' }}>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontSize: '14px', 
+              fontWeight: '500',
+              color: '#374151'
+            }}>
+              Número de Ticket
+            </label>
+            <input
+              type="text"
+              value={nroTicket}
+              onChange={(e) => setNroTicket(e.target.value)}
+              placeholder="Ingrese el número de ticket"
+              className="plantilla-modal-select"
+              style={{ 
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px'
+              }}
+            />
+          </div>
+        )}
 
         <p className="plantilla-modal-description-title">Descripcion del Mensaje</p>
         
@@ -233,7 +324,13 @@ const PlantillaModal = () => {
           <button 
             className="plantilla-modal-button plantilla-modal-confirm"
             onClick={handleEnviar}
-            disabled={!selectedPlantilla || isLoading || loadingMeta || !metaConfig}
+            disabled={
+              !selectedPlantilla || 
+              isLoading || 
+              loadingMeta || 
+              !metaConfig || 
+              (requiereNroTicket(selectedPlantilla) && !nroTicket.trim())
+            }
           >
             {isLoading ? 'Enviando...' : loadingMeta ? 'Cargando...' : 'Enviar'}
           </button>

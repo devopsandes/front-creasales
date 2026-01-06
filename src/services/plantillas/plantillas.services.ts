@@ -8,6 +8,7 @@ export interface EnviarPlantillaData {
   numero: string;
   afiliado: string;
   operador: string;
+  nroTicket?: string; // Campo opcional para plantilla case 10
 }
 
 export const enviarPlantilla = async (
