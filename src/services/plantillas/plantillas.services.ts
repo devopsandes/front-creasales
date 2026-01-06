@@ -8,6 +8,16 @@ export interface EnviarPlantillaData {
   numero: string;
   afiliado: string;
   operador: string;
+  nroTicket?: string; // Campo opcional para plantilla case 10
+  periodos?: string; // Campo opcional para plantillas case 0, 2, 7
+  vencimiento?: string; // Campo opcional para plantillas case 0 y 7
+  total?: string; // Campo opcional para plantillas case 0 y 7
+  cuil?: string; // Campo opcional para plantillas case 0 y 7
+  metodo?: string; // Campo opcional para plantillas case 2 y 4
+  plan?: string; // Campo opcional para plantilla case 4
+  capitas?: number; // Campo opcional para plantilla case 4
+  email?: string; // Campo opcional para plantilla case 4
+  ingreso?: string; // Campo opcional para plantilla case 4
 }
 
 export const enviarPlantilla = async (
