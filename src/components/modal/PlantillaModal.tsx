@@ -16,6 +16,12 @@ const PlantillaModal = () => {
   const [metaConfig, setMetaConfig] = useState<{ graph_api_token: string; id_phone_number: number } | null>(null);
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [nroTicket, setNroTicket] = useState<string>('');
+  const [periodos, setPeriodos] = useState<string>('');
+  const [vencimiento, setVencimiento] = useState<string>('');
+  const [total, setTotal] = useState<string>('');
+  const [metodo, setMetodo] = useState<string>('');
+  const [plan, setPlan] = useState<string>('');
+  const [capitas, setCapitas] = useState<string>('');
   
   const dispatch = useDispatch();
   const modalPlantilla = useSelector((state: RootState) => state.action.modalPlantilla);
@@ -29,8 +35,19 @@ const PlantillaModal = () => {
   // Obtener chat actual
   const currentChat = chats.find(chat => chat.id === chatId);
   const numeroTelefono = currentChat?.cliente?.telefono || '';
-  const nombreAfiliado = dataUser?.apellnombAfilado || currentChat?.cliente?.nombre || 'Cliente';
+  // Obtener nombre completo del afiliado: nombre + apellido del chat o dataUser
+  const nombreAfiliado = currentChat?.cliente?.nombre && currentChat?.cliente?.apellido
+    ? `${currentChat.cliente.nombre} ${currentChat.cliente.apellido}`
+    : (dataUser?.apellnombAfilado || currentChat?.cliente?.nombre || 'Cliente');
   const nombreOperador = user?.name || 'Operador';
+  // Obtener CUIL del chat o dataUser
+  const cuilCliente = currentChat?.cliente?.cuil?.toString() || dataUser?.CUILAfiliado?.toString() || '';
+  // Obtener email del chat o dataUser
+  const emailCliente = currentChat?.cliente?.email || dataUser?.mail || '';
+  // Obtener ingreso del chat y formatearlo
+  const ingresoCliente = currentChat?.cliente?.ingreso
+    ? new Date(currentChat.cliente.ingreso).toLocaleDateString('es-AR')
+    : (dataUser?.mesAlta ? new Date(dataUser.mesAlta).toLocaleDateString('es-AR') : new Date().toLocaleDateString('es-AR'));
 
   // Obtener configuración de Meta al abrir el modal
   useEffect(() => {
@@ -76,6 +93,12 @@ const PlantillaModal = () => {
       setIsLoading(false);
       setError(null);
       setNroTicket('');
+      setPeriodos('');
+      setVencimiento('');
+      setTotal('');
+      setMetodo('');
+      setPlan('');
+      setCapitas('');
     }
   }, [modalPlantilla]);
 
@@ -92,6 +115,16 @@ const PlantillaModal = () => {
         return 12; // Prevención estafas
       case 'novedades-tramite':
         return 10; // Novedades trámite
+      case 'deuda':
+        return 0; // Deuda
+      case 'deuda-utilidad':
+        return 7; // Deuda Utilidad
+      case 'pago-recibido':
+        return 2; // Pago Recibido
+      case 'pre-alta':
+        return 4; // Pre-Alta
+      case 'pre-alta-rel':
+        return 8; // Pre-Alta Rel
       default:
         return null;
     }
@@ -105,6 +138,21 @@ const PlantillaModal = () => {
   // Verificar si una plantilla requiere nroTicket
   const requiereNroTicket = (plantillaId: string): boolean => {
     return plantillaId === 'novedades-tramite';
+  };
+
+  // Verificar si una plantilla requiere campos de deuda (periodos, vencimiento, total)
+  const requiereCamposDeuda = (plantillaId: string): boolean => {
+    return plantillaId === 'deuda' || plantillaId === 'deuda-utilidad';
+  };
+
+  // Verificar si una plantilla requiere campos de pago recibido (metodo, periodos)
+  const requiereCamposPagoRecibido = (plantillaId: string): boolean => {
+    return plantillaId === 'pago-recibido';
+  };
+
+  // Verificar si una plantilla requiere campos de pre-alta (plan, capitas, metodo)
+  const requiereCamposPreAlta = (plantillaId: string): boolean => {
+    return plantillaId === 'pre-alta' || plantillaId === 'pre-alta-rel';
   };
 
   const handleEnviar = async () => {
@@ -131,6 +179,50 @@ const PlantillaModal = () => {
       setError('Por favor, ingrese el número de ticket');
       return;
     }
+
+    // Validar campos de deuda si son requeridos
+    if (requiereCamposDeuda(selectedPlantilla)) {
+      if (!periodos.trim()) {
+        setError('Por favor, ingrese los periodos');
+        return;
+      }
+      if (!vencimiento.trim()) {
+        setError('Por favor, ingrese la fecha de vencimiento');
+        return;
+      }
+      if (!total.trim()) {
+        setError('Por favor, ingrese el total');
+        return;
+      }
+    }
+
+    // Validar campos de pago recibido si son requeridos
+    if (requiereCamposPagoRecibido(selectedPlantilla)) {
+      if (!metodo.trim()) {
+        setError('Por favor, ingrese el método de pago');
+        return;
+      }
+      if (!periodos.trim()) {
+        setError('Por favor, ingrese los periodos');
+        return;
+      }
+    }
+
+    // Validar campos de pre-alta si son requeridos
+    if (requiereCamposPreAlta(selectedPlantilla)) {
+      if (!plan.trim()) {
+        setError('Por favor, ingrese el plan');
+        return;
+      }
+      if (!capitas.trim() || isNaN(Number(capitas)) || Number(capitas) <= 0) {
+        setError('Por favor, ingrese un número válido de capitas');
+        return;
+      }
+      if (!metodo.trim()) {
+        setError('Por favor, ingrese el método de pago');
+        return;
+      }
+    }
     
     setIsLoading(true);
     setError(null);
@@ -152,6 +244,29 @@ const PlantillaModal = () => {
       // Agregar nroTicket si es requerido
       if (requiereNroTicket(selectedPlantilla)) {
         dataEnvio.nroTicket = nroTicket.trim();
+      }
+
+      // Agregar campos de deuda si son requeridos
+      if (requiereCamposDeuda(selectedPlantilla)) {
+        dataEnvio.periodos = periodos.trim();
+        dataEnvio.vencimiento = vencimiento.trim();
+        dataEnvio.total = total.trim();
+        dataEnvio.cuil = cuilCliente;
+      }
+
+      // Agregar campos de pago recibido si son requeridos
+      if (requiereCamposPagoRecibido(selectedPlantilla)) {
+        dataEnvio.metodo = metodo.trim();
+        dataEnvio.periodos = periodos.trim();
+      }
+
+      // Agregar campos de pre-alta si son requeridos (case 4 y 8)
+      if (requiereCamposPreAlta(selectedPlantilla)) {
+        dataEnvio.plan = plan.trim();
+        dataEnvio.capitas = Number(capitas);
+        dataEnvio.metodo = metodo.trim();
+        dataEnvio.email = emailCliente;
+        dataEnvio.ingreso = ingresoCliente;
       }
 
       const response = await enviarPlantilla(token, dataEnvio);
@@ -232,6 +347,76 @@ Cuidar tus datos es cuidar tu salud. Muchas gracias.`;
         // Usar nroTicket si está disponible, sino mostrar placeholder
         const ticketNum = nroTicket.trim() || '1234';
         return `¡Hola ${nombreAfiliado}! Soy ${nombreOperador}. Necesito que me brindes información extra sobre tu trámite número ${ticketNum}. Aguardamos respuesta. ¡Muchas gracias!`;
+      case 'deuda':
+      case 'deuda-utilidad':
+        // Usar valores de los inputs o placeholders
+        const periodosText = periodos.trim() || 'aca va la lista de los periodos';
+        const vencimientoText = vencimiento.trim() || '10/10/1990';
+        const totalText = total.trim() || '$ 123456';
+        const cuilText = cuilCliente || '20367894563';
+        return `Estimado afiliado ${nombreAfiliado.toLowerCase()}:
+Desde Andes Salud 😊 te adjuntamos los link de pago de la cuota mensual de los periodos detallados a continuación:
+Te recordamos que también podés abonar por transferencia al siguiente Alias: ANDES.SALUD123
+PERIODOS ADEUDADOS:
+
+${periodosText}
+
+VENCIMIENTO: ${vencimientoText}
+DEUDA TOTAL: ${totalText}
+CUIL TITULAR: ${cuilText}
+
+Transferencia Bancaria:
+Alias: ANDES.SALUD123
+Razón social: ANDESALUD S.A.
+
+⚠️ ESTE ES UN MENSAJE AUTOMÁTICO, NO DEBES RESPONDERLO ⚠️ 
+Sí tenés alguna duda comunicate con PIXI, nuestro asistente virtual vía Whatsapp haciendo clic acá 👉🏼 wa.me/5492613300622`;
+      case 'pago-recibido':
+        // Usar valores de los inputs o placeholders
+        const metodoPago = metodo.trim() || 'bizum';
+        const periodosPago = periodos.trim() || 'mayo 2025';
+        return `¡Hola ${nombreAfiliado}!
+✅ Hemos recibido tu pago a través de ${metodoPago} correspondiente al periodo de ${periodosPago}. ¡Muchas gracias! 😊`;
+      case 'pre-alta':
+        // Usar valores de los inputs o placeholders
+        const planText = plan.trim() || 'PLAN BLACK';
+        const capitasText = capitas.trim() || '3';
+        const metodoPreAlta = metodo.trim() || 'EFECTIVO';
+        const emailText = emailCliente || 'juanperex@perex.com';
+        return `¡Hola ☺️, ${nombreAfiliado}!
+Estamos procesando tu solicitud para afiliarte a Andes Salud y queremos asegurarnos de que tus datos de contacto sean correctos. ✅
+
+Datos del Plan: 
+Plan elegido: ${planText}
+Modalidad de ingreso: RELACION DE DEPENDENCIA
+Cantidad total de integrantes: ${capitasText}
+Forma de Pago: ${metodoPreAlta}
+Correo Electrónico: ${emailText}
+
+Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , estamos aquí para ayudarte.
+
+¡Gracias por elegirnos! 😊`;
+      case 'pre-alta-rel':
+        // Usar valores de los inputs o placeholders
+        const planTextRel = plan.trim() || 'PLAN BLACK';
+        const capitasTextRel = capitas.trim() || '3';
+        const metodoPreAltaRel = metodo.trim() || 'DEBITO';
+        const emailTextRel = emailCliente || 'juan@perex.com';
+        return `¡Hola ☺️, ${nombreAfiliado}!
+Estamos procesando tu solicitud para afiliarte a Andes Salud y queremos asegurarnos de que tus datos de contacto sean correctos. ✅
+
+TUS DATOS 
+Plan elegido: ${planTextRel}
+Modalidad de ingreso: RELACION DE DEPENDENCIA
+Cantidad total de integrantes: ${capitasTextRel}
+Forma de Pago: ${metodoPreAltaRel}
+Correo Electrónico: ${emailTextRel}
+
+Para hacer efectiva la opción tienes que tener tu clave fiscal, te mostramos como se hace: https://www.youtube.com/shorts/ZHxnTkWq1oo
+
+Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , estamos aquí para ayudarte.
+
+¡Gracias por elegirnos! 😊`;
       default:
         return '';
     }
@@ -246,94 +431,215 @@ Cuidar tus datos es cuidar tu salud. Muchas gracias.`;
           <X size={20} />
         </button>
         
-        <div className="plantilla-modal-icon">
-          <FileText size={32} />
-        </div>
+        <div className="plantilla-modal-header">
+          <div className="plantilla-modal-icon">
+            <FileText size={32} />
+          </div>
 
-        <h2 className="plantilla-modal-title">Enviar Plantilla</h2>
-        <p className="plantilla-modal-subtitle">Selecciona la plantilla que deseas enviar a este chat</p>
+          <h2 className="plantilla-modal-title">Enviar Plantilla</h2>
+          <p className="plantilla-modal-subtitle">Selecciona la plantilla que deseas enviar a este chat</p>
 
-        <div className="plantilla-modal-select-container">
-          <select
-            value={selectedPlantilla}
-            onChange={(e) => setSelectedPlantilla(e.target.value)}
-            className="plantilla-modal-select"
-          >
-            <option value="">Seleccionar Plantilla</option>
-            <option value="inicio">Retomar Conversación</option>
-            <option value="novedades">Novedades</option>
-            <option value="beneficio">Beneficio</option>
-            <option value="prevencion-estafas">Prevención Estafas</option>
-            <option value="novedades-tramite">Novedades Trámite</option>
-          </select>
-        </div>
-
-        {/* Input para nroTicket cuando se selecciona la plantilla de trámite */}
-        {requiereNroTicket(selectedPlantilla) && (
-          <div className="plantilla-modal-select-container" style={{ marginTop: '15px' }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              fontSize: '14px', 
-              fontWeight: '500',
-              color: '#374151'
-            }}>
-              Número de Ticket
-            </label>
-            <input
-              type="text"
-              value={nroTicket}
-              onChange={(e) => setNroTicket(e.target.value)}
-              placeholder="Ingrese el número de ticket"
+          <div className="plantilla-modal-select-container">
+            <select
+              value={selectedPlantilla}
+              onChange={(e) => setSelectedPlantilla(e.target.value)}
               className="plantilla-modal-select"
-              style={{ 
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px'
-              }}
-            />
+            >
+              <option value="">Seleccionar Plantilla</option>
+              <option value="inicio">Retomar Conversación</option>
+              <option value="novedades">Novedades</option>
+              <option value="beneficio">Beneficio</option>
+              <option value="prevencion-estafas">Prevención Estafas</option>
+              <option value="novedades-tramite">Novedades Trámite</option>
+              <option value="deuda">Deuda</option>
+              <option value="deuda-utilidad">Deuda Utilidad</option>
+              <option value="pago-recibido">Pago Recibido</option>
+              <option value="pre-alta">Pre-Alta</option>
+              <option value="pre-alta-rel">Pre-Alta Rel</option>
+            </select>
           </div>
-        )}
+        </div>
 
-        <p className="plantilla-modal-description-title">Descripcion del Mensaje</p>
-        
-        {selectedPlantilla && (
-          <div className="plantilla-modal-description-box">
-            <p className="plantilla-modal-description-text">
-              {getPlantillaText(selectedPlantilla)}
-            </p>
+        <div className="plantilla-modal-content">
+          {/* Input para nroTicket cuando se selecciona la plantilla de trámite */}
+          {requiereNroTicket(selectedPlantilla) && (
+            <div className="plantilla-modal-input-group">
+              <label className="plantilla-modal-input-label">
+                Número de Ticket
+              </label>
+              <input
+                type="text"
+                value={nroTicket}
+                onChange={(e) => setNroTicket(e.target.value)}
+                placeholder="Ingrese el número de ticket"
+                className="plantilla-modal-input"
+              />
+            </div>
+          )}
+
+          {/* Inputs para campos de deuda cuando se seleccionan plantillas de deuda */}
+          {requiereCamposDeuda(selectedPlantilla) && (
+            <>
+              <div className="plantilla-modal-input-group">
+                <label className="plantilla-modal-input-label">
+                  Periodos
+                </label>
+                <input
+                  type="text"
+                  value={periodos}
+                  onChange={(e) => setPeriodos(e.target.value)}
+                  placeholder="Ej: 2024-01,2024-02 o Enero 2024, Febrero 2024"
+                  className="plantilla-modal-input"
+                />
+              </div>
+
+              <div className="plantilla-modal-input-group">
+                <label className="plantilla-modal-input-label">
+                  Vencimiento
+                </label>
+                <input
+                  type="text"
+                  value={vencimiento}
+                  onChange={(e) => setVencimiento(e.target.value)}
+                  placeholder="Ej: 2024-03-15 o 15/03/2024"
+                  className="plantilla-modal-input"
+                />
+              </div>
+
+              <div className="plantilla-modal-input-group">
+                <label className="plantilla-modal-input-label">
+                  Total
+                </label>
+                <input
+                  type="text"
+                  value={total}
+                  onChange={(e) => setTotal(e.target.value)}
+                  placeholder="Ej: $5000 o 5000"
+                  className="plantilla-modal-input"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Inputs para campos de pago recibido cuando se selecciona la plantilla */}
+          {requiereCamposPagoRecibido(selectedPlantilla) && (
+            <>
+              <div className="plantilla-modal-input-group">
+                <label className="plantilla-modal-input-label">
+                  Método de Pago
+                </label>
+                <input
+                  type="text"
+                  value={metodo}
+                  onChange={(e) => setMetodo(e.target.value)}
+                  placeholder="Ej: Transferencia bancaria, Efectivo, Tarjeta"
+                  className="plantilla-modal-input"
+                />
+              </div>
+
+              <div className="plantilla-modal-input-group">
+                <label className="plantilla-modal-input-label">
+                  Periodos
+                </label>
+                <input
+                  type="text"
+                  value={periodos}
+                  onChange={(e) => setPeriodos(e.target.value)}
+                  placeholder="Ej: 2024-01,2024-02 o mayo 2025"
+                  className="plantilla-modal-input"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Inputs para campos de pre-alta cuando se selecciona la plantilla */}
+          {requiereCamposPreAlta(selectedPlantilla) && (
+            <>
+              <div className="plantilla-modal-input-group">
+                <label className="plantilla-modal-input-label">
+                  Plan
+                </label>
+                <input
+                  type="text"
+                  value={plan}
+                  onChange={(e) => setPlan(e.target.value)}
+                  placeholder="Ej: Plan Básico, Plan Premium, PLAN BLACK"
+                  className="plantilla-modal-input"
+                />
+              </div>
+
+              <div className="plantilla-modal-input-group">
+                <label className="plantilla-modal-input-label">
+                  Capitas
+                </label>
+                <input
+                  type="number"
+                  value={capitas}
+                  onChange={(e) => setCapitas(e.target.value)}
+                  placeholder="Ej: 1, 2, 3"
+                  className="plantilla-modal-input"
+                  min="1"
+                />
+              </div>
+
+              <div className="plantilla-modal-input-group">
+                <label className="plantilla-modal-input-label">
+                  Método de Pago
+                </label>
+                <input
+                  type="text"
+                  value={metodo}
+                  onChange={(e) => setMetodo(e.target.value)}
+                  placeholder="Ej: Transferencia, Débito automático, EFECTIVO"
+                  className="plantilla-modal-input"
+                />
+              </div>
+            </>
+          )}
+
+          <p className="plantilla-modal-description-title">Descripcion del Mensaje</p>
+          
+          {selectedPlantilla && (
+            <div className="plantilla-modal-description-box">
+              <p className="plantilla-modal-description-text">
+                {getPlantillaText(selectedPlantilla)}
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <div className="plantilla-modal-error">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="plantilla-modal-footer">
+          <div className="plantilla-modal-actions">
+            <button 
+              className="plantilla-modal-button plantilla-modal-cancel"
+              onClick={handleCancelar}
+              disabled={isLoading || loadingMeta}
+            >
+              Cancelar
+            </button>
+            <button 
+              className="plantilla-modal-button plantilla-modal-confirm"
+              onClick={handleEnviar}
+              disabled={
+                !selectedPlantilla || 
+                isLoading || 
+                loadingMeta || 
+                !metaConfig || 
+                (requiereNroTicket(selectedPlantilla) && !nroTicket.trim()) ||
+                (requiereCamposDeuda(selectedPlantilla) && (!periodos.trim() || !vencimiento.trim() || !total.trim())) ||
+                (requiereCamposPagoRecibido(selectedPlantilla) && (!metodo.trim() || !periodos.trim())) ||
+                (requiereCamposPreAlta(selectedPlantilla) && (!plan.trim() || !capitas.trim() || !metodo.trim() || isNaN(Number(capitas)) || Number(capitas) <= 0))
+              }
+            >
+              {isLoading ? 'Enviando...' : loadingMeta ? 'Cargando...' : 'Enviar'}
+            </button>
           </div>
-        )}
-
-        {error && (
-          <div className="plantilla-modal-error">
-            {error}
-          </div>
-        )}
-
-        <div className="plantilla-modal-actions">
-          <button 
-            className="plantilla-modal-button plantilla-modal-cancel"
-            onClick={handleCancelar}
-            disabled={isLoading || loadingMeta}
-          >
-            Cancelar
-          </button>
-          <button 
-            className="plantilla-modal-button plantilla-modal-confirm"
-            onClick={handleEnviar}
-            disabled={
-              !selectedPlantilla || 
-              isLoading || 
-              loadingMeta || 
-              !metaConfig || 
-              (requiereNroTicket(selectedPlantilla) && !nroTicket.trim())
-            }
-          >
-            {isLoading ? 'Enviando...' : loadingMeta ? 'Cargando...' : 'Enviar'}
-          </button>
         </div>
       </div>
     </div>

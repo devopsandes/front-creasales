@@ -16,7 +16,12 @@ import { getSocket } from "../../app/slices/socketSlice"
 import { getChats } from "../../services/chats/chats.services"
 
 // Función auxiliar para capitalizar correctamente el texto
-const capitalizeText = (text: string): string => {
+const capitalizeText = (text: string | undefined | null): string => {
+    // Validar que el texto exista y no esté vacío
+    if (!text || typeof text !== 'string') {
+        return '';
+    }
+    
     return text
         .toLowerCase()
         .split(' ')
@@ -493,14 +498,14 @@ const ListaChats = () => {
                             )}
                             {filtrados != undefined && ordenarChatsPorFecha(filtrados, ordenFecha).map(chat => (
                                 <Link 
-                                    to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente.telefono}&nombre=${chat.cliente.nombre}`} 
+                                    to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente?.telefono || ''}&nombre=${chat.cliente?.nombre || ''}`} 
                                     className={`item-lista text-left ${chat.id === activeChatId ? 'active' : ''}`}
                                     key={chat.id}
                                     onClick={handleClickLink}
                                 >
                                     <div className="flex justify-between px-2">
                                         <p className="chat-client-info">
-                                            {capitalizeText(chat.cliente.nombre)} - {chat.cliente.telefono}
+                                            {capitalizeText(chat.cliente?.nombre)} - {chat.cliente?.telefono || ''}
                                         </p>
                                         {chat?.mensajes?.filter(m => m.leido === false).length > 0 && (
                                             <p className="chat-badge-count">
