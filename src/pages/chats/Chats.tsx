@@ -153,12 +153,37 @@ const Chats = () => {
             }
             
             setMensajes(data.chat.mensajes)
-            let ultimo = data.chat.mensajes[data.chat.mensajes.length - 1]
-            if(ultimo.msg_salida === '%archivado%'){
-                // con este bloque condicional verificamos que el ultimo mensaje no sea el de archivado, si lo es, tomamos el penúltimo
-                ultimo = data.chat.mensajes[data.chat.mensajes.length - 2]
+            
+            // Validar que haya mensajes antes de acceder al último
+            if (data.chat.mensajes && data.chat.mensajes.length > 0) {
+                let ultimo = data.chat.mensajes[data.chat.mensajes.length - 1]
+                
+                // Validar que el último mensaje exista y verificar si es de archivado
+                if(ultimo && ultimo.msg_salida === '%archivado%'){
+                    // con este bloque condicional verificamos que el ultimo mensaje no sea el de archivado, si lo es, tomamos el penúltimo
+                    if (data.chat.mensajes.length > 1) {
+                        ultimo = data.chat.mensajes[data.chat.mensajes.length - 2]
+                        // Validar que el penúltimo mensaje exista antes de usarlo
+                        if (ultimo && ultimo.createdAt) {
+                            setCondChat(menos24hs(ultimo.createdAt))
+                        } else {
+                            setCondChat(false)
+                        }
+                    } else {
+                        // Si solo hay un mensaje y es de archivado, no hay penúltimo
+                        setCondChat(false)
+                    }
+                } else if (ultimo && ultimo.createdAt) {
+                    // Si el último mensaje no es de archivado, usar su fecha
+                    setCondChat(menos24hs(ultimo.createdAt))
+                } else {
+                    // Si el último mensaje no tiene fecha, establecer condChat en false
+                    setCondChat(false)
+                }
+            } else {
+                // Si no hay mensajes, establecer condChat en false
+                setCondChat(false)
             }
-            setCondChat(menos24hs(ultimo.createdAt))
             setLoading(false)
             
         }
