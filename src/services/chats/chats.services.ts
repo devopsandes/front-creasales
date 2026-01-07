@@ -1,6 +1,6 @@
 import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
-import { ChatResponse, ChatsResponse } from "../../interfaces/chats.interface"
+import { ChatResponse, ChatsResponse, TimelineResponse } from "../../interfaces/chats.interface"
 import { DataUser } from "../../interfaces/action.interface"
 
 
@@ -23,6 +23,72 @@ const findChatById = async (token: string, id: string): Promise<ChatResponse & E
             return objeto
         }
         throw error; // Lanza el error si no es del tipo esperado
+    }
+}
+
+const findChatTimeline = async (
+    token: string,
+    id: string,
+    params?: { page?: number; limit?: number }
+): Promise<TimelineResponse & ErrorResponse> => {
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`
+
+        const headers = {
+            authorization: `Bearer ${token}`,
+        }
+
+        const query = {
+            page: params?.page ?? 1,
+            limit: params?.limit ?? 200,
+        }
+
+        const debug =
+            import.meta.env.DEV &&
+            typeof window !== "undefined" &&
+            window.localStorage?.getItem("debugTimeline") === "1"
+
+        if (debug) {
+            console.log("[findChatTimeline] GET", url, { params: query })
+        }
+
+        const { data } = await axios.get<TimelineResponse & ErrorResponse>(url, {
+            headers,
+            params: query,
+        })
+
+        if (debug) {
+            console.log("[findChatTimeline] OK", {
+                statusCode: (data as any)?.statusCode,
+                page: (data as any)?.page,
+                limit: (data as any)?.limit,
+                total: (data as any)?.total,
+                itemsPreview: Array.isArray((data as any)?.items) ? (data as any).items.slice(0, 3) : (data as any)?.items,
+            })
+        }
+
+        return data
+    } catch (error) {
+        const debug =
+            import.meta.env.DEV &&
+            typeof window !== "undefined" &&
+            window.localStorage?.getItem("debugTimeline") === "1"
+
+        if (axios.isAxiosError(error) && error.response) {
+            if (debug) {
+                console.log("[findChatTimeline] ERROR", {
+                    url: `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`,
+                    status: error.response.status,
+                    data: error.response.data,
+                })
+            }
+            const objeto: TimelineResponse & ErrorResponse = error.response.data
+            return objeto
+        }
+        if (debug) {
+            console.log("[findChatTimeline] ERROR (no response)", error)
+        }
+        throw error
     }
 }
 
@@ -65,4 +131,4 @@ const getChats = async (token: string, page: string, limit: string): Promise< Ch
 
 
 
-export {  findChatById, getUserData, getChats }
+export { findChatById, findChatTimeline, getUserData, getChats }

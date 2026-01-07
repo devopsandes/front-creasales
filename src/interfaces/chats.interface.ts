@@ -1,5 +1,43 @@
 import { Usuario } from "./auth.interface";
 
+export type TimelineItem =
+    | {
+          kind: "message";
+          id: string;
+          createdAt: string | Date;
+          msg_entrada?: string | null;
+          msg_salida?: string | null;
+          type?: "text" | "image";
+          imageUrl?: string;
+      }
+    | {
+          kind: "event";
+          id: string;
+          createdAt: string | Date;
+          type: string;
+          text: string;
+          payload?: any;
+      }
+    // Compatibilidad temporal con mensajes legacy (sin `kind`)
+    | {
+          kind?: undefined;
+          id?: string;
+          createdAt: string | Date;
+          updatedAt?: string | Date;
+          msg_entrada?: null | string;
+          msg_salida?: null | string;
+          nota?: any;
+          leido?: boolean;
+      };
+
+export interface TimelineResponse {
+    statusCode: number;
+    page: number;
+    limit: number;
+    total: number;
+    items: TimelineItem[];
+}
+
 export interface ChatTag {
     id:        string;
     nombre:    string;
