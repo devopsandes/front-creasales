@@ -1,10 +1,9 @@
 import React, { FormEvent, useEffect, useState, useRef } from 'react'
 import { useLocation, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatById, getUserData } from '../../services/chats/chats.services'
-import { Mensaje } from '../../interfaces/chats.interface'
+import { findChatTimeline, getUserData } from '../../services/chats/chats.services'
+import { Mensaje, TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
-import { Socket } from 'socket.io-client'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '../../app/store'
@@ -34,7 +33,7 @@ import axios from 'axios'
 
 const Chats = () => {
     const [usuarios,setUsuarios] = useState<Usuario[]>([])
-    const [mensajes, setMensajes] = useState<Mensaje[]>([])
+    const [mensajes, setMensajes] = useState<TimelineItem[]>([])
     const [mensaje, setMensaje] = useState<string>('')
     const [condChat, setCondChat] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
@@ -68,7 +67,63 @@ const Chats = () => {
     const currentChat = chats.find(chat => chat.id === id)
     const chatTags: ChatTag[] = currentChat?.tags || []
 
-    let socket: Socket | null = null
+    const normalizeTimelineItem = (raw: any): TimelineItem => {
+        // algunos backends envuelven el payload
+        const it = raw?.item ?? raw?.event ?? raw
+
+        if (it?.kind === "event" || it?.kind === "message") return it
+
+        // Evento “nuevo” pero sin kind (caso típico: {type, text, createdAt, ...})
+        if (it?.type && it?.text !== undefined) {
+            return { ...it, kind: "event" as const }
+        }
+
+        // Mensaje legacy sin kind (msg_entrada / msg_salida)
+        if (it?.msg_entrada !== undefined || it?.msg_salida !== undefined) {
+            return { ...it, kind: "message" as const }
+        }
+
+        // fallback: si no se puede inferir, lo dejamos como viene
+        return it
+    }
+
+    const resolveEventText = (evt: any): string => {
+        const text = `${evt?.text ?? ""}`.trim()
+        if (text) return text
+
+        // Fallbacks defensivos por tipo, por si el backend aún no envía `text`
+        switch (evt?.type) {
+            case "CHAT_ASSIGNED": {
+                const nombre =
+                    evt?.payload?.operador?.nombre ??
+                    evt?.payload?.operador?.name ??
+                    evt?.payload?.operator?.nombre ??
+                    evt?.payload?.operator?.name ??
+                    evt?.payload?.user?.nombre ??
+                    evt?.payload?.user?.name
+                const apellido =
+                    evt?.payload?.operador?.apellido ??
+                    evt?.payload?.operator?.apellido ??
+                    evt?.payload?.user?.apellido
+                const fullName = [nombre, apellido].filter(Boolean).join(" ").trim()
+                return fullName
+                    ? `Esta conversación fue asignada a ${fullName}`
+                    : "Esta conversación fue asignada"
+            }
+            case "TAG_ASSIGNED": {
+                const tagName =
+                    evt?.payload?.tag?.nombre ??
+                    evt?.payload?.tagName ??
+                    evt?.payload?.nombreTag
+                return tagName ? `Se asignó la etiqueta ${tagName}` : "Se asignó una etiqueta"
+            }
+            default:
+                return evt?.type ? `${evt.type}` : "Evento"
+        }
+    }
+
+    const debugTimeline =
+        import.meta.env.DEV && localStorage.getItem("debugTimeline") === "1"
 
     useEffect(() => {
         const ejecucion = async () => {
@@ -99,91 +154,154 @@ const Chats = () => {
     
     useEffect(()=>{
         dispatch(connectSocket())
-        socket = getSocket()
+        const socket = getSocket()
         setLoading(true)
         socket?.emit('register',telefono)
         return () => {
             // dispatch(disconnectSocket())
         }
-    },[dispatch])
+    },[dispatch, telefono])
     
    
 
-    useEffect(()=>{
-        
-        if(!socket) return
+    useEffect(() => {
+        const socket = getSocket()
+        if (!socket || !id) return
 
+        const messageEventName = `new-message-${id}`
+        const chatEventName = `chat-event-${id}`
 
-        const handleNewMessage = (mensaje: Mensaje) => {
-            
-            setCondChat(menos24hs(mensaje.createdAt))
-            setMensajes(prevChats => [...prevChats,mensaje])
+        if (debugTimeline) {
+            console.log("[socket] init", {
+                connected: socket.connected,
+                id: socket.id,
+                messageEventName,
+                chatEventName,
+            })
+        }
+
+        const handleConnect = () => {
+            if (debugTimeline) console.log("[socket] connect", { id: socket.id })
+        }
+
+        const handleDisconnect = (reason: any) => {
+            if (debugTimeline) console.log("[socket] disconnect", { reason })
+        }
+
+        const handleConnectError = (err: any) => {
+            if (debugTimeline) console.log("[socket] connect_error", err)
+        }
+
+        const handleAny = (eventName: string, ...args: any[]) => {
+            if (!debugTimeline) return
+            // Evitamos ruido excesivo: logueamos eventos del chat o errores
+            const shouldLog =
+                eventName === chatEventName ||
+                eventName === messageEventName ||
+                eventName === "error" ||
+                eventName.toLowerCase().includes("chat-event") ||
+                eventName.toLowerCase().includes("new-message")
+            if (shouldLog) console.log("[socket] onAny", eventName, ...args)
+        }
+
+        const handleNewMessage = (mensaje: any) => {
+            const item: TimelineItem = { ...mensaje, kind: "message" as const }
+            setCondChat(menos24hs(new Date(mensaje.createdAt)))
+            setMensajes(prev => [...prev, item])
+            if (debugTimeline) console.log("[socket] new-message", messageEventName, mensaje)
+        }
+
+        const handleChatEvent = (evt: any) => {
+            // Normalizamos porque algunos eventos pueden venir sin `kind`
+            if (debugTimeline) console.log("[socket] chat-event", chatEventName, evt)
+            setMensajes(prev => [...prev, normalizeTimelineItem(evt)])
         }
 
         const handleError = (error: any) => {
-            console.log(error);
-            if (error.name === 'TokenExpiredError') {
+            console.log(error)
+            if (error?.name === 'TokenExpiredError') {
                 dispatch(openSessionExpired())
                 return
             }
         }
 
-        const handleMsjArchivar = (mensaje: Mensaje) => {
-            setMensajes(prevChats => [...prevChats,mensaje])
-            
-        }
+        socket.on("connect", handleConnect)
+        socket.on("disconnect", handleDisconnect)
+        socket.on("connect_error", handleConnectError)
+        socket.onAny(handleAny)
 
-        socket.on(`new-message`,handleNewMessage)
-        socket.on('msj-archivar',handleMsjArchivar)
-        socket.on('error',handleError)
+        socket.on(messageEventName, handleNewMessage)
+        socket.on(chatEventName, handleChatEvent)
+        socket.on('error', handleError)
 
         return () => {
-            socket!.off(`new-message`, handleNewMessage)
-            socket!.off('error', handleError)
+            socket.off("connect", handleConnect)
+            socket.off("disconnect", handleDisconnect)
+            socket.off("connect_error", handleConnectError)
+            socket.offAny(handleAny)
+
+            socket.off(messageEventName, handleNewMessage)
+            socket.off(chatEventName, handleChatEvent)
+            socket.off('error', handleError)
         }
-    },[socket])
+    }, [id, dispatch])
 
     useEffect(() => {
         // Obtener los mensajes del chat
         const inicio = async () => {
-            const data = await findChatById(token!, id!)
-            if(data.statusCode === 401) {
+            if (!id) return
+
+            if (debugTimeline) {
+                console.log("[Chats] timeline load start", {
+                    chatId: id,
+                    backend: import.meta.env.VITE_URL_BACKEND,
+                    page: 1,
+                    limit: 200,
+                })
+            }
+
+            const data = await findChatTimeline(token!, id!, { page: 1, limit: 200 })
+            if (data.statusCode === 401) {
                 dispatch(openSessionExpired())
                 return
             }
             
-            setMensajes(data.chat.mensajes)
-            
-            // Validar que haya mensajes antes de acceder al último
-            if (data.chat.mensajes && data.chat.mensajes.length > 0) {
-                let ultimo = data.chat.mensajes[data.chat.mensajes.length - 1]
-                
-                // Validar que el último mensaje exista y verificar si es de archivado
-                if(ultimo && ultimo.msg_salida === '%archivado%'){
-                    // con este bloque condicional verificamos que el ultimo mensaje no sea el de archivado, si lo es, tomamos el penúltimo
-                    if (data.chat.mensajes.length > 1) {
-                        ultimo = data.chat.mensajes[data.chat.mensajes.length - 2]
-                        // Validar que el penúltimo mensaje exista antes de usarlo
-                        if (ultimo && ultimo.createdAt) {
-                            setCondChat(menos24hs(ultimo.createdAt))
-                        } else {
-                            setCondChat(false)
-                        }
-                    } else {
-                        // Si solo hay un mensaje y es de archivado, no hay penúltimo
-                        setCondChat(false)
-                    }
-                } else if (ultimo && ultimo.createdAt) {
-                    // Si el último mensaje no es de archivado, usar su fecha
-                    setCondChat(menos24hs(ultimo.createdAt))
-                } else {
-                    // Si el último mensaje no tiene fecha, establecer condChat en false
-                    setCondChat(false)
-                }
+            const rawItems: any[] = (data as any).items || []
+            if (debugTimeline) {
+                console.log("[Chats] timeline raw items", {
+                    count: rawItems.length,
+                    preview: rawItems.slice(0, 3),
+                })
+            }
+
+            // Asegura orden ascendente para que el scroll al final funcione bien
+            const items = rawItems
+                .map(normalizeTimelineItem)
+                .sort((a, b) => {
+                const ta = new Date((a as any)?.createdAt ?? 0).getTime()
+                const tb = new Date((b as any)?.createdAt ?? 0).getTime()
+                return ta - tb
+            })
+
+            setMensajes(items)
+            if (debugTimeline) {
+                console.log("[Chats] timeline normalized items", {
+                    count: items.length,
+                    events: items.filter((x: any) => x?.kind === "event").slice(0, 5),
+                })
+            }
+
+            // condChat: tomar el último item "message" real (ignorar eventos)
+            const lastMessage = [...items]
+                .reverse()
+                .find((x: any) => x && x.kind === "message")
+
+            if (lastMessage?.createdAt) {
+                setCondChat(menos24hs(new Date(lastMessage.createdAt)))
             } else {
-                // Si no hay mensajes, establecer condChat en false
                 setCondChat(false)
             }
+
             setLoading(false)
             
         }
@@ -204,7 +322,7 @@ const Chats = () => {
             
             if(mensaje.length === 0 && archivo == null)
                 return alert('Debe escribir un mensaje')
-            socket = getSocket()
+            const socket = getSocket()
             if (socket && socket.connected) {
                 const objMsj = {
                     mensaje,
@@ -240,7 +358,7 @@ const Chats = () => {
                 updatedAt: new Date()
             }
             setMensajes(prevChats => [...prevChats,msj])            
-            socket = getSocket()
+            const socket = getSocket()
             if (socket && socket.connected) {
                const objMsj = {
                 mensaje,
@@ -436,23 +554,39 @@ const Chats = () => {
                         </div>
                     </div>
                     <div className='body-chat' ref={mensajesContainerRef}>
-                        {mensajes.map((msj, index) => (
-                            msj.msg_salida === '%archivado%' ? (
-                                <div className='contenedor-archivado' key={index}>
-                                    <p className='mensaje-archivado'> Archivado</p>
+                        {mensajes.map((msj: any, index) => {
+                            const key = msj?.id ?? `${msj?.createdAt ?? "no-date"}-${index}`
+
+                            // soporta eventos con y sin kind (por compatibilidad)
+                            const isEvent = msj?.kind === "event" || (msj?.type && msj?.text !== undefined && msj?.msg_entrada === undefined && msj?.msg_salida === undefined)
+
+                            if (isEvent) {
+                                return (
+                                    <div className='contenedor-archivado' key={key}>
+                                        <p className='mensaje-archivado'>{resolveEventText(msj)}</p>
+                                        <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
+                                    </div>
+                                )
+                            }
+
+                            if (msj?.msg_salida === '%archivado%') {
+                                return (
+                                    <div className='contenedor-archivado' key={key}>
+                                        <p className='mensaje-archivado'> Archivado</p>
+                                        <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
+                                    </div>
+                                )
+                            }
+
+                            return (
+                                <div key={key} className={`${msj.msg_entrada ? 'contenedor-entrada' : 'contenedor-salida'}`}>
+                                    <p className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
+                                        {msj.msg_entrada ? msj.msg_entrada : msj.msg_salida}
+                                    </p>
                                     <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
                                 </div>
-                            ) : (
-                            <div key={index} className={`${msj.msg_entrada ? 'contenedor-entrada' : 'contenedor-salida'}`}>
-                                <p className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
-                                    {msj.msg_entrada ? msj.msg_entrada : msj.msg_salida}
-                                </p>
-                                <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
-
-                            </div>
                             )
-                          
-                        ))}
+                        })}
                     </div>
                     <div className='footer-chat'>
                         {archivo && (
