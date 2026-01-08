@@ -254,11 +254,11 @@
 }
 
 .btn-plantilla {
-    background-color: #e9d5ff;
+    background-color: #d8b4fe;
 }
 
 .btn-plantilla:hover {
-    background-color: #d8b4fe;
+    background-color: #c084fc;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -268,11 +268,11 @@
 }
 
 .btn-nota-privada {
-    background-color: #fde68a;
+    background-color: #fcd34d;
 }
 
 .btn-nota-privada:hover {
-    background-color: #fcd34d;
+    background-color: #fbbf24;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
