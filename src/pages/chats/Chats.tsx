@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useState, useRef } from 'react'
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
 import { findChatTimeline, getUserData } from '../../services/chats/chats.services'
@@ -121,6 +121,66 @@ const Chats = () => {
                 return evt?.type ? `${evt.type}` : "Evento"
         }
     }
+
+    type DateSeparator = {
+        kind: "date_separator";
+        id: string;
+        createdAt: string | Date;
+        label: string;
+    }
+
+    type RenderItem = TimelineItem | DateSeparator
+
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+
+    const toDayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+
+    const formatDayLabel = (date: Date) => {
+        const now = new Date()
+        const today0 = startOfDay(now)
+        const d0 = startOfDay(date)
+        const msPerDay = 86400000
+        const diffDays = Math.floor((today0.getTime() - d0.getTime()) / msPerDay)
+
+        if (diffDays === 0) return "Hoy"
+        if (diffDays === 1) return "Ayer"
+
+        return new Intl.DateTimeFormat("es-AR", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        }).format(d0)
+    }
+
+    const withDateSeparators = (items: TimelineItem[]): RenderItem[] => {
+        const out: RenderItem[] = []
+        let prevKey: string | null = null
+
+        for (const it of items) {
+            const d = new Date((it as any)?.createdAt)
+            if (Number.isNaN(d.getTime())) {
+                out.push(it)
+                continue
+            }
+
+            const key = toDayKey(d)
+            if (key !== prevKey) {
+                out.push({
+                    kind: "date_separator",
+                    id: `sep-${key}`,
+                    createdAt: it.createdAt,
+                    label: formatDayLabel(d),
+                })
+                prevKey = key
+            }
+
+            out.push(it)
+        }
+
+        return out
+    }
+
+    const renderItems = useMemo(() => withDateSeparators(mensajes), [mensajes])
 
     const debugTimeline =
         import.meta.env.DEV && localStorage.getItem("debugTimeline") === "1"
@@ -595,8 +655,16 @@ const Chats = () => {
                         </div>
                     </div>
                     <div className='body-chat' ref={mensajesContainerRef}>
-                        {mensajes.map((msj: any, index) => {
+                        {renderItems.map((msj: any, index) => {
                             const key = msj?.id ?? `${msj?.createdAt ?? "no-date"}-${index}`
+
+                            if (msj?.kind === "date_separator") {
+                                return (
+                                    <div className='date-separator' key={key}>
+                                        <span className='date-separator-label'>{msj.label}</span>
+                                    </div>
+                                )
+                            }
 
                             // soporta eventos con y sin kind (por compatibilidad)
                             const isEvent = msj?.kind === "event" || (msj?.type && msj?.text !== undefined && msj?.msg_entrada === undefined && msj?.msg_salida === undefined)
