@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
+import { Tag as TagIcon, User } from "lucide-react"
 import { RootState } from "../../app/store"
 import { setUserData, setViewSide, openSessionExpired, setChats } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
@@ -50,6 +51,7 @@ const ListaChats = () => {
     const [selectedTag, setSelectedTag] = useState<string>('')
     const [allTags, setAllTags] = useState<{ id: string; nombre: string }[]>([])
     const [searchChat, setSearchChat] = useState<string>('')
+    const [selectedOperator, setSelectedOperator] = useState<string>('')
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
 
@@ -192,6 +194,7 @@ const ListaChats = () => {
 
     const handleChangeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedValue = e.target.value
+        setSelectedOperator(selectedValue)
         aplicarFiltros(selectedValue, selectedTag, undefined, searchChat)
         
         const newSearchParams = new URLSearchParams(searchParams);
@@ -268,6 +271,7 @@ const ListaChats = () => {
         const userId = searchParams.get('userId');
         if (userId && selectRef.current && users.length > 1 && chats1.length > 0) {
             selectRef.current.value = userId;
+            setSelectedOperator(userId);
             aplicarFiltros(userId, selectedTag, undefined, searchChat);
         }
     }, [users, chats1, searchParams, loading, selectedTag, searchChat])
@@ -516,31 +520,36 @@ const ListaChats = () => {
                                 </div>
                                 {showFilterSelect && (
                                     <div className="w-full px-2 mb-2 space-y-2">
-                                        <select
-                                            ref={selectRef}
-                                            id="operador-select"
-                                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                            onChange={handleChangeSelect}
-                                        >
-                                            <option value="" className="bg-gray-500">Seleccione</option>
-                                            <option value="TODOS" className="bg-gray-500">TODOS</option>
-                                            <option value="BOT" className="bg-gray-500">BOT OPERADOR</option>
-                                            {users.map(user => (
-                                                <option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
-                                            ))}
-                                        
-                                        </select>
-                                        <select
-                                            id="tag-select"
-                                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                            onChange={handleChangeTagSelect}
-                                            value={selectedTag}
-                                        >
-                                            <option value="" className="bg-gray-500">Todas las etiquetas</option>
-                                            {allTags.map(tag => (
-                                                <option key={tag.id} value={tag.id} className="bg-gray-500">{tag.nombre}</option>
-                                            ))}
-                                        </select>
+                                        <div className="filter-input-row">
+                                            <User className="filter-input-icon" size={18} />
+                                            <select
+                                                ref={selectRef}
+                                                id="operador-select"
+                                                className={`filter-select ${selectedOperator === '' ? 'filter-select--placeholder' : ''}`}
+                                                onChange={handleChangeSelect}
+                                            >
+                                                <option value="">Filtrar por operador</option>
+                                                <option value="TODOS" className="bg-gray-500">TODOS</option>
+                                                <option value="BOT" className="bg-gray-500">BOT OPERADOR</option>
+                                                {users.map(user => (
+                                                    <option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="filter-input-row">
+                                            <TagIcon className="filter-input-icon" size={18} />
+                                            <select
+                                                id="tag-select"
+                                                className={`filter-select ${selectedTag === '' ? 'filter-select--placeholder' : ''}`}
+                                                onChange={handleChangeTagSelect}
+                                                value={selectedTag}
+                                            >
+                                                <option value="">Filtrar por etiqueta</option>
+                                                {allTags.map(tag => (
+                                                    <option key={tag.id} value={tag.id} className="bg-gray-500">{tag.nombre}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
                                 )}
                             </div>
