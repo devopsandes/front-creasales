@@ -1,8 +1,8 @@
-import React, { FormEvent, useEffect, useState, useRef } from 'react'
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
 import { findChatTimeline, getUserData } from '../../services/chats/chats.services'
-import { Mensaje, TimelineItem } from '../../interfaces/chats.interface'
+import { TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
 import { useDispatch, useSelector } from 'react-redux'
@@ -122,6 +122,66 @@ const Chats = () => {
         }
     }
 
+    type DateSeparator = {
+        kind: "date_separator";
+        id: string;
+        createdAt: string | Date;
+        label: string;
+    }
+
+    type RenderItem = TimelineItem | DateSeparator
+
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+
+    const toDayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+
+    const formatDayLabel = (date: Date) => {
+        const now = new Date()
+        const today0 = startOfDay(now)
+        const d0 = startOfDay(date)
+        const msPerDay = 86400000
+        const diffDays = Math.floor((today0.getTime() - d0.getTime()) / msPerDay)
+
+        if (diffDays === 0) return "Hoy"
+        if (diffDays === 1) return "Ayer"
+
+        return new Intl.DateTimeFormat("es-AR", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        }).format(d0)
+    }
+
+    const withDateSeparators = (items: TimelineItem[]): RenderItem[] => {
+        const out: RenderItem[] = []
+        let prevKey: string | null = null
+
+        for (const it of items) {
+            const d = new Date((it as any)?.createdAt)
+            if (Number.isNaN(d.getTime())) {
+                out.push(it)
+                continue
+            }
+
+            const key = toDayKey(d)
+            if (key !== prevKey) {
+                out.push({
+                    kind: "date_separator",
+                    id: `sep-${key}`,
+                    createdAt: it.createdAt,
+                    label: formatDayLabel(d),
+                })
+                prevKey = key
+            }
+
+            out.push(it)
+        }
+
+        return out
+    }
+
+    const renderItems = useMemo(() => withDateSeparators(mensajes), [mensajes])
+
     const debugTimeline =
         import.meta.env.DEV && localStorage.getItem("debugTimeline") === "1"
 
@@ -192,12 +252,17 @@ const Chats = () => {
             if (debugTimeline) console.log("[socket] connect_error", err)
         }
 
+        const handleArchivarAck = (data: any) => {
+            if (debugTimeline) console.log("[socket] archivar-ack", data)
+        }
+
         const handleAny = (eventName: string, ...args: any[]) => {
             if (!debugTimeline) return
             // Evitamos ruido excesivo: logueamos eventos del chat o errores
             const shouldLog =
                 eventName === chatEventName ||
                 eventName === messageEventName ||
+                eventName === "archivar-ack" ||
                 eventName === "error" ||
                 eventName.toLowerCase().includes("chat-event") ||
                 eventName.toLowerCase().includes("new-message")
@@ -228,6 +293,7 @@ const Chats = () => {
         socket.on("connect", handleConnect)
         socket.on("disconnect", handleDisconnect)
         socket.on("connect_error", handleConnectError)
+        socket.on("archivar-ack", handleArchivarAck)
         socket.onAny(handleAny)
 
         socket.on(messageEventName, handleNewMessage)
@@ -238,6 +304,7 @@ const Chats = () => {
             socket.off("connect", handleConnect)
             socket.off("disconnect", handleDisconnect)
             socket.off("connect_error", handleConnectError)
+            socket.off("archivar-ack", handleArchivarAck)
             socket.offAny(handleAny)
 
             socket.off(messageEventName, handleNewMessage)
@@ -352,12 +419,6 @@ const Chats = () => {
 
     const handleArchivarConfirm = () => {
         try {
-            const msj: Mensaje = {
-                msg_salida: mensaje,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            }
-            setMensajes(prevChats => [...prevChats,msj])            
             const socket = getSocket()
             if (socket && socket.connected) {
                const objMsj = {
@@ -367,7 +428,47 @@ const Chats = () => {
                 token
                }
                
-                socket.emit("archivar", objMsj);
+                if (debugTimeline) {
+                    console.log("[socket] emit archivar", objMsj, {
+                        connected: socket.connected,
+                        socketId: socket.id,
+                    })
+                }
+
+                const refreshTimeline = async () => {
+                    try {
+                        if (!id) return
+                        const data = await findChatTimeline(token!, id!, { page: 1, limit: 200 })
+                        if (data.statusCode === 401) {
+                            dispatch(openSessionExpired())
+                            return
+                        }
+                        const rawItems: any[] = (data as any).items || []
+                        const items = rawItems
+                            .map(normalizeTimelineItem)
+                            .sort(
+                                (a, b) =>
+                                    new Date((a as any)?.createdAt ?? 0).getTime() -
+                                    new Date((b as any)?.createdAt ?? 0).getTime()
+                            )
+                        setMensajes(items)
+                    } catch (e) {
+                        if (debugTimeline) console.log("[Chats] timeline refresh after archivar failed", e)
+                    }
+                }
+
+                // ACK: confirma si el backend terminó el flujo (y si generó eventId)
+                socket.emit("archivar", objMsj, (ack: any) => {
+                    if (debugTimeline) console.log("[socket] archivar ack", ack)
+                    // Si ok, refrescamos para asegurar que el hito persistido aparezca aunque el realtime no llegue
+                    if (ack?.ok) {
+                        refreshTimeline()
+                    }
+                })
+
+                // Fallback: si no hay ack o el evento tarda en persistir/emitir, refrescamos igual.
+                refreshTimeline()
+                setTimeout(refreshTimeline, 800)
             } else {
                 console.warn("Socket desconectado, enviando por HTTP...");
                 //await axios.post("/api/mensajes", { contenido: mensaje, usuarioId: "12345", chatId: "67890" });
@@ -554,8 +655,16 @@ const Chats = () => {
                         </div>
                     </div>
                     <div className='body-chat' ref={mensajesContainerRef}>
-                        {mensajes.map((msj: any, index) => {
+                        {renderItems.map((msj: any, index) => {
                             const key = msj?.id ?? `${msj?.createdAt ?? "no-date"}-${index}`
+
+                            if (msj?.kind === "date_separator") {
+                                return (
+                                    <div className='date-separator' key={key}>
+                                        <span className='date-separator-label'>{msj.label}</span>
+                                    </div>
+                                )
+                            }
 
                             // soporta eventos con y sin kind (por compatibilidad)
                             const isEvent = msj?.kind === "event" || (msj?.type && msj?.text !== undefined && msj?.msg_entrada === undefined && msj?.msg_salida === undefined)
