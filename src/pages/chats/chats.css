@@ -114,6 +114,20 @@
     z-index: 0;
 }
 
+.contenedor-archivado.contenedor-aviso-24h::before {
+    background: linear-gradient(90deg, transparent 0%, rgba(16, 185, 129, 0.55) 50%, transparent 100%);
+}
+
+.mensaje-archivado.mensaje-aviso-24h {
+    background-color: rgba(236, 253, 245, 0.95);
+    border-color: rgba(167, 243, 208, 0.95);
+    color: #065f46;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+    max-width: 92%;
+}
+
 .mensaje-salida,.mensaje-entrada, .mensaje-archivado {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }

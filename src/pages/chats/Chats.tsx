@@ -701,6 +701,13 @@ const Chats = () => {
                                 </div>
                             )
                         })}
+                        {!condChat && (
+                            <div className='contenedor-archivado contenedor-aviso-24h'>
+                                <p className='mensaje-archivado mensaje-aviso-24h'>
+                                    Como pasaron 24 horas del último mensaje recibido debes iniciar esta conversación con una plantilla, cuando te responda podrás conversar libremente.
+                                </p>
+                            </div>
+                        )}
                     </div>
                     <div className='footer-chat'>
                         {archivo && (
