@@ -124,6 +124,16 @@ const Chats = () => {
         }
     }
 
+    const formatAuthorName = (value: any) => {
+        if (!value || typeof value !== 'string') return ''
+        return value
+            .toLowerCase()
+            .split(' ')
+            .filter(Boolean)
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ')
+    }
+
     type DateSeparator = {
         kind: "date_separator";
         id: string;
@@ -186,6 +196,27 @@ const Chats = () => {
 
     const debugTimeline =
         import.meta.env.DEV && localStorage.getItem("debugTimeline") === "1"
+
+    const handleNotaPrivada = () => {
+        if (!mensaje || mensaje.trim().length === 0) {
+            setErrorModalMessage('Debe escribir una nota')
+            setIsErrorModalOpen(true)
+            return
+        }
+
+        const socket = getSocket()
+        if (socket && socket.connected) {
+            const payload = {
+                chatId: id,
+                mensaje,
+                token,
+            }
+            setMensaje("")
+            socket.emit("nota-privada", payload, (ack: any) => {
+                if (debugTimeline) console.log("[nota-privada ACK]", ack)
+            })
+        }
+    }
 
     useEffect(() => {
         const ejecucion = async () => {
@@ -258,6 +289,10 @@ const Chats = () => {
             if (debugTimeline) console.log("[socket] archivar-ack", data)
         }
 
+        const handleNotaPrivadaAck = (data: any) => {
+            if (debugTimeline) console.log("[socket] nota-privada-ack", data)
+        }
+
         const handleAny = (eventName: string, ...args: any[]) => {
             if (!debugTimeline) return
             // Evitamos ruido excesivo: logueamos eventos del chat o errores
@@ -265,6 +300,7 @@ const Chats = () => {
                 eventName === chatEventName ||
                 eventName === messageEventName ||
                 eventName === "archivar-ack" ||
+                eventName === "nota-privada-ack" ||
                 eventName === "error" ||
                 eventName.toLowerCase().includes("chat-event") ||
                 eventName.toLowerCase().includes("new-message")
@@ -296,6 +332,7 @@ const Chats = () => {
         socket.on("disconnect", handleDisconnect)
         socket.on("connect_error", handleConnectError)
         socket.on("archivar-ack", handleArchivarAck)
+        socket.on("nota-privada-ack", handleNotaPrivadaAck)
         socket.onAny(handleAny)
 
         socket.on(messageEventName, handleNewMessage)
@@ -307,6 +344,7 @@ const Chats = () => {
             socket.off("disconnect", handleDisconnect)
             socket.off("connect_error", handleConnectError)
             socket.off("archivar-ack", handleArchivarAck)
+            socket.off("nota-privada-ack", handleNotaPrivadaAck)
             socket.offAny(handleAny)
 
             socket.off(messageEventName, handleNewMessage)
@@ -675,6 +713,19 @@ const Chats = () => {
                             const isEvent = msj?.kind === "event" || (msj?.type && msj?.text !== undefined && msj?.msg_entrada === undefined && msj?.msg_salida === undefined)
 
                             if (isEvent) {
+                                if (msj?.type === "PRIVATE_NOTE_CREATED") {
+                                    return (
+                                        <div className='contenedor-nota-privada' key={key}>
+                                            <div className='mensaje-nota-privada'>
+                                                <span className='mensaje-nota-privada-text'>{resolveEventText(msj)}</span>
+                                                {msj?.payload?.authorName && (
+                                                    <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>
+                                                )}
+                                            </div>
+                                            <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
+                                        </div>
+                                    )
+                                }
                                 return (
                                     <div className='contenedor-archivado' key={key}>
                                         <p className='mensaje-archivado'>{resolveEventText(msj)}</p>
@@ -701,6 +752,13 @@ const Chats = () => {
                                 </div>
                             )
                         })}
+                        {!condChat && (
+                            <div className='contenedor-archivado contenedor-aviso-24h'>
+                                <p className='mensaje-archivado mensaje-aviso-24h'>
+                                    Como pasaron 24 horas del último mensaje recibido debes iniciar esta conversación con una plantilla, cuando te responda podrás conversar libremente.
+                                </p>
+                            </div>
+                        )}
                     </div>
                     <div className='footer-chat'>
                         {archivo && (
@@ -765,7 +823,7 @@ const Chats = () => {
                                 >
                                     Plantilla
                                 </button>
-                                <button type='button' className='btn-msg btn-nota-privada'>
+                                <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>
                                     Nota Privada
                                 </button>
                                 <button type='submit' className='btn-msg'>
