@@ -10,6 +10,7 @@ import { RootState } from '../../app/store'
 import UserSearchModal from '../../components/modal/UserSearchModal'
 import ArchiveModal from '../../components/modal/ArchiveModal'
 import DeleteModal from '../../components/modal/DeleteModal'
+import ErrorModal from '../../components/modal/ErrorModal'
 import ChatInfoDropdown from '../../components/dropdown/ChatInfoDropdown'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
@@ -18,7 +19,6 @@ import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionE
 import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
 /* import { FaMicrophone } from "react-icons/fa"; */
-import ModalPlantilla from '../../components/modal/ModalPlantilla'
 import PlantillaModal from '../../components/modal/PlantillaModal'
 import './chats.css'
 import { toast } from 'react-toastify'
@@ -42,6 +42,8 @@ const Chats = () => {
     const [filteredUsers, setFilteredUsers] = useState<Usuario[]>([]);
     const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+    const [errorModalMessage, setErrorModalMessage] = useState('');
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -387,8 +389,11 @@ const Chats = () => {
             e.preventDefault()
             console.log(archivo == null);
             
-            if(mensaje.length === 0 && archivo == null)
-                return alert('Debe escribir un mensaje')
+            if(mensaje.length === 0 && archivo == null) {
+                setErrorModalMessage('Debe escribir un mensaje')
+                setIsErrorModalOpen(true)
+                return
+            }
             const socket = getSocket()
             if (socket && socket.connected) {
                 const objMsj = {
@@ -782,7 +787,6 @@ const Chats = () => {
                         )}
                         
                     </div>
-                    <ModalPlantilla />
                     <PlantillaModal />
                     <UserSearchModal  />
                     <ArchiveModal 
@@ -794,6 +798,15 @@ const Chats = () => {
                         isOpen={isDeleteModalOpen}
                         onClose={handleDeleteCancel}
                         onConfirm={handleDeleteConfirm}
+                    />
+                    <ErrorModal
+                        isOpen={isErrorModalOpen}
+                        onClose={() => {
+                            setIsErrorModalOpen(false)
+                            setErrorModalMessage('')
+                        }}
+                        title="Atención"
+                        message={errorModalMessage || 'Debe escribir un mensaje'}
                     />
                 </div>
             )}

@@ -111,7 +111,7 @@ const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse>=
 
 const getChats = async (token: string, page: string, limit: string): Promise< ChatsResponse & ErrorResponse> => {
     try {
-        const url = `https://sales.createch.com.ar/api/v1/chats?page=${page}&limit=${limit}`
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats?page=${page}&limit=${limit}`
 
         const headers = {
             authorization: `Bearer ${token}`
