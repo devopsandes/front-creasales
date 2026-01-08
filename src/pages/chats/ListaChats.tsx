@@ -49,6 +49,7 @@ const ListaChats = () => {
     const [showFilterSelect, setShowFilterSelect] = useState<boolean>(false)
     const [selectedTag, setSelectedTag] = useState<string>('')
     const [allTags, setAllTags] = useState<{ id: string; nombre: string }[]>([])
+    const [searchChat, setSearchChat] = useState<string>('')
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
 
@@ -191,7 +192,7 @@ const ListaChats = () => {
 
     const handleChangeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedValue = e.target.value
-        aplicarFiltros(selectedValue, selectedTag)
+        aplicarFiltros(selectedValue, selectedTag, undefined, searchChat)
         
         const newSearchParams = new URLSearchParams(searchParams);
         if (selectedValue && selectedValue !== "TODOS" && selectedValue !== "BOT") {
@@ -205,10 +206,20 @@ const ListaChats = () => {
     const handleChangeTagSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const tagValue = e.target.value
         setSelectedTag(tagValue)
-        aplicarFiltros(selectRef.current?.value || '', tagValue)
+        aplicarFiltros(selectRef.current?.value || '', tagValue, undefined, searchChat)
     }
 
-    const aplicarFiltros = (operadorValue: string, tagValue: string, chatsBase?: ChatState[]) => {
+    const normalizeSearch = (value: string) => {
+        return (value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[\s()+\-]/g, '')
+    }
+
+    const onlyDigits = (value: string) => (value || '').replace(/\D/g, '')
+
+    const aplicarFiltros = (operadorValue: string, tagValue: string, chatsBase?: ChatState[], searchValue?: string) => {
         const baseChats = chatsBase || chats1
         let filtrados: ChatState[] = []
 
@@ -228,6 +239,28 @@ const ListaChats = () => {
             )
         }
 
+        const q = (searchValue ?? '').trim()
+        if (q.length > 0) {
+            const qNorm = normalizeSearch(q)
+            const qDigits = onlyDigits(q)
+
+            filtrados = filtrados.filter(chat => {
+                const nombre = chat?.cliente?.nombre || ''
+                const apellido = chat?.cliente?.apellido || ''
+                const telefono = chat?.cliente?.telefono || ''
+
+                const haystack = normalizeSearch(`${nombre} ${apellido} ${telefono}`)
+                if (qNorm && haystack.includes(qNorm)) return true
+
+                if (qDigits.length > 0) {
+                    const telDigits = onlyDigits(telefono)
+                    if (telDigits.includes(qDigits)) return true
+                }
+
+                return false
+            })
+        }
+
         setFiltrados(filtrados)
     }
 
@@ -235,9 +268,9 @@ const ListaChats = () => {
         const userId = searchParams.get('userId');
         if (userId && selectRef.current && users.length > 1 && chats1.length > 0) {
             selectRef.current.value = userId;
-            aplicarFiltros(userId, selectedTag);
+            aplicarFiltros(userId, selectedTag, undefined, searchChat);
         }
-    }, [users, chats1, searchParams, loading, selectedTag])
+    }, [users, chats1, searchParams, loading, selectedTag, searchChat])
 
     useEffect(() => {
         if (chatsFromRedux.length > 0) {
@@ -304,9 +337,9 @@ const ListaChats = () => {
 
             // Aplicar filtros de operador y tag sobre la base seleccionada
             const operadorValue = selectRef.current?.value || ''
-            aplicarFiltros(operadorValue, selectedTag, chatsBase)
+            aplicarFiltros(operadorValue, selectedTag, chatsBase, searchChat)
         }
-    }, [chatsFromRedux, id, styleBtn])
+    }, [chatsFromRedux, id, styleBtn, searchChat, selectedTag])
 
   
 
@@ -435,67 +468,83 @@ const ListaChats = () => {
                     )}
                     {chats1.length > 0 && (
                         <>
-                            <div className="w-full flex justify-between px-2 items-center mb-4 py-2">
-                                <div className="flex gap-2">
-                                    <div 
-                                        className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
-                                        onClick={handleOrdenarPorFecha}
-                                        title=""
-                                    >
-                                        {ordenFecha === 'desc' ? (
-                                            <LuArrowDownFromLine />
-                                        ) : (
-                                            <LuArrowUpFromLine />
-                                        )}
-                                        <span className="sort-tooltip">Ordenar por fecha</span>
-                                    </div>
-                                    <div 
-                                        className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
-                                        onClick={handleExportarConversaciones}
-                                        title=""
-                                    >
-                                        <LuDownload />
-                                        <span className="sort-tooltip">Exportar conversaciones</span>
-                                    </div>
-                                    <div 
-                                        className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
-                                        onClick={handleToggleFilter}
-                                        title=""
-                                    >
-                                        <LuFilter />
-                                        <span className="sort-tooltip">Filtrar conversaciones</span>
+                            <div className="chat-list-controls">
+                                <div className="w-full flex justify-between px-2 items-center mb-2 py-2">
+                                    <div className="flex gap-2 flex-wrap">
+                                        <div 
+                                            className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
+                                            onClick={handleOrdenarPorFecha}
+                                            title=""
+                                        >
+                                            {ordenFecha === 'desc' ? (
+                                                <LuArrowDownFromLine />
+                                            ) : (
+                                                <LuArrowUpFromLine />
+                                            )}
+                                            <span className="sort-tooltip">Ordenar por fecha</span>
+                                        </div>
+                                        <div 
+                                            className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
+                                            onClick={handleExportarConversaciones}
+                                            title=""
+                                        >
+                                            <LuDownload />
+                                            <span className="sort-tooltip">Exportar conversaciones</span>
+                                        </div>
+                                        <div 
+                                            className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
+                                            onClick={handleToggleFilter}
+                                            title=""
+                                        >
+                                            <LuFilter />
+                                            <span className="sort-tooltip">Filtrar conversaciones</span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="w-full px-2 mb-2">
+                                <input
+                                    type="text"
+                                    value={searchChat}
+                                    onChange={(e) => {
+                                        const v = e.target.value
+                                        setSearchChat(v)
+                                        aplicarFiltros(selectRef.current?.value || '', selectedTag, undefined, v)
+                                    }}
+                                    placeholder="Buscar por nombre o teléfono..."
+                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"
+                                />
+                                </div>
+                                {showFilterSelect && (
+                                    <div className="w-full px-2 mb-2 space-y-2">
+                                        <select
+                                            ref={selectRef}
+                                            id="operador-select"
+                                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                            onChange={handleChangeSelect}
+                                        >
+                                            <option value="" className="bg-gray-500">Seleccione</option>
+                                            <option value="TODOS" className="bg-gray-500">TODOS</option>
+                                            <option value="BOT" className="bg-gray-500">BOT OPERADOR</option>
+                                            {users.map(user => (
+                                                <option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
+                                            ))}
+                                        
+                                        </select>
+                                        <select
+                                            id="tag-select"
+                                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                            onChange={handleChangeTagSelect}
+                                            value={selectedTag}
+                                        >
+                                            <option value="" className="bg-gray-500">Todas las etiquetas</option>
+                                            {allTags.map(tag => (
+                                                <option key={tag.id} value={tag.id} className="bg-gray-500">{tag.nombre}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                             </div>
-                            {showFilterSelect && (
-                                <div className="w-full px-2 mb-4 space-y-2">
-                                    <select
-                                        ref={selectRef}
-                                        id="operador-select"
-                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                        onChange={handleChangeSelect}
-                                    >
-                                        <option value="" className="bg-gray-500">Seleccione</option>
-                                        <option value="TODOS" className="bg-gray-500">TODOS</option>
-                                        <option value="BOT" className="bg-gray-500">BOT OPERADOR</option>
-                                        {users.map(user => (
-                                            <option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
-                                        ))}
-                                    
-                                    </select>
-                                    <select
-                                        id="tag-select"
-                                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                                        onChange={handleChangeTagSelect}
-                                        value={selectedTag}
-                                    >
-                                        <option value="" className="bg-gray-500">Todas las etiquetas</option>
-                                        {allTags.map(tag => (
-                                            <option key={tag.id} value={tag.id} className="bg-gray-500">{tag.nombre}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
+                            <div className="chat-list-spacing"></div>
                             {filtrados != undefined && ordenarChatsPorFecha(filtrados, ordenFecha).map(chat => (
                                 <Link 
                                     to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente?.telefono || ''}&nombre=${chat.cliente?.nombre || ''}`} 
@@ -527,6 +576,9 @@ const ListaChats = () => {
                                     </div>
                                 </Link>
                             ))}
+                            {filtrados && filtrados.length === 0 && (
+                                <p className="msg-error px-2">No hay coincidencias</p>
+                            )}
                         </>
                     )}
                 
