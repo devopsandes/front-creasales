@@ -2,7 +2,7 @@ import React, { FormEvent, useEffect, useState, useRef } from 'react'
 import { useLocation, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
 import { findChatTimeline, getUserData } from '../../services/chats/chats.services'
-import { Mensaje, TimelineItem } from '../../interfaces/chats.interface'
+import { TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
 import { useDispatch, useSelector } from 'react-redux'
@@ -192,12 +192,17 @@ const Chats = () => {
             if (debugTimeline) console.log("[socket] connect_error", err)
         }
 
+        const handleArchivarAck = (data: any) => {
+            if (debugTimeline) console.log("[socket] archivar-ack", data)
+        }
+
         const handleAny = (eventName: string, ...args: any[]) => {
             if (!debugTimeline) return
             // Evitamos ruido excesivo: logueamos eventos del chat o errores
             const shouldLog =
                 eventName === chatEventName ||
                 eventName === messageEventName ||
+                eventName === "archivar-ack" ||
                 eventName === "error" ||
                 eventName.toLowerCase().includes("chat-event") ||
                 eventName.toLowerCase().includes("new-message")
@@ -228,6 +233,7 @@ const Chats = () => {
         socket.on("connect", handleConnect)
         socket.on("disconnect", handleDisconnect)
         socket.on("connect_error", handleConnectError)
+        socket.on("archivar-ack", handleArchivarAck)
         socket.onAny(handleAny)
 
         socket.on(messageEventName, handleNewMessage)
@@ -238,6 +244,7 @@ const Chats = () => {
             socket.off("connect", handleConnect)
             socket.off("disconnect", handleDisconnect)
             socket.off("connect_error", handleConnectError)
+            socket.off("archivar-ack", handleArchivarAck)
             socket.offAny(handleAny)
 
             socket.off(messageEventName, handleNewMessage)
@@ -352,12 +359,6 @@ const Chats = () => {
 
     const handleArchivarConfirm = () => {
         try {
-            const msj: Mensaje = {
-                msg_salida: mensaje,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            }
-            setMensajes(prevChats => [...prevChats,msj])            
             const socket = getSocket()
             if (socket && socket.connected) {
                const objMsj = {
@@ -367,7 +368,47 @@ const Chats = () => {
                 token
                }
                
-                socket.emit("archivar", objMsj);
+                if (debugTimeline) {
+                    console.log("[socket] emit archivar", objMsj, {
+                        connected: socket.connected,
+                        socketId: socket.id,
+                    })
+                }
+
+                const refreshTimeline = async () => {
+                    try {
+                        if (!id) return
+                        const data = await findChatTimeline(token!, id!, { page: 1, limit: 200 })
+                        if (data.statusCode === 401) {
+                            dispatch(openSessionExpired())
+                            return
+                        }
+                        const rawItems: any[] = (data as any).items || []
+                        const items = rawItems
+                            .map(normalizeTimelineItem)
+                            .sort(
+                                (a, b) =>
+                                    new Date((a as any)?.createdAt ?? 0).getTime() -
+                                    new Date((b as any)?.createdAt ?? 0).getTime()
+                            )
+                        setMensajes(items)
+                    } catch (e) {
+                        if (debugTimeline) console.log("[Chats] timeline refresh after archivar failed", e)
+                    }
+                }
+
+                // ACK: confirma si el backend terminó el flujo (y si generó eventId)
+                socket.emit("archivar", objMsj, (ack: any) => {
+                    if (debugTimeline) console.log("[socket] archivar ack", ack)
+                    // Si ok, refrescamos para asegurar que el hito persistido aparezca aunque el realtime no llegue
+                    if (ack?.ok) {
+                        refreshTimeline()
+                    }
+                })
+
+                // Fallback: si no hay ack o el evento tarda en persistir/emitir, refrescamos igual.
+                refreshTimeline()
+                setTimeout(refreshTimeline, 800)
             } else {
                 console.warn("Socket desconectado, enviando por HTTP...");
                 //await axios.post("/api/mensajes", { contenido: mensaje, usuarioId: "12345", chatId: "67890" });
