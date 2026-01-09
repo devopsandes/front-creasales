@@ -22,7 +22,7 @@ import Configuracion from '../pages/configuracion/Configuracion'
 import BotIA from '../pages/bot/BotIA'
 import DashboardHome from '../pages/dashboard-home/DashboardHome'
 import Chats from '../pages/chats/Chats'
-import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones } from '../utils/navegacion'
+import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import LogoFondo from '../components/logo/LogoFondo'
 import TableUsers from '../pages/usuarios/TableUsers'
@@ -34,6 +34,7 @@ import Terminos from '../pages/legal/Terminos'
 import EliminarDatos from '../pages/legal/EliminarDatos'
 import MainView from '../pages/main/MainView'
 import TableIntegraciones from '../pages/integraciones/TableIntegraciones'
+import RespuestasRapidasPage from '../pages/respuestas-rapidas/RespuestasRapidasPage'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -162,6 +163,10 @@ const AppRouter = () => {
 
           <Route path='clientes' element={<NavTag tags={navClientes} />}>
             <Route index element={<TableClientes/>}/>
+          </Route>
+
+          <Route path='respuestas-rapidas' element={<NavTag tags={navRespuestasRapidas} />}>
+            <Route index element={<RespuestasRapidasPage/>}/>
           </Route>
 
           <Route path='tags' element={<NavTag tags={navTags} />}>

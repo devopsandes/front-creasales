@@ -142,6 +142,14 @@ const navEmpresa: Tag[] = [
     },
   ]
 
+  const navRespuestasRapidas: Tag[] = [
+    {
+      id: 1,
+      name: "Respuestas rápidas",
+      path: "/dashboard/respuestas-rapidas"
+    },
+  ]
+
 
 export {
     navCategorias,
@@ -156,5 +164,6 @@ export {
     navTags,
     navAcciones,
     navClientes,
-    navIntegraciones
+    navIntegraciones,
+    navRespuestasRapidas
 }

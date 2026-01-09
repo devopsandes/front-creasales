@@ -28,6 +28,8 @@ import { getOperadoresEmpresa } from '../../services/empresas/empresa.services'
 import { getMentionsUnreadCount, markMentionsRead } from '../../services/mentions/mentions.services'
 import { bumpMentionsRefreshNonce, setMentionUnreadCount } from '../../app/slices/actionSlice'
 import SuccessModal from '../../components/modal/SuccessModal'
+import { QuickResponse } from '../../interfaces/quickResponses.interface'
+import { getQuickResponses } from '../../services/quickResponses/quickResponses.services'
 
 
 
@@ -52,6 +54,12 @@ const Chats = () => {
     const [mentionReadSuccessMsg, setMentionReadSuccessMsg] = useState<string>('El chat fue marcado como leído exitosamente.')
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const mensajeInputRef = useRef<HTMLInputElement | null>(null);
+    const [quickResponses,setQuickResponses] = useState<QuickResponse[]>([])
+    const [qrOpen,setQrOpen] = useState(false)
+    const [qrFiltered,setQrFiltered] = useState<QuickResponse[]>([])
+    const [qrActiveIndex,setQrActiveIndex] = useState(0)
+    const [qrTriggerRange,setQrTriggerRange] = useState<{start:number;end:number}|null>(null)
 
 
 
@@ -493,6 +501,20 @@ const Chats = () => {
         }
     }, [mensajes]) // Este efecto se ejecuta cada vez que `mensajes` cambia
 
+    useEffect(() => {
+        const run = async () => {
+            if (!token) return
+            const resp = await getQuickResponses(token, { page: 1, limit: 200 })
+            if ((resp as any)?.statusCode === 401) {
+                dispatch(openSessionExpired())
+                return
+            }
+            const list = Array.isArray((resp as any)?.items) ? (resp as any).items : []
+            setQuickResponses(list)
+        }
+        run().catch(() => {})
+    }, [token])
+
     const handleClickBtn = (e: FormEvent<HTMLFormElement>) => {
         try {
             e.preventDefault()
@@ -698,12 +720,84 @@ const Chats = () => {
         fileInputRef.current?.click(); // dispara el file picker
     };
 
+    const closeQuickMenu = () => {
+        setQrOpen(false)
+        setQrFiltered([])
+        setQrActiveIndex(0)
+        setQrTriggerRange(null)
+    }
+
+    const insertQuickResponse = (qr: QuickResponse) => {
+        const range = qrTriggerRange
+        const input = mensajeInputRef.current
+        if (!range || !input) return
+        const current = input.value
+        const start = range.start
+        const end = range.end
+        const newValue = current.slice(0, start) + (qr.text || '') + current.slice(end)
+        setMensaje(newValue)
+        closeQuickMenu()
+        requestAnimationFrame(() => {
+            const caret = start + (qr.text || '').length
+            input.focus()
+            input.setSelectionRange(caret, caret)
+        })
+    }
+
+    const handleKeyDownText = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (!qrOpen) return
+        if (e.key === 'Escape') {
+            e.preventDefault()
+            closeQuickMenu()
+            return
+        }
+        if (!qrFiltered.length) return
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setQrActiveIndex((prev) => (prev + 1) % qrFiltered.length)
+            return
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setQrActiveIndex((prev) => (prev - 1 + qrFiltered.length) % qrFiltered.length)
+            return
+        }
+        if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault()
+            const selected = qrFiltered[qrActiveIndex]
+            if (selected) insertQuickResponse(selected)
+        }
+    }
+
 
     const handleChangeText = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setMensaje(value);
 
-        // Detectar el último "token" de mención al final del input, sin espacios
+        const caretPos = e.target.selectionStart ?? value.length
+        const leftText = value.slice(0, caretPos)
+        const slashMatch = leftText.match(/\/(\w*)$/)
+        if (slashMatch) {
+            const q = (slashMatch[1] || '').toLowerCase()
+            const start = caretPos - slashMatch[0].length
+            const end = caretPos
+            const norm = (s: string) => (s || '').toLowerCase()
+            const filtered = quickResponses.filter((qr) => {
+                const a = norm(qr.shortcut)
+                const b = norm(qr.text)
+                if (!q) return true
+                return a.includes(q) || b.includes(q)
+            })
+            setQrTriggerRange({ start, end })
+            setQrFiltered(filtered)
+            setQrActiveIndex(0)
+            setQrOpen(true)
+            setShowList(false)
+            return
+        } else {
+            closeQuickMenu()
+        }
+
         const match = value.match(/@([^\s@]*)$/);
         if (match) {
             const query = (match[1] || '').toLowerCase();
@@ -718,7 +812,6 @@ const Chats = () => {
             const results = usuarios
                 .filter((u) => {
                     const full = normalize(`${u.nombre ?? ''} ${u.apellido ?? ''}`.trim())
-                    // si el usuario solo puso "@", mostramos todos
                     if (!q) return true
                     return full.includes(q)
                 })
@@ -878,6 +971,8 @@ const Chats = () => {
                                     className='input-msg'
                                     value={mensaje}
                                     onChange={handleChangeText}
+                                    onKeyDown={handleKeyDownText}
+                                    ref={mensajeInputRef}
                                 />
                                 <button
                                     type='button'
@@ -898,6 +993,27 @@ const Chats = () => {
                                     onChange={handleAddFile}
                                 />
 
+                                {qrOpen && (
+                                    <ul className="absolute bottom-12 left-2 w-96 max-h-60 overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden rounded-xl bg-slate-50/95 backdrop-blur-sm shadow-lg ring-1 ring-slate-200">
+                                    {qrFiltered.length ? (
+                                        qrFiltered.map((qr, idx) => (
+                                        <li
+                                            key={qr.id}
+                                            onMouseDown={(e) => {
+                                                e.preventDefault()
+                                                insertQuickResponse(qr)
+                                            }}
+                                            className={`px-3 py-2 cursor-pointer text-slate-700 text-left hover:bg-indigo-50 hover:text-slate-900 transition-colors ${idx === qrActiveIndex ? 'bg-indigo-50 text-slate-900' : ''}`}
+                                        >
+                                            <div className="font-semibold">/{qr.shortcut}</div>
+                                            <div className="text-xs text-slate-500 truncate">{qr.text}</div>
+                                        </li>
+                                        ))
+                                    ) : (
+                                        <li className="px-3 py-2 text-gray-400">No hay coincidencias</li>
+                                    )}
+                                    </ul>
+                                )}
                                 {showList && (
                                     <ul className="absolute bottom-12 left-2 w-80 max-h-48 overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden rounded-xl bg-slate-50/95 backdrop-blur-sm shadow-lg ring-1 ring-slate-200">
                                     {filteredUsers.length ? (
