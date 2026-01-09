@@ -10,7 +10,7 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
 import { Tag as TagIcon, User } from "lucide-react"
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, bumpMentionsRefreshNonce, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
@@ -42,7 +42,6 @@ const ListaChats = () => {
     const [bots,setBots] = useState<ChatState[]>([])
     const [sinAsignar,setSinAsignar] = useState<ChatState[]>([])
     const [menciones,setMenciones] = useState<ChatState[]>([])
-    const [mencionesCount, setMencionesCount] = useState<number>(0)
     const [styleBtn, setStyleBtn] = useState<string>('todas')
 
     const [loading, setLoading] = useState<boolean>(true)
@@ -160,7 +159,6 @@ const ListaChats = () => {
             setSinAsignar(sinAsignarTemp)
             setMenciones(mencionesTemp)
             const effectiveMentionTotal = (mentionTotal ?? mencionesTemp.length)
-            setMencionesCount(effectiveMentionTotal)
             dispatch(setMentionUnreadCount(effectiveMentionTotal))
             setChats1(chatos.chats)
             setFiltrados(chatos.chats)
