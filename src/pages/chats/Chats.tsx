@@ -14,8 +14,8 @@ import ErrorModal from '../../components/modal/ErrorModal'
 import ChatInfoDropdown from '../../components/dropdown/ChatInfoDropdown'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
-import { Trash2 } from "lucide-react";
-import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired } from '../../app/slices/actionSlice'
+import { CheckCheck, Trash2 } from "lucide-react";
+import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired, clearMentionChatSelection } from '../../app/slices/actionSlice'
 import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
 /* import { FaMicrophone } from "react-icons/fa"; */
@@ -26,7 +26,8 @@ import { Usuario } from '../../interfaces/auth.interface'
 import axios from 'axios'
 import { getOperadoresEmpresa } from '../../services/empresas/empresa.services'
 import { getMentionsUnreadCount, markMentionsRead } from '../../services/mentions/mentions.services'
-import { setMentionUnreadCount } from '../../app/slices/actionSlice'
+import { bumpMentionsRefreshNonce, setMentionUnreadCount } from '../../app/slices/actionSlice'
+import SuccessModal from '../../components/modal/SuccessModal'
 
 
 
@@ -47,6 +48,8 @@ const Chats = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
     const [errorModalMessage, setErrorModalMessage] = useState('');
+    const [showMentionReadSuccess, setShowMentionReadSuccess] = useState(false)
+    const [mentionReadSuccessMsg, setMentionReadSuccessMsg] = useState<string>('El chat fue marcado como leído exitosamente.')
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -69,6 +72,8 @@ const Chats = () => {
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
     const dispatch = useDispatch()
     const dataUser = useSelector((state: RootState) => state.action.dataUser)
+    const mentionsMode = useSelector((state: RootState) => state.action.mentionsMode)
+    const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
     const chats = useSelector((state: RootState) => state.action.chats)
     const currentChat = chats.find(chat => chat.id === id)
     const chatTags: ChatTag[] = currentChat?.tags || []
@@ -228,12 +233,43 @@ const Chats = () => {
                 token,
                 mentions: selectedMentionUser ? [{ userId: selectedMentionUser.id }] : [],
             }
+            console.log("[mentions][nota-privada] mensaje:", mensaje)
+            console.log("[mentions][nota-privada] selectedMentionUser:", selectedMentionUser)
+            console.log("[mentions][nota-privada] payload.mentions:", payload.mentions)
             setMensaje("")
             setSelectedMentionUser(null)
             socket.emit("nota-privada", payload, (ack: any) => {
                 if (debugTimeline) console.log("[nota-privada ACK]", ack)
             })
         }
+    }
+
+    const handleMarkMentionRead = async () => {
+        if (!token) return
+
+        // Solo disponible si el usuario está en "Menciones" y seleccionó al menos un chat con checkbox
+        const ids = Array.isArray(selectedMentionChatIds) ? selectedMentionChatIds : []
+        if (!mentionsMode || ids.length === 0) return
+
+        const resp = await markMentionsRead(token, ids)
+        if ((resp as any)?.statusCode === 401) {
+            dispatch(openSessionExpired())
+            return
+        }
+        const countResp = await getMentionsUnreadCount(token)
+        if ((countResp as any)?.statusCode === 401) {
+            dispatch(openSessionExpired())
+            return
+        }
+        dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
+        dispatch(bumpMentionsRefreshNonce())
+        dispatch(clearMentionChatSelection())
+        setMentionReadSuccessMsg(
+            ids.length === 1
+                ? 'El chat fue marcado como leído exitosamente.'
+                : 'Los chats seleccionados fueron marcados como leídos exitosamente.'
+        )
+        setShowMentionReadSuccess(true)
     }
 
     useEffect(() => {
@@ -273,25 +309,8 @@ const Chats = () => {
         ejecucion();
     },[, location])
 
-    // Marcar menciones como leídas al abrir un chat (si el backend lo soporta)
-    useEffect(() => {
-        const chatId = id as string | undefined
-        if (!chatId || !token) return
-        markMentionsRead(token, chatId)
-            .then(async (resp) => {
-                if ((resp as any)?.statusCode === 401) {
-                    dispatch(openSessionExpired())
-                    return
-                }
-                const countResp = await getMentionsUnreadCount(token)
-                if ((countResp as any)?.statusCode === 401) {
-                    dispatch(openSessionExpired())
-                    return
-                }
-                dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
-            })
-            .catch(() => {})
-    }, [id, token])
+    // Importante UX: NO marcamos menciones como leídas al abrir el chat.
+    // Solo se marcarán como leídas cuando el usuario lo haga explícitamente (botón "Marcar como leído").
 
   
 
@@ -762,6 +781,15 @@ const Chats = () => {
                                 <FaFileArrowDown />
                                 <span>Archivar</span>
                             </button>
+                            {mentionsMode && Array.isArray(selectedMentionChatIds) && selectedMentionChatIds.length > 0 && (
+                                <button
+                                    onClick={handleMarkMentionRead}
+                                    className="chat-action-button chat-button-mention-read"
+                                >
+                                    <CheckCheck size={16} />
+                                    <span>Marcar como leído</span>
+                                </button>
+                            )}
                             {role !== 'USER' && (
                                 <button
                                     onClick={handleDeleteClick}
@@ -943,6 +971,12 @@ const Chats = () => {
                         }}
                         title="Atención"
                         message={errorModalMessage || 'Debe escribir un mensaje'}
+                    />
+                    <SuccessModal
+                        isOpen={showMentionReadSuccess}
+                        onClose={() => setShowMentionReadSuccess(false)}
+                        title="Listo"
+                        message={mentionReadSuccessMsg}
                     />
                 </div>
             )}
