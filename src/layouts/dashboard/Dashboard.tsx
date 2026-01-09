@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import DashSidebar from "../../components/sidebars/DashSidebar";
@@ -11,10 +11,11 @@ import { useDispatch, useSelector  } from "react-redux";
 import { Socket } from "socket.io-client";
 import { connectSocket,  getSocket } from "../../app/slices/socketSlice";
 import { setEmpresa, setUser } from "../../app/slices/authSlice";
-import { openSessionExpired, closeSessionExpired } from "../../app/slices/actionSlice";
+import { openSessionExpired, closeSessionExpired, setMentionUnreadCount } from "../../app/slices/actionSlice";
 import { RootState } from "../../app/store";
 import { setupAxiosInterceptors } from "../../utils/axiosInterceptor";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
+import { getMentionsUnreadCount } from "../../services/mentions/mentions.services";
 
 
 
@@ -24,6 +25,8 @@ const Dashboard = () => {
   const dispatch = useDispatch()
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
   const sessionExpired = useSelector((state: RootState) => state.action.sessionExpired)
+  const warnedMissingEmpresaRef = useRef(false)
+  const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
   
   let socket: Socket | null = null
   
@@ -62,6 +65,38 @@ const Dashboard = () => {
               console.error('Error conectando socket:', error);
           }
     },[dispatch])
+
+  // Menciones realtime + contador global
+  useEffect(() => {
+    const token = localStorage.getItem('token') || ''
+    const myUserId = localStorage.getItem('userId') || ''
+    const socketInstance = getSocket()
+
+    if (!token || !myUserId || !socketInstance || !socketConnected) return
+
+    const refreshCount = async () => {
+      const resp = await getMentionsUnreadCount(token)
+      if ((resp as any)?.statusCode === 401) {
+        dispatch(openSessionExpired())
+        return
+      }
+      dispatch(setMentionUnreadCount((resp as any)?.count ?? 0))
+    }
+
+    // carga inicial
+    refreshCount().catch(() => {})
+
+    const eventName = `mention-${myUserId}`
+    const handler = (_payload: any) => {
+      // opción robusta: pedir el contador real al backend
+      refreshCount().catch(() => {})
+    }
+
+    socketInstance.on(eventName, handler)
+    return () => {
+      socketInstance.off(eventName, handler)
+    }
+  }, [dispatch, socketConnected])
   
 
   const navigate = useNavigate()
@@ -69,6 +104,7 @@ const Dashboard = () => {
   useEffect(() => {
     const token = localStorage.getItem('token')
     const userId = localStorage.getItem('userId')
+    const currentRole = localStorage.getItem('role')
     
     if(token){
       // Obtener empresa
@@ -81,7 +117,13 @@ const Dashboard = () => {
             return navigate('/auth/signin')
           }
           if(!data?.empresa){
-            return toast.warn('llenar los datos de su empresa')
+            // Para rol USER no mostramos este aviso (no puede completar empresa).
+            // En DEV/StrictMode el efecto puede correr 2 veces, lo hacemos idempotente.
+            if (currentRole !== 'USER' && !warnedMissingEmpresaRef.current) {
+              warnedMissingEmpresaRef.current = true
+              return toast.warn('llenar los datos de su empresa', { toastId: 'missing-empresa' })
+            }
+            return
           }
           dispatch(setEmpresa(data.empresa))
         })

@@ -74,6 +74,10 @@ const DashSidebar = ({ role }: Props) => {
             <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
             <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
             <DashItem icon={UserCircle2} path='' titulo="Clientes"/>
+
+            <div className="dashsidebar-logout" onClick={handleLogoutClick}>
+              <LogOut size={25} strokeWidth={1.5}/>
+            </div>
           </>
         )}
         

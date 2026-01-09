@@ -22,9 +22,11 @@ import { IoIosAttach } from "react-icons/io";
 import PlantillaModal from '../../components/modal/PlantillaModal'
 import './chats.css'
 import { toast } from 'react-toastify'
-import { usuariosXRole } from '../../services/auth/auth.services'
 import { Usuario } from '../../interfaces/auth.interface'
 import axios from 'axios'
+import { getOperadoresEmpresa } from '../../services/empresas/empresa.services'
+import { getMentionsUnreadCount, markMentionsRead } from '../../services/mentions/mentions.services'
+import { setMentionUnreadCount } from '../../app/slices/actionSlice'
 
 
 
@@ -33,6 +35,7 @@ import axios from 'axios'
 
 const Chats = () => {
     const [usuarios,setUsuarios] = useState<Usuario[]>([])
+    const [selectedMentionUser, setSelectedMentionUser] = useState<Usuario | null>(null)
     const [mensajes, setMensajes] = useState<TimelineItem[]>([])
     const [mensaje, setMensaje] = useState<string>('')
     const [condChat, setCondChat] = useState<boolean>(false)
@@ -50,6 +53,7 @@ const Chats = () => {
 
 
     const token = localStorage.getItem('token') || ''
+    const role = localStorage.getItem('role') || ''
 
     const location = useLocation()
     
@@ -134,6 +138,17 @@ const Chats = () => {
             .join(' ')
     }
 
+    const toTitleCase = (value: any) => {
+        if (!value || typeof value !== 'string') return ''
+        return value
+            .trim()
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(Boolean)
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ')
+    }
+
     type DateSeparator = {
         kind: "date_separator";
         id: string;
@@ -206,12 +221,15 @@ const Chats = () => {
 
         const socket = getSocket()
         if (socket && socket.connected) {
-            const payload = {
+            // Backward-compatible: el backend actual puede ignorar `mentions`.
+            const payload: any = {
                 chatId: id,
                 mensaje,
                 token,
+                mentions: selectedMentionUser ? [{ userId: selectedMentionUser.id }] : [],
             }
             setMensaje("")
+            setSelectedMentionUser(null)
             socket.emit("nota-privada", payload, (ack: any) => {
                 if (debugTimeline) console.log("[nota-privada ACK]", ack)
             })
@@ -220,8 +238,22 @@ const Chats = () => {
 
     useEffect(() => {
         const ejecucion = async () => {
-            const respUsers = await usuariosXRole('USER', token);
-            setUsuarios(respUsers.users);
+            // Para menciones necesitamos "operadores" de la empresa del usuario, sin importar rol.
+            // Esto depende de un endpoint backend con scope por empresa (ver empresa.services.ts).
+            try {
+                const resp = await getOperadoresEmpresa(token)
+                const list = Array.isArray((resp as any)?.users) ? (resp as any).users : []
+                // Orden prolijo: Apellido, Nombre
+                const ordered = [...list].sort((a: Usuario, b: Usuario) => {
+                    const aa = `${a.apellido ?? ''} ${a.nombre ?? ''}`.trim().toLowerCase()
+                    const bb = `${b.apellido ?? ''} ${b.nombre ?? ''}`.trim().toLowerCase()
+                    return aa.localeCompare(bb)
+                })
+                setUsuarios(ordered)
+            } catch {
+                // fallback seguro: no rompemos el chat si no hay endpoint todavía
+                setUsuarios([])
+            }
         }
         ejecucion();
     }, [])
@@ -240,6 +272,26 @@ const Chats = () => {
         }
         ejecucion();
     },[, location])
+
+    // Marcar menciones como leídas al abrir un chat (si el backend lo soporta)
+    useEffect(() => {
+        const chatId = id as string | undefined
+        if (!chatId || !token) return
+        markMentionsRead(token, chatId)
+            .then(async (resp) => {
+                if ((resp as any)?.statusCode === 401) {
+                    dispatch(openSessionExpired())
+                    return
+                }
+                const countResp = await getMentionsUnreadCount(token)
+                if ((countResp as any)?.statusCode === 401) {
+                    dispatch(openSessionExpired())
+                    return
+                }
+                dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
+            })
+            .catch(() => {})
+    }, [id, token])
 
   
 
@@ -632,22 +684,43 @@ const Chats = () => {
         const value = e.target.value;
         setMensaje(value);
 
-        const match = mensaje.match(/@(\w*)$/);
+        // Detectar el último "token" de mención al final del input, sin espacios
+        const match = value.match(/@([^\s@]*)$/);
         if (match) {
-        const query = match[1].toLowerCase();
-        const results = usuarios.filter((u) =>
-            u.nombre.toLowerCase().startsWith(query)
-        );
-        setFilteredUsers(results);
-        setShowList(true);
+            const query = (match[1] || '').toLowerCase();
+
+            const normalize = (s: string) =>
+                (s || '')
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+
+            const q = normalize(query)
+            const results = usuarios
+                .filter((u) => {
+                    const full = normalize(`${u.nombre ?? ''} ${u.apellido ?? ''}`.trim())
+                    // si el usuario solo puso "@", mostramos todos
+                    if (!q) return true
+                    return full.includes(q)
+                })
+
+            setFilteredUsers(results);
+            setShowList(true);
         } else {
-        setShowList(false);
+            setShowList(false);
         }
     }
 
     const handleSelectUser = (user: any) => {
-        const newText = mensaje.replace(/@\w*$/, `@${user.name} `);
-        setMensaje(newText);
+        const toHandle = (u: Usuario) =>
+            (u?.nombre || 'usuario')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, '')
+
+        const handle = toHandle(user)
+        setMensaje((prev) => prev.replace(/@([^\s@]*)$/, `@${handle} `));
+        setSelectedMentionUser(user as Usuario)
         setShowList(false);
         // textareaRef.current!.focus();
     };
@@ -673,13 +746,15 @@ const Chats = () => {
                             <span className=''>{nombre}</span>
                         </p>
                         <div className='header-chat-actions'>
-                            <button
-                                onClick={() => dispatch(openModal())}
-                                className="chat-action-button chat-button-assign"
-                            >
-                                <IoPersonAdd />
-                                <span>Asignar</span>
-                            </button>
+                            {role !== 'USER' && (
+                                <button
+                                    onClick={() => dispatch(openModal())}
+                                    className="chat-action-button chat-button-assign"
+                                >
+                                    <IoPersonAdd />
+                                    <span>Asignar</span>
+                                </button>
+                            )}
                             <button
                                 onClick={handleArchivarClick}
                                 className="chat-action-button chat-button-archive"
@@ -687,13 +762,15 @@ const Chats = () => {
                                 <FaFileArrowDown />
                                 <span>Archivar</span>
                             </button>
-                            <button
-                                onClick={handleDeleteClick}
-                                className="chat-action-button chat-button-delete"
-                            >
-                                <Trash2 size={16} />
-                                <span>Eliminar</span>
-                            </button>
+                            {role !== 'USER' && (
+                                <button
+                                    onClick={handleDeleteClick}
+                                    className="chat-action-button chat-button-delete"
+                                >
+                                    <Trash2 size={16} />
+                                    <span>Eliminar</span>
+                                </button>
+                            )}
                             <ChatInfoDropdown dataUser={dataUser} tags={chatTags} />
                         </div>
                     </div>
@@ -794,15 +871,16 @@ const Chats = () => {
                                 />
 
                                 {showList && (
-                                    <ul className="absolute bottom-12 left-2 bg-white border rounded-md shadow-md w-48 max-h-40 overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden ">
+                                    <ul className="absolute bottom-12 left-2 w-80 max-h-48 overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden rounded-xl bg-slate-50/95 backdrop-blur-sm shadow-lg ring-1 ring-slate-200">
                                     {filteredUsers.length ? (
                                         filteredUsers.map((user) => (
                                         <li
                                             key={user.id}
                                             onClick={() => handleSelectUser(user)}
-                                            className="px-3 py-2 hover:bg-blue-100 cursor-pointer text-gray-700 text-left"
+                                            className="px-3 py-2 cursor-pointer text-slate-700 text-left whitespace-nowrap overflow-hidden text-ellipsis hover:bg-indigo-50 hover:text-slate-900 transition-colors"
                                         >
-                                            @{user.nombre}
+                                            @{(user.nombre || '').toLowerCase().replace(/\s+/g, '')}{" "}
+                                            <span className="text-gray-500">— {toTitleCase(user.apellido)} {toTitleCase(user.nombre)}</span>
                                         </li>
                                         ))
                                     ) : (
