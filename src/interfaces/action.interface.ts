@@ -17,6 +17,9 @@ export interface ActionState  {
    sessionExpired: boolean;
    chats: ChatState[];
    mentionUnreadCount: number;
+   mentionsRefreshNonce: number;
+   mentionsMode: boolean;
+   selectedMentionChatIds: string[];
 };
 
 export interface DataUser {

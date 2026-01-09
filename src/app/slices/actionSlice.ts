@@ -16,7 +16,10 @@ const initialState : ActionState = {
     ticketId: '',
     sessionExpired: false,
     chats: [],
-    mentionUnreadCount: 0
+    mentionUnreadCount: 0,
+    mentionsRefreshNonce: 0,
+    mentionsMode: false,
+    selectedMentionChatIds: []
 }
 
 const actionSlice = createSlice({
@@ -87,6 +90,23 @@ const actionSlice = createSlice({
         },
         setMentionUnreadCount: (state, action) => {
             state.mentionUnreadCount = action.payload
+        },
+        bumpMentionsRefreshNonce: (state) => {
+            state.mentionsRefreshNonce = (state.mentionsRefreshNonce || 0) + 1
+        },
+        setMentionsMode: (state, action) => {
+            state.mentionsMode = !!action.payload
+        },
+        toggleMentionChatSelection: (state, action) => {
+            const chatId = action.payload as string
+            if (!chatId) return
+            const set = new Set(state.selectedMentionChatIds || [])
+            if (set.has(chatId)) set.delete(chatId)
+            else set.add(chatId)
+            state.selectedMentionChatIds = Array.from(set)
+        },
+        clearMentionChatSelection: (state) => {
+            state.selectedMentionChatIds = []
         }
     }
 })
@@ -111,7 +131,11 @@ export const {
     openSessionExpired,
     closeSessionExpired,
     setChats,
-    setMentionUnreadCount
+    setMentionUnreadCount,
+    bumpMentionsRefreshNonce,
+    setMentionsMode,
+    toggleMentionChatSelection,
+    clearMentionChatSelection
 } = actionSlice.actions
 export default actionSlice.reducer
 

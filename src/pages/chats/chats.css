@@ -334,6 +334,30 @@
     box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.5);
 }
 
+.mentions-markread-btn {
+    background-color: #b45309; /* más intenso para mejor contraste */
+    color: white;
+    border: none;
+    border-radius: 0.55rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1;
+    opacity: 0.95;
+    transition: all 0.15s ease;
+}
+
+.mentions-markread-btn:hover {
+    background-color: #92400e;
+    opacity: 1;
+}
+
+.mentions-markread-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 .header-icon {
     display: flex;
     justify-content: center;
@@ -363,6 +387,11 @@
     cursor: pointer;
     transition: all 0.2s;
     border: 1px solid transparent;
+}
+
+.header-item.header-item--active {
+    background-color: #e0f2fe !important;
+    transform: scale(1.03);
 }
 
 .header-item:hover {
@@ -643,6 +672,15 @@
 .chat-button-archive:hover {
     background-color: #0f766e;
     color: white;
+}
+
+.chat-button-mention-read {
+    background-color: #a78bfa; /* violeta suave */
+    color: white;
+}
+
+.chat-button-mention-read:hover {
+    background-color: #8b5cf6;
 }
 
 .chat-button-delete {

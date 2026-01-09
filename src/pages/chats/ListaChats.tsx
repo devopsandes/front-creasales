@@ -10,7 +10,7 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
 import { Tag as TagIcon, User } from "lucide-react"
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, bumpMentionsRefreshNonce, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
@@ -54,6 +54,7 @@ const ListaChats = () => {
     const [allTags, setAllTags] = useState<{ id: string; nombre: string }[]>([])
     const [searchChat, setSearchChat] = useState<string>('')
     const [selectedOperator, setSelectedOperator] = useState<string>('')
+    // selección de menciones vive en Redux (para compartir con la vista del chat)
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
 
@@ -62,6 +63,8 @@ const ListaChats = () => {
     const viewSide = useSelector((state: RootState) => state.action.viewSide);
     const chatsFromRedux = useSelector((state: RootState) => state.action.chats);
     const mentionUnreadCount = useSelector((state: RootState) => state.action.mentionUnreadCount);
+    const mentionsRefreshNonce = useSelector((state: RootState) => state.action.mentionsRefreshNonce);
+    const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds);
 
 
     const socket = getSocket()
@@ -90,7 +93,7 @@ const ListaChats = () => {
         const ejecucion = async () => {
             
             const chatos = await getChats(token,'1','100')
-            let mentionTotal = 0
+            let mentionTotal: number | null = null
 
             // Intentamos obtener menciones (si backend aún no lo soporta, no rompemos nada)
             try {
@@ -106,11 +109,17 @@ const ListaChats = () => {
                 items.forEach((it: any) => {
                     const chatId = extractMentionChatId(it)
                     if (chatId) ids.push(chatId)
-                    if (typeof it?.unreadCount === 'number' && mentionTotal === 0) {
-                        mentionTotal += it.unreadCount
+                    // Si el backend no envía el count global, podemos sumar desde los items como fallback
+                    if (typeof it?.unreadCount === 'number' && mentionTotal === null) {
+                        mentionTotal = (mentionTotal ?? 0) + it.unreadCount
                     }
                 })
                 setMentionChatIds(Array.from(new Set(ids)))
+
+                // Reconciliación: si no hay ítems unread, el contador debe ser 0
+                if (items.length === 0) {
+                    mentionTotal = 0
+                }
             } catch {
                 // noop
             }
@@ -150,8 +159,9 @@ const ListaChats = () => {
             setAsignadas(asignadasTemp)
             setSinAsignar(sinAsignarTemp)
             setMenciones(mencionesTemp)
-            setMencionesCount(mentionTotal || mencionesTemp.length)
-            dispatch(setMentionUnreadCount(mentionTotal || mencionesTemp.length))
+            const effectiveMentionTotal = (mentionTotal ?? mencionesTemp.length)
+            setMencionesCount(effectiveMentionTotal)
+            dispatch(setMentionUnreadCount(effectiveMentionTotal))
             setChats1(chatos.chats)
             setFiltrados(chatos.chats)
             dispatch(setChats(chatos.chats))
@@ -202,6 +212,12 @@ const ListaChats = () => {
         
     },[])
 
+    // Estado inicial: no estamos en "Menciones" hasta que el usuario toque esa pestaña
+    useEffect(() => {
+        dispatch(setMentionsMode(false))
+        dispatch(clearMentionChatSelection())
+    }, [dispatch])
+
     // Realtime: cuando cambia el contador global (por socket), refrescamos la lista de chatIds mencionados
     useEffect(() => {
         if (!token) return
@@ -216,7 +232,7 @@ const ListaChats = () => {
                 setMentionChatIds(Array.from(new Set(ids)))
             })
             .catch(() => {})
-    }, [mentionUnreadCount, token])
+    }, [mentionUnreadCount, token, mentionsRefreshNonce])
     
     
     
@@ -437,20 +453,24 @@ const ListaChats = () => {
         setShowFilterSelect(!showFilterSelect)
     }
 
+    // Marcado como leído se dispara desde la vista del chat (botón al lado de "Archivar")
+
     
 
   return (
      <div className="chats-container">
         <div className='main-chat'>
             <div className="header-lista">
-                <div className="header-item">
+                <div className={`header-item ${styleBtn === "asig" ? "header-item--active" : ""}`}>
                     <button 
                         onClick={() => {
+                            dispatch(setMentionsMode(false))
+                            dispatch(clearMentionChatSelection())
                             setStyleBtn("asig")
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, asignadas)
                         }} 
-                        className={`btn-item ${styleBtn === "asig" && "border-1 p-1 border-red-600"}`}
+                        className="btn-item"
                     >
                         Asignadas a mí
                         <span>{asignadas.length}</span>
@@ -458,73 +478,82 @@ const ListaChats = () => {
                     
                 </div>
               
-                <div className="header-item">
+                <div className={`header-item ${styleBtn === "archi" ? "header-item--active" : ""}`}>
                     <button 
                         onClick={() => {
+                            dispatch(setMentionsMode(false))
+                            dispatch(clearMentionChatSelection())
                             setStyleBtn("archi")
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, archivadas)
                         }} 
-                        className={`btn-item ${styleBtn === "archi" && "border-1 p-1 border-red-600"}`}
+                        className="btn-item"
                     >
                         Archivadas
                         <span>{archivadas.length}</span>
                     </button>
                    
                 </div>
-                 <div className="header-item">
+                 <div className={`header-item ${styleBtn === "todas" ? "header-item--active" : ""}`}>
                      <button 
                         onClick={() => {
+                            dispatch(setMentionsMode(false))
+                            dispatch(clearMentionChatSelection())
                             setStyleBtn("todas")
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, chats1)
                         }} 
-                        className={`btn-item ${styleBtn === "todas" && "border-1 p-1 border-red-600"}`}
+                        className="btn-item"
                     >
                         Todas
                         <span>{chats1.length}</span>
                     </button>
                    
                 </div>
-                 <div className="header-item">
+                 <div className={`header-item ${styleBtn === "bots" ? "header-item--active" : ""}`}>
                      <button 
                         onClick={() => {
+                            dispatch(setMentionsMode(false))
+                            dispatch(clearMentionChatSelection())
                             setStyleBtn('bots')
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, bots)
                         }} 
-                        className={`btn-item ${styleBtn === "bots" && "border-1 p-1 border-red-600"}`}
+                        className="btn-item"
                     >
                         Bots
                         <span>{bots.length}</span>
                     </button>
                    
                 </div>
-                 <div className="header-item">
+                 <div className={`header-item ${styleBtn === "sinAsignar" ? "header-item--active" : ""}`}>
                      <button 
                         onClick={() => {
+                            dispatch(setMentionsMode(false))
+                            dispatch(clearMentionChatSelection())
                             setStyleBtn('sinAsignar')
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, sinAsignar)
                         }} 
-                        className={`btn-item ${styleBtn === "sinAsignar" && "border-1 p-1 border-red-600"}`}
+                        className="btn-item"
                     >
                         Sin asignar
                         <span>{sinAsignar.length}</span>
                     </button>
                    
                 </div>
-                 <div className="header-item">
+                 <div className={`header-item ${styleBtn === "menciones" ? "header-item--active" : ""}`}>
                      <button 
                         onClick={() => {
                             setStyleBtn('menciones')
+                            dispatch(setMentionsMode(true))
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, menciones)
                         }} 
-                        className={`btn-item ${styleBtn === "menciones" && "border-1 p-1 border-red-600"}`}
+                        className="btn-item"
                     >
                         Menciones
-                        <span>{mentionUnreadCount || mencionesCount}</span>
+                        <span>{mentionUnreadCount}</span>
                     </button>
                    
                 </div>
@@ -616,6 +645,8 @@ const ListaChats = () => {
                                         </div>
                                     </div>
                                 )}
+                                {/* El botón "Marcar como leído" se muestra en la vista del chat (al lado de Archivar)
+                                   y solo si hay chats seleccionados en la pestaña Menciones */}
                             </div>
                             <div className="chat-list-spacing"></div>
                             {filtrados != undefined && ordenarChatsPorFecha(filtrados, ordenFecha).map(chat => (
@@ -637,10 +668,18 @@ const ListaChats = () => {
                                         
                                     </div>
                                     <div className="chat-tags-container">
-                                        <input
-                                            type="checkbox"
-                                            className="checkbox"
-                                        />
+                                        {styleBtn === 'menciones' && (
+                                            <input
+                                                type="checkbox"
+                                                className="checkbox"
+                                                checked={(selectedMentionChatIds || []).includes(chat.id)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onChange={(e) => {
+                                                    e.stopPropagation()
+                                                    dispatch(toggleMentionChatSelection(chat.id))
+                                                }}
+                                            />
+                                        )}
                                         {chat.tags && chat.tags.length > 0 ? (
                                             chat.tags.map(tag => (
                                                 <p key={tag.id} className="chat-tag">{tag.nombre}</p>

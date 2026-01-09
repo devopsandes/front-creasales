@@ -79,13 +79,17 @@ export const getMentionChats = async (
 
 /**
  * Backend requerido:
- * - POST /mentions/mark-read  body: { chatId } (auth requerida; roles USER|ADMIN|ROOT; scope empresa)
+ * - POST /mentions/mark-read  body: { chatId } o { chatIds } (auth requerida; roles USER|ADMIN|ROOT; scope empresa)
  */
-export const markMentionsRead = async (token: string, chatId: string): Promise<{ statusCode: number } & Partial<ErrorResponse>> => {
+export const markMentionsRead = async (
+  token: string,
+  chatIdOrIds: string | string[]
+): Promise<{ statusCode: number } & Partial<ErrorResponse>> => {
   try {
     const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/mark-read`
     const headers = { authorization: `Bearer ${token}` }
-    const { data } = await axios.post<any>(url, { chatId }, { headers })
+    const body = Array.isArray(chatIdOrIds) ? { chatIds: chatIdOrIds } : { chatId: chatIdOrIds }
+    const { data } = await axios.post<any>(url, body, { headers })
     return { statusCode: data?.statusCode ?? 200 }
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {

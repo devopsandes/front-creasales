@@ -15,7 +15,7 @@ import { openSessionExpired, closeSessionExpired, setMentionUnreadCount } from "
 import { RootState } from "../../app/store";
 import { setupAxiosInterceptors } from "../../utils/axiosInterceptor";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
-import { getMentionsUnreadCount } from "../../services/mentions/mentions.services";
+import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services";
 
 
 
@@ -75,12 +75,26 @@ const Dashboard = () => {
     if (!token || !myUserId || !socketInstance || !socketConnected) return
 
     const refreshCount = async () => {
-      const resp = await getMentionsUnreadCount(token)
-      if ((resp as any)?.statusCode === 401) {
+      // Reconciliación para evitar desync:
+      // si el backend devuelve count viejo pero la lista unread está vacía,
+      // forzamos el contador a 0 (fuente de verdad: /mentions/chats?unreadOnly=1).
+      const [countResp, chatsResp] = await Promise.all([
+        getMentionsUnreadCount(token),
+        getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 }),
+      ])
+
+      if ((countResp as any)?.statusCode === 401 || (chatsResp as any)?.statusCode === 401) {
         dispatch(openSessionExpired())
         return
       }
-      dispatch(setMentionUnreadCount((resp as any)?.count ?? 0))
+
+      const items = Array.isArray((chatsResp as any)?.items) ? (chatsResp as any).items : []
+      if (items.length === 0) {
+        dispatch(setMentionUnreadCount(0))
+        return
+      }
+
+      dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
     }
 
     // carga inicial
