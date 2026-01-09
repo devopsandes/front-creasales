@@ -16,6 +16,7 @@ export interface ActionState  {
    ticketId: string;
    sessionExpired: boolean;
    chats: ChatState[];
+   mentionUnreadCount: number;
 };
 
 export interface DataUser {

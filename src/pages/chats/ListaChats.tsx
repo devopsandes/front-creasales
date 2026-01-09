@@ -10,11 +10,12 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
 import { Tag as TagIcon, User } from "lucide-react"
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired, setChats } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
 import { getChats } from "../../services/chats/chats.services"
+import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services"
 
 // Función auxiliar para capitalizar correctamente el texto
 const capitalizeText = (text: string | undefined | null): string => {
@@ -41,6 +42,7 @@ const ListaChats = () => {
     const [bots,setBots] = useState<ChatState[]>([])
     const [sinAsignar,setSinAsignar] = useState<ChatState[]>([])
     const [menciones,setMenciones] = useState<ChatState[]>([])
+    const [mencionesCount, setMencionesCount] = useState<number>(0)
     const [styleBtn, setStyleBtn] = useState<string>('todas')
 
     const [loading, setLoading] = useState<boolean>(true)
@@ -59,12 +61,20 @@ const ListaChats = () => {
     const dataUser = useSelector((state: RootState) => state.action.dataUser);
     const viewSide = useSelector((state: RootState) => state.action.viewSide);
     const chatsFromRedux = useSelector((state: RootState) => state.action.chats);
+    const mentionUnreadCount = useSelector((state: RootState) => state.action.mentionUnreadCount);
 
 
     const socket = getSocket()
 
     const token  = localStorage.getItem('token') || '';
+    const role = localStorage.getItem('role') || '';
     const id = jwtDecode<{ id: string }>(token).id;
+
+    const [mentionChatIds, setMentionChatIds] = useState<string[]>([])
+
+    const extractMentionChatId = (it: any): string | null => {
+        return it?.chatId || it?.chat_id || it?.chat?.id || it?.id || null
+    }
 
     
 
@@ -79,8 +89,31 @@ const ListaChats = () => {
         
         const ejecucion = async () => {
             
-            const respUsers = await usuariosXRole('USER', token);
             const chatos = await getChats(token,'1','100')
+            let mentionTotal = 0
+
+            // Intentamos obtener menciones (si backend aún no lo soporta, no rompemos nada)
+            try {
+                const [countResp, chatsResp] = await Promise.all([
+                    getMentionsUnreadCount(token),
+                    getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 }),
+                ])
+                if (typeof (countResp as any)?.count === 'number') {
+                    mentionTotal = (countResp as any).count
+                }
+                const items = Array.isArray((chatsResp as any)?.items) ? (chatsResp as any).items : []
+                const ids: string[] = []
+                items.forEach((it: any) => {
+                    const chatId = extractMentionChatId(it)
+                    if (chatId) ids.push(chatId)
+                    if (typeof it?.unreadCount === 'number' && mentionTotal === 0) {
+                        mentionTotal += it.unreadCount
+                    }
+                })
+                setMentionChatIds(Array.from(new Set(ids)))
+            } catch {
+                // noop
+            }
 
             const archivadasTemp: ChatState[] = []
             const botsTemp: ChatState[] = []
@@ -88,6 +121,7 @@ const ListaChats = () => {
             const sinAsignarTemp: ChatState[] = []
             const mencionesTemp: ChatState[] = []
             const botsIds = new Set<string>()
+            const mentionIds = new Set<string>(mentionChatIds)
 
             chatos.chats.forEach(chat => {
                 if(chat.archivar){
@@ -106,8 +140,9 @@ const ListaChats = () => {
                     asignadasTemp.push(chat)
                 }
 
-                // Lógica para menciones (puede ser ajustada según la implementación específica)
-                // Por ahora se deja vacío para que se complete la lógica después
+                if (mentionIds.has(chat.id)) {
+                    mencionesTemp.push(chat)
+                }
             })
 
             setArchivadas(archivadasTemp)
@@ -115,22 +150,33 @@ const ListaChats = () => {
             setAsignadas(asignadasTemp)
             setSinAsignar(sinAsignarTemp)
             setMenciones(mencionesTemp)
+            setMencionesCount(mentionTotal || mencionesTemp.length)
+            dispatch(setMentionUnreadCount(mentionTotal || mencionesTemp.length))
             setChats1(chatos.chats)
             setFiltrados(chatos.chats)
             dispatch(setChats(chatos.chats))
             setLoading(false)
             
-            const usersIds = new Set<string>()
-            const uniqueUsers: Usuario[] = []
-            
-            respUsers.users.forEach(user => {
-                if(!usersIds.has(user.id)){
-                    uniqueUsers.push(user)
-                    usersIds.add(user.id)
-                }
-            })
-            
-            setUsers(uniqueUsers)
+            // Los usuarios con rol USER no tienen permiso para listar operadores (backend devuelve 403).
+            // Para evitar errores, solo pedimos la lista si el rol actual NO es USER y además validamos el shape.
+            if (role !== 'USER') {
+                const respUsers = await usuariosXRole('USER', token);
+                const list = Array.isArray((respUsers as any)?.users) ? (respUsers as any).users : []
+
+                const usersIds = new Set<string>()
+                const uniqueUsers: Usuario[] = []
+                
+                list.forEach((user: Usuario) => {
+                    if(!usersIds.has(user.id)){
+                        uniqueUsers.push(user)
+                        usersIds.add(user.id)
+                    }
+                })
+                
+                setUsers(uniqueUsers)
+            } else {
+                setUsers([])
+            }
 
             // Extraer tags únicos de todos los chats
             const tagsMap = new Map<string, { id: string; nombre: string }>()
@@ -155,6 +201,22 @@ const ListaChats = () => {
         
         
     },[])
+
+    // Realtime: cuando cambia el contador global (por socket), refrescamos la lista de chatIds mencionados
+    useEffect(() => {
+        if (!token) return
+        getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 })
+            .then((resp: any) => {
+                const items = Array.isArray(resp?.items) ? resp.items : []
+                const ids: string[] = []
+                items.forEach((it: any) => {
+                    const chatId = extractMentionChatId(it)
+                    if (chatId) ids.push(chatId)
+                })
+                setMentionChatIds(Array.from(new Set(ids)))
+            })
+            .catch(() => {})
+    }, [mentionUnreadCount, token])
     
     
     
@@ -284,6 +346,7 @@ const ListaChats = () => {
             const sinAsignarTemp: ChatState[] = []
             const mencionesTemp: ChatState[] = []
             const botsIds = new Set<string>()
+            const mentionIds = new Set<string>(mentionChatIds)
 
             chatsFromRedux.forEach(chat => {
                 if(chat.archivar){
@@ -302,8 +365,9 @@ const ListaChats = () => {
                     asignadasTemp.push(chat)
                 }
 
-                // Lógica para menciones (puede ser ajustada según la implementación específica)
-                // Por ahora se deja vacío para que se complete la lógica después
+                if (mentionIds.has(chat.id)) {
+                    mencionesTemp.push(chat)
+                }
             })
 
             setArchivadas(archivadasTemp)
@@ -343,7 +407,7 @@ const ListaChats = () => {
             const operadorValue = selectRef.current?.value || ''
             aplicarFiltros(operadorValue, selectedTag, chatsBase, searchChat)
         }
-    }, [chatsFromRedux, id, styleBtn, searchChat, selectedTag])
+    }, [chatsFromRedux, id, styleBtn, searchChat, selectedTag, mentionChatIds])
 
   
 
@@ -460,7 +524,7 @@ const ListaChats = () => {
                         className={`btn-item ${styleBtn === "menciones" && "border-1 p-1 border-red-600"}`}
                     >
                         Menciones
-                        <span>{menciones.length}</span>
+                        <span>{mentionUnreadCount || mencionesCount}</span>
                     </button>
                    
                 </div>

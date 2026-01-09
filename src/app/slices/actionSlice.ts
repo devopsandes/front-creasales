@@ -15,7 +15,8 @@ const initialState : ActionState = {
     modalTeca: false,
     ticketId: '',
     sessionExpired: false,
-    chats: []
+    chats: [],
+    mentionUnreadCount: 0
 }
 
 const actionSlice = createSlice({
@@ -83,6 +84,9 @@ const actionSlice = createSlice({
         },
         setChats: (state, action) => {
             state.chats = action.payload
+        },
+        setMentionUnreadCount: (state, action) => {
+            state.mentionUnreadCount = action.payload
         }
     }
 })
@@ -106,7 +110,8 @@ export const {
     eraseDataUser,
     openSessionExpired,
     closeSessionExpired,
-    setChats
+    setChats,
+    setMentionUnreadCount
 } = actionSlice.actions
 export default actionSlice.reducer
 

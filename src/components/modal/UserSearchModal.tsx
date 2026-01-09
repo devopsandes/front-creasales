@@ -46,11 +46,19 @@ const UserSearchModal = ( ) => {
   const modalView = useSelector((state: RootState) => state.action.modal);
   
   const token  = localStorage.getItem('token') || '';
+  const role = localStorage.getItem('role') || '';
 
   useEffect(() => {
     const ejecucion = async () => {
+      // Si el rol actual es USER, el backend devuelve 403 al listar usuarios.
+      // Evitamos el request y mantenemos solo el "BOT OPERADOR".
+      if (role === 'USER') {
+        return;
+      }
+
       const respUsers = await usuariosXRole('USER', token);
-      setUsers([...users,...respUsers.users]);
+      const list = Array.isArray((respUsers as any)?.users) ? (respUsers as any).users : [];
+      setUsers((prev) => [...prev, ...list]);
       
     }
     ejecucion();
