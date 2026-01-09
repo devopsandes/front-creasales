@@ -172,8 +172,8 @@ const AppRouter = () => {
             <Route index element={<TableIntegraciones/>}/>
           </Route>
 
-
-
+          {/* Fallback dentro del dashboard para evitar pantalla en blanco en subrutas inexistentes */}
+          <Route path='*' element={<DashboardHome />} />
 
         </Route>
 
