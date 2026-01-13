@@ -31,6 +31,16 @@ const capitalizeText = (text: string | undefined | null): string => {
         .join(' ');
 };
 
+type ChatAssignment = 'bot' | 'unassigned' | 'assigned'
+
+const getAssignment = (chat: ChatState): ChatAssignment => {
+    const assignment = chat.assignment
+    if (assignment === 'bot' || assignment === 'unassigned' || assignment === 'assigned') {
+        return assignment
+    }
+    return chat.operador ? 'assigned' : 'unassigned'
+};
+
 const ListaChats = () => {
     const { id: activeChatId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -39,10 +49,11 @@ const ListaChats = () => {
     const [chats1,setChats1] = useState<ChatState[]>([])
     const [archivadas,setArchivadas] = useState<ChatState[]>([])
     const [asignadas,setAsignadas] = useState<ChatState[]>([])
+    const [asignadasOtros,setAsignadasOtros] = useState<ChatState[]>([])
     const [bots,setBots] = useState<ChatState[]>([])
     const [sinAsignar,setSinAsignar] = useState<ChatState[]>([])
     const [menciones,setMenciones] = useState<ChatState[]>([])
-    const [styleBtn, setStyleBtn] = useState<string>('todas')
+    const [styleBtn, setStyleBtn] = useState<string>('otros')
 
     const [loading, setLoading] = useState<boolean>(true)
     const [users, setUsers] = useState<Usuario[]>([]);
@@ -126,6 +137,7 @@ const ListaChats = () => {
             const archivadasTemp: ChatState[] = []
             const botsTemp: ChatState[] = []
             const asignadasTemp: ChatState[] = []
+            const asignadasOtrosTemp: ChatState[] = []
             const sinAsignarTemp: ChatState[] = []
             const mencionesTemp: ChatState[] = []
             const botsIds = new Set<string>()
@@ -136,16 +148,23 @@ const ListaChats = () => {
                     archivadasTemp.push(chat)
                 }
 
-                if(!chat.operador){
+                if(getAssignment(chat) === 'bot'){
                     if(!botsIds.has(chat.id)){
                         botsTemp.push(chat)
                         botsIds.add(chat.id)
                     }
+                }
+
+                if(getAssignment(chat) === 'unassigned' && !chat.archivar){
                     sinAsignarTemp.push(chat)
                 }
 
-                if(id === chat.operador?.id){
+                if(getAssignment(chat) === 'assigned' && id === chat.operador?.id){
                     asignadasTemp.push(chat)
+                }
+
+                if (getAssignment(chat) === 'assigned' && !chat.archivar && chat.operador?.id && chat.operador.id !== id) {
+                    asignadasOtrosTemp.push(chat)
                 }
 
                 if (mentionIds.has(chat.id)) {
@@ -156,12 +175,27 @@ const ListaChats = () => {
             setArchivadas(archivadasTemp)
             setBots(botsTemp)
             setAsignadas(asignadasTemp)
+            setAsignadasOtros(asignadasOtrosTemp)
             setSinAsignar(sinAsignarTemp)
             setMenciones(mencionesTemp)
             const effectiveMentionTotal = (mentionTotal ?? mencionesTemp.length)
             dispatch(setMentionUnreadCount(effectiveMentionTotal))
             setChats1(chatos.chats)
-            setFiltrados(chatos.chats)
+            let initialBase: ChatState[] = chatos.chats
+            if (styleBtn === "asig") {
+                initialBase = asignadasTemp
+            } else if (styleBtn === "archi") {
+                initialBase = archivadasTemp
+            } else if (styleBtn === "otros") {
+                initialBase = asignadasOtrosTemp
+            } else if (styleBtn === "bots") {
+                initialBase = botsTemp
+            } else if (styleBtn === "sinAsignar") {
+                initialBase = sinAsignarTemp
+            } else if (styleBtn === "menciones") {
+                initialBase = mencionesTemp
+            }
+            setFiltrados(initialBase)
             dispatch(setChats(chatos.chats))
             setLoading(false)
             
@@ -241,9 +275,12 @@ const ListaChats = () => {
         
         
         
-        const handleNuevoChat = (chat: ChatState) => {
-            setFiltrados(prevChats => [chat, ...prevChats])
+        const handleNuevoChat = async (_chat: ChatState) => {
             audioRef.current.play()
+            try {
+                const chatos = await getChats(token,'1','100')
+                dispatch(setChats(chatos.chats))
+            } catch {}
         }
 
         const handleError = (error: any) => {
@@ -266,7 +303,7 @@ const ListaChats = () => {
             socket!.off('nuevo-chat', handleNuevoChat)
             socket!.off('error', handleError)
         }
-    },[socket]) 
+    },[socket, token, dispatch]) 
 
     const handleChangeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedValue = e.target.value
@@ -306,9 +343,9 @@ const ListaChats = () => {
         if(operadorValue === "" || operadorValue === "TODOS"){
             filtrados = [...baseChats]
         }else if(operadorValue === 'BOT'){
-            filtrados = baseChats.filter(chat => chat.operador === null)
+            filtrados = baseChats.filter(chat => getAssignment(chat) === 'bot')
         }else{
-            filtrados = baseChats.filter(chat => chat.operador?.id === operadorValue)
+            filtrados = baseChats.filter(chat => getAssignment(chat) === 'assigned' && chat.operador?.id === operadorValue)
         }
 
         // Filtro por tag
@@ -357,6 +394,7 @@ const ListaChats = () => {
             const archivadasTemp: ChatState[] = []
             const botsTemp: ChatState[] = []
             const asignadasTemp: ChatState[] = []
+            const asignadasOtrosTemp: ChatState[] = []
             const sinAsignarTemp: ChatState[] = []
             const mencionesTemp: ChatState[] = []
             const botsIds = new Set<string>()
@@ -367,16 +405,23 @@ const ListaChats = () => {
                     archivadasTemp.push(chat)
                 }
 
-                if(!chat.operador){
+                if(getAssignment(chat) === 'bot'){
                     if(!botsIds.has(chat.id)){
                         botsTemp.push(chat)
                         botsIds.add(chat.id)
                     }
+                }
+
+                if(getAssignment(chat) === 'unassigned' && !chat.archivar){
                     sinAsignarTemp.push(chat)
                 }
 
-                if(id === chat.operador?.id){
+                if(getAssignment(chat) === 'assigned' && id === chat.operador?.id){
                     asignadasTemp.push(chat)
+                }
+
+                if (getAssignment(chat) === 'assigned' && !chat.archivar && chat.operador?.id && chat.operador.id !== id) {
+                    asignadasOtrosTemp.push(chat)
                 }
 
                 if (mentionIds.has(chat.id)) {
@@ -387,6 +432,7 @@ const ListaChats = () => {
             setArchivadas(archivadasTemp)
             setBots(botsTemp)
             setAsignadas(asignadasTemp)
+            setAsignadasOtros(asignadasOtrosTemp)
             setSinAsignar(sinAsignarTemp)
             setMenciones(mencionesTemp)
             setChats1(chatsFromRedux)
@@ -409,6 +455,8 @@ const ListaChats = () => {
                 chatsBase = asignadasTemp
             } else if (styleBtn === "archi") {
                 chatsBase = archivadasTemp
+            } else if (styleBtn === "otros") {
+                chatsBase = asignadasOtrosTemp
             } else if (styleBtn === "bots") {
                 chatsBase = botsTemp
             } else if (styleBtn === "sinAsignar") {
@@ -459,6 +507,23 @@ const ListaChats = () => {
      <div className="chats-container">
         <div className='main-chat'>
             <div className="header-lista">
+                <div className={`header-item ${styleBtn === "sinAsignar" ? "header-item--active" : ""}`}>
+                    <button 
+                        onClick={() => {
+                            dispatch(setMentionsMode(false))
+                            dispatch(clearMentionChatSelection())
+                            setStyleBtn('sinAsignar')
+                            const operadorValue = selectRef.current?.value || ''
+                            aplicarFiltros(operadorValue, selectedTag, sinAsignar)
+                        }} 
+                        className="btn-item"
+                    >
+                        Sin asignar
+                        <span>{sinAsignar.length}</span>
+                    </button>
+                   
+                </div>
+
                 <div className={`header-item ${styleBtn === "asig" ? "header-item--active" : ""}`}>
                     <button 
                         onClick={() => {
@@ -475,7 +540,24 @@ const ListaChats = () => {
                     </button>
                     
                 </div>
-              
+
+                 <div className={`header-item ${styleBtn === "otros" ? "header-item--active" : ""}`}>
+                     <button 
+                        onClick={() => {
+                            dispatch(setMentionsMode(false))
+                            dispatch(clearMentionChatSelection())
+                            setStyleBtn("otros")
+                            const operadorValue = selectRef.current?.value || ''
+                            aplicarFiltros(operadorValue, selectedTag, asignadasOtros)
+                        }} 
+                        className="btn-item"
+                    >
+                        Asignadas a otros
+                        <span>{asignadasOtros.length}</span>
+                    </button>
+                   
+                </div>
+
                 <div className={`header-item ${styleBtn === "archi" ? "header-item--active" : ""}`}>
                     <button 
                         onClick={() => {
@@ -492,22 +574,23 @@ const ListaChats = () => {
                     </button>
                    
                 </div>
-                 <div className={`header-item ${styleBtn === "todas" ? "header-item--active" : ""}`}>
+
+                 <div className={`header-item ${styleBtn === "menciones" ? "header-item--active" : ""}`}>
                      <button 
                         onClick={() => {
-                            dispatch(setMentionsMode(false))
-                            dispatch(clearMentionChatSelection())
-                            setStyleBtn("todas")
+                            setStyleBtn('menciones')
+                            dispatch(setMentionsMode(true))
                             const operadorValue = selectRef.current?.value || ''
-                            aplicarFiltros(operadorValue, selectedTag, chats1)
+                            aplicarFiltros(operadorValue, selectedTag, menciones)
                         }} 
                         className="btn-item"
                     >
-                        Todas
-                        <span>{chats1.length}</span>
+                        Menciones
+                        <span>{mentionUnreadCount}</span>
                     </button>
                    
                 </div>
+
                  <div className={`header-item ${styleBtn === "bots" ? "header-item--active" : ""}`}>
                      <button 
                         onClick={() => {
@@ -521,37 +604,6 @@ const ListaChats = () => {
                     >
                         Bots
                         <span>{bots.length}</span>
-                    </button>
-                   
-                </div>
-                 <div className={`header-item ${styleBtn === "sinAsignar" ? "header-item--active" : ""}`}>
-                     <button 
-                        onClick={() => {
-                            dispatch(setMentionsMode(false))
-                            dispatch(clearMentionChatSelection())
-                            setStyleBtn('sinAsignar')
-                            const operadorValue = selectRef.current?.value || ''
-                            aplicarFiltros(operadorValue, selectedTag, sinAsignar)
-                        }} 
-                        className="btn-item"
-                    >
-                        Sin asignar
-                        <span>{sinAsignar.length}</span>
-                    </button>
-                   
-                </div>
-                 <div className={`header-item ${styleBtn === "menciones" ? "header-item--active" : ""}`}>
-                     <button 
-                        onClick={() => {
-                            setStyleBtn('menciones')
-                            dispatch(setMentionsMode(true))
-                            const operadorValue = selectRef.current?.value || ''
-                            aplicarFiltros(operadorValue, selectedTag, menciones)
-                        }} 
-                        className="btn-item"
-                    >
-                        Menciones
-                        <span>{mentionUnreadCount}</span>
                     </button>
                    
                 </div>
