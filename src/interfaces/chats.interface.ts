@@ -50,11 +50,12 @@ export interface ChatState {
     cliente:   Cliente;
     createdAt: Date;
     id:        string;
-    operador: Usuario;
+    operador: Usuario | null;
     thread_id: string;
     updatedAt: Date;
     mensajes:  Mensaje[];
     tags?:     ChatTag[];
+    assignment?: 'bot' | 'unassigned' | 'assigned';
 }
 
 export interface Cliente {
