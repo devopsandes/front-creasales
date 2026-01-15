@@ -19,7 +19,8 @@ const initialState : ActionState = {
     mentionUnreadCount: 0,
     mentionsRefreshNonce: 0,
     mentionsMode: false,
-    selectedMentionChatIds: []
+    selectedMentionChatIds: [],
+    selectedBulkReadChatIds: []
 }
 
 const actionSlice = createSlice({
@@ -88,6 +89,51 @@ const actionSlice = createSlice({
         setChats: (state, action) => {
             state.chats = action.payload
         },
+        /**
+         * Marcado local como leído (optimistic UI / sync post-backend).
+         * - Resetea `unreadCount` si existe
+         * - Marca `leido=true` en mensajes entrantes legacy si vienen en `mensajes`
+         */
+        markChatReadLocal: (state, action) => {
+            const chatId = action.payload as string
+            if (!chatId) return
+
+            const chats = Array.isArray(state.chats) ? state.chats : []
+            const idx = chats.findIndex((c: any) => c?.id === chatId)
+            if (idx < 0) return
+
+            const chat: any = chats[idx]
+            chat.unreadCount = 0
+            chat.manualUnread = false
+
+            if (Array.isArray(chat.mensajes)) {
+                chat.mensajes = chat.mensajes.map((m: any) => {
+                    // solo entrantes
+                    if (m?.msg_entrada && m?.leido === false) return { ...m, leido: true }
+                    return m
+                })
+            }
+
+            // forzamos reemplazo para asegurar re-render
+            state.chats = [...chats]
+        },
+        /**
+         * Marcado local como "no leído" (manualUnread) sin tocar mensajes.
+         * Útil para UX: dejar un chat pendiente aunque no haya nuevos mensajes.
+         */
+        markChatUnreadLocal: (state, action) => {
+            const chatId = action.payload as string
+            if (!chatId) return
+
+            const chats = Array.isArray(state.chats) ? state.chats : []
+            const idx = chats.findIndex((c: any) => c?.id === chatId)
+            if (idx < 0) return
+
+            const chat: any = chats[idx]
+            chat.manualUnread = true
+
+            state.chats = [...chats]
+        },
         setMentionUnreadCount: (state, action) => {
             state.mentionUnreadCount = action.payload
         },
@@ -107,7 +153,18 @@ const actionSlice = createSlice({
         },
         clearMentionChatSelection: (state) => {
             state.selectedMentionChatIds = []
-        }
+        },
+        toggleBulkReadChatSelection: (state, action) => {
+            const chatId = action.payload as string
+            if (!chatId) return
+            const set = new Set(state.selectedBulkReadChatIds || [])
+            if (set.has(chatId)) set.delete(chatId)
+            else set.add(chatId)
+            state.selectedBulkReadChatIds = Array.from(set)
+        },
+        clearBulkReadChatSelection: (state) => {
+            state.selectedBulkReadChatIds = []
+        },
     }
 })
 
@@ -131,11 +188,15 @@ export const {
     openSessionExpired,
     closeSessionExpired,
     setChats,
+    markChatReadLocal,
+    markChatUnreadLocal,
     setMentionUnreadCount,
     bumpMentionsRefreshNonce,
     setMentionsMode,
     toggleMentionChatSelection,
-    clearMentionChatSelection
+    clearMentionChatSelection,
+    toggleBulkReadChatSelection,
+    clearBulkReadChatSelection
 } = actionSlice.actions
 export default actionSlice.reducer
 

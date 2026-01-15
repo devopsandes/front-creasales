@@ -26,10 +26,11 @@ import { Usuario } from '../../interfaces/auth.interface'
 import axios from 'axios'
 import { getOperadoresEmpresa } from '../../services/empresas/empresa.services'
 import { getMentionsUnreadCount, markMentionsRead } from '../../services/mentions/mentions.services'
-import { bumpMentionsRefreshNonce, setMentionUnreadCount } from '../../app/slices/actionSlice'
+import { bumpMentionsRefreshNonce, clearBulkReadChatSelection, markChatReadLocal, markChatUnreadLocal, setMentionUnreadCount } from '../../app/slices/actionSlice'
 import SuccessModal from '../../components/modal/SuccessModal'
 import { QuickResponse } from '../../interfaces/quickResponses.interface'
 import { getQuickResponses } from '../../services/quickResponses/quickResponses.services'
+import { setChatReadState } from '../../services/chats/chats.services'
 
 
 
@@ -82,6 +83,7 @@ const Chats = () => {
     const dataUser = useSelector((state: RootState) => state.action.dataUser)
     const mentionsMode = useSelector((state: RootState) => state.action.mentionsMode)
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
+    const selectedBulkReadChatIds = useSelector((state: RootState) => state.action.selectedBulkReadChatIds)
     const chats = useSelector((state: RootState) => state.action.chats)
     const currentChat = chats.find(chat => chat.id === id)
     const chatTags: ChatTag[] = currentChat?.tags || []
@@ -278,6 +280,34 @@ const Chats = () => {
                 : 'Los chats seleccionados fueron marcados como leídos exitosamente.'
         )
         setShowMentionReadSuccess(true)
+    }
+
+    const handleBulkSetReadState = async (state: "read" | "unread") => {
+        if (!token) return
+        // Importante: NO aplica en Menciones (no tocar su flujo)
+        if (mentionsMode) return
+
+        const ids = Array.isArray(selectedBulkReadChatIds) ? selectedBulkReadChatIds : []
+        if (ids.length === 0) return
+
+        // Optimistic UI sobre Redux (ListaChats recalcula desde chatsFromRedux)
+        if (state === "read") {
+            ids.forEach((chatId) => dispatch(markChatReadLocal(chatId)))
+        } else {
+            ids.forEach((chatId) => dispatch(markChatUnreadLocal(chatId)))
+        }
+
+        try {
+            const results = await Promise.all(ids.map((chatId) => setChatReadState(token, chatId, state)))
+            if (results.some((r: any) => r?.statusCode === 401)) {
+                dispatch(openSessionExpired())
+                return
+            }
+        } catch {
+            // noop: optimistic ya aplicado
+        } finally {
+            dispatch(clearBulkReadChatSelection())
+        }
     }
 
     useEffect(() => {
@@ -854,8 +884,8 @@ const Chats = () => {
                             <FaCircleUser size={25} />
                         </div>
                         <p className='nombre-chat'>
-                            <span className=''>+{telefono}</span>
                             <span className=''>{nombre}</span>
+                            <span className=''>+{telefono}</span>
                         </p>
                         <div className='header-chat-actions'>
                             {role !== 'USER' && (
@@ -874,6 +904,24 @@ const Chats = () => {
                                 <FaFileArrowDown />
                                 <span>Archivar</span>
                             </button>
+                            {!mentionsMode && Array.isArray(selectedBulkReadChatIds) && selectedBulkReadChatIds.length > 0 && (
+                                <>
+                                    <button
+                                        onClick={() => handleBulkSetReadState("read")}
+                                        className="chat-action-button chat-button-mention-read"
+                                    >
+                                        <CheckCheck size={16} />
+                                        <span>Marcar como leído</span>
+                                    </button>
+                                    <button
+                                        onClick={() => handleBulkSetReadState("unread")}
+                                        className="chat-action-button chat-button-mark-unread"
+                                    >
+                                        <CheckCheck size={16} />
+                                        <span>Marcar como no leído</span>
+                                    </button>
+                                </>
+                            )}
                             {mentionsMode && Array.isArray(selectedMentionChatIds) && selectedMentionChatIds.length > 0 && (
                                 <button
                                     onClick={handleMarkMentionRead}

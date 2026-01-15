@@ -56,6 +56,21 @@ export interface ChatState {
     mensajes:  Mensaje[];
     tags?:     ChatTag[];
     assignment?: 'bot' | 'unassigned' | 'assigned';
+    /**
+     * Option C (backend agregado):
+     * - `unreadCount`: cantidad de mensajes ENTRANTES no leídos.
+     * - `lastIncomingMessageAt`: timestamp del último mensaje ENTRANTE recibido.
+     * Estos campos son opcionales para mantener compatibilidad con backends viejos.
+     */
+    unreadCount?: number;
+    lastIncomingMessageAt?: Date | string;
+    manualUnread?: boolean;
+    lastReadAt?: Date | string | null;
+    /**
+     * Fallbacks opcionales si el backend decide exponerlos.
+     */
+    lastMessageAt?: Date | string;
+    lastMessageDirection?: 'incoming' | 'outgoing';
 }
 
 export interface Cliente {

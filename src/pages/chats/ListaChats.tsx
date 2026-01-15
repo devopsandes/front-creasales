@@ -10,7 +10,7 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
 import { Tag as TagIcon, User } from "lucide-react"
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
@@ -75,6 +75,7 @@ const ListaChats = () => {
     const mentionUnreadCount = useSelector((state: RootState) => state.action.mentionUnreadCount);
     const mentionsRefreshNonce = useSelector((state: RootState) => state.action.mentionsRefreshNonce);
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds);
+    const selectedBulkReadChatIds = useSelector((state: RootState) => state.action.selectedBulkReadChatIds);
 
 
     const socket = getSocket()
@@ -248,6 +249,7 @@ const ListaChats = () => {
     useEffect(() => {
         dispatch(setMentionsMode(false))
         dispatch(clearMentionChatSelection())
+        dispatch(clearBulkReadChatSelection())
     }, [dispatch])
 
     // Realtime: cuando cambia el contador global (por socket), refrescamos la lista de chatIds mencionados
@@ -477,6 +479,67 @@ const ListaChats = () => {
         dispatch(setViewSide(true))
     }
 
+    const toDateSafe = (value: any): Date | null => {
+        if (!value) return null
+        const d = new Date(value)
+        return Number.isNaN(d.getTime()) ? null : d
+    }
+
+    const getUnreadCount = (chat: ChatState): number => {
+        const anyChat: any = chat as any
+        if (typeof anyChat?.unreadCount === 'number') return Math.max(0, anyChat.unreadCount)
+        const msgs = Array.isArray(anyChat?.mensajes) ? anyChat.mensajes : []
+        // Solo entrantes: lo "no leído" tiene sentido para mensajes recibidos.
+        return msgs.filter((m: any) => m?.msg_entrada && m?.leido === false).length
+    }
+
+    const isManuallyUnread = (chat: ChatState): boolean => {
+        const anyChat: any = chat as any
+        return anyChat?.manualUnread === true
+    }
+
+    const getLastIncomingAt = (chat: ChatState): Date | null => {
+        const anyChat: any = chat as any
+        const direct =
+            toDateSafe(anyChat?.lastIncomingMessageAt) ??
+            (anyChat?.lastMessageDirection === 'incoming' ? toDateSafe(anyChat?.lastMessageAt) : null)
+        if (direct) return direct
+
+        const msgs = Array.isArray(anyChat?.mensajes) ? anyChat.mensajes : []
+        let best: Date | null = null
+        for (const m of msgs) {
+            if (!m?.msg_entrada) continue
+            const d = toDateSafe(m?.createdAt)
+            if (!d) continue
+            if (!best || d.getTime() > best.getTime()) best = d
+        }
+        return best
+    }
+
+    const formatRelativeLastIncoming = (d: Date | null): string => {
+        if (!d) return ''
+        const now = new Date()
+        const diffMs = Math.max(0, now.getTime() - d.getTime())
+        const diffSec = Math.floor(diffMs / 1000)
+        const diffMin = Math.floor(diffSec / 60)
+        const diffHr = Math.floor(diffMin / 60)
+
+        const diffDays = Math.floor(diffHr / 24)
+        if (diffDays >= 1) {
+            return diffDays === 1 ? 'hace un día' : `hace ${diffDays} días`
+        }
+        if (diffHr >= 1) return diffHr === 1 ? 'hace 1 hora' : `hace ${diffHr} horas`
+        if (diffMin >= 1) return diffMin === 1 ? 'hace 1 minuto' : `hace ${diffMin} minutos`
+        return 'hace unos segundos'
+    }
+
+    const handleOpenChat = () => {
+        // Solo navegación/UX (no marcar leído automáticamente)
+        handleClickLink()
+    }
+
+    // Nota: el "bulk mark read/unread" se ejecuta desde la vista del chat (botones al lado de Archivar).
+
     const ordenarChatsPorFecha = (chats: ChatState[], orden: 'desc' | 'asc'): ChatState[] => {
         return [...chats].sort((a, b) => {
             const fechaA = new Date(a.updatedAt || a.createdAt).getTime()
@@ -512,6 +575,7 @@ const ListaChats = () => {
                         onClick={() => {
                             dispatch(setMentionsMode(false))
                             dispatch(clearMentionChatSelection())
+                            dispatch(clearBulkReadChatSelection())
                             setStyleBtn('sinAsignar')
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, sinAsignar)
@@ -529,6 +593,7 @@ const ListaChats = () => {
                         onClick={() => {
                             dispatch(setMentionsMode(false))
                             dispatch(clearMentionChatSelection())
+                            dispatch(clearBulkReadChatSelection())
                             setStyleBtn("asig")
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, asignadas)
@@ -546,6 +611,7 @@ const ListaChats = () => {
                         onClick={() => {
                             dispatch(setMentionsMode(false))
                             dispatch(clearMentionChatSelection())
+                            dispatch(clearBulkReadChatSelection())
                             setStyleBtn("otros")
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, asignadasOtros)
@@ -563,6 +629,7 @@ const ListaChats = () => {
                         onClick={() => {
                             dispatch(setMentionsMode(false))
                             dispatch(clearMentionChatSelection())
+                            dispatch(clearBulkReadChatSelection())
                             setStyleBtn("archi")
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, archivadas)
@@ -580,6 +647,7 @@ const ListaChats = () => {
                         onClick={() => {
                             setStyleBtn('menciones')
                             dispatch(setMentionsMode(true))
+                            dispatch(clearBulkReadChatSelection())
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, menciones)
                         }} 
@@ -596,6 +664,7 @@ const ListaChats = () => {
                         onClick={() => {
                             dispatch(setMentionsMode(false))
                             dispatch(clearMentionChatSelection())
+                            dispatch(clearBulkReadChatSelection())
                             setStyleBtn('bots')
                             const operadorValue = selectRef.current?.value || ''
                             aplicarFiltros(operadorValue, selectedTag, bots)
@@ -700,22 +769,41 @@ const ListaChats = () => {
                             </div>
                             <div className="chat-list-spacing"></div>
                             {filtrados != undefined && ordenarChatsPorFecha(filtrados, ordenFecha).map(chat => (
+                                (() => {
+                                    const nombre = capitalizeText(chat.cliente?.nombre)
+                                    const telefono = chat.cliente?.telefono || ''
+                                    const unread = getUnreadCount(chat)
+                                    const lastIncoming = getLastIncomingAt(chat)
+                                    const lastIncomingLabel = formatRelativeLastIncoming(lastIncoming)
+                                    const manualUnread = isManuallyUnread(chat)
+                                    const showMarker = unread > 0 || manualUnread
+                                    const bulkChecked = (selectedBulkReadChatIds || []).includes(chat.id)
+                                    return (
                                 <Link 
                                     to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente?.telefono || ''}&nombre=${chat.cliente?.nombre || ''}`} 
                                     className={`item-lista text-left ${chat.id === activeChatId ? 'active' : ''}`}
                                     key={chat.id}
-                                    onClick={handleClickLink}
+                                    onClick={handleOpenChat}
                                 >
-                                    <div className="flex justify-between px-2">
-                                        <p className="chat-client-info">
-                                            {capitalizeText(chat.cliente?.nombre)} - {chat.cliente?.telefono || ''}
-                                        </p>
-                                        {chat?.mensajes?.filter(m => m.leido === false).length > 0 && (
-                                            <p className="chat-badge-count">
-                                                {chat.mensajes.filter(m => m.leido === false).length}
-                                            </p>
-                                        )}
-                                        
+                                    <div className="chat-item-header">
+                                        <div className="chat-item-title">
+                                            <div className="chat-item-name-row">
+                                                <span className="chat-item-name">{nombre}</span>
+                                                {showMarker && (
+                                                    <span
+                                                        className="chat-unread-indicator"
+                                                        title={manualUnread ? "Marcado como no leído" : `${unread} mensaje(s) sin leer`}
+                                                        aria-label={manualUnread ? "Marcado como no leído" : `${unread} mensaje(s) sin leer`}
+                                                    >
+                                                        <span className="chat-unread-dot" />
+                                                    </span>
+                                                )}
+                                                {lastIncomingLabel && (
+                                                    <span className="chat-last-incoming">{lastIncomingLabel}</span>
+                                                )}
+                                            </div>
+                                            <div className="chat-item-phone">{telefono}</div>
+                                        </div>
                                     </div>
                                     <div className="chat-tags-container">
                                         {styleBtn === 'menciones' && (
@@ -730,6 +818,19 @@ const ListaChats = () => {
                                                 }}
                                             />
                                         )}
+                                        {styleBtn !== 'menciones' && (
+                                            <input
+                                                type="checkbox"
+                                                className="checkbox"
+                                                checked={bulkChecked}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onChange={(e) => {
+                                                    e.stopPropagation()
+                                                    dispatch(toggleBulkReadChatSelection(chat.id))
+                                                }}
+                                                title="Seleccionar para marcar como leído"
+                                            />
+                                        )}
                                         {chat.tags && chat.tags.length > 0 ? (
                                             chat.tags.map(tag => (
                                                 <p key={tag.id} className="chat-tag">{tag.nombre}</p>
@@ -737,6 +838,8 @@ const ListaChats = () => {
                                         ) : null}
                                     </div>
                                 </Link>
+                                    )
+                                })()
                             ))}
                             {filtrados && filtrados.length === 0 && (
                                 <p className="msg-error px-2">No hay coincidencias</p>
