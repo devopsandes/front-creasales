@@ -129,6 +129,32 @@ const getChats = async (token: string, page: string, limit: string): Promise< Ch
     }
 }
 
+/**
+ * Backend actual:
+ * - PATCH /chats/:id/read-state  body: { state: "read" | "unread" }
+ * - Idempotente
+ */
+const setChatReadState = async (
+    token: string,
+    chatId: string,
+    state: "read" | "unread"
+): Promise<
+    | ({ ok?: boolean; statusCode?: number; chatId?: string; state?: "read" | "unread"; unreadCount?: number; manualUnread?: boolean; lastIncomingMessageAt?: string | null; lastReadAt?: string | null } & ErrorResponse)
+    | any
+> => {
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${chatId}/read-state`
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await axios.patch(url, { state }, { headers })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            const objeto: any = error.response.data
+            return objeto
+        }
+        throw error
+    }
+}
 
 
-export { findChatById, findChatTimeline, getUserData, getChats }
+export { findChatById, findChatTimeline, getUserData, getChats, setChatReadState }
