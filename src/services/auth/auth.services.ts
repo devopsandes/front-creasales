@@ -162,13 +162,19 @@ const switchActivo = async (userId: string | undefined, token: string, activo: b
 
 const asignarOperador = async (chat_id: string, user_id: string, token: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `https://sales.createch.com.ar/api/v1/auth/usuarios/operador?chat_id=${chat_id}&user_id=${user_id}&token=${encodeURIComponent(token)}`
+        // Nuevo backend: genera hito CHAT_ASSIGNED + emite socket chat-event-${chatId}
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/operators`
 
         const headers = {
-            authorization: `Bearer ${token}`
+            authorization: `Bearer ${token}`,
         }
 
-        const { data } = await axios.get<SuccessResponse & ErrorResponse>(url, {headers})
+        const body = {
+            chatId: chat_id,
+            userId: user_id,
+        }
+
+        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url, body, { headers })
 
         return data
     } catch (error) {

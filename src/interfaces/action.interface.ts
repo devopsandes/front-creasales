@@ -16,6 +16,15 @@ export interface ActionState  {
    ticketId: string;
    sessionExpired: boolean;
    chats: ChatState[];
+   mentionUnreadCount: number;
+   mentionsRefreshNonce: number;
+   mentionsMode: boolean;
+   selectedMentionChatIds: string[];
+   /**
+    * Selección "bulk" para marcar chats como leídos (fuera de Menciones).
+    * No debe interferir con `selectedMentionChatIds`.
+    */
+   selectedBulkReadChatIds: string[];
 };
 
 export interface DataUser {

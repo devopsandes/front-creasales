@@ -63,10 +63,14 @@
 /* Cuando el sidebar está expandido (clase .expanded) */
 .dash-sidebar.expanded .di-container {
     justify-content: flex-start;
+    gap: 0.75rem;
 }
 
 .dash-sidebar.expanded .di-container p {
     display: block;
+    font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dash-sidebar.expanded .di-tooltip {

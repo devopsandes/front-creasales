@@ -48,3 +48,6 @@ const ErrorModal = ({ isOpen, onClose, title = 'Error', message = 'Ocurrió un e
 
 export default ErrorModal
 
+
+
+

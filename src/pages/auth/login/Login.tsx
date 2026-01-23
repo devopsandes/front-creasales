@@ -7,6 +7,7 @@ import EyeSlash from '../../../components/icons/EyeSlash'
 import { authLogin } from '../../../services/auth/auth.services'
 import { useDispatch } from 'react-redux'
 import { accessGranted } from '../../../app/slices/authSlice'
+import { decodeToken } from '../../../utils/tokenUtils'
 import './login.css'
 
 const Login = () => {
@@ -19,25 +20,6 @@ const Login = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   // const [ login ] = useLoginMutation()
-
-  // Función para decodificar el JWT y extraer el ID
-  const decodeToken = (token: string): string | null => {
-    try {
-      const base64Url = token.split('.')[1]
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      )
-      const decoded = JSON.parse(jsonPayload)
-      return decoded.id || null
-    } catch (error) {
-      console.error('Error decodificando token:', error)
-      return null
-    }
-  }
   
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -47,18 +29,23 @@ const Login = () => {
     const respuesta = await authLogin({email, password})
     
     if(respuesta.token){
-      // Extraer el ID del token JWT
-      const userId = decodeToken(respuesta.token)
+      const decoded = decodeToken(respuesta.token)
+      const userId = respuesta.id || decoded?.id || null
+      const role = respuesta.role
       
       dispatch(accessGranted())
       localStorage.setItem('token', respuesta.token)
-      localStorage.setItem('role', respuesta.role)
+      localStorage.setItem('role', role)
       
       if(userId){
         localStorage.setItem('userId', userId)
       }
       
-      navigate('/dashboard/empresa')
+      if(role === 'ROOT' || role === 'ADMIN'){
+        navigate('/dashboard/empresa')
+      }else{
+        navigate('/dashboard/chats')
+      }
     }else {
       setMsgError(respuesta.message[0])
     }

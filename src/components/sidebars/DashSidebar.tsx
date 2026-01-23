@@ -15,6 +15,7 @@ import {
   LogOut
 } from "lucide-react";
 import { FaMeta } from "react-icons/fa6";
+import QuickReplies from "../icons/QuickReplies";
 import DashItem from '../items/DashItem'
 import LogoutModal from '../modal/LogoutModal'
 import './dashsidebar.css'
@@ -53,6 +54,7 @@ const DashSidebar = ({ role }: Props) => {
             <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
             <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
             <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes"/>
+            <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas"/>
             <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta"/>
             <DashItem icon={UsersRound} path='/dashboard/usuarios' titulo="Usuarios"/>
             <DashItem icon={Bot} path='/dashboard/bot' titulo="BOT/IA"/>
@@ -73,7 +75,12 @@ const DashSidebar = ({ role }: Props) => {
           <>
             <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
             <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
-            <DashItem icon={UserCircle2} path='' titulo="Clientes"/>
+            <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes"/>
+            <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas"/>
+
+            <div className="dashsidebar-logout" onClick={handleLogoutClick}>
+              <LogOut size={25} strokeWidth={1.5}/>
+            </div>
           </>
         )}
         

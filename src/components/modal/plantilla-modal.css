@@ -30,10 +30,46 @@
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   position: relative;
   animation: slideUp 0.3s ease-out;
-  max-height: 80vh;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  overflow: hidden;
+}
+
+.plantilla-modal-header {
+  flex-shrink: 0;
+}
+
+.plantilla-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.5rem;
+  margin-right: -0.5rem;
+  min-height: 0;
+}
+
+.plantilla-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.plantilla-modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.plantilla-modal-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.plantilla-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.plantilla-modal-footer {
+  flex-shrink: 0;
+  margin-top: 1rem;
 }
 
 @keyframes slideUp {
@@ -100,7 +136,37 @@
 }
 
 .plantilla-modal-select-container {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.plantilla-modal-input-group {
+  margin-bottom: 0.75rem;
+}
+
+.plantilla-modal-input-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.plantilla-modal-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.plantilla-modal-input:focus {
+  outline: none;
+  border-color: #9333ea;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
 }
 
 .plantilla-modal-select {
@@ -146,10 +212,10 @@
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   padding: 1rem;
-  min-height: 120px;
-  max-height: 200px;
+  min-height: 100px;
+  max-height: 180px;
   overflow-y: auto;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .plantilla-modal-description-text {
@@ -162,11 +228,21 @@
   white-space: pre-wrap;
 }
 
+.plantilla-modal-error {
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border: 1px solid #fecaca;
+}
+
 .plantilla-modal-actions {
   display: flex;
   gap: 0.75rem;
   justify-content: center;
-  margin-top: auto;
   padding-top: 1rem;
   border-top: 1px solid #e5e7eb;
 }
