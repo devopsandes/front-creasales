@@ -164,6 +164,65 @@ const Chats = () => {
             .join(' ')
     }
 
+    const getMediaUrl = (value: any): string | null => {
+        if (!value) return null
+        if (typeof value === "string") return value
+        if (typeof value === "object" && typeof value.url === "string") return value.url
+        return null
+    }
+
+    const MessageContent = ({ msg }: { msg: any }) => {
+        const fallbackText = (msg?.msg_entrada ?? msg?.msg_salida ?? "") as string
+
+        if (msg?.type === "image") {
+            const url = getMediaUrl(msg?.imageUrl)
+            if (!url) return <span className="chat-text">{fallbackText}</span>
+            return <img src={url} alt="imagen" className="chat-media-img" loading="lazy" />
+        }
+
+        if (msg?.type === "document") {
+            const url = getMediaUrl(msg?.documentUrl)
+            if (!url) return <span className="chat-text">{fallbackText}</span>
+            const fileName = `${msg?.msg_entrada ?? msg?.msg_salida ?? "documento"}`
+            const isPdf = fileName.toLowerCase().endsWith(".pdf")
+
+            return (
+                <div className="chat-media-doc">
+                    {isPdf && (
+                        <iframe
+                            src={url}
+                            title={fileName}
+                            className="chat-media-iframe"
+                        />
+                    )}
+                    <a
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="chat-media-link"
+                    >
+                        Abrir / Descargar {isPdf ? "PDF" : "documento"}
+                    </a>
+                </div>
+            )
+        }
+
+        if (msg?.type === "audio") {
+            const url = getMediaUrl(msg?.audioUrl)
+            if (!url) return <span className="chat-text">{fallbackText}</span>
+            return (
+                <div className="chat-media-audio">
+                    <audio controls src={url} className="chat-media-audio-player" />
+                    {!!msg?.traduccion && (
+                        <div className="chat-media-transcripcion">{msg.traduccion}</div>
+                    )}
+                </div>
+            )
+        }
+
+        return <span className="chat-text">{fallbackText}</span>
+    }
+
     type DateSeparator = {
         kind: "date_separator";
         id: string;
@@ -991,9 +1050,9 @@ const Chats = () => {
 
                             return (
                                 <div key={key} className={`${msj.msg_entrada ? 'contenedor-entrada' : 'contenedor-salida'}`}>
-                                    <p className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
-                                        {msj.msg_entrada ? msj.msg_entrada : msj.msg_salida}
-                                    </p>
+                                    <div className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
+                                        <MessageContent msg={msj} />
+                                    </div>
                                     <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
                                 </div>
                             )
