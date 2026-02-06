@@ -67,6 +67,14 @@ export interface ChatState {
     tags?:     ChatTag[];
     assignment?: 'bot' | 'unassigned' | 'assigned';
     /**
+     * Toggle Bot por conversación (backend nuevo).
+     * Campos opcionales para mantener compatibilidad con backends viejos o entornos desactualizados.
+     */
+    botEnabled?: boolean;
+    botDisabledAt?: Date | string | null;
+    botDisabledByUserId?: string | null;
+    botDisableReason?: string | null;
+    /**
      * Option C (backend agregado):
      * - `unreadCount`: cantidad de mensajes ENTRANTES no leídos.
      * - `lastIncomingMessageAt`: timestamp del último mensaje ENTRANTE recibido.

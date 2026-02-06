@@ -156,5 +156,44 @@ const setChatReadState = async (
     }
 }
 
+/**
+ * Toggle Bot por conversación (backend nuevo)
+ * PATCH /api/v1/chats/:id/bot-state
+ * Body: { enabled: boolean, reason?: string }
+ * Respuesta incluye auditoría: botEnabled, botDisabledAt, botDisabledByUserId, botDisableReason
+ */
+const setChatBotState = async (
+    token: string,
+    chatId: string,
+    enabled: boolean,
+    reason?: string
+): Promise<
+    | ({
+          botEnabled?: boolean;
+          botDisabledAt?: string | Date | null;
+          botDisabledByUserId?: string | null;
+          botDisableReason?: string | null;
+          statusCode?: number;
+      } & ErrorResponse)
+    | any
+> => {
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${chatId}/bot-state`
+        const headers = { authorization: `Bearer ${token}` }
+        const body: any = { enabled }
+        if (typeof reason === "string" && reason.trim().length > 0) {
+            body.reason = reason.trim().slice(0, 255)
+        }
+        const { data } = await axios.patch(url, body, { headers })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            const objeto: any = error.response.data
+            return objeto
+        }
+        throw error
+    }
+}
 
-export { findChatById, findChatTimeline, getUserData, getChats, setChatReadState }
+
+export { findChatById, findChatTimeline, getUserData, getChats, setChatReadState, setChatBotState }
