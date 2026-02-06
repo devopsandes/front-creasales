@@ -823,6 +823,30 @@
     background-color: #3b82f6;
 }
 
+.chat-button-bot-on {
+    background-color: #22c55e; /* verde: bot conectado */
+    color: white;
+}
+
+.chat-button-bot-on:hover {
+    background-color: #16a34a;
+}
+
+.chat-button-bot-off {
+    background-color: #ef4444; /* rojo: bot desconectado */
+    color: white;
+}
+
+.chat-button-bot-off:hover {
+    background-color: #dc2626;
+}
+
+.chat-button-bot-loading,
+.chat-action-button:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
 .chat-button-archive {
     background-color: #14b8a6;
     color: white;

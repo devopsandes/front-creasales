@@ -1,7 +1,7 @@
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatTimeline, getUserData } from '../../services/chats/chats.services'
+import { findChatTimeline, getUserData, setChatBotState } from '../../services/chats/chats.services'
 import { TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
@@ -14,8 +14,8 @@ import ErrorModal from '../../components/modal/ErrorModal'
 import ChatInfoDropdown from '../../components/dropdown/ChatInfoDropdown'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
-import { CheckCheck, Trash2 } from "lucide-react";
-import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired, clearMentionChatSelection } from '../../app/slices/actionSlice'
+import { Bot, BotOff, CheckCheck, Trash2 } from "lucide-react";
+import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired, clearMentionChatSelection, setChats } from '../../app/slices/actionSlice'
 import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
 /* import { FaMicrophone } from "react-icons/fa"; */
@@ -53,6 +53,7 @@ const Chats = () => {
     const [errorModalMessage, setErrorModalMessage] = useState('');
     const [showMentionReadSuccess, setShowMentionReadSuccess] = useState(false)
     const [mentionReadSuccessMsg, setMentionReadSuccessMsg] = useState<string>('El chat fue marcado como leído exitosamente.')
+    const [isTogglingBot, setIsTogglingBot] = useState(false)
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const mensajeInputRef = useRef<HTMLInputElement | null>(null);
@@ -87,6 +88,8 @@ const Chats = () => {
     const chats = useSelector((state: RootState) => state.action.chats)
     const currentChat = chats.find(chat => chat.id === id)
     const chatTags: ChatTag[] = currentChat?.tags || []
+    const botEnabled = (currentChat as any)?.botEnabled
+    const effectiveBotEnabled = typeof botEnabled === "boolean" ? botEnabled : true
 
     const normalizeTimelineItem = (raw: any): TimelineItem => {
         // algunos backends envuelven el payload
@@ -642,6 +645,43 @@ const Chats = () => {
         setIsArchiveModalOpen(true);
     }
 
+    const handleToggleBot = async () => {
+        if (!token || !id) return
+        if (isTogglingBot) return
+
+        const nextEnabled = !effectiveBotEnabled
+        setIsTogglingBot(true)
+        try {
+            const resp: any = await setChatBotState(token, id, nextEnabled)
+            if (resp?.statusCode === 401) {
+                dispatch(openSessionExpired())
+                return
+            }
+            if (resp?.statusCode && resp.statusCode >= 400) {
+                toast.error(resp?.message || 'No se pudo actualizar el estado del bot')
+                return
+            }
+
+            // Actualización local del chat (mínimo necesario)
+            const patch = {
+                botEnabled: resp?.botEnabled ?? nextEnabled,
+                botDisabledAt: resp?.botDisabledAt ?? null,
+                botDisabledByUserId: resp?.botDisabledByUserId ?? null,
+                botDisableReason: resp?.botDisableReason ?? null,
+            }
+            const updated = (Array.isArray(chats) ? chats : []).map((c: any) =>
+                c?.id === id ? { ...c, ...patch } : c
+            )
+            dispatch(setChats(updated))
+
+            toast.success(nextEnabled ? 'Bot conectado' : 'Bot desconectado')
+        } catch (e) {
+            toast.error('Error al actualizar el estado del bot')
+        } finally {
+            setIsTogglingBot(false)
+        }
+    }
+
     const handleArchivarConfirm = () => {
         try {
             const socket = getSocket()
@@ -947,6 +987,17 @@ const Chats = () => {
                             <span className=''>+{telefono}</span>
                         </p>
                         <div className='header-chat-actions'>
+                            {role !== 'USER' && (
+                                <button
+                                    onClick={handleToggleBot}
+                                    className={`chat-action-button ${effectiveBotEnabled ? "chat-button-bot-on" : "chat-button-bot-off"} ${isTogglingBot ? "chat-button-bot-loading" : ""}`}
+                                    disabled={isTogglingBot}
+                                    title={effectiveBotEnabled ? "Bot conectado" : "Bot desconectado"}
+                                >
+                                    {effectiveBotEnabled ? <BotOff /> : <Bot />}
+                                    <span>{effectiveBotEnabled ? "Desconectar Bot" : "Conectar Bot"}</span>
+                                </button>
+                            )}
                             {role !== 'USER' && (
                                 <button
                                     onClick={() => dispatch(openModal())}
