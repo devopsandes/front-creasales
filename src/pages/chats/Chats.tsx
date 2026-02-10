@@ -1,7 +1,7 @@
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useParams } from "react-router-dom"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatTimeline, getUserData, setChatBotState } from '../../services/chats/chats.services'
+import { findChatTimeline, getChats, getUserData, setChatBotState } from '../../services/chats/chats.services'
 import { TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
@@ -69,6 +69,7 @@ const Chats = () => {
     const role = localStorage.getItem('role') || ''
 
     const location = useLocation()
+    const navigate = useNavigate()
     
    
     const id = useParams().id 
@@ -777,26 +778,45 @@ const Chats = () => {
 
     const handleDeleteConfirm = async () => {
         try {
-            const url = `https://sales.createch.com.ar/api/v1/chats/${id}/messages`
+            if (!id) return
+
+            // Base URL única: siempre salir vía VITE_URL_BACKEND (staging/prod)
+            const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/messages`
             
             const headers = {
                 authorization: `Bearer ${token}`
             }
 
-            const body = {
-                chatId: id,
-                telefono,
-                token
-            }
-
             const response = await axios.delete(url, {
                 headers,
-                data: body
             })
 
             if (response.status === 200 || response.status === 204) {
                 toast.success('Chat eliminado correctamente');
                 setIsDeleteModalOpen(false);
+
+                // Limpiar estado local del chat eliminado para evitar UI colgada
+                setMensajes([])
+                setMensaje('')
+                setArchivo(null)
+                setCondChat(false)
+                dispatch(clearMentionChatSelection())
+                dispatch(clearBulkReadChatSelection())
+
+                // Refrescar lista global (ListaChats no refetchea al volver si sigue montado)
+                try {
+                    const chatos = await getChats(token, '1', '100')
+                    if ((chatos as any)?.statusCode === 401) {
+                        dispatch(openSessionExpired())
+                    } else if (Array.isArray((chatos as any)?.chats)) {
+                        dispatch(setChats((chatos as any).chats))
+                    }
+                } catch {
+                    // noop: no bloqueamos el flujo de UX por un refresh
+                }
+
+                // Salir del chat (el backend hace hard delete con cascadas)
+                navigate('/dashboard/chats')
             }
         } catch (error) {
             console.log(error);
