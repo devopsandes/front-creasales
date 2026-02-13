@@ -1,5 +1,7 @@
 import { Usuario } from "./auth.interface";
 
+export type MediaUrl = string | { statusCode?: number; expires?: number; url?: string };
+
 export type TimelineItem =
     | {
           kind: "message";
@@ -7,8 +9,11 @@ export type TimelineItem =
           createdAt: string | Date;
           msg_entrada?: string | null;
           msg_salida?: string | null;
-          type?: "text" | "image";
-          imageUrl?: string;
+          type?: "text" | "image" | "document" | "audio";
+          imageUrl?: MediaUrl;
+          documentUrl?: MediaUrl;
+          audioUrl?: MediaUrl;
+          traduccion?: string | null;
       }
     | {
           kind: "event";
@@ -28,6 +33,11 @@ export type TimelineItem =
           msg_salida?: null | string;
           nota?: any;
           leido?: boolean;
+          type?: any;
+          imageUrl?: any;
+          documentUrl?: any;
+          audioUrl?: any;
+          traduccion?: any;
       };
 
 export interface TimelineResponse {
@@ -56,6 +66,14 @@ export interface ChatState {
     mensajes:  Mensaje[];
     tags?:     ChatTag[];
     assignment?: 'bot' | 'unassigned' | 'assigned';
+    /**
+     * Toggle Bot por conversación (backend nuevo).
+     * Campos opcionales para mantener compatibilidad con backends viejos o entornos desactualizados.
+     */
+    botEnabled?: boolean;
+    botDisabledAt?: Date | string | null;
+    botDisabledByUserId?: string | null;
+    botDisableReason?: string | null;
     /**
      * Option C (backend agregado):
      * - `unreadCount`: cantidad de mensajes ENTRANTES no leídos.

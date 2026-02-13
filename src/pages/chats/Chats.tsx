@@ -1,7 +1,7 @@
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useParams } from "react-router-dom"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatTimeline, getUserData } from '../../services/chats/chats.services'
+import { findChatTimeline, getChats, getUserData, setChatBotState } from '../../services/chats/chats.services'
 import { TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
@@ -14,8 +14,8 @@ import ErrorModal from '../../components/modal/ErrorModal'
 import ChatInfoDropdown from '../../components/dropdown/ChatInfoDropdown'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
-import { CheckCheck, Trash2 } from "lucide-react";
-import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired, clearMentionChatSelection } from '../../app/slices/actionSlice'
+import { Bot, BotOff, CheckCheck, Trash2 } from "lucide-react";
+import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired, clearMentionChatSelection, setChats } from '../../app/slices/actionSlice'
 import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
 /* import { FaMicrophone } from "react-icons/fa"; */
@@ -53,6 +53,7 @@ const Chats = () => {
     const [errorModalMessage, setErrorModalMessage] = useState('');
     const [showMentionReadSuccess, setShowMentionReadSuccess] = useState(false)
     const [mentionReadSuccessMsg, setMentionReadSuccessMsg] = useState<string>('El chat fue marcado como leído exitosamente.')
+    const [isTogglingBot, setIsTogglingBot] = useState(false)
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const mensajeInputRef = useRef<HTMLInputElement | null>(null);
@@ -68,6 +69,7 @@ const Chats = () => {
     const role = localStorage.getItem('role') || ''
 
     const location = useLocation()
+    const navigate = useNavigate()
     
    
     const id = useParams().id 
@@ -87,6 +89,8 @@ const Chats = () => {
     const chats = useSelector((state: RootState) => state.action.chats)
     const currentChat = chats.find(chat => chat.id === id)
     const chatTags: ChatTag[] = currentChat?.tags || []
+    const botEnabled = (currentChat as any)?.botEnabled
+    const effectiveBotEnabled = typeof botEnabled === "boolean" ? botEnabled : true
 
     const normalizeTimelineItem = (raw: any): TimelineItem => {
         // algunos backends envuelven el payload
@@ -162,6 +166,65 @@ const Chats = () => {
             .filter(Boolean)
             .map(part => part.charAt(0).toUpperCase() + part.slice(1))
             .join(' ')
+    }
+
+    const getMediaUrl = (value: any): string | null => {
+        if (!value) return null
+        if (typeof value === "string") return value
+        if (typeof value === "object" && typeof value.url === "string") return value.url
+        return null
+    }
+
+    const MessageContent = ({ msg }: { msg: any }) => {
+        const fallbackText = (msg?.msg_entrada ?? msg?.msg_salida ?? "") as string
+
+        if (msg?.type === "image") {
+            const url = getMediaUrl(msg?.imageUrl)
+            if (!url) return <span className="chat-text">{fallbackText}</span>
+            return <img src={url} alt="imagen" className="chat-media-img" loading="lazy" />
+        }
+
+        if (msg?.type === "document") {
+            const url = getMediaUrl(msg?.documentUrl)
+            if (!url) return <span className="chat-text">{fallbackText}</span>
+            const fileName = `${msg?.msg_entrada ?? msg?.msg_salida ?? "documento"}`
+            const isPdf = fileName.toLowerCase().endsWith(".pdf")
+
+            return (
+                <div className="chat-media-doc">
+                    {isPdf && (
+                        <iframe
+                            src={url}
+                            title={fileName}
+                            className="chat-media-iframe"
+                        />
+                    )}
+                    <a
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="chat-media-link"
+                    >
+                        Abrir / Descargar {isPdf ? "PDF" : "documento"}
+                    </a>
+                </div>
+            )
+        }
+
+        if (msg?.type === "audio") {
+            const url = getMediaUrl(msg?.audioUrl)
+            if (!url) return <span className="chat-text">{fallbackText}</span>
+            return (
+                <div className="chat-media-audio">
+                    <audio controls src={url} className="chat-media-audio-player" />
+                    {!!msg?.traduccion && (
+                        <div className="chat-media-transcripcion">{msg.traduccion}</div>
+                    )}
+                </div>
+            )
+        }
+
+        return <span className="chat-text">{fallbackText}</span>
     }
 
     type DateSeparator = {
@@ -583,6 +646,43 @@ const Chats = () => {
         setIsArchiveModalOpen(true);
     }
 
+    const handleToggleBot = async () => {
+        if (!token || !id) return
+        if (isTogglingBot) return
+
+        const nextEnabled = !effectiveBotEnabled
+        setIsTogglingBot(true)
+        try {
+            const resp: any = await setChatBotState(token, id, nextEnabled)
+            if (resp?.statusCode === 401) {
+                dispatch(openSessionExpired())
+                return
+            }
+            if (resp?.statusCode && resp.statusCode >= 400) {
+                toast.error(resp?.message || 'No se pudo actualizar el estado del bot')
+                return
+            }
+
+            // Actualización local del chat (mínimo necesario)
+            const patch = {
+                botEnabled: resp?.botEnabled ?? nextEnabled,
+                botDisabledAt: resp?.botDisabledAt ?? null,
+                botDisabledByUserId: resp?.botDisabledByUserId ?? null,
+                botDisableReason: resp?.botDisableReason ?? null,
+            }
+            const updated = (Array.isArray(chats) ? chats : []).map((c: any) =>
+                c?.id === id ? { ...c, ...patch } : c
+            )
+            dispatch(setChats(updated))
+
+            toast.success(nextEnabled ? 'Bot conectado' : 'Bot desconectado')
+        } catch (e) {
+            toast.error('Error al actualizar el estado del bot')
+        } finally {
+            setIsTogglingBot(false)
+        }
+    }
+
     const handleArchivarConfirm = () => {
         try {
             const socket = getSocket()
@@ -678,26 +778,45 @@ const Chats = () => {
 
     const handleDeleteConfirm = async () => {
         try {
-            const url = `https://sales.createch.com.ar/api/v1/chats/${id}/messages`
+            if (!id) return
+
+            // Base URL única: siempre salir vía VITE_URL_BACKEND (staging/prod)
+            const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/messages`
             
             const headers = {
                 authorization: `Bearer ${token}`
             }
 
-            const body = {
-                chatId: id,
-                telefono,
-                token
-            }
-
             const response = await axios.delete(url, {
                 headers,
-                data: body
             })
 
             if (response.status === 200 || response.status === 204) {
                 toast.success('Chat eliminado correctamente');
                 setIsDeleteModalOpen(false);
+
+                // Limpiar estado local del chat eliminado para evitar UI colgada
+                setMensajes([])
+                setMensaje('')
+                setArchivo(null)
+                setCondChat(false)
+                dispatch(clearMentionChatSelection())
+                dispatch(clearBulkReadChatSelection())
+
+                // Refrescar lista global (ListaChats no refetchea al volver si sigue montado)
+                try {
+                    const chatos = await getChats(token, '1', '100')
+                    if ((chatos as any)?.statusCode === 401) {
+                        dispatch(openSessionExpired())
+                    } else if (Array.isArray((chatos as any)?.chats)) {
+                        dispatch(setChats((chatos as any).chats))
+                    }
+                } catch {
+                    // noop: no bloqueamos el flujo de UX por un refresh
+                }
+
+                // Salir del chat (el backend hace hard delete con cascadas)
+                navigate('/dashboard/chats')
             }
         } catch (error) {
             console.log(error);
@@ -890,6 +1009,17 @@ const Chats = () => {
                         <div className='header-chat-actions'>
                             {role !== 'USER' && (
                                 <button
+                                    onClick={handleToggleBot}
+                                    className={`chat-action-button ${effectiveBotEnabled ? "chat-button-bot-on" : "chat-button-bot-off"} ${isTogglingBot ? "chat-button-bot-loading" : ""}`}
+                                    disabled={isTogglingBot}
+                                    title={effectiveBotEnabled ? "Bot conectado" : "Bot desconectado"}
+                                >
+                                    {effectiveBotEnabled ? <BotOff /> : <Bot />}
+                                    <span>{effectiveBotEnabled ? "Desconectar Bot" : "Conectar Bot"}</span>
+                                </button>
+                            )}
+                            {role !== 'USER' && (
+                                <button
                                     onClick={() => dispatch(openModal())}
                                     className="chat-action-button chat-button-assign"
                                 >
@@ -991,9 +1121,9 @@ const Chats = () => {
 
                             return (
                                 <div key={key} className={`${msj.msg_entrada ? 'contenedor-entrada' : 'contenedor-salida'}`}>
-                                    <p className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
-                                        {msj.msg_entrada ? msj.msg_entrada : msj.msg_salida}
-                                    </p>
+                                    <div className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
+                                        <MessageContent msg={msj} />
+                                    </div>
                                     <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
                                 </div>
                             )
