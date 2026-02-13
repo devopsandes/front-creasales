@@ -22,11 +22,12 @@ import Configuracion from '../pages/configuracion/Configuracion'
 import BotIA from '../pages/bot/BotIA'
 import DashboardHome from '../pages/dashboard-home/DashboardHome'
 import Chats from '../pages/chats/Chats'
-import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas } from '../utils/navegacion'
+import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas, navEmisivos } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import LogoFondo from '../components/logo/LogoFondo'
 import TableUsers from '../pages/usuarios/TableUsers'
 import TableTickets from '../pages/tickets/TableTickets'
+import EmisivosMain from '../pages/emisivos/EmisivosMain'
 import TableTags from '../pages/tags/TableTags'
 import TableAcciones from '../pages/acciones/TableAcciones'
 import TableClientes from '../pages/clientes/TableClientes'
@@ -159,6 +160,10 @@ const AppRouter = () => {
 
           <Route path='tickets' element={<NavTag tags={navTickets} />}>
             <Route index element={<TableTickets/>}/>
+          </Route>
+
+          <Route path='emisivos' element={<NavTag tags={navEmisivos} />}>
+            <Route index element={<EmisivosMain/>}/>
           </Route>
 
           <Route path='clientes' element={<NavTag tags={navClientes} />}>
