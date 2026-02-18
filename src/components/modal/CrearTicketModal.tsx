@@ -10,7 +10,7 @@ import { buscarAfiliado } from '../../services/tickets/tickets.services';
 import DepartamentosTipificaciones from './DepartamentosTipificaciones';
 import TicketSuccessModal from './TicketSuccessModal.tsx';
 import DeudaModal from './DeudaModal';
-import { consultarDeuda } from '../../services/tickets/tickets.services';
+import { consultarDeuda, uploadArchivos } from '../../services/tickets/tickets.services';
 
 
 const CrearTicketModal = () => {
@@ -98,20 +98,43 @@ const CrearTicketModal = () => {
         setLoading(true);
 
         try {
+
+            // Extraer archivosFiles del objeto antes de enviar
+            const { archivosFiles, ...restData } = tipificacionData;
+
             const ticketData: any = {
                 nombre: tipificacion,
                 descripcion: tipificacion,
                 departamento: departamento,
                 tipificacion: tipificacion,
                 afiliadoData: afiliadoData,
-                ...tipificacionData
+                ...restData  // Spread sin archivosFiles
             };
 
             const resp = await createTicket(token, ticketData);
 
             if (resp.statusCode === 201) {
-                // GUARDAR DATOS DEL TICKET Y MOSTRAR MODAL DE ÉXITO
+                // GUARDAR DATOS DEL TICKET
                 setTicketCreado(resp.ticket);
+
+                // SI HAY ARCHIVOS, INTENTAR SUBIRLOS
+                if (archivosFiles && archivosFiles.length > 0) {
+                    try {
+                        toast.info('Subiendo imágenes...');
+                        const uploadResp = await uploadArchivos(token, resp.ticket.id, archivosFiles);
+
+                        if (uploadResp.statusCode === 200) {
+                            toast.success('Ticket e imágenes creados correctamente');
+                        } else {
+                            toast.warning('Ticket creado, pero hubo un problema al subir las imágenes');
+                        }
+                    } catch (error) {
+                        console.error('Error al subir archivos:', error);
+                        toast.warning('Ticket creado, pero hubo un problema al subir las imágenes');
+                    }
+                }
+
+                // MOSTRAR MODAL DE ÉXITO
                 setShowSuccessModal(true);
             } else {
                 toast.error('Error al crear ticket');
@@ -131,7 +154,7 @@ const CrearTicketModal = () => {
                 '564264000000175045': 'prestaciones-medicas',
                 '564264000000179032': 'fiscalizacion',
                 '564264000000181969': 'afiliaciones',
-                '564264000000184906': 'atencion-al-afiliado',
+                '564264000000184906': 'atención-al-afiliado',
                 '564264000042384029': 'internaciones',
                 '564264000000188843': 'preexistencias',
                 '564264000065821073': 'gapri'

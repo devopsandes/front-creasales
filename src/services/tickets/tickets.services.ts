@@ -135,6 +135,31 @@ const consultarDeuda = async (token: string, cuil: string) => {
     }
 }
 
-export { getTickets, getTicketById, createTicket, buscarAfiliado, deleteTicket, consultarDeuda }
+const uploadArchivos = async (token: string, ticketId: string, files: File[]) => {
+    try {
+        const formData = new FormData();
+
+        files.forEach((file) => {
+            formData.append('files', file);
+        });
+
+        const url = `${import.meta.env.VITE_URL_BACKEND}/tickets/${ticketId}/archivos`;
+
+        const headers = {
+            authorization: `Bearer ${token}`
+        };
+
+        const { data } = await axios.post(url, formData, { headers });
+
+        return data;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data;
+        }
+        throw error;
+    }
+}
+
+export { getTickets, getTicketById, createTicket, buscarAfiliado, deleteTicket, consultarDeuda, uploadArchivos }
 
 

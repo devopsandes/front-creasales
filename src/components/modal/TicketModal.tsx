@@ -63,6 +63,26 @@ const TicketModal = () => {
         }
     }
 
+    const handleIrAZoho = () => {
+        if (ticket?.idZoho && ticket?.departamento) {
+            // Mapeo de departamentos a URLs de Zoho
+            const departamentoUrlMap: { [key: string]: string } = {
+                '564264000000175045': 'prestaciones-medicas',
+                '564264000000179032': 'fiscalizacion',
+                '564264000000181969': 'afiliaciones',
+                '564264000000184906': 'atencion-al-afiliado',
+                '564264000042384029': 'internaciones',
+                '564264000000188843': 'preexistencias',
+                '564264000065821073': 'gapri'
+            };
+
+            const seccionZoho = departamentoUrlMap[ticket.departamento] || 'atencion-al-afiliado';
+            const urlZoho = `https://desk.zoho.com/agent/andessalud21/${seccionZoho}/tickets/details/${ticket.idZoho}`;
+
+            window.open(urlZoho, '_blank');
+        }
+    };
+
     const clienteData = ticket?.chat?.cliente || ticket?.afiliadoData;
 
     return (
@@ -80,6 +100,28 @@ const TicketModal = () => {
                         <h2 className="ticket-detail-modal-title">Propiedades del Ticket #{ticket?.nro}</h2>
                         <p className="ticket-detail-modal-subtitle">{ticket?.nombre}</p>
                     </div>
+                    {ticket?.idZoho && (
+                        <button
+                            onClick={handleIrAZoho}
+                            className="ticket-detail-zoho-button"
+                            style={{
+                                marginLeft: 'auto',
+                                padding: '0.5rem 1rem',
+                                backgroundColor: '#6366f1',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                fontWeight: '500',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}
+                        >
+                            🔗 Ir a Zoho
+                        </button>
+                    )}
                 </div>
 
                 <div className="ticket-detail-modal-info-section">

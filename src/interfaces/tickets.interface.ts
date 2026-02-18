@@ -19,6 +19,7 @@ export interface Ticket {
     closedAt:    null;
     comentarios: string;
     nro:         string;
+    idZoho?:     string;
     createdAt:   Date;
     updatedAt:   Date;
     chat:        Chat;

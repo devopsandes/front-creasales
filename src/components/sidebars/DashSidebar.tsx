@@ -12,7 +12,9 @@ import {
   CheckSquare,
   Tag,
   Plug2,
-  LogOut
+  LogOut,
+  MailOpen,
+  MailCheckIcon
 } from "lucide-react";
 import { FaMeta } from "react-icons/fa6";
 import QuickReplies from "../icons/QuickReplies";
@@ -52,6 +54,7 @@ const DashSidebar = ({ role }: Props) => {
           <>
             <DashItem icon={Building2} path='/dashboard/empresa' titulo="Empresa"/>
             <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
+            <DashItem icon={MailCheckIcon} path='/dashboard/emisivos' titulo="Emisivos"/>
             <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
             <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes"/>
             <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas"/>

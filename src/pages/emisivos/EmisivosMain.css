@@ -1,0 +1,88 @@
+/*
+  Estilos para el wrapper principal con tabs
+*/
+
+.emisivos-main-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9fafb;
+}
+
+/* Tabs Container */
+.emisivos-tabs-container {
+  position: relative;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 2rem;
+}
+
+.emisivos-tabs {
+  display: flex;
+  gap: 0;
+  position: relative;
+}
+
+.emisivos-tab {
+  position: relative;
+  padding: 1rem 2rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.emisivos-tab:hover {
+  color: #111827;
+}
+
+.emisivos-tab-active {
+  color: #3b82f6;
+}
+
+/* Indicador animado */
+.emisivos-tab-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 33.333%;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 3px 3px 0 0;
+}
+
+/* Content Area */
+.emisivos-tab-content {
+  flex: 1;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .emisivos-tabs-container {
+    padding: 0 1rem;
+  }
+
+  .emisivos-tab {
+    padding: 1rem 1rem;
+    font-size: 0.8125rem;
+  }
+}
