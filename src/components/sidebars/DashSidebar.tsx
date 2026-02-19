@@ -13,7 +13,6 @@ import {
   Tag,
   Plug2,
   LogOut,
-  MailOpen,
   MailCheckIcon
 } from "lucide-react";
 import { FaMeta } from "react-icons/fa6";
