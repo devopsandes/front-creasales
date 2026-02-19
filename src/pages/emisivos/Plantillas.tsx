@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FaEdit, FaTrash, FaPlus, FaTimes, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
-import './plantillas.css';
+import './Plantillas.css';
 
 interface Plantilla {
   id: string;

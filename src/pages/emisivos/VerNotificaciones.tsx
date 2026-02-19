@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { FaEye, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle, FaSearch } from "react-icons/fa";
-import './verNotificaciones.css';
+import './VerNotificaciones.css';
 
 interface Notificacion {
   id: number;
