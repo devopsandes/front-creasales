@@ -22,6 +22,7 @@ const PlantillaModal = () => {
   const [metodo, setMetodo] = useState<string>('');
   const [plan, setPlan] = useState<string>('');
   const [capitas, setCapitas] = useState<string>('');
+  const [cuota, setCuota] = useState<string>('');
   
   const dispatch = useDispatch();
   const modalPlantilla = useSelector((state: RootState) => state.action.modalPlantilla);
@@ -42,6 +43,7 @@ const PlantillaModal = () => {
   const nombreOperador = user?.name || 'Operador';
   // Obtener CUIL del chat o dataUser
   const cuilCliente = currentChat?.cliente?.cuil?.toString() || dataUser?.CUILAfiliado?.toString() || '';
+  const cuilTitular = dataUser?.CUILTitular?.toString() || cuilCliente;
   // Obtener email del chat o dataUser
   const emailCliente = currentChat?.cliente?.email || dataUser?.mail || '';
   // Obtener ingreso del chat y formatearlo
@@ -99,60 +101,85 @@ const PlantillaModal = () => {
       setMetodo('');
       setPlan('');
       setCapitas('');
+      setCuota('');
     }
   }, [modalPlantilla]);
 
   // Mapeo de plantillas a opciones del backend
   const getOpcionPlantilla = (plantillaId: string): number | null => {
     switch (plantillaId) {
-      case 'inicio':
-        return 9; // Retomar Conversación
+      // ids sincronizados (guía backend)
+      case 'retomar_conversacion':
+        return 9;
       case 'novedades':
-        return 5; // Novedades
+        return 5;
       case 'beneficio':
-        return 6; // Beneficio
+        return 6;
+      case 'pagorecibido':
+        return 2;
+      case 'bienvenida':
+        return 3;
+      case 'prealta':
+        return 4;
+      case 'prealta_rel':
+        return 8;
+      case 'novedades_tramite':
+        return 10;
+      case 'duplicados':
+        return 11;
+      case 'prevencion_estafas':
+        return 12;
+      case 'deuda_utilidad':
+        return 7;
+
+      // compatibilidad ids antiguos (no deberían usarse desde el UI)
+      case 'inicio':
+        return 9;
       case 'prevencion-estafas':
-        return 12; // Prevención estafas
+        return 12;
       case 'novedades-tramite':
-        return 10; // Novedades trámite
-      case 'deuda':
-        return 0; // Deuda
+        return 10;
       case 'deuda-utilidad':
-        return 7; // Deuda Utilidad
+        return 7;
       case 'pago-recibido':
-        return 2; // Pago Recibido
+        return 2;
       case 'pre-alta':
-        return 4; // Pre-Alta
+        return 4;
       case 'pre-alta-rel':
-        return 8; // Pre-Alta Rel
+        return 8;
+      case 'deuda':
+        return 0;
       default:
         return null;
     }
   };
 
-  // Verificar si una plantilla es simple (solo requiere número, sin parámetros)
-  const isPlantillaSimple = (plantillaId: string): boolean => {
-    return plantillaId === 'novedades' || plantillaId === 'beneficio' || plantillaId === 'prevencion-estafas';
-  };
-
   // Verificar si una plantilla requiere nroTicket
   const requiereNroTicket = (plantillaId: string): boolean => {
-    return plantillaId === 'novedades-tramite';
+    return plantillaId === 'novedades_tramite' || plantillaId === 'novedades-tramite';
   };
 
   // Verificar si una plantilla requiere campos de deuda (periodos, vencimiento, total)
   const requiereCamposDeuda = (plantillaId: string): boolean => {
-    return plantillaId === 'deuda' || plantillaId === 'deuda-utilidad';
+    return plantillaId === 'deuda_utilidad' || plantillaId === 'deuda-utilidad' || plantillaId === 'deuda';
   };
 
   // Verificar si una plantilla requiere campos de pago recibido (metodo, periodos)
   const requiereCamposPagoRecibido = (plantillaId: string): boolean => {
-    return plantillaId === 'pago-recibido';
+    return plantillaId === 'pagorecibido' || plantillaId === 'pago-recibido';
   };
 
   // Verificar si una plantilla requiere campos de pre-alta (plan, capitas, metodo)
   const requiereCamposPreAlta = (plantillaId: string): boolean => {
-    return plantillaId === 'pre-alta' || plantillaId === 'pre-alta-rel';
+    return plantillaId === 'prealta' || plantillaId === 'prealta_rel' || plantillaId === 'pre-alta' || plantillaId === 'pre-alta-rel';
+  };
+
+  const requiereCamposBienvenida = (plantillaId: string): boolean => {
+    return plantillaId === 'bienvenida';
+  };
+
+  const requiereDuplicados = (plantillaId: string): boolean => {
+    return plantillaId === 'duplicados';
   };
 
   const handleEnviar = async () => {
@@ -171,6 +198,13 @@ const PlantillaModal = () => {
 
     if (!numeroTelefono) {
       setError('No se pudo obtener el número de teléfono del chat');
+      return;
+    }
+
+    // Normalizar y validar número (solo dígitos, 11–13)
+    const numeroSoloDigitos = (numeroTelefono || '').replace(/\D/g, '');
+    if (numeroSoloDigitos.length < 11 || numeroSoloDigitos.length > 13) {
+      setError('El número de teléfono debe contener solo dígitos y tener entre 11 y 13 caracteres');
       return;
     }
 
@@ -223,31 +257,61 @@ const PlantillaModal = () => {
         return;
       }
     }
+
+    // Validar campos de bienvenida si son requeridos
+    if (requiereCamposBienvenida(selectedPlantilla)) {
+      if (!cuota.trim()) {
+        setError('Por favor, ingrese la cuota mensual');
+        return;
+      }
+      if (!cuilTitular.trim()) {
+        setError('No se pudo obtener el CUIL del titular');
+        return;
+      }
+      const planBienvenida = dataUser?.planAfiliado || plan.trim();
+      if (!planBienvenida) {
+        setError('No se pudo obtener el plan');
+        return;
+      }
+      if (!emailCliente.trim()) {
+        setError('No se pudo obtener el email');
+        return;
+      }
+      const idAfiliado = (dataUser as any)?.IdAfiliadoTitular || (dataUser as any)?.IdAfiliado || '';
+      if (!idAfiliado) {
+        setError('No se pudo obtener el ID del afiliado para la credencial');
+        return;
+      }
+    }
     
     setIsLoading(true);
     setError(null);
     
     try {
       // Preparar datos con conversión a número
-      // Para plantillas simples (5, 6, 12) solo se requiere el número
-      const isSimple = isPlantillaSimple(selectedPlantilla);
       const dataEnvio: any = {
         opcion: Number(opcion), //  Asegurar número
         graph_api_token: metaConfig.graph_api_token,
         id_phone_number: Number(metaConfig.id_phone_number), // Convertir a número
-        numero: numeroTelefono,
-        // Para plantillas simples, enviar valores vacíos ya que no se requieren
-        afiliado: isSimple ? '' : nombreAfiliado,
-        operador: isSimple ? '' : nombreOperador
+        numero: numeroSoloDigitos
       };
+
+      // Campos específicos por plantilla (evitar enviar propiedades no contempladas por el DTO del backend)
+      if (selectedPlantilla === 'retomar_conversacion' || selectedPlantilla === 'inicio') {
+        dataEnvio.afiliado = nombreAfiliado;
+        dataEnvio.operador = nombreOperador;
+      }
 
       // Agregar nroTicket si es requerido
       if (requiereNroTicket(selectedPlantilla)) {
+        dataEnvio.afiliado = nombreAfiliado;
+        dataEnvio.operador = nombreOperador;
         dataEnvio.nroTicket = nroTicket.trim();
       }
 
       // Agregar campos de deuda si son requeridos
       if (requiereCamposDeuda(selectedPlantilla)) {
+        dataEnvio.afiliado = nombreAfiliado;
         dataEnvio.periodos = periodos.trim();
         dataEnvio.vencimiento = vencimiento.trim();
         dataEnvio.total = total.trim();
@@ -256,17 +320,36 @@ const PlantillaModal = () => {
 
       // Agregar campos de pago recibido si son requeridos
       if (requiereCamposPagoRecibido(selectedPlantilla)) {
+        dataEnvio.afiliado = nombreAfiliado;
         dataEnvio.metodo = metodo.trim();
         dataEnvio.periodos = periodos.trim();
       }
 
       // Agregar campos de pre-alta si son requeridos (case 4 y 8)
       if (requiereCamposPreAlta(selectedPlantilla)) {
+        dataEnvio.afiliado = nombreAfiliado;
         dataEnvio.plan = plan.trim();
         dataEnvio.capitas = Number(capitas);
         dataEnvio.metodo = metodo.trim();
         dataEnvio.email = emailCliente;
         dataEnvio.ingreso = ingresoCliente;
+      }
+
+      // Agregar campos de bienvenida (case 3)
+      if (requiereCamposBienvenida(selectedPlantilla)) {
+        const planBienvenida = dataUser?.planAfiliado || plan.trim();
+        const idAfiliado = (dataUser as any)?.IdAfiliadoTitular || (dataUser as any)?.IdAfiliado || '';
+        const credencialUrl = `https://andessalud.createch.com.ar/api/credencial?idAfiliado=${idAfiliado}`;
+        dataEnvio.afiliado = nombreAfiliado;
+        dataEnvio.cuil = cuilTitular;
+        dataEnvio.plan = planBienvenida;
+        dataEnvio.email = emailCliente;
+        dataEnvio.cuota = cuota.trim();
+        dataEnvio.credencial = credencialUrl;
+      }
+
+      if (requiereDuplicados(selectedPlantilla)) {
+        dataEnvio.afiliado = nombreAfiliado;
       }
 
       const response = await enviarPlantilla(token, dataEnvio);
@@ -307,6 +390,7 @@ const PlantillaModal = () => {
   const getPlantillaText = (plantillaId: string): string => {
     switch (plantillaId) {
       case 'inicio':
+      case 'retomar_conversacion':
         return `¡Hola ${nombreAfiliado}! Mi nombre es ${nombreOperador} y tengo novedades de tu gestión iniciada. Por favor cuando respondas este mensaje podemos continuar, muchas gracias.`;
       case 'novedades':
         return `¡NOVEDADES!
@@ -321,6 +405,34 @@ Es muy importante que agendes que el único teléfono para solicitar el servicio
 📞 Línea de emergencias: 0810-666-1449
 
 Seguimos avanzando para estar más cerca tuyo, cuando más lo necesitás.`;
+      case 'bienvenida': {
+        const planBienvenida = dataUser?.planAfiliado || plan.trim() || 'Black';
+        const cuilText = cuilTitular || '27324567897';
+        const emailText = emailCliente || 'correo@correo.com';
+        const cuotaText = cuota.trim() || '$ 55999';
+        const idAfiliado = (dataUser as any)?.IdAfiliadoTitular || (dataUser as any)?.IdAfiliado || 'sarasa';
+        const credencialUrl = `https://andessalud.createch.com.ar/api/credencial?idAfiliado=${idAfiliado}`;
+        return `¡Felicitaciones ${nombreAfiliado} 😊 se activó tu cobertura de salud!
+Te damos la bienvenida a Andes Salud. Te ayudaremos a conocer cómo acceder a tu cobertura médica.
+
+✅ App móvil: Al momento de instalarla tené a mano tu DNI, vas a necesitarlo para ingresar. Descargala acá
+IOS
+https://apps.apple.com/ar/app/andessaludapp/id6633440872
+ANDROID
+https://play.google.com/store/apps/details?id=com.ar.andessalud.andessalud
+✅ Pixi tu asistente virtual, a través de Whatsapp wa.me/5492613300622. Él te guiará paso a paso para cada solución.
+✅ Sitio Web para realizar todas las gestiones que necesites. https://andessalud.com.ar/
+
+Tus Datos:
+
+Titular: ${cuilText}
+Plan: ${planBienvenida}
+Email: ${emailText}
+Cuota Mensual: ${cuotaText}
+Credencial: ${credencialUrl}
+
+¡Gracias por elegirnos! 😊`;
+      }
       case 'beneficio':
         return `🎉 ¡Renovamos un nuevo beneficio pensado para vos!
 A partir del 1° de julio renovamos nuestro servicio de medicina Online, vas a poder acceder desde la APP de ANDES SALUD a DR. ONLINE,  nuestro servicio de atención médica por videollamada, disponible las 24 horas, los 365 días de año, estés donde estés.
@@ -333,6 +445,7 @@ Con DR, ONLINE, damos un paso más para estar cerca tuyo cuando más lo necesita
 👉 Por ahora solo en Android… ¡pero iOS llega muy pronto!
 Más conectados con tu bienestar.`;
       case 'prevencion-estafas':
+      case 'prevencion_estafas':
         return `Hola, ¿cómo estás?
 
 Recordá que ANDES SALUD nunca solicita datos bancarios por teléfono, correo electrónico ni mensajes.
@@ -344,11 +457,13 @@ Si recibís un llamado o mensaje donde te pidan información como tu número de 
 
 Cuidar tus datos es cuidar tu salud. Muchas gracias.`;
       case 'novedades-tramite':
+      case 'novedades_tramite':
         // Usar nroTicket si está disponible, sino mostrar placeholder
         const ticketNum = nroTicket.trim() || '1234';
         return `¡Hola ${nombreAfiliado}! Soy ${nombreOperador}. Necesito que me brindes información extra sobre tu trámite número ${ticketNum}. Aguardamos respuesta. ¡Muchas gracias!`;
       case 'deuda':
       case 'deuda-utilidad':
+      case 'deuda_utilidad':
         // Usar valores de los inputs o placeholders
         const periodosText = periodos.trim() || 'aca va la lista de los periodos';
         const vencimientoText = vencimiento.trim() || '10/10/1990';
@@ -372,12 +487,14 @@ Razón social: ANDESALUD S.A.
 ⚠️ ESTE ES UN MENSAJE AUTOMÁTICO, NO DEBES RESPONDERLO ⚠️ 
 Sí tenés alguna duda comunicate con PIXI, nuestro asistente virtual vía Whatsapp haciendo clic acá 👉🏼 wa.me/5492613300622`;
       case 'pago-recibido':
+      case 'pagorecibido':
         // Usar valores de los inputs o placeholders
         const metodoPago = metodo.trim() || 'bizum';
         const periodosPago = periodos.trim() || 'mayo 2025';
         return `¡Hola ${nombreAfiliado}!
 ✅ Hemos recibido tu pago a través de ${metodoPago} correspondiente al periodo de ${periodosPago}. ¡Muchas gracias! 😊`;
       case 'pre-alta':
+      case 'prealta':
         // Usar valores de los inputs o placeholders
         const planText = plan.trim() || 'PLAN BLACK';
         const capitasText = capitas.trim() || '3';
@@ -397,6 +514,7 @@ Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , e
 
 ¡Gracias por elegirnos! 😊`;
       case 'pre-alta-rel':
+      case 'prealta_rel':
         // Usar valores de los inputs o placeholders
         const planTextRel = plan.trim() || 'PLAN BLACK';
         const capitasTextRel = capitas.trim() || '3';
@@ -417,6 +535,8 @@ Para hacer efectiva la opción tienes que tener tu clave fiscal, te mostramos co
 Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , estamos aquí para ayudarte.
 
 ¡Gracias por elegirnos! 😊`;
+      case 'duplicados':
+        return `¡Hola ${nombreAfiliado}!`;
       default:
         return '';
     }
@@ -446,21 +566,38 @@ Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , e
               className="plantilla-modal-select"
             >
               <option value="">Seleccionar Plantilla</option>
-              <option value="inicio">Retomar Conversación</option>
+              <option value="retomar_conversacion">Retomar conversación</option>
               <option value="novedades">Novedades</option>
               <option value="beneficio">Beneficio</option>
-              <option value="prevencion-estafas">Prevención Estafas</option>
-              <option value="novedades-tramite">Novedades Trámite</option>
-              <option value="deuda">Deuda</option>
-              <option value="deuda-utilidad">Deuda Utilidad</option>
-              <option value="pago-recibido">Pago Recibido</option>
-              <option value="pre-alta">Pre-Alta</option>
-              <option value="pre-alta-rel">Pre-Alta Rel</option>
+              <option value="prevencion_estafas">Prevención Estafas</option>
+              <option value="novedades_tramite">Novedades Trámite</option>
+              <option value="deuda_utilidad">Deuda Utilidad</option>
+              <option value="pagorecibido">Pago Recibido</option>
+              <option value="bienvenida">Bienvenida</option>
+              <option value="prealta">Pre-Alta</option>
+              <option value="prealta_rel">Pre-Alta Rel</option>
+              <option value="duplicados">Duplicados</option>
             </select>
           </div>
         </div>
 
         <div className="plantilla-modal-content">
+          {/* Input para cuota cuando se selecciona la plantilla bienvenida */}
+          {requiereCamposBienvenida(selectedPlantilla) && (
+            <div className="plantilla-modal-input-group">
+              <label className="plantilla-modal-input-label">
+                Cuota Mensual
+              </label>
+              <input
+                type="text"
+                value={cuota}
+                onChange={(e) => setCuota(e.target.value)}
+                placeholder="Ej: $ 55999"
+                className="plantilla-modal-input"
+              />
+            </div>
+          )}
+
           {/* Input para nroTicket cuando se selecciona la plantilla de trámite */}
           {requiereNroTicket(selectedPlantilla) && (
             <div className="plantilla-modal-input-group">
@@ -634,7 +771,8 @@ Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , e
                 (requiereNroTicket(selectedPlantilla) && !nroTicket.trim()) ||
                 (requiereCamposDeuda(selectedPlantilla) && (!periodos.trim() || !vencimiento.trim() || !total.trim())) ||
                 (requiereCamposPagoRecibido(selectedPlantilla) && (!metodo.trim() || !periodos.trim())) ||
-                (requiereCamposPreAlta(selectedPlantilla) && (!plan.trim() || !capitas.trim() || !metodo.trim() || isNaN(Number(capitas)) || Number(capitas) <= 0))
+                (requiereCamposPreAlta(selectedPlantilla) && (!plan.trim() || !capitas.trim() || !metodo.trim() || isNaN(Number(capitas)) || Number(capitas) <= 0)) ||
+                (requiereCamposBienvenida(selectedPlantilla) && !cuota.trim())
               }
             >
               {isLoading ? 'Enviando...' : loadingMeta ? 'Cargando...' : 'Enviar'}
