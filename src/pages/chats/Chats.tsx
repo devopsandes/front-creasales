@@ -31,6 +31,7 @@ import SuccessModal from '../../components/modal/SuccessModal'
 import { QuickResponse } from '../../interfaces/quickResponses.interface'
 import { getQuickResponses } from '../../services/quickResponses/quickResponses.services'
 import { setChatReadState } from '../../services/chats/chats.services'
+import { jwtDecode } from "jwt-decode"
 
 
 
@@ -91,6 +92,27 @@ const Chats = () => {
     const chatTags: ChatTag[] = currentChat?.tags || []
     const botEnabled = (currentChat as any)?.botEnabled
     const effectiveBotEnabled = typeof botEnabled === "boolean" ? botEnabled : true
+    const userIdFromToken = useMemo(() => {
+        try {
+            if (!token) return null
+            return jwtDecode<{ id?: string }>(token)?.id ?? null
+        } catch {
+            return null
+        }
+    }, [token])
+
+    const canToggleBot = useMemo(() => {
+        if (role !== 'USER') return true
+        if (!currentChat || !userIdFromToken) return false
+
+        const assignment = (() => {
+            const a = (currentChat as any)?.assignment
+            if (a === 'bot' || a === 'unassigned' || a === 'assigned') return a
+            return (currentChat as any)?.operador ? 'assigned' : 'unassigned'
+        })()
+
+        return assignment === 'assigned' && (currentChat as any)?.operador?.id === userIdFromToken
+    }, [role, currentChat, userIdFromToken])
 
     const normalizeTimelineItem = (raw: any): TimelineItem => {
         // algunos backends envuelven el payload
@@ -649,6 +671,10 @@ const Chats = () => {
     const handleToggleBot = async () => {
         if (!token || !id) return
         if (isTogglingBot) return
+        if (!canToggleBot) {
+            toast.error('No tenés permisos para cambiar el estado del bot en este chat')
+            return
+        }
 
         const nextEnabled = !effectiveBotEnabled
         setIsTogglingBot(true)
@@ -1007,7 +1033,7 @@ const Chats = () => {
                             <span className=''>+{telefono}</span>
                         </p>
                         <div className='header-chat-actions'>
-                            {role !== 'USER' && (
+                            {canToggleBot && (
                                 <button
                                     onClick={handleToggleBot}
                                     className={`chat-action-button ${effectiveBotEnabled ? "chat-button-bot-on" : "chat-button-bot-off"} ${isTogglingBot ? "chat-button-bot-loading" : ""}`}
