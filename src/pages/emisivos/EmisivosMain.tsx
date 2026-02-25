@@ -1,12 +1,14 @@
 // EmisivosMain.tsx
 
 import { useState } from "react";
-import Notificaciones from "./CrearNotificaciones";
+import CrearNotificaciones from "./CrearNotificaciones";
 import VerNotificaciones from "./VerNotificaciones";
+import VerMensajes from "./VerMensajes";
 import Plantillas from "./Plantillas";
+import VerNotificacionesMasivas from "./VerNotificacionesMasivas";
 import './EmisivosMain.css';
 
-type TabType = 'crear' | 'ver' | 'plantillas';
+type TabType = 'crear' | 'verNotificacionesMasivas' | 'verNotificaciones' | 'verMensajes' | 'plantillas';
 
 const EmisivosMain = () => {
   const [activeTab, setActiveTab] = useState<TabType>('crear');
@@ -23,10 +25,22 @@ const EmisivosMain = () => {
             Crear Notificaciones
           </button>
           <button
-            className={`emisivos-tab ${activeTab === 'ver' ? 'emisivos-tab-active' : ''}`}
-            onClick={() => setActiveTab('ver')}
+            className={`emisivos-tab ${activeTab === 'verNotificacionesMasivas' ? 'emisivos-tab-active' : ''}`}
+            onClick={() => setActiveTab('verNotificacionesMasivas')}
+          >
+            Notificaciones Masivas
+          </button>
+          <button
+            className={`emisivos-tab ${activeTab === 'verNotificaciones' ? 'emisivos-tab-active' : ''}`}
+            onClick={() => setActiveTab('verNotificaciones')}
           >
             Ver Notificaciones
+          </button>
+          <button
+            className={`emisivos-tab ${activeTab === 'verMensajes' ? 'emisivos-tab-active' : ''}`}
+            onClick={() => setActiveTab('verMensajes')}
+          >
+            Ver Mensajes
           </button>
           <button
             className={`emisivos-tab ${activeTab === 'plantillas' ? 'emisivos-tab-active' : ''}`}
@@ -35,20 +49,25 @@ const EmisivosMain = () => {
             Plantillas
           </button>
         </div>
-        <div 
-          className="emisivos-tab-indicator" 
-          style={{ 
-            transform: activeTab === 'crear' ? 'translateX(0%)' : 
-                      activeTab === 'ver' ? 'translateX(100%)' : 'translateX(200%)',
-            width: '33.333%'
+        <div
+          className="emisivos-tab-indicator"
+          style={{
+            transform: activeTab === 'crear' ? 'translateX(0%)' :
+              activeTab === 'verNotificacionesMasivas' ? 'translateX(100%)' :
+                activeTab === 'verNotificaciones' ? 'translateX(200%)' :
+                  activeTab === 'verMensajes' ? 'translateX(300%)' :
+                    'translateX(400%)',
+            width: '20%'
           }}
         ></div>
       </div>
 
       {/* Content */}
       <div className="emisivos-tab-content">
-        {activeTab === 'crear' && <Notificaciones />}
-        {activeTab === 'ver' && <VerNotificaciones />}
+        {activeTab === 'crear' && <CrearNotificaciones />}
+        {activeTab === 'verNotificacionesMasivas' && <VerNotificacionesMasivas />}
+        {activeTab === 'verNotificaciones' && <VerNotificaciones />}
+        {activeTab === 'verMensajes' && <VerMensajes />}
         {activeTab === 'plantillas' && <Plantillas />}
       </div>
     </div>
