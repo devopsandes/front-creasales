@@ -34,6 +34,10 @@ const ConfirmacionModal = ({ payload, onConfirmar, onCancelar }: ConfirmacionMod
     ? (payload.filtroProvincia as string[]).join(', ')
     : 'Todas';
 
+  const planes = Array.isArray(payload.filtroPlan) && (payload.filtroPlan as string[]).length > 0
+    ? (payload.filtroPlan as string[]).join(', ')
+    : null;
+
   const plantillaNombre = plantillasNombres[String(payload.plantillaId)] || `ID ${payload.plantillaId}`;
   const tieneContenidoManual = !payload.plantillaId || payload.plantillaId === "0" || payload.plantillaId === 0;
   const esCuil = typeof payload.cuil === 'string' && (payload.cuil as string).trim().length > 0;
@@ -44,7 +48,7 @@ const ConfirmacionModal = ({ payload, onConfirmar, onCancelar }: ConfirmacionMod
     : `Días del mes: ${diasDeEnvio.join(', ')}`;
 
   const filtrosActivos = [
-    payload.filtroPlan !== 'todos' && { label: 'Plan', val: payload.filtroPlan as string },
+    planes && { label: 'Plan', val: planes },
     !esCuil && payload.filtroEstadoDelCliente && { label: 'Estado cliente', val: payload.filtroEstadoDelCliente as string },
     payload.filtroCategoriaCliente !== 'todas' && { label: 'Categoría cliente', val: payload.filtroCategoriaCliente as string },
     payload.filtroCategoriaAndes !== 'todas' && { label: 'Categoría Andes', val: payload.filtroCategoriaAndes as string },

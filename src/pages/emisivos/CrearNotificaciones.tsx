@@ -15,7 +15,11 @@ interface EmisivoForm {
 }
 
 interface Filtros {
-  plan: string;
+  planes: {
+    todos: boolean; titanium: boolean; titaniumPlusCC: boolean;
+    titaniumPlusSC: boolean; black: boolean; platinum: boolean;
+    gold: boolean; pmo: boolean;
+  };
   provincias: {
     todas: boolean; mendoza: boolean; sanJuan: boolean;
     cordoba: boolean; sanLuis: boolean; laRioja: boolean;
@@ -41,7 +45,7 @@ const CrearNotificaciones = () => {
   });
 
   const [filtros, setFiltros] = useState<Filtros>({
-    plan: "todos",
+    planes: { todos: true, titanium: false, titaniumPlusCC: false, titaniumPlusSC: false, black: false, platinum: false, gold: false, pmo: false },
     provincias: { todas: true, mendoza: false, sanJuan: false, cordoba: false, sanLuis: false, laRioja: false },
     estadoCliente: "ALTA", cuil: "",
     categoriaCliente: "todas", categoriaAndes: "todas",
@@ -69,16 +73,16 @@ const CrearNotificaciones = () => {
     { id: 9, nombre: "Referidos" },
   ];
 
-  const planesOptions = [
-    { value: "todos", label: "Todos" },
-    { value: "TITANIUM", label: "Titanium" },
-    { value: "TITANIUM PLUS C/C", label: "Titanium Plus C/C" },
-    { value: "TITANIUM PLUS S/C", label: "Titanium Plus S/C" },
-    { value: "BLACK", label: "Black" },
-    { value: "PLATINUM", label: "Platinum" },
-    { value: "GOLD", label: "Gold" },
-    { value: "PMO", label: "Pmo" },
-  ];
+  // const planesOptions = [
+  //   { value: "todos", label: "Todos" },
+  //   { value: "TITANIUM", label: "Titanium" },
+  //   { value: "TITANIUM PLUS C/C", label: "Titanium Plus C/C" },
+  //   { value: "TITANIUM PLUS S/C", label: "Titanium Plus S/C" },
+  //   { value: "BLACK", label: "Black" },
+  //   { value: "PLATINUM", label: "Platinum" },
+  //   { value: "GOLD", label: "Gold" },
+  //   { value: "PMO", label: "Pmo" },
+  // ];
 
   const estadosOptions = [{ value: "ALTA", label: "Alta" }, { value: "BAJA", label: "Baja" }];
   const categoriaClienteOptions = [
@@ -141,6 +145,14 @@ const CrearNotificaciones = () => {
     setForm({ ...form, canales: { ...form.canales, [canal]: !form.canales[canal] } });
   };
 
+  const handlePlanChange = (plan: keyof typeof filtros.planes) => {
+    if (plan === 'todos') {
+      setFiltros({ ...filtros, planes: { todos: true, titanium: false, titaniumPlusCC: false, titaniumPlusSC: false, black: false, platinum: false, gold: false, pmo: false } });
+    } else {
+      setFiltros({ ...filtros, planes: { ...filtros.planes, todos: false, [plan]: !filtros.planes[plan] } });
+    }
+  };
+
   const handleProvinciaChange = (provincia: keyof typeof filtros.provincias) => {
     if (provincia === 'todas') {
       setFiltros({ ...filtros, provincias: { todas: true, mendoza: false, sanJuan: false, cordoba: false, sanLuis: false, laRioja: false } });
@@ -156,7 +168,11 @@ const CrearNotificaciones = () => {
 
   const buildPayload = () => {
     const base = {
-      filtroPlan: filtros.plan,
+      filtroPlan: filtros.planes.todos
+        ? []
+        : (Object.keys(filtros.planes) as Array<keyof typeof filtros.planes>)
+          .filter(key => key !== 'todos' && filtros.planes[key])
+          .map(key => ({ todos: 'todos', titanium: 'TITANIUM', titaniumPlusCC: 'TITANIUM PLUS C/C', titaniumPlusSC: 'TITANIUM PLUS S/C', black: 'BLACK', platinum: 'PLATINUM', gold: 'GOLD', pmo: 'PMO' }[key])),
       filtroProvincia: filtros.provincias.todas
         ? []
         : (Object.keys(filtros.provincias) as Array<keyof typeof filtros.provincias>)
@@ -270,11 +286,17 @@ const CrearNotificaciones = () => {
             </div>
 
             <div className="emisivos-filters">
+
               <div className="emisivos-filter-group">
                 <label className="emisivos-filter-label">Plan</label>
-                <select value={filtros.plan} onChange={(e) => setFiltros({ ...filtros, plan: e.target.value })} className={`emisivos-select ${isCuilActive ? 'emisivos-disabled' : ''}`} disabled={isCuilActive}>
-                  {planesOptions.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-                </select>
+                <div className="emisivos-checkbox-group">
+                  {(['todos', 'titanium', 'titaniumPlusCC', 'titaniumPlusSC', 'black', 'platinum', 'gold', 'pmo'] as const).map(pla => (
+                    <label key={pla} className={`emisivos-checkbox-label ${isCuilActive ? 'emisivos-disabled' : ''}`}>
+                      <input type="checkbox" checked={filtros.planes[pla]} onChange={() => handlePlanChange(pla)} disabled={isCuilActive} className="emisivos-checkbox" />
+                      <span>{{ todos: 'Todos', titanium: 'Titanium', titaniumPlusCC: 'Titanium Plus C/C', titaniumPlusSC: 'Titanium Plus S/C', black: 'Black', platinum: 'Platinum', gold: 'Gold', pmo: 'Pmo' }[pla]}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="emisivos-filter-group">
