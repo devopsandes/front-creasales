@@ -8,14 +8,9 @@ import { createQuickResponse, deleteQuickResponse, getQuickResponses, updateQuic
 import "./respuestas-rapidas.css"
 
 const normalizeShortcut=(raw:string)=>{
-  const s=(raw||"").trim().replace(/^\//,"").toLowerCase()
-  return s
-}
-
-const isValidShortcut=(s:string)=>{
-  if(!s)return false
-  if(s.length<1||s.length>50)return false
-  return/^[a-z0-9_]+$/.test(s)
+  const firstTrim=(raw||"").trim()
+  const withoutFirstSlash=firstTrim.startsWith("/")?firstTrim.slice(1):firstTrim
+  return withoutFirstSlash.trim().toLowerCase()
 }
 
 const RespuestasRapidasPage=()=>{
@@ -27,6 +22,7 @@ const RespuestasRapidasPage=()=>{
   const searchRef=useRef<number|undefined>(undefined)
   const [isFormOpen,setIsFormOpen]=useState(false)
   const [editing,setEditing]=useState<QuickResponse|null>(null)
+  const [originalShortcut,setOriginalShortcut]=useState("")
   const [shortcut,setShortcut]=useState("")
   const [text,setText]=useState("")
   const [saving,setSaving]=useState(false)
@@ -60,6 +56,7 @@ const RespuestasRapidasPage=()=>{
 
   const openCreate=()=>{
     setEditing(null)
+    setOriginalShortcut("")
     setShortcut("")
     setText("")
     setFormError("")
@@ -68,6 +65,7 @@ const RespuestasRapidasPage=()=>{
 
   const openEdit=(qr:QuickResponse)=>{
     setEditing(qr)
+    setOriginalShortcut(normalizeShortcut(qr.shortcut||""))
     setShortcut(qr.shortcut||"")
     setText(qr.text||"")
     setFormError("")
@@ -76,6 +74,7 @@ const RespuestasRapidasPage=()=>{
 
   const openDuplicate=(qr:QuickResponse)=>{
     setEditing(null)
+    setOriginalShortcut("")
     const base=normalizeShortcut(qr.shortcut||"")
     setShortcut(base?`${base}_copia`:"copia")
     setText(qr.text||"")
@@ -84,20 +83,36 @@ const RespuestasRapidasPage=()=>{
   }
 
   const handleSave=async()=>{
-    const s=normalizeShortcut(shortcut)
-    const t=(text||"").trim()
-    if(!isValidShortcut(s)){
-      setFormError("Atajo inválido")
+    const rawShortcut=shortcut||""
+    const rawText=text||""
+    if(/[\r\n]/.test(rawShortcut)){
+      setFormError("El atajo no puede contener saltos de línea")
+      return
+    }
+    const s=normalizeShortcut(rawShortcut)
+    const t=rawText.trim()
+    if(!s){
+      setFormError("El atajo es requerido")
+      return
+    }
+    if(s.length>50){
+      setFormError("El atajo debe tener entre 1 y 50 caracteres")
       return
     }
     if(!t){
       setFormError("El mensaje es requerido")
       return
     }
+    if(t.length>5000){
+      setFormError("El mensaje no puede superar 5000 caracteres")
+      return
+    }
     setSaving(true)
     setFormError("")
-    const payload={shortcut:s,text:t}
-    const resp=editing?await updateQuickResponse(token,editing.id,payload):await createQuickResponse(token,payload)
+    const shortcutChanged=editing?normalizeShortcut(rawShortcut)!==originalShortcut:true
+    const resp=editing
+      ?await updateQuickResponse(token,editing.id,{...(shortcutChanged?{shortcut:s}:{}) ,text:t})
+      :await createQuickResponse(token,{shortcut:s,text:t})
     const code=(resp as any)?.statusCode
     if(code===401){
       dispatch(openSessionExpired())
@@ -105,12 +120,14 @@ const RespuestasRapidasPage=()=>{
       return
     }
     if(code===409){
-      setFormError("El atajo ya existe")
+      const msg=(resp as any)?.message
+      setFormError(Array.isArray(msg)?msg.join(", "):"El atajo ya existe")
       setSaving(false)
       return
     }
     if(code&&code>=400){
-      setFormError("No se pudo guardar")
+      const msg=(resp as any)?.message
+      setFormError(Array.isArray(msg)?msg.join(", "):"No se pudo guardar")
       setSaving(false)
       return
     }
@@ -218,7 +235,7 @@ const RespuestasRapidasPage=()=>{
               <div>
                 <label className="block text-xs font-semibold text-slate-700">Atajo</label>
                 <input value={shortcut} onChange={e=>setShortcut(e.target.value)} placeholder="bienvenida" className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                <p className="mt-1 text-xs text-slate-500">Solo letras,números y _</p>
+                <p className="mt-1 text-xs text-slate-500">Se guarda en minúsculas,sin el primer /,sin saltos de línea,1 a 50 caracteres</p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700">Mensaje</label>

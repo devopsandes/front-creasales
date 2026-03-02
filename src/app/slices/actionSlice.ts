@@ -20,7 +20,20 @@ const initialState : ActionState = {
     mentionsRefreshNonce: 0,
     mentionsMode: false,
     selectedMentionChatIds: [],
-    selectedBulkReadChatIds: []
+    selectedBulkReadChatIds: [],
+
+    // Cache SPA-only para la vista /dashboard/chats
+    chatListQueryKey: undefined,
+    chatListPage: 1,
+    chatListHasMore: true,
+    chatListUpdatedAt: 0,
+    chatListTab: 'otros',
+    chatListSearchText: '',
+    chatListSelectedOperator: '',
+    chatListSelectedTag: '',
+    chatListOrdenFecha: 'desc',
+    chatListScrollTop: 0,
+    chatListFilters: {}
 }
 
 const actionSlice = createSlice({
@@ -88,6 +101,23 @@ const actionSlice = createSlice({
         },
         setChats: (state, action) => {
             state.chats = action.payload
+        },
+        setChatListCacheMeta: (state, action) => {
+            const patch = action.payload || {}
+            if (patch.chatListQueryKey !== undefined) state.chatListQueryKey = patch.chatListQueryKey
+            if (patch.chatListPage !== undefined) state.chatListPage = patch.chatListPage
+            if (patch.chatListHasMore !== undefined) state.chatListHasMore = patch.chatListHasMore
+            if (patch.chatListUpdatedAt !== undefined) state.chatListUpdatedAt = patch.chatListUpdatedAt
+            if (patch.chatListScrollTop !== undefined) state.chatListScrollTop = patch.chatListScrollTop
+            if (patch.chatListFilters !== undefined) state.chatListFilters = patch.chatListFilters
+        },
+        setChatListUiState: (state, action) => {
+            const patch = action.payload || {}
+            if (patch.chatListTab !== undefined) state.chatListTab = patch.chatListTab
+            if (patch.chatListSearchText !== undefined) state.chatListSearchText = patch.chatListSearchText
+            if (patch.chatListSelectedOperator !== undefined) state.chatListSelectedOperator = patch.chatListSelectedOperator
+            if (patch.chatListSelectedTag !== undefined) state.chatListSelectedTag = patch.chatListSelectedTag
+            if (patch.chatListOrdenFecha !== undefined) state.chatListOrdenFecha = patch.chatListOrdenFecha
         },
         /**
          * Marcado local como leído (optimistic UI / sync post-backend).
@@ -188,6 +218,8 @@ export const {
     openSessionExpired,
     closeSessionExpired,
     setChats,
+    setChatListCacheMeta,
+    setChatListUiState,
     markChatReadLocal,
     markChatUnreadLocal,
     setMentionUnreadCount,

@@ -88,6 +88,7 @@ const Chats = () => {
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
     const selectedBulkReadChatIds = useSelector((state: RootState) => state.action.selectedBulkReadChatIds)
     const chats = useSelector((state: RootState) => state.action.chats)
+    const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters)
     const currentChat = chats.find(chat => chat.id === id)
     const chatTags: ChatTag[] = currentChat?.tags || []
     const botEnabled = (currentChat as any)?.botEnabled
@@ -831,11 +832,26 @@ const Chats = () => {
 
                 // Refrescar lista global (ListaChats no refetchea al volver si sigue montado)
                 try {
-                    const chatos = await getChats(token, '1', '100')
+                    const chatos = await getChats(token, '1', '100', chatListFilters)
                     if ((chatos as any)?.statusCode === 401) {
                         dispatch(openSessionExpired())
                     } else if (Array.isArray((chatos as any)?.chats)) {
-                        dispatch(setChats((chatos as any).chats))
+                        const incoming = (chatos as any).chats as any[]
+                        const base = Array.isArray(chats) ? chats.filter((c: any) => c?.id !== id) : []
+                        const map = new Map<string, any>()
+                        base.forEach((c: any) => {
+                            if (c?.id) map.set(c.id, c)
+                        })
+                        incoming.forEach((c: any) => {
+                            if (c?.id) map.set(c.id, c)
+                        })
+                        const merged = Array.from(map.values()).sort((a: any, b: any) => {
+                            const aMs = new Date(a?.lastMessageAt || a?.updatedAt || a?.createdAt || 0).getTime()
+                            const bMs = new Date(b?.lastMessageAt || b?.updatedAt || b?.createdAt || 0).getTime()
+                            if (aMs !== bMs) return bMs - aMs
+                            return `${b?.id ?? ""}`.localeCompare(`${a?.id ?? ""}`)
+                        })
+                        dispatch(setChats(merged))
                     }
                 } catch {
                     // noop: no bloqueamos el flujo de UX por un refresh

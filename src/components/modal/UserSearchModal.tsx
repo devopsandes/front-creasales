@@ -44,6 +44,8 @@ const UserSearchModal = ( ) => {
  
   const dispatch = useDispatch();
   const modalView = useSelector((state: RootState) => state.action.modal);
+  const chats = useSelector((state: RootState) => state.action.chats);
+  const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters);
   
   const token  = localStorage.getItem('token') || '';
   const role = localStorage.getItem('role') || '';
@@ -102,8 +104,19 @@ const UserSearchModal = ( ) => {
         
         // Actualizar la lista de chats
         try {
-          const chatos = await getChats(token, '1', '100');
-          dispatch(setChats(chatos.chats));
+          const chatos = await getChats(token, '1', '100', chatListFilters);
+          const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : [];
+          const base = Array.isArray(chats) ? chats : [];
+          const map = new Map<string, any>();
+          base.forEach((c: any) => { if (c?.id) map.set(c.id, c); });
+          incoming.forEach((c: any) => { if (c?.id) map.set(c.id, c); });
+          const merged = Array.from(map.values()).sort((a: any, b: any) => {
+            const aMs = new Date(a?.lastMessageAt || a?.updatedAt || a?.createdAt || 0).getTime();
+            const bMs = new Date(b?.lastMessageAt || b?.updatedAt || b?.createdAt || 0).getTime();
+            if (aMs !== bMs) return bMs - aMs;
+            return `${b?.id ?? ""}`.localeCompare(`${a?.id ?? ""}`);
+          });
+          dispatch(setChats(merged));
         } catch (error) {
           // Error silencioso al actualizar chats
         }
