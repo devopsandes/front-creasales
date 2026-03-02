@@ -72,6 +72,7 @@ const VerNotificaciones = () => {
   const [toastMessage, setToastMessage] = useState('');
 
   const [filtroId, setFiltroId] = useState("");
+  const [filtroNotifMasivaId, setFiltroNotifMasivaId] = useState("");
 
   const showToastMessage = (type: 'success' | 'error', message: string) => {
     setToastType(type);
@@ -91,6 +92,7 @@ const VerNotificaciones = () => {
         ...(filtroId.trim() && { id: filtroId.trim() }),
         ...(filtroEstado !== 'Todos' && { estado: filtroEstado }),
         ...(filtroCuil.trim() && { cuil: filtroCuil.trim() }),
+        ...(filtroNotifMasivaId.trim() && { notifMasivaId: filtroNotifMasivaId.trim() }),
       });
 
       const response = await fetch(
@@ -116,12 +118,12 @@ const VerNotificaciones = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filtroEstado, filtroCuil, filtroId]);
+  }, [filtroEstado, filtroCuil, filtroId, filtroNotifMasivaId]);
 
   // Re-fetch desde página 1 cuando cambian los filtros
   useEffect(() => {
     fetchNotificaciones(1);
-  }, [filtroEstado, filtroCuil, filtroId]);
+  }, [filtroEstado, filtroCuil, filtroId, filtroNotifMasivaId]);
 
   const handleAnular = async (id: number, tipo: string) => {
     if (!window.confirm(`¿Estás seguro de anular la notificación "${tipo}"?`)) return;
@@ -188,6 +190,19 @@ const VerNotificaciones = () => {
               type="number"
               value={filtroId}
               onChange={(e) => setFiltroId(e.target.value)}
+              placeholder="Ingrese ID..."
+              className="ver-notif-filter-input"
+            />
+          </div>
+          <div className="ver-notif-filter-group">
+            <label className="ver-notif-filter-label">
+              <FaSearch className="ver-notif-filter-icon" />
+              Buscar por Notif. Masiva
+            </label>
+            <input
+              type="number"
+              value={filtroNotifMasivaId}
+              onChange={(e) => setFiltroNotifMasivaId(e.target.value)}
               placeholder="Ingrese ID..."
               className="ver-notif-filter-input"
             />

@@ -7,75 +7,77 @@ import './VerMensajes.css';
 type TipoMensaje = 'Email' | 'Push' | 'WhatsApp';
 
 interface MensajeUnificado {
-  id:             number;
-  tipo:           TipoMensaje;
-  cuil:           string | null;
-  destinatario:   string | null;
-  titulo:         string;
+  id: number;
+  tipo: TipoMensaje;
+  cuil: string | null;
+  destinatario: string | null;
+  titulo: string;
   plantillaNombre: string | null;
-  cuerpo:         string | null;
-  estado:         string;
-  leido:          boolean;
-  fechaLectura:   string | null;
-  errorMensaje:   string | null;
+  cuerpo: string | null;
+  estado: string;
+  leido: boolean;
+  fechaLectura: string | null;
+  errorMensaje: string | null;
   notificacionId: number;
-  createdAt:      string;
+  createdAt: string;
+  updatedAt: string;
+  notificacionMasivaId: number | null;
+  notificacionMasivaNombre: string | null;
 }
 
 interface Counts {
-  Todos:    number;
-  Email:    number;
-  Push:     number;
+  Todos: number;
+  Email: number;
+  Push: number;
   WhatsApp: number;
 }
 
 interface ApiResponse {
   status: string;
-  data:   MensajeUnificado[];
+  data: MensajeUnificado[];
   meta?: {
-    total:      number;
-    page:       number;
-    limit:      number;
+    total: number;
+    page: number;
+    limit: number;
     totalPages: number;
-    counts:     Counts;
-    message?:   string;
+    counts: Counts;
+    message?: string;
   };
 }
 
 const TIPO_ICONS: Record<TipoMensaje, JSX.Element> = {
-  Email:    <FaEnvelope />,
-  Push:     <FaBell />,
+  Email: <FaEnvelope />,
+  Push: <FaBell />,
   WhatsApp: <FaWhatsapp />,
 };
 
 const TIPO_COLORS: Record<TipoMensaje, string> = {
-  Email:    'tipo-email',
-  Push:     'tipo-push',
+  Email: 'tipo-email',
+  Push: 'tipo-push',
   WhatsApp: 'tipo-whatsapp',
 };
 
 const ESTADO_CONFIG: Record<string, { label: string; cls: string }> = {
-  'ENVIADO':           { label: 'Enviado',     cls: 'estado-enviado'   },
-  'ERROR':             { label: 'Error',        cls: 'estado-error'     },
-  'PENDIENTE':         { label: 'Pendiente',    cls: 'estado-pendiente' },
-  'PENDIENTE_DE_ENVIO':{ label: 'Pendiente',    cls: 'estado-pendiente' },
-  'EN_PROCESO':        { label: 'En Proceso',   cls: 'estado-proceso'   },
+  'ENVIADO': { label: 'Enviado', cls: 'estado-enviado' },
+  'ERROR': { label: 'Error', cls: 'estado-error' },
+  'PENDIENTE_DE_ENVIO': { label: 'Pendiente', cls: 'estado-pendiente' },
 };
 
 const VerMensajes = () => {
-  const [mensajes, setMensajes]         = useState<MensajeUnificado[]>([]);
-  const [isLoading, setIsLoading]       = useState(false);
-  const [error, setError]               = useState<string | null>(null);
+  const [mensajes, setMensajes] = useState<MensajeUnificado[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [page, setPage]                 = useState(1);
-  const [totalPages, setTotalPages]     = useState(1);
-  const [totalItems, setTotalItems]     = useState(0);
-  const [counts, setCounts]             = useState<Counts>({ Todos: 0, Email: 0, Push: 0, WhatsApp: 0 });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [counts, setCounts] = useState<Counts>({ Todos: 0, Email: 0, Push: 0, WhatsApp: 0 });
 
-  const [filtroTipo, setFiltroTipo]     = useState<'Todos' | TipoMensaje>('Todos');
+  const [filtroTipo, setFiltroTipo] = useState<'Todos' | TipoMensaje>('Todos');
   const [filtroEstado, setFiltroEstado] = useState('Todos');
-  const [filtroCuil, setFiltroCuil]     = useState('');
-  const [expandedId, setExpandedId]     = useState<number | null>(null);
+  const [filtroNotifMasivaId, setFiltroNotifMasivaId] = useState('');
+  const [filtroCuil, setFiltroCuil] = useState('');
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const fetchMensajes = useCallback(async (currentPage = 1) => {
     setIsLoading(true);
@@ -83,11 +85,12 @@ const VerMensajes = () => {
     try {
       const token = localStorage.getItem('token') || '';
       const params = new URLSearchParams({
-        page:  String(currentPage),
+        page: String(currentPage),
         limit: '15',
-        ...(filtroTipo    !== 'Todos' && { tipo:   filtroTipo }),
-        ...(filtroEstado  !== 'Todos' && { estado: filtroEstado }),
-        ...(filtroCuil.trim()         && { cuil:   filtroCuil.trim() }),
+        ...(filtroTipo !== 'Todos' && { tipo: filtroTipo }),
+        ...(filtroEstado !== 'Todos' && { estado: filtroEstado }),
+        ...(filtroCuil.trim() && { cuil: filtroCuil.trim() }),
+        ...(filtroNotifMasivaId.trim() && { notifMasivaId: filtroNotifMasivaId.trim() }),
       });
 
       const response = await fetch(
@@ -100,7 +103,7 @@ const VerMensajes = () => {
       if (data.status === 'success') {
         setMensajes(data.data || []);
         setTotalPages(data.meta?.totalPages ?? 1);
-        setTotalItems(data.meta?.total      ?? 0);
+        setTotalItems(data.meta?.total ?? 0);
         setCounts(data.meta?.counts ?? { Todos: 0, Email: 0, Push: 0, WhatsApp: 0 });
         setPage(currentPage);
         setExpandedId(null);
@@ -113,9 +116,9 @@ const VerMensajes = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filtroTipo, filtroEstado, filtroCuil]);
+  }, [filtroTipo, filtroEstado, filtroCuil, filtroNotifMasivaId]);
 
-  useEffect(() => { fetchMensajes(1); }, [filtroTipo, filtroEstado, filtroCuil]);
+  useEffect(() => { fetchMensajes(1); }, [filtroTipo, filtroEstado, filtroCuil, filtroNotifMasivaId]);
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '—';
@@ -171,12 +174,24 @@ const VerMensajes = () => {
             />
           </div>
           <div className="ver-msj-filter-group">
+            <label className="ver-msj-filter-label">
+              <FaSearch className="ver-msj-filter-icon" />
+              Buscar por Notif. Masiva
+            </label>
+            <input
+              type="number"
+              value={filtroNotifMasivaId}
+              onChange={(e) => setFiltroNotifMasivaId(e.target.value)}
+              placeholder="Ingrese ID..."
+              className="ver-msj-filter-input"
+            />
+          </div>
+          <div className="ver-msj-filter-group">
             <label className="ver-msj-filter-label">Estado</label>
             <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} className="ver-msj-filter-select">
               <option value="Todos">Todos los estados</option>
               <option value="ENVIADO">Enviado</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="EN_PROCESO">En Proceso</option>
+              <option value="PENDIENTE_DE_ENVIO">Pendiente</option>
               <option value="ERROR">Error</option>
             </select>
           </div>
@@ -219,6 +234,7 @@ const VerMensajes = () => {
                   <th className="ver-msj-th ver-msj-th-center">Estado</th>
                   <th className="ver-msj-th ver-msj-th-center">Leído</th>
                   <th className="ver-msj-th">Notif. #</th>
+                  <th className="ver-msj-th">Notif. Masiva</th>
                   <th className="ver-msj-th">Fecha</th>
                   <th className="ver-msj-th ver-msj-th-center">Detalle</th>
                 </tr>
@@ -229,7 +245,7 @@ const VerMensajes = () => {
                     <td colSpan={10} className="ver-msj-empty">No se encontraron mensajes</td>
                   </tr>
                 ) : mensajes.map((m) => {
-                  const estadoCfg  = getEstado(m.estado);
+                  const estadoCfg = getEstado(m.estado);
                   const isExpanded = expandedId === m.id;
                   return (
                     <>
@@ -266,6 +282,20 @@ const VerMensajes = () => {
                         <td className="ver-msj-td">
                           <span className="ver-msj-notif-link">#{m.notificacionId}</span>
                         </td>
+                        <td className="ver-msj-td">
+                          {m.notificacionMasivaId ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <span style={{ fontSize: '0.875rem', color: '#111827', fontWeight: 500 }}>
+                                {m.notificacionMasivaNombre || '—'}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                                ID {m.notificacionMasivaId}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="ver-msj-sin-dato">—</span>
+                          )}
+                        </td>
                         <td className="ver-msj-td ver-msj-td-fecha">{formatDate(m.createdAt)}</td>
                         <td className="ver-msj-td ver-msj-td-center">
                           <button
@@ -290,6 +320,10 @@ const VerMensajes = () => {
                                 <div className="ver-msj-expanded-item">
                                   <span className="ver-msj-exp-label">Fecha de lectura</span>
                                   <span className="ver-msj-exp-value">{formatDate(m.fechaLectura)}</span>
+                                </div>
+                                <div className="ver-msj-expanded-item">
+                                  <span className="ver-msj-exp-label">Última actualización</span>
+                                  <span className="ver-msj-exp-value">{formatDate(m.updatedAt)}</span>
                                 </div>
                                 <div className="ver-msj-expanded-item">
                                   <span className="ver-msj-exp-label">Notificación origen</span>

@@ -1,7 +1,7 @@
 // VerNotificacionesMasivas.tsx
 
 import { useState, useEffect, useCallback } from "react";
-import { FaSearch, FaEye, FaTrash, FaCheckCircle, FaTimesCircle, FaSync, FaEdit, FaTimes, FaSave } from "react-icons/fa";
+import { FaSearch, FaEye, FaTrash, FaCheckCircle, FaTimesCircle, FaSync, FaEdit, FaTimes, FaSave, FaEnvelope, FaBell, FaWhatsapp } from "react-icons/fa";
 import './VerNotificacionesMasivas.css';
 
 interface NotificacionMasiva {
@@ -327,9 +327,9 @@ const VerNotificacionesMasivas = () => {
 
                                                 <td className="vnm-table-cell vnm-table-cell-center">
                                                     <div className="vnm-canales-row">
-                                                        <span className={`vnm-canal-icon ${masiva.flagCorreo ? 'canal-active' : 'canal-inactive'}`} title="Email">✉</span>
-                                                        <span className={`vnm-canal-icon ${masiva.flagPush ? 'canal-active' : 'canal-inactive'}`} title="Push">🔔</span>
-                                                        <span className={`vnm-canal-icon ${masiva.flagMensaje ? 'canal-active' : 'canal-inactive'}`} title="WhatsApp">💬</span>
+                                                        <span className={`vnm-canal-icon ${masiva.flagCorreo ? 'canal-active' : 'canal-inactive'}`} title="Email"><FaEnvelope /></span>
+                                                        <span className={`vnm-canal-icon ${masiva.flagPush ? 'canal-active' : 'canal-inactive'}`} title="Push"><FaBell /></span>
+                                                        <span className={`vnm-canal-icon ${masiva.flagMensaje ? 'canal-active' : 'canal-inactive'}`} title="WhatsApp"><FaWhatsapp /></span>
                                                     </div>
                                                 </td>
 
