@@ -109,9 +109,35 @@ const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse>=
 }
 
 
-const getChats = async (token: string, page: string, limit: string): Promise< ChatsResponse & ErrorResponse> => {
+type GetChatsFilters = {
+    q?: string
+    operatorId?: string
+    assignment?: string
+    tagId?: string
+    archived?: string | number | boolean
+}
+
+const getChats = async (
+    token: string,
+    page: string,
+    limit: string,
+    filters?: GetChatsFilters
+): Promise<ChatsResponse & ErrorResponse> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/chats?page=${page}&limit=${limit}`
+        const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats`
+        const params = new URLSearchParams()
+        params.set("page", `${page}`)
+        params.set("limit", `${limit}`)
+
+        if (filters?.q) params.set("q", `${filters.q}`)
+        if (filters?.operatorId) params.set("operatorId", `${filters.operatorId}`)
+        if (filters?.assignment) params.set("assignment", `${filters.assignment}`)
+        if (filters?.tagId) params.set("tagId", `${filters.tagId}`)
+        if (filters?.archived !== undefined && filters?.archived !== null && `${filters.archived}` !== "") {
+            params.set("archived", `${filters.archived}`)
+        }
+
+        const url = `${baseUrl}?${params.toString()}`
 
         const headers = {
             authorization: `Bearer ${token}`
