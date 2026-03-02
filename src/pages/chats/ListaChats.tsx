@@ -10,11 +10,11 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
 import { Tag as TagIcon, User } from "lucide-react"
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
-import { getChats } from "../../services/chats/chats.services"
+import { getChatCounts, getChats } from "../../services/chats/chats.services"
 import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services"
 
 // Función auxiliar para capitalizar correctamente el texto
@@ -72,6 +72,7 @@ const ListaChats = () => {
     const [searchChat, setSearchChat] = useState<string>('')
     const [debouncedSearch, setDebouncedSearch] = useState<string>('')
     const [selectedOperator, setSelectedOperator] = useState<string>('')
+    const [hydrated, setHydrated] = useState<boolean>(false)
     // selección de menciones vive en Redux (para compartir con la vista del chat)
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
@@ -80,6 +81,17 @@ const ListaChats = () => {
     const dataUser = useSelector((state: RootState) => state.action.dataUser);
     const viewSide = useSelector((state: RootState) => state.action.viewSide);
     const chatsFromRedux = useSelector((state: RootState) => state.action.chats);
+    const chatListQueryKey = useSelector((state: RootState) => state.action.chatListQueryKey);
+    const chatListPage = useSelector((state: RootState) => state.action.chatListPage);
+    const chatListHasMore = useSelector((state: RootState) => state.action.chatListHasMore);
+    const chatListUpdatedAt = useSelector((state: RootState) => state.action.chatListUpdatedAt);
+    const chatListTab = useSelector((state: RootState) => state.action.chatListTab);
+    const chatListSearchText = useSelector((state: RootState) => state.action.chatListSearchText);
+    const chatListSelectedOperator = useSelector((state: RootState) => state.action.chatListSelectedOperator);
+    const chatListSelectedTag = useSelector((state: RootState) => state.action.chatListSelectedTag);
+    const chatListOrdenFecha = useSelector((state: RootState) => state.action.chatListOrdenFecha);
+    const chatListScrollTop = useSelector((state: RootState) => state.action.chatListScrollTop);
+    const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters);
     const chatsRef = useRef<ChatState[]>([])
     const mentionUnreadCount = useSelector((state: RootState) => state.action.mentionUnreadCount);
     const mentionsRefreshNonce = useSelector((state: RootState) => state.action.mentionsRefreshNonce);
@@ -102,6 +114,22 @@ const ListaChats = () => {
     
 
     const dispatch = useDispatch()
+
+    const [tabCounts, setTabCounts] = useState<{
+        total: number
+        archived: number
+        bots: number
+        unassigned: number
+        mine: number
+        others: number
+    }>({
+        total: 0,
+        archived: 0,
+        bots: 0,
+        unassigned: 0,
+        mine: 0,
+        others: 0,
+    })
 
     useEffect(() => {
         chatsRef.current = Array.isArray(chatsFromRedux) ? chatsFromRedux : []
@@ -186,14 +214,53 @@ const ListaChats = () => {
         return () => window.clearTimeout(t)
     }, [searchChat])
 
+    // Contadores de pestañas fieles a BD (solo dependen de q y tagId)
     useEffect(() => {
+        if (!token) return
+        const q = `${debouncedSearch ?? ""}`.trim()
+        const tagId = `${selectedTag ?? ""}`.trim()
+
+        getChatCounts(token, {
+            q: q.length ? q : undefined,
+            tagId: tagId.length ? tagId : undefined,
+        })
+            .then((resp: any) => {
+                const c = resp?.counts || {}
+                setTabCounts({
+                    total: Number(c.total) || 0,
+                    archived: Number(c.archived) || 0,
+                    bots: Number(c.bots) || 0,
+                    unassigned: Number(c.unassigned) || 0,
+                    mine: Number(c.mine) || 0,
+                    others: Number(c.others) || 0,
+                })
+            })
+            .catch(() => {})
+    }, [token, debouncedSearch, selectedTag])
+
+    useEffect(() => {
+        if (!hydrated) return
         const filters = buildChatQueryFilters()
         activeFiltersRef.current = filters
-        // Compartimos filtros para refresh desde otros componentes (delete/asignar/tags)
-        try {
-            window.localStorage.setItem("chatListFilters", JSON.stringify(filters))
-        } catch {}
-    }, [debouncedSearch, selectedTag, selectedOperator, styleBtn])
+
+        // Guardamos filtros/estado UI en Redux (SPA-only)
+        const queryKey = JSON.stringify({
+            tab: styleBtn,
+            q: filters?.q || "",
+            operatorId: filters?.operatorId || "",
+            assignment: filters?.assignment || "",
+            tagId: filters?.tagId || "",
+            archived: filters?.archived ?? "",
+        })
+        dispatch(setChatListCacheMeta({ chatListQueryKey: queryKey, chatListFilters: filters }))
+        dispatch(setChatListUiState({
+            chatListTab: styleBtn,
+            chatListSearchText: searchChat,
+            chatListSelectedOperator: selectedOperator,
+            chatListSelectedTag: selectedTag,
+            chatListOrdenFecha: ordenFecha,
+        }))
+    }, [hydrated, debouncedSearch, selectedTag, selectedOperator, styleBtn, ordenFecha, searchChat, dispatch])
 
    
 
@@ -272,28 +339,95 @@ const ListaChats = () => {
         
     },[])
 
+    // Rehidratar UI/listado al volver a la vista (SPA navigation)
+    useEffect(() => {
+        // Importante: hidratar ANTES de permitir que otros effects guarden defaults en Redux.
+        if (chatListFilters && typeof chatListFilters === "object") {
+            activeFiltersRef.current = chatListFilters
+            const q = `${(chatListFilters as any)?.q ?? ""}`
+            if (q) setDebouncedSearch(q)
+        }
+
+        // UI
+        if (typeof chatListTab === "string" && chatListTab) setStyleBtn(chatListTab)
+        if (typeof chatListSearchText === "string") setSearchChat(chatListSearchText)
+        if (typeof chatListSelectedOperator === "string") setSelectedOperator(chatListSelectedOperator)
+        if (typeof chatListSelectedTag === "string") setSelectedTag(chatListSelectedTag)
+        if (chatListOrdenFecha === "asc" || chatListOrdenFecha === "desc") setOrdenFecha(chatListOrdenFecha)
+
+        // paging/meta
+        if (typeof chatListPage === "number" && chatListPage >= 1) setPage(chatListPage)
+        if (typeof chatListHasMore === "boolean") setHasMore(chatListHasMore)
+
+        // scroll restore (si hay cache)
+        if (listRef.current && typeof chatListScrollTop === "number" && chatListScrollTop > 0) {
+            requestAnimationFrame(() => {
+                if (listRef.current) listRef.current.scrollTop = chatListScrollTop
+            })
+        }
+
+        setHydrated(true)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     // Fuente de verdad: backend (q/operator/tag/assignment/archived) + paginación
     useEffect(() => {
+        if (!hydrated) return
         if (!token) return
         const filters = activeFiltersRef.current || {}
+        const nextKey = JSON.stringify({
+            tab: styleBtn,
+            q: filters?.q || "",
+            operatorId: filters?.operatorId || "",
+            assignment: filters?.assignment || "",
+            tagId: filters?.tagId || "",
+            archived: filters?.archived ?? "",
+        })
+
+        const cachedOk =
+            Array.isArray(chatsFromRedux) &&
+            chatsFromRedux.length > 0 &&
+            typeof chatListQueryKey === "string" &&
+            chatListQueryKey === nextKey
+
+        // Si volvimos a la vista y el cache coincide, no resetear; opcional refresh silencioso por TTL
+        const TTL_MS = 15_000
+        const isStale =
+            !chatListUpdatedAt || (typeof chatListUpdatedAt === "number" && Date.now() - chatListUpdatedAt > TTL_MS)
+
+        if (cachedOk && !isStale) {
+            setLoading(false)
+            return
+        }
 
         setLoading(true)
         setIsLoadingMore(false)
         setHasMore(true)
         setPage(1)
-        dispatch(setChats([]))
+        if (!cachedOk) dispatch(setChats([]))
 
         getChats(token, "1", `${CHAT_PAGE_LIMIT}`, filters)
             .then((resp: any) => {
                 const items: ChatState[] = Array.isArray(resp?.chats) ? resp.chats : []
-                dispatch(setChats(items))
+                // Si había cache, mergeamos para no "perder" páginas ya cargadas; sino reemplazo directo
+                const merged = cachedOk ? mergeChatsById(chatsRef.current, items) : items
+                const MAX_CACHE = 1000
+                const nextList = Array.isArray(merged) ? merged.slice(0, MAX_CACHE) : merged
+                dispatch(setChats(nextList))
                 setHasMore(resolveHasMore(resp, CHAT_PAGE_LIMIT))
+                dispatch(setChatListCacheMeta({
+                    chatListQueryKey: nextKey,
+                    chatListHasMore: resolveHasMore(resp, CHAT_PAGE_LIMIT),
+                    chatListPage: 1,
+                    chatListUpdatedAt: Date.now(),
+                    chatListFilters: filters,
+                }))
             })
             .catch(() => {
                 // noop
             })
             .finally(() => setLoading(false))
-    }, [token, debouncedSearch, selectedTag, selectedOperator, styleBtn])
+    }, [hydrated, token, debouncedSearch, selectedTag, selectedOperator, styleBtn, chatListQueryKey, chatListUpdatedAt, dispatch])
 
     // Estado inicial: no estamos en "Menciones" hasta que el usuario toque esa pestaña
     useEffect(() => {
@@ -336,9 +470,15 @@ const ListaChats = () => {
                 return
             }
             const merged = mergeChatsById(chatsFromRedux, incoming)
-            dispatch(setChats(merged))
+            const MAX_CACHE = 1000
+            dispatch(setChats(merged.slice(0, MAX_CACHE)))
             setPage(nextPage)
             setHasMore(resolveHasMore(resp, CHAT_PAGE_LIMIT))
+            dispatch(setChatListCacheMeta({
+                chatListPage: nextPage,
+                chatListHasMore: resolveHasMore(resp, CHAT_PAGE_LIMIT),
+                chatListUpdatedAt: Date.now(),
+            }))
         } catch {
             // noop: no frenamos la UX por un error puntual en scroll
         } finally {
@@ -348,6 +488,8 @@ const ListaChats = () => {
 
     const handleListScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const el = e.currentTarget
+        // Persistimos scroll para volver al mismo lugar
+        dispatch(setChatListCacheMeta({ chatListScrollTop: el.scrollTop }))
         const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - SCROLL_BOTTOM_THRESHOLD_PX
         if (nearBottom) {
             loadMoreChats()
@@ -369,8 +511,13 @@ const ListaChats = () => {
                 const chatos = await getChats(token, '1', `${CHAT_PAGE_LIMIT}`, filters)
                 const firstPage: ChatState[] = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
                 const merged = mergeChatsById(chatsRef.current, firstPage)
-                dispatch(setChats(merged))
+                const MAX_CACHE = 1000
+                dispatch(setChats(merged.slice(0, MAX_CACHE)))
                 setHasMore(resolveHasMore(chatos, CHAT_PAGE_LIMIT))
+                dispatch(setChatListCacheMeta({
+                    chatListHasMore: resolveHasMore(chatos, CHAT_PAGE_LIMIT),
+                    chatListUpdatedAt: Date.now(),
+                }))
             } catch {}
         }
 
@@ -622,7 +769,7 @@ const ListaChats = () => {
                         className="btn-item"
                     >
                         Sin asignar
-                        <span>{sinAsignar.length}</span>
+                        <span>{tabCounts.unassigned}</span>
                     </button>
                    
                 </div>
@@ -640,7 +787,7 @@ const ListaChats = () => {
                         className="btn-item"
                     >
                         Asignadas a mí
-                        <span>{asignadas.length}</span>
+                        <span>{tabCounts.mine}</span>
                     </button>
                     
                 </div>
@@ -658,7 +805,7 @@ const ListaChats = () => {
                         className="btn-item"
                     >
                         Asignadas a otros
-                        <span>{asignadasOtros.length}</span>
+                        <span>{tabCounts.others}</span>
                     </button>
                    
                 </div>
@@ -676,7 +823,7 @@ const ListaChats = () => {
                         className="btn-item"
                     >
                         Archivadas
-                        <span>{archivadas.length}</span>
+                        <span>{tabCounts.archived}</span>
                     </button>
                    
                 </div>
@@ -711,7 +858,7 @@ const ListaChats = () => {
                         className="btn-item"
                     >
                         Bots
-                        <span>{bots.length}</span>
+                        <span>{tabCounts.bots}</span>
                     </button>
                    
                 </div>

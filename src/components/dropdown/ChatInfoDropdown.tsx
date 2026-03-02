@@ -32,6 +32,7 @@ const ChatInfoDropdown = ({ dataUser, tags = [] }: ChatInfoDropdownProps) => {
   const dispatch = useDispatch()
   const token = localStorage.getItem('token') || ''
   const chats = useSelector((state: RootState) => state.action.chats)
+  const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters)
   const currentChat = chats.find(chat => chat.id === chatId)
   const operador = currentChat?.operador
 
@@ -126,12 +127,7 @@ const ChatInfoDropdown = ({ dataUser, tags = [] }: ChatInfoDropdownProps) => {
 
   const handleTagConfirm = async (_tagId: string) => {
     try {
-      let filters: any = undefined
-      try {
-        const raw = window.localStorage.getItem("chatListFilters")
-        filters = raw ? JSON.parse(raw) : undefined
-      } catch {}
-      const chatos = await getChats(token, '1', '100', filters)
+      const chatos = await getChats(token, '1', '100', chatListFilters)
       const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
       const base = Array.isArray(chats) ? chats : []
       const map = new Map<string, any>()
@@ -157,12 +153,7 @@ const ChatInfoDropdown = ({ dataUser, tags = [] }: ChatInfoDropdownProps) => {
 
   const handleRemoveTagSuccess = async () => {
     try {
-      let filters: any = undefined
-      try {
-        const raw = window.localStorage.getItem("chatListFilters")
-        filters = raw ? JSON.parse(raw) : undefined
-      } catch {}
-      const chatos = await getChats(token, '1', '100', filters)
+      const chatos = await getChats(token, '1', '100', chatListFilters)
       const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
       const base = Array.isArray(chats) ? chats : []
       const map = new Map<string, any>()

@@ -45,6 +45,7 @@ const UserSearchModal = ( ) => {
   const dispatch = useDispatch();
   const modalView = useSelector((state: RootState) => state.action.modal);
   const chats = useSelector((state: RootState) => state.action.chats);
+  const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters);
   
   const token  = localStorage.getItem('token') || '';
   const role = localStorage.getItem('role') || '';
@@ -103,13 +104,7 @@ const UserSearchModal = ( ) => {
         
         // Actualizar la lista de chats
         try {
-          let filters: any = undefined;
-          try {
-            const raw = window.localStorage.getItem("chatListFilters");
-            filters = raw ? JSON.parse(raw) : undefined;
-          } catch {}
-
-          const chatos = await getChats(token, '1', '100', filters);
+          const chatos = await getChats(token, '1', '100', chatListFilters);
           const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : [];
           const base = Array.isArray(chats) ? chats : [];
           const map = new Map<string, any>();

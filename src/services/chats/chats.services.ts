@@ -1,6 +1,6 @@
 import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
-import { ChatResponse, ChatsResponse, TimelineResponse } from "../../interfaces/chats.interface"
+import { ChatCountsResponse, ChatResponse, ChatsResponse, TimelineResponse } from "../../interfaces/chats.interface"
 import { DataUser } from "../../interfaces/action.interface"
 
 
@@ -117,6 +117,28 @@ type GetChatsFilters = {
     archived?: string | number | boolean
 }
 
+const getChatCounts = async (
+    token: string,
+    params?: { q?: string; tagId?: string }
+): Promise<ChatCountsResponse & ErrorResponse> => {
+    try {
+        const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats/counts`
+        const qs = new URLSearchParams()
+        if (params?.q) qs.set("q", `${params.q}`)
+        if (params?.tagId) qs.set("tagId", `${params.tagId}`)
+        const url = qs.toString() ? `${baseUrl}?${qs.toString()}` : baseUrl
+
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await axios.get<ChatCountsResponse & ErrorResponse>(url, { headers })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data as any
+        }
+        throw error
+    }
+}
+
 const getChats = async (
     token: string,
     page: string,
@@ -222,4 +244,4 @@ const setChatBotState = async (
 }
 
 
-export { findChatById, findChatTimeline, getUserData, getChats, setChatReadState, setChatBotState }
+export { findChatById, findChatTimeline, getUserData, getChats, getChatCounts, setChatReadState, setChatBotState }

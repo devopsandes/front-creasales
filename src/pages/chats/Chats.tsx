@@ -88,6 +88,7 @@ const Chats = () => {
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
     const selectedBulkReadChatIds = useSelector((state: RootState) => state.action.selectedBulkReadChatIds)
     const chats = useSelector((state: RootState) => state.action.chats)
+    const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters)
     const currentChat = chats.find(chat => chat.id === id)
     const chatTags: ChatTag[] = currentChat?.tags || []
     const botEnabled = (currentChat as any)?.botEnabled
@@ -831,13 +832,7 @@ const Chats = () => {
 
                 // Refrescar lista global (ListaChats no refetchea al volver si sigue montado)
                 try {
-                    let filters: any = undefined
-                    try {
-                        const raw = window.localStorage.getItem("chatListFilters")
-                        filters = raw ? JSON.parse(raw) : undefined
-                    } catch {}
-
-                    const chatos = await getChats(token, '1', '100', filters)
+                    const chatos = await getChats(token, '1', '100', chatListFilters)
                     if ((chatos as any)?.statusCode === 401) {
                         dispatch(openSessionExpired())
                     } else if (Array.isArray((chatos as any)?.chats)) {

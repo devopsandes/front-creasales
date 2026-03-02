@@ -151,6 +151,22 @@ export interface ChatsResponse {
     chats: ChatState[];
 }
 
+export interface ChatCounts {
+    total: number;
+    archived: number;
+    bots: number;
+    unassigned: number;
+    mine: number;
+    others: number;
+}
+
+export interface ChatCountsResponse {
+    // compat
+    statcusCode?: number;
+    statusCode?: number;
+    counts: ChatCounts;
+}
+
 export interface Chat {
     id:        string;
     thread_id: string;
