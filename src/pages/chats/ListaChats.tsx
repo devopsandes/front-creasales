@@ -10,11 +10,11 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
 import { Tag as TagIcon, User } from "lucide-react"
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
-import { getChats } from "../../services/chats/chats.services"
+import { getChatCounts, getChats } from "../../services/chats/chats.services"
 import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services"
 
 // Función auxiliar para capitalizar correctamente el texto
@@ -45,6 +45,10 @@ const ListaChats = () => {
     const { id: activeChatId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
     const selectRef = useRef<HTMLSelectElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
+
+    const CHAT_PAGE_LIMIT = 100
+    const SCROLL_BOTTOM_THRESHOLD_PX = 260
     
     const [chats1,setChats1] = useState<ChatState[]>([])
     const [archivadas,setArchivadas] = useState<ChatState[]>([])
@@ -56,6 +60,9 @@ const ListaChats = () => {
     const [styleBtn, setStyleBtn] = useState<string>('otros')
 
     const [loading, setLoading] = useState<boolean>(true)
+    const [page, setPage] = useState<number>(1)
+    const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
+    const [hasMore, setHasMore] = useState<boolean>(true)
     const [users, setUsers] = useState<Usuario[]>([]);
     const [filtrados, setFiltrados] = useState<ChatState[]>([])
     const [ordenFecha, setOrdenFecha] = useState<'desc' | 'asc'>('desc') // 'desc' = más reciente primero, 'asc' = más viejo primero
@@ -63,7 +70,9 @@ const ListaChats = () => {
     const [selectedTag, setSelectedTag] = useState<string>('')
     const [allTags, setAllTags] = useState<{ id: string; nombre: string }[]>([])
     const [searchChat, setSearchChat] = useState<string>('')
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('')
     const [selectedOperator, setSelectedOperator] = useState<string>('')
+    const [hydrated, setHydrated] = useState<boolean>(false)
     // selección de menciones vive en Redux (para compartir con la vista del chat)
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
@@ -72,6 +81,18 @@ const ListaChats = () => {
     const dataUser = useSelector((state: RootState) => state.action.dataUser);
     const viewSide = useSelector((state: RootState) => state.action.viewSide);
     const chatsFromRedux = useSelector((state: RootState) => state.action.chats);
+    const chatListQueryKey = useSelector((state: RootState) => state.action.chatListQueryKey);
+    const chatListPage = useSelector((state: RootState) => state.action.chatListPage);
+    const chatListHasMore = useSelector((state: RootState) => state.action.chatListHasMore);
+    const chatListUpdatedAt = useSelector((state: RootState) => state.action.chatListUpdatedAt);
+    const chatListTab = useSelector((state: RootState) => state.action.chatListTab);
+    const chatListSearchText = useSelector((state: RootState) => state.action.chatListSearchText);
+    const chatListSelectedOperator = useSelector((state: RootState) => state.action.chatListSelectedOperator);
+    const chatListSelectedTag = useSelector((state: RootState) => state.action.chatListSelectedTag);
+    const chatListOrdenFecha = useSelector((state: RootState) => state.action.chatListOrdenFecha);
+    const chatListScrollTop = useSelector((state: RootState) => state.action.chatListScrollTop);
+    const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters);
+    const chatsRef = useRef<ChatState[]>([])
     const mentionUnreadCount = useSelector((state: RootState) => state.action.mentionUnreadCount);
     const mentionsRefreshNonce = useSelector((state: RootState) => state.action.mentionsRefreshNonce);
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds);
@@ -94,6 +115,153 @@ const ListaChats = () => {
 
     const dispatch = useDispatch()
 
+    const [tabCounts, setTabCounts] = useState<{
+        total: number
+        archived: number
+        bots: number
+        unassigned: number
+        mine: number
+        others: number
+    }>({
+        total: 0,
+        archived: 0,
+        bots: 0,
+        unassigned: 0,
+        mine: 0,
+        others: 0,
+    })
+
+    useEffect(() => {
+        chatsRef.current = Array.isArray(chatsFromRedux) ? chatsFromRedux : []
+    }, [chatsFromRedux])
+
+    const toMsSafe = (value: any): number => {
+        if (!value) return 0
+        const d = new Date(value)
+        const ms = d.getTime()
+        return Number.isNaN(ms) ? 0 : ms
+    }
+
+    const compareChatsForStore = (a: ChatState, b: ChatState): number => {
+        const aMs = toMsSafe((a as any)?.lastMessageAt) || toMsSafe(a.updatedAt) || toMsSafe(a.createdAt)
+        const bMs = toMsSafe((b as any)?.lastMessageAt) || toMsSafe(b.updatedAt) || toMsSafe(b.createdAt)
+        if (aMs !== bMs) return bMs - aMs
+
+        const aCreated = toMsSafe(a.createdAt)
+        const bCreated = toMsSafe(b.createdAt)
+        if (aCreated !== bCreated) return bCreated - aCreated
+
+        // Desempate determinístico similar al backend
+        return `${b.id}`.localeCompare(`${a.id}`)
+    }
+
+    const mergeChatsById = (current: ChatState[], incoming: ChatState[]): ChatState[] => {
+        const map = new Map<string, ChatState>()
+        ;(Array.isArray(current) ? current : []).forEach((c) => {
+            if (c?.id) map.set(c.id, c)
+        })
+        ;(Array.isArray(incoming) ? incoming : []).forEach((c) => {
+            if (c?.id) map.set(c.id, c)
+        })
+        return Array.from(map.values()).sort(compareChatsForStore)
+    }
+
+    const resolveHasMore = (resp: any, limit: number): boolean => {
+        if (typeof resp?.hasMore === "boolean") return resp.hasMore
+        const items = Array.isArray(resp?.chats) ? resp.chats : []
+        return items.length >= limit
+    }
+
+    const normalizeFilterValue = (value: string) => `${value ?? ""}`.trim()
+
+    const buildChatQueryFilters = () => {
+        const q = normalizeFilterValue(debouncedSearch)
+        const tagId = normalizeFilterValue(selectedTag)
+        const operatorValue = normalizeFilterValue(selectedOperator)
+
+        const filters: any = {}
+        if (q) filters.q = q
+        if (tagId) filters.tagId = tagId
+
+        // Operador (UI) -> query params
+        if (operatorValue && operatorValue !== "TODOS") {
+            if (operatorValue === "BOT") {
+                filters.assignment = "bot"
+            } else {
+                filters.operatorId = operatorValue
+            }
+        }
+
+        // Tabs que sí son representables en backend sin romper UX existente
+        if (styleBtn === "bots") {
+            filters.assignment = "bot"
+        } else if (styleBtn === "sinAsignar") {
+            filters.assignment = "unassigned"
+        } else if (styleBtn === "asig") {
+            // "mis asignadas"
+            filters.operatorId = id
+        } else if (styleBtn === "archi") {
+            filters.archived = 1
+        }
+
+        return filters
+    }
+
+    const activeFiltersRef = useRef<any>({})
+    useEffect(() => {
+        // Debounce simple para no spamear requests por tecla
+        const t = window.setTimeout(() => setDebouncedSearch(searchChat), 350)
+        return () => window.clearTimeout(t)
+    }, [searchChat])
+
+    // Contadores de pestañas fieles a BD (solo dependen de q y tagId)
+    useEffect(() => {
+        if (!token) return
+        const q = `${debouncedSearch ?? ""}`.trim()
+        const tagId = `${selectedTag ?? ""}`.trim()
+
+        getChatCounts(token, {
+            q: q.length ? q : undefined,
+            tagId: tagId.length ? tagId : undefined,
+        })
+            .then((resp: any) => {
+                const c = resp?.counts || {}
+                setTabCounts({
+                    total: Number(c.total) || 0,
+                    archived: Number(c.archived) || 0,
+                    bots: Number(c.bots) || 0,
+                    unassigned: Number(c.unassigned) || 0,
+                    mine: Number(c.mine) || 0,
+                    others: Number(c.others) || 0,
+                })
+            })
+            .catch(() => {})
+    }, [token, debouncedSearch, selectedTag])
+
+    useEffect(() => {
+        if (!hydrated) return
+        const filters = buildChatQueryFilters()
+        activeFiltersRef.current = filters
+
+        // Guardamos filtros/estado UI en Redux (SPA-only)
+        const queryKey = JSON.stringify({
+            tab: styleBtn,
+            q: filters?.q || "",
+            operatorId: filters?.operatorId || "",
+            assignment: filters?.assignment || "",
+            tagId: filters?.tagId || "",
+            archived: filters?.archived ?? "",
+        })
+        dispatch(setChatListCacheMeta({ chatListQueryKey: queryKey, chatListFilters: filters }))
+        dispatch(setChatListUiState({
+            chatListTab: styleBtn,
+            chatListSearchText: searchChat,
+            chatListSelectedOperator: selectedOperator,
+            chatListSelectedTag: selectedTag,
+            chatListOrdenFecha: ordenFecha,
+        }))
+    }, [hydrated, debouncedSearch, selectedTag, selectedOperator, styleBtn, ordenFecha, searchChat, dispatch])
+
    
 
     
@@ -102,8 +270,6 @@ const ListaChats = () => {
     useEffect(()=>{
         
         const ejecucion = async () => {
-            
-            const chatos = await getChats(token,'1','100')
             let mentionTotal: number | null = null
 
             // Intentamos obtener menciones (si backend aún no lo soporta, no rompemos nada)
@@ -135,69 +301,10 @@ const ListaChats = () => {
                 // noop
             }
 
-            const archivadasTemp: ChatState[] = []
-            const botsTemp: ChatState[] = []
-            const asignadasTemp: ChatState[] = []
-            const asignadasOtrosTemp: ChatState[] = []
-            const sinAsignarTemp: ChatState[] = []
-            const mencionesTemp: ChatState[] = []
-            const botsIds = new Set<string>()
-            const mentionIds = new Set<string>(mentionChatIds)
-
-            chatos.chats.forEach(chat => {
-                if(chat.archivar){
-                    archivadasTemp.push(chat)
-                }
-
-                if(getAssignment(chat) === 'bot'){
-                    if(!botsIds.has(chat.id)){
-                        botsTemp.push(chat)
-                        botsIds.add(chat.id)
-                    }
-                }
-
-                if(getAssignment(chat) === 'unassigned' && !chat.archivar){
-                    sinAsignarTemp.push(chat)
-                }
-
-                if(getAssignment(chat) === 'assigned' && id === chat.operador?.id){
-                    asignadasTemp.push(chat)
-                }
-
-                if (getAssignment(chat) === 'assigned' && !chat.archivar && chat.operador?.id && chat.operador.id !== id) {
-                    asignadasOtrosTemp.push(chat)
-                }
-
-                if (mentionIds.has(chat.id)) {
-                    mencionesTemp.push(chat)
-                }
-            })
-
-            setArchivadas(archivadasTemp)
-            setBots(botsTemp)
-            setAsignadas(asignadasTemp)
-            setAsignadasOtros(asignadasOtrosTemp)
-            setSinAsignar(sinAsignarTemp)
-            setMenciones(mencionesTemp)
-            const effectiveMentionTotal = (mentionTotal ?? mencionesTemp.length)
-            dispatch(setMentionUnreadCount(effectiveMentionTotal))
-            setChats1(chatos.chats)
-            let initialBase: ChatState[] = chatos.chats
-            if (styleBtn === "asig") {
-                initialBase = asignadasTemp
-            } else if (styleBtn === "archi") {
-                initialBase = archivadasTemp
-            } else if (styleBtn === "otros") {
-                initialBase = asignadasOtrosTemp
-            } else if (styleBtn === "bots") {
-                initialBase = botsTemp
-            } else if (styleBtn === "sinAsignar") {
-                initialBase = sinAsignarTemp
-            } else if (styleBtn === "menciones") {
-                initialBase = mencionesTemp
+            // Carga de chats se maneja en un effect aparte (según filtros/buscador)
+            if (mentionTotal !== null) {
+                dispatch(setMentionUnreadCount(mentionTotal))
             }
-            setFiltrados(initialBase)
-            dispatch(setChats(chatos.chats))
             setLoading(false)
             
             // Los usuarios con rol USER no tienen permiso para listar operadores (backend devuelve 403).
@@ -220,19 +327,6 @@ const ListaChats = () => {
             } else {
                 setUsers([])
             }
-
-            // Extraer tags únicos de todos los chats
-            const tagsMap = new Map<string, { id: string; nombre: string }>()
-            chatos.chats.forEach(chat => {
-                if(chat.tags && chat.tags.length > 0) {
-                    chat.tags.forEach(tag => {
-                        if(!tagsMap.has(tag.id)) {
-                            tagsMap.set(tag.id, { id: tag.id, nombre: tag.nombre })
-                        }
-                    })
-                }
-            })
-            setAllTags(Array.from(tagsMap.values()))
         
         }
         
@@ -244,6 +338,96 @@ const ListaChats = () => {
         
         
     },[])
+
+    // Rehidratar UI/listado al volver a la vista (SPA navigation)
+    useEffect(() => {
+        // Importante: hidratar ANTES de permitir que otros effects guarden defaults en Redux.
+        if (chatListFilters && typeof chatListFilters === "object") {
+            activeFiltersRef.current = chatListFilters
+            const q = `${(chatListFilters as any)?.q ?? ""}`
+            if (q) setDebouncedSearch(q)
+        }
+
+        // UI
+        if (typeof chatListTab === "string" && chatListTab) setStyleBtn(chatListTab)
+        if (typeof chatListSearchText === "string") setSearchChat(chatListSearchText)
+        if (typeof chatListSelectedOperator === "string") setSelectedOperator(chatListSelectedOperator)
+        if (typeof chatListSelectedTag === "string") setSelectedTag(chatListSelectedTag)
+        if (chatListOrdenFecha === "asc" || chatListOrdenFecha === "desc") setOrdenFecha(chatListOrdenFecha)
+
+        // paging/meta
+        if (typeof chatListPage === "number" && chatListPage >= 1) setPage(chatListPage)
+        if (typeof chatListHasMore === "boolean") setHasMore(chatListHasMore)
+
+        // scroll restore (si hay cache)
+        if (listRef.current && typeof chatListScrollTop === "number" && chatListScrollTop > 0) {
+            requestAnimationFrame(() => {
+                if (listRef.current) listRef.current.scrollTop = chatListScrollTop
+            })
+        }
+
+        setHydrated(true)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // Fuente de verdad: backend (q/operator/tag/assignment/archived) + paginación
+    useEffect(() => {
+        if (!hydrated) return
+        if (!token) return
+        const filters = activeFiltersRef.current || {}
+        const nextKey = JSON.stringify({
+            tab: styleBtn,
+            q: filters?.q || "",
+            operatorId: filters?.operatorId || "",
+            assignment: filters?.assignment || "",
+            tagId: filters?.tagId || "",
+            archived: filters?.archived ?? "",
+        })
+
+        const cachedOk =
+            Array.isArray(chatsFromRedux) &&
+            chatsFromRedux.length > 0 &&
+            typeof chatListQueryKey === "string" &&
+            chatListQueryKey === nextKey
+
+        // Si volvimos a la vista y el cache coincide, no resetear; opcional refresh silencioso por TTL
+        const TTL_MS = 15_000
+        const isStale =
+            !chatListUpdatedAt || (typeof chatListUpdatedAt === "number" && Date.now() - chatListUpdatedAt > TTL_MS)
+
+        if (cachedOk && !isStale) {
+            setLoading(false)
+            return
+        }
+
+        setLoading(true)
+        setIsLoadingMore(false)
+        setHasMore(true)
+        setPage(1)
+        if (!cachedOk) dispatch(setChats([]))
+
+        getChats(token, "1", `${CHAT_PAGE_LIMIT}`, filters)
+            .then((resp: any) => {
+                const items: ChatState[] = Array.isArray(resp?.chats) ? resp.chats : []
+                // Si había cache, mergeamos para no "perder" páginas ya cargadas; sino reemplazo directo
+                const merged = cachedOk ? mergeChatsById(chatsRef.current, items) : items
+                const MAX_CACHE = 1000
+                const nextList = Array.isArray(merged) ? merged.slice(0, MAX_CACHE) : merged
+                dispatch(setChats(nextList))
+                setHasMore(resolveHasMore(resp, CHAT_PAGE_LIMIT))
+                dispatch(setChatListCacheMeta({
+                    chatListQueryKey: nextKey,
+                    chatListHasMore: resolveHasMore(resp, CHAT_PAGE_LIMIT),
+                    chatListPage: 1,
+                    chatListUpdatedAt: Date.now(),
+                    chatListFilters: filters,
+                }))
+            })
+            .catch(() => {
+                // noop
+            })
+            .finally(() => setLoading(false))
+    }, [hydrated, token, debouncedSearch, selectedTag, selectedOperator, styleBtn, chatListQueryKey, chatListUpdatedAt, dispatch])
 
     // Estado inicial: no estamos en "Menciones" hasta que el usuario toque esa pestaña
     useEffect(() => {
@@ -269,6 +453,49 @@ const ListaChats = () => {
     }, [mentionUnreadCount, token, mentionsRefreshNonce])
     
     
+    const loadMoreChats = async () => {
+        if (!token) return
+        if (loading) return
+        if (isLoadingMore) return
+        if (!hasMore) return
+
+        const nextPage = page + 1
+        setIsLoadingMore(true)
+        try {
+            const filters = activeFiltersRef.current || {}
+            const resp = await getChats(token, `${nextPage}`, `${CHAT_PAGE_LIMIT}`, filters)
+            const incoming: ChatState[] = Array.isArray((resp as any)?.chats) ? (resp as any).chats : []
+            if (incoming.length === 0) {
+                setHasMore(false)
+                return
+            }
+            const merged = mergeChatsById(chatsFromRedux, incoming)
+            const MAX_CACHE = 1000
+            dispatch(setChats(merged.slice(0, MAX_CACHE)))
+            setPage(nextPage)
+            setHasMore(resolveHasMore(resp, CHAT_PAGE_LIMIT))
+            dispatch(setChatListCacheMeta({
+                chatListPage: nextPage,
+                chatListHasMore: resolveHasMore(resp, CHAT_PAGE_LIMIT),
+                chatListUpdatedAt: Date.now(),
+            }))
+        } catch {
+            // noop: no frenamos la UX por un error puntual en scroll
+        } finally {
+            setIsLoadingMore(false)
+        }
+    }
+
+    const handleListScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const el = e.currentTarget
+        // Persistimos scroll para volver al mismo lugar
+        dispatch(setChatListCacheMeta({ chatListScrollTop: el.scrollTop }))
+        const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - SCROLL_BOTTOM_THRESHOLD_PX
+        if (nearBottom) {
+            loadMoreChats()
+        }
+    }
+    
     
     useEffect(()=>{
         
@@ -280,8 +507,17 @@ const ListaChats = () => {
         const handleNuevoChat = async (_chat: ChatState) => {
             audioRef.current.play()
             try {
-                const chatos = await getChats(token,'1','100')
-                dispatch(setChats(chatos.chats))
+                const filters = activeFiltersRef.current || {}
+                const chatos = await getChats(token, '1', `${CHAT_PAGE_LIMIT}`, filters)
+                const firstPage: ChatState[] = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
+                const merged = mergeChatsById(chatsRef.current, firstPage)
+                const MAX_CACHE = 1000
+                dispatch(setChats(merged.slice(0, MAX_CACHE)))
+                setHasMore(resolveHasMore(chatos, CHAT_PAGE_LIMIT))
+                dispatch(setChatListCacheMeta({
+                    chatListHasMore: resolveHasMore(chatos, CHAT_PAGE_LIMIT),
+                    chatListUpdatedAt: Date.now(),
+                }))
             } catch {}
         }
 
@@ -327,69 +563,19 @@ const ListaChats = () => {
         aplicarFiltros(selectRef.current?.value || '', tagValue, undefined, searchChat)
     }
 
-    const normalizeSearch = (value: string) => {
-        return (value || '')
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[\s()+\-]/g, '')
-    }
-
-    const onlyDigits = (value: string) => (value || '').replace(/\D/g, '')
-
-    const aplicarFiltros = (operadorValue: string, tagValue: string, chatsBase?: ChatState[], searchValue?: string) => {
-        const baseChats = chatsBase || chats1
-        let filtrados: ChatState[] = []
-
-        // Filtro por operador
-        if(operadorValue === "" || operadorValue === "TODOS"){
-            filtrados = [...baseChats]
-        }else if(operadorValue === 'BOT'){
-            filtrados = baseChats.filter(chat => getAssignment(chat) === 'bot')
-        }else{
-            filtrados = baseChats.filter(chat => getAssignment(chat) === 'assigned' && chat.operador?.id === operadorValue)
-        }
-
-        // Filtro por tag
-        if(tagValue && tagValue !== ""){
-            filtrados = filtrados.filter(chat => 
-                chat.tags && chat.tags.some(tag => tag.id === tagValue)
-            )
-        }
-
-        const q = (searchValue ?? '').trim()
-        if (q.length > 0) {
-            const qNorm = normalizeSearch(q)
-            const qDigits = onlyDigits(q)
-
-            filtrados = filtrados.filter(chat => {
-                const nombre = chat?.cliente?.nombre || ''
-                const apellido = chat?.cliente?.apellido || ''
-                const telefono = chat?.cliente?.telefono || ''
-
-                const haystack = normalizeSearch(`${nombre} ${apellido} ${telefono}`)
-                if (qNorm && haystack.includes(qNorm)) return true
-
-                if (qDigits.length > 0) {
-                    const telDigits = onlyDigits(telefono)
-                    if (telDigits.includes(qDigits)) return true
-                }
-
-                return false
-            })
-        }
-
-        setFiltrados(filtrados)
+    const aplicarFiltros = (_operadorValue: string, _tagValue: string, chatsBase?: ChatState[], _searchValue?: string) => {
+        // Buscador y filtros (operador/etiqueta) ahora son server-side via GET /chats.
+        // Esta función se mantiene para reutilizar la UI existente (tabs) sin refactor grande.
+        setFiltrados(chatsBase || chats1)
     }
 
     useEffect(() => {
         const userId = searchParams.get('userId');
-        if (userId && selectRef.current && users.length > 1 && chats1.length > 0) {
+        if (userId && selectRef.current && users.length > 1) {
             selectRef.current.value = userId;
             setSelectedOperator(userId);
-            aplicarFiltros(userId, selectedTag, undefined, searchChat);
         }
-    }, [users, chats1, searchParams, loading, selectedTag, searchChat])
+    }, [users, searchParams])
 
     useEffect(() => {
         if (chatsFromRedux.length > 0) {
@@ -583,7 +769,7 @@ const ListaChats = () => {
                         className="btn-item"
                     >
                         Sin asignar
-                        <span>{sinAsignar.length}</span>
+                        <span>{tabCounts.unassigned}</span>
                     </button>
                    
                 </div>
@@ -601,7 +787,7 @@ const ListaChats = () => {
                         className="btn-item"
                     >
                         Asignadas a mí
-                        <span>{asignadas.length}</span>
+                        <span>{tabCounts.mine}</span>
                     </button>
                     
                 </div>
@@ -619,7 +805,7 @@ const ListaChats = () => {
                         className="btn-item"
                     >
                         Asignadas a otros
-                        <span>{asignadasOtros.length}</span>
+                        <span>{tabCounts.others}</span>
                     </button>
                    
                 </div>
@@ -637,7 +823,7 @@ const ListaChats = () => {
                         className="btn-item"
                     >
                         Archivadas
-                        <span>{archivadas.length}</span>
+                        <span>{tabCounts.archived}</span>
                     </button>
                    
                 </div>
@@ -672,13 +858,13 @@ const ListaChats = () => {
                         className="btn-item"
                     >
                         Bots
-                        <span>{bots.length}</span>
+                        <span>{tabCounts.bots}</span>
                     </button>
                    
                 </div>
             </div>
             <div className="lista-main">
-                <div className="col-lista">
+                <div className="col-lista" ref={listRef} onScroll={handleListScroll}>
                     {chats1.length === 0 && !loading && (
                         <p className="msg-error">No hay chats disponibles</p>
                     )}

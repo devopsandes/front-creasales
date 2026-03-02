@@ -141,8 +141,30 @@ export interface Mensaje {
 }
 
 export interface ChatsResponse {
-    statcusCode: number;
-    chats:       ChatState[];
+    // backend previo (typo shipped)
+    statcusCode?: number;
+    // backend actual
+    statusCode?: number;
+    page?: number;
+    limit?: number;
+    hasMore?: boolean;
+    chats: ChatState[];
+}
+
+export interface ChatCounts {
+    total: number;
+    archived: number;
+    bots: number;
+    unassigned: number;
+    mine: number;
+    others: number;
+}
+
+export interface ChatCountsResponse {
+    // compat
+    statcusCode?: number;
+    statusCode?: number;
+    counts: ChatCounts;
 }
 
 export interface Chat {
