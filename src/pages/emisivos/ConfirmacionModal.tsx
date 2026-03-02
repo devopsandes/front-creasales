@@ -5,6 +5,7 @@ import './ConfirmacionModal.css';
 
 interface ConfirmacionModalProps {
   payload: Record<string, unknown>;
+  totalAfectados?: number | null;
   onConfirmar: () => void;
   onCancelar: () => void;
 }
@@ -22,7 +23,7 @@ const plantillasNombres: Record<string, string> = {
   "9": "Referidos",
 };
 
-const ConfirmacionModal = ({ payload, onConfirmar, onCancelar }: ConfirmacionModalProps) => {
+const ConfirmacionModal = ({ payload, totalAfectados, onConfirmar, onCancelar }: ConfirmacionModalProps) => {
 
   const canales = [
     payload.correo === 1 && { icon: <FaEnvelope />, label: 'Email', cls: 'canal-email' },
@@ -82,6 +83,22 @@ const ConfirmacionModal = ({ payload, onConfirmar, onCancelar }: ConfirmacionMod
 
         <div className="modal-body">
 
+          {/* Total afectados */}
+          {totalAfectados !== null && totalAfectados !== undefined && (
+            <div className="modal-section">
+              <div className="modal-section-title">
+                <FaUser className="modal-section-icon" />
+                Usuarios afectados
+              </div>
+              <div className="modal-row">
+                <span className="modal-row-label">Total</span>
+                <span className="modal-row-val" style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                  {totalAfectados} usuarios
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Canales */}
           <div className="modal-section">
             <div className="modal-section-title">
@@ -118,7 +135,7 @@ const ConfirmacionModal = ({ payload, onConfirmar, onCancelar }: ConfirmacionMod
             )}
           </div>
 
-          {/* Filtros — solo si no es CUIL y hay filtros activos */}
+          {/* Filtros */}
           {!esCuil && filtrosActivos.length > 0 && (
             <div className="modal-section">
               <div className="modal-section-title">

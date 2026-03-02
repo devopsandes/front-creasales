@@ -59,6 +59,7 @@ const CrearNotificaciones = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<Record<string, unknown> | null>(null);
+  const [totalAfectados, setTotalAfectados] = useState<number | null>(null);
 
   const plantillas = [
     { id: 0, nombre: "Sin plantilla" },
@@ -72,17 +73,6 @@ const CrearNotificaciones = () => {
     { id: 8, nombre: "Prevencion-Estafas" },
     { id: 9, nombre: "Referidos" },
   ];
-
-  // const planesOptions = [
-  //   { value: "todos", label: "Todos" },
-  //   { value: "TITANIUM", label: "Titanium" },
-  //   { value: "TITANIUM PLUS C/C", label: "Titanium Plus C/C" },
-  //   { value: "TITANIUM PLUS S/C", label: "Titanium Plus S/C" },
-  //   { value: "BLACK", label: "Black" },
-  //   { value: "PLATINUM", label: "Platinum" },
-  //   { value: "GOLD", label: "Gold" },
-  //   { value: "PMO", label: "Pmo" },
-  // ];
 
   const estadosOptions = [{ value: "ALTA", label: "Alta" }, { value: "BAJA", label: "Baja" }];
   const categoriaClienteOptions = [
@@ -166,6 +156,45 @@ const CrearNotificaciones = () => {
     setTimeout(() => setShowToast(false), 4000);
   };
 
+  const consultarTotalAfectados = async (payload: Record<string, unknown>) => {
+    try {
+      const filtroPlan = payload.filtroPlan as string[];
+      const filtroProvincia = payload.filtroProvincia as string[];
+      const periodoAdeudado = payload.filtroPeriodoAdeudado as string;
+      const montoInferior = payload.filtroMontoInferior as string;
+      const montoSuperior = payload.filtroMontoSuperior as string;
+
+      const tieneFiltroDeDedor = periodoAdeudado || montoInferior || montoSuperior;
+
+      const body: Record<string, unknown> = {
+        deudores: tieneFiltroDeDedor ? 1 : 0,
+      };
+
+      if (filtroPlan && filtroPlan.length > 0) body.plan = filtroPlan;
+      if (filtroProvincia && filtroProvincia.length > 0) body.provincia = filtroProvincia;
+      if (payload.filtroEstadoDelCliente) body.estadoCliente = payload.filtroEstadoDelCliente;
+      if (payload.filtroCategoriaCliente && payload.filtroCategoriaCliente !== 'todas') body.categoria = payload.filtroCategoriaCliente;
+      if (payload.filtroCategoriaAndes && payload.filtroCategoriaAndes !== 'todas') body.categoriaAndes = payload.filtroCategoriaAndes;
+      if (payload.filtroTipoConsumidor && payload.filtroTipoConsumidor !== 'todos') body.tipoConsumidor = payload.filtroTipoConsumidor;
+      if (payload.filtroObraSocial && payload.filtroObraSocial !== 'todas') body.obraSocial = payload.filtroObraSocial;
+      if (payload.filtroTipoDePago && payload.filtroTipoDePago !== 'todos los medios de pago') body.tipoDePago = payload.filtroTipoDePago;
+      if (montoInferior) body.montoInferior = montoInferior;
+      if (montoSuperior) body.montoSuperior = montoSuperior;
+      if (periodoAdeudado) body.periodoAdeudado = periodoAdeudado;
+      console.log('body filtros:', JSON.stringify(body, null, 2));
+      const response = await fetch('https://fiscalizacion.createch.com.ar/padrones/filtros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+      return data?.meta?.total ?? null;
+    } catch {
+      return null;
+    }
+  };
+
   const buildPayload = () => {
     const base = {
       filtroPlan: filtros.planes.todos
@@ -177,7 +206,7 @@ const CrearNotificaciones = () => {
         ? []
         : (Object.keys(filtros.provincias) as Array<keyof typeof filtros.provincias>)
           .filter(key => key !== 'todas' && filtros.provincias[key])
-          .map(key => ({ todas: 'todas', mendoza: 'mendoza', sanJuan: 'san juan', cordoba: 'cordoba', sanLuis: 'san luis', laRioja: 'la rioja' }[key])),
+          .map(key => ({ todas: 'todas', mendoza: 'MENDOZA', sanJuan: 'SAN JUAN', cordoba: 'CORDOBA', sanLuis: 'SAN LUIS', laRioja: 'LA RIOJA' }[key])),
       filtroEstadoDelCliente: filtros.estadoCliente,
       filtroCategoriaCliente: filtros.categoriaCliente,
       filtroCategoriaAndes: filtros.categoriaAndes,
@@ -196,7 +225,6 @@ const CrearNotificaciones = () => {
       push: form.canales.push ? 1 : 0,
     };
 
-    // Si hay CUIL activo no se envían diasDeEnvio ni nombreNotificacion
     if (isCuilActive) {
       return base;
     }
@@ -208,7 +236,7 @@ const CrearNotificaciones = () => {
     };
   };
 
-  const handleEnviar = () => {
+  const handleEnviar = async () => {
     if (isCuilActive && !filtros.cuil.trim()) {
       showToastMessage('error', 'Por favor, ingrese un CUIL'); return;
     }
@@ -218,11 +246,18 @@ const CrearNotificaciones = () => {
     if ((!form.plantilla || form.plantilla === "0") && (!form.titulo?.trim()) && (!form.cuerpo?.trim())) {
       showToastMessage('error', 'Debe seleccionar una plantilla'); return;
     }
-    // Validar nombreNotificacion solo si no hay CUIL
     if (!isCuilActive && !form.nombreNotificacion.trim()) {
       showToastMessage('error', 'Debe ingresar un nombre para la notificación masiva'); return;
     }
-    setPendingPayload(buildPayload() as Record<string, unknown>);
+
+    const payload = buildPayload() as Record<string, unknown>;
+    setPendingPayload(payload);
+
+    if (!isCuilActive) {
+      const total = await consultarTotalAfectados(payload);
+      setTotalAfectados(total);
+    }
+
     setShowModal(true);
   };
 
@@ -278,7 +313,6 @@ const CrearNotificaciones = () => {
 
       <div className="emisivos-container">
         <div className="emisivos-content">
-          {/* Sidebar de Filtros */}
           <aside className="emisivos-sidebar">
             <div className="emisivos-sidebar-header">
               <h3 className="emisivos-sidebar-title">Filtros de Destinatarios</h3>
@@ -386,10 +420,8 @@ const CrearNotificaciones = () => {
             </div>
           </aside>
 
-          {/* Main Content */}
           <main className="emisivos-main">
             <div className="emisivos-form-container">
-              {/* Canales */}
               <div className="emisivos-channels">
                 <h3 className="emisivos-channels-title">Canales de Envío</h3>
                 <div className="emisivos-channels-grid">
@@ -407,7 +439,6 @@ const CrearNotificaciones = () => {
                 </div>
               </div>
 
-              {/* Nombre de la Notificación — siempre visible cuando no hay CUIL */}
               {!isCuilActive && (
                 <div className="emisivos-days-section">
                   <div className="emisivos-form-group">
@@ -426,7 +457,6 @@ const CrearNotificaciones = () => {
                 </div>
               )}
 
-              {/* Días de Envío */}
               <div className={`emisivos-days-section ${isCuilActive ? 'emisivos-days-disabled' : ''}`}>
                 <div className="emisivos-days-header">
                   <h3 className="emisivos-days-title">Días de Envío</h3>
@@ -463,7 +493,6 @@ const CrearNotificaciones = () => {
                 </div>
               </div>
 
-              {/* Formulario */}
               <div className="emisivos-form">
                 <h3 className="emisivos-form-title">Contenido del Mensaje</h3>
 
@@ -497,16 +526,15 @@ const CrearNotificaciones = () => {
         </div>
       </div>
 
-      {/* Modal de confirmación */}
       {showModal && pendingPayload && (
         <ConfirmacionModal
           payload={pendingPayload}
+          totalAfectados={totalAfectados}
           onConfirmar={handleConfirmar}
           onCancelar={() => { setShowModal(false); setPendingPayload(null); }}
         />
       )}
 
-      {/* Toast */}
       {showToast && (
         <div className={`emisivos-toast ${toastType === 'success' ? 'emisivos-toast-success' : 'emisivos-toast-error'}`}>
           <div className="emisivos-toast-content">

@@ -15,6 +15,8 @@ import { consultarDeuda, uploadArchivos } from '../../services/tickets/tickets.s
 
 const CrearTicketModal = () => {
 
+    console.log('URL BACKEND:', import.meta.env.VITE_URL_BACKEND);
+
     const [departamento, setDepartamento] = useState('');
     const [tipificacion, setTipificacion] = useState('');
     const [busquedaAfiliado, setBusquedaAfiliado] = useState('');
@@ -148,13 +150,19 @@ const CrearTicketModal = () => {
 
     // FUNCIÓN PARA IR A ZOHO
     const handleIrAZoho = () => {
+        console.log('ticketCreado:', ticketCreado);
+        console.log('idZoho:', ticketCreado?.idZoho);
+        console.log('departamento:', departamento);
+        console.log('ticketCreado:', ticketCreado);
+        console.log('departamento estado:', departamento);
+        console.log('departamento ticket:', ticketCreado?.departamento);
         if (ticketCreado?.idZoho && departamento) {
             // Mapeo de departamentos a URLs de Zoho
             const departamentoUrlMap: { [key: string]: string } = {
-                '564264000000175045': 'prestaciones-medicas',
+                '564264000000175045': 'prestaciones-médicas',
                 '564264000000179032': 'fiscalizacion',
                 '564264000000181969': 'afiliaciones',
-                '564264000000184906': 'atención-al-afiliado',
+                '564264000000184906': 'atencion-al-afiliado',
                 '564264000042384029': 'internaciones',
                 '564264000000188843': 'preexistencias',
                 '564264000065821073': 'gapri'
