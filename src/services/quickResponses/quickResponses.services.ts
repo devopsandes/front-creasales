@@ -6,7 +6,18 @@ export type QuickResponsesListResponse={items:QuickResponse[];total?:number;page
 type BackendListResponse={statusCode:number;page:number;limit:number;total:number;paginas:number;quickResponses:QuickResponse[];message?:any;error?:string}
 type BackendOneResponse={statusCode:number;quickResponse:QuickResponse;message?:any;error?:string}
 
-const baseUrl=()=>`${import.meta.env.VITE_URL_BACKEND}/quick-responses`
+const apiBase=()=>{
+  const raw=`${import.meta.env.VITE_URL_BACKEND??""}`.trim()
+  if(!raw)return"/api/v1"
+  if(/^https?:\/\//i.test(raw))return raw.replace(/\/+$/,"")
+  let base=raw
+  if(!base.startsWith("/"))base=`/${base}`
+  base=base.replace(/\/+$/,"")
+  if(base.includes("/api/v1"))return base
+  return`${base}/api/v1`
+}
+
+const baseUrl=()=>`${apiBase()}/quick-responses`
 
 export const getQuickResponses=async(token:string,params?:{search?:string;page?:number;limit?:number}):Promise<QuickResponsesListResponse>=>{
   try{
