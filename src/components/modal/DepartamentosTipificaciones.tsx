@@ -74,12 +74,16 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
             nombre: 'Prestaciones Médicas',
             tipificaciones: [
                 'Cronicidad',
+                'Diabetes',
                 'Reintegro',
                 'Carga Certificado Discapacidad',
                 'Problemas al utilizar servicio',
                 'Medicamentos',
                 'Estudio o Práctica Médica',
-                'Anticonceptivos'
+                'Anticonceptivos',
+                'Internación domiciliaria',
+                'Fertilidad',
+                'Carga de vía clínica'
             ]
         },
         '564264000000179032': {
@@ -404,6 +408,42 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                 </>
             )}
 
+            {departamento === '564264000000175045' && tipificacion === 'Diabetes' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Observaciones</label>
+                        <textarea
+                            placeholder="Ingrese una observación"
+                            className="ticket-modal-textarea"
+                            value={observaciones}
+                            onChange={(e) => {
+                                setObservaciones(e.target.value);
+                                updateData({ observaciones: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ observaciones, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
+                </>
+            )}
+
             {departamento === '564264000000175045' && tipificacion === 'Reintegro' && (
                 <>
                     <div className="ticket-modal-form-group">
@@ -591,6 +631,114 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                         ))}
                     </select>
                 </div>
+            )}
+
+            {departamento === '564264000000175045' && tipificacion === 'Internación domiciliaria' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Observaciones</label>
+                        <textarea
+                            placeholder="Ingrese una observación"
+                            className="ticket-modal-textarea"
+                            value={observaciones}
+                            onChange={(e) => {
+                                setObservaciones(e.target.value);
+                                updateData({ observaciones: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ observaciones, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
+                </>
+            )}
+
+            {departamento === '564264000000175045' && tipificacion === 'Fertilidad' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Observaciones</label>
+                        <textarea
+                            placeholder="Ingrese una observación"
+                            className="ticket-modal-textarea"
+                            value={observaciones}
+                            onChange={(e) => {
+                                setObservaciones(e.target.value);
+                                updateData({ observaciones: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ observaciones, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
+                </>
+            )}
+
+            {departamento === '564264000000175045' && tipificacion === 'Carga de vía clínica' && (
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Observaciones</label>
+                        <textarea
+                            placeholder="Ingrese una observación"
+                            className="ticket-modal-textarea"
+                            value={observaciones}
+                            onChange={(e) => {
+                                setObservaciones(e.target.value);
+                                updateData({ observaciones: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ observaciones, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
+                </>
             )}
 
             {/* FISCALIZACIÓN */}
@@ -1688,7 +1836,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             onChange={(e) => {
                                 const files = Array.from(e.target.files || []);
                                 setArchivosImagenes(files);
-                                updateData({prestador, observaciones, archivosFiles: files });
+                                updateData({ prestador, observaciones, archivosFiles: files });
                             }}
                         />
                         {archivosImagenes.length > 0 && (

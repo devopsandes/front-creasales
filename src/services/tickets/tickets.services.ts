@@ -160,6 +160,20 @@ const uploadArchivos = async (token: string, ticketId: string, files: File[]) =>
     }
 }
 
+export const irAZoho = async (token: string, ticketId: string) => {
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/tickets/${ticketId}/ir-a-zoho`;
+        const headers = { authorization: `Bearer ${token}` };
+        const { data } = await axios.post(url, {}, { headers });
+        return data;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data;
+        }
+        throw error;
+    }
+}
+
 export { getTickets, getTicketById, createTicket, buscarAfiliado, deleteTicket, consultarDeuda, uploadArchivos }
 
 

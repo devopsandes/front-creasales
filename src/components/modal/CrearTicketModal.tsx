@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { closeModalTicket } from '../../app/slices/actionSlice';
 import { RootState } from '../../app/store';
 import { createTicket } from '../../services/tickets/tickets.services';
+import { irAZoho } from '../../services/tickets/tickets.services';
 import { toast } from 'react-toastify';
 import XMark from '../icons/XMark';
 import './ticket-modal.css';
@@ -149,15 +150,8 @@ const CrearTicketModal = () => {
     };
 
     // FUNCIÓN PARA IR A ZOHO
-    const handleIrAZoho = () => {
-        console.log('ticketCreado:', ticketCreado);
-        console.log('idZoho:', ticketCreado?.idZoho);
-        console.log('departamento:', departamento);
-        console.log('ticketCreado:', ticketCreado);
-        console.log('departamento estado:', departamento);
-        console.log('departamento ticket:', ticketCreado?.departamento);
+    const handleIrAZoho = async () => {
         if (ticketCreado?.idZoho && departamento) {
-            // Mapeo de departamentos a URLs de Zoho
             const departamentoUrlMap: { [key: string]: string } = {
                 '564264000000175045': 'prestaciones-médicas',
                 '564264000000179032': 'fiscalizacion',
@@ -168,9 +162,10 @@ const CrearTicketModal = () => {
                 '564264000065821073': 'gapri'
             };
 
+            await irAZoho(token, ticketCreado.id);
+
             const seccionZoho = departamentoUrlMap[departamento] || 'atencion-al-afiliado';
             const urlZoho = `https://desk.zoho.com/agent/andessalud21/${seccionZoho}/tickets/details/${ticketCreado.idZoho}`;
-
             window.open(urlZoho, '_blank');
         }
         handleCloseSuccess();

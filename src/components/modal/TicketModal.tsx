@@ -3,6 +3,7 @@ import { RootState } from "../../app/store";
 import { closeModalTeca, openSessionExpired } from "../../app/slices/actionSlice";
 import { useEffect, useRef, useState } from "react";
 import { getTicketById } from "../../services/tickets/tickets.services";
+import { irAZoho } from '../../services/tickets/tickets.services';
 import { Ticket } from "../../interfaces/tickets.interface";
 import { formatCreatedAt } from "../../utils/functions";
 import { Mensaje } from "../../interfaces/chats.interface";
@@ -63,9 +64,8 @@ const TicketModal = () => {
         }
     }
 
-    const handleIrAZoho = () => {
+    const handleIrAZoho = async () => {
         if (ticket?.idZoho && ticket?.departamento) {
-            // Mapeo de departamentos a URLs de Zoho
             const departamentoUrlMap: { [key: string]: string } = {
                 '564264000000175045': 'prestaciones-médicas',
                 '564264000000179032': 'fiscalizacion',
@@ -76,9 +76,10 @@ const TicketModal = () => {
                 '564264000065821073': 'gapri'
             };
 
+            await irAZoho(token, ticket.id);
+
             const seccionZoho = departamentoUrlMap[ticket.departamento] || 'atencion-al-afiliado';
             const urlZoho = `https://desk.zoho.com/agent/andessalud21/${seccionZoho}/tickets/details/${ticket.idZoho}`;
-
             window.open(urlZoho, '_blank');
         }
     };
