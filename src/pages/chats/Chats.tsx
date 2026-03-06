@@ -39,7 +39,7 @@ import { jwtDecode } from "jwt-decode"
 
 
 const Chats = () => {
-    const [usuarios,setUsuarios] = useState<Usuario[]>([])
+    const [usuarios, setUsuarios] = useState<Usuario[]>([])
     const [selectedMentionUser, setSelectedMentionUser] = useState<Usuario | null>(null)
     const [mensajes, setMensajes] = useState<TimelineItem[]>([])
     const [mensaje, setMensaje] = useState<string>('')
@@ -58,11 +58,11 @@ const Chats = () => {
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const mensajeInputRef = useRef<HTMLInputElement | null>(null);
-    const [quickResponses,setQuickResponses] = useState<QuickResponse[]>([])
-    const [qrOpen,setQrOpen] = useState(false)
-    const [qrFiltered,setQrFiltered] = useState<QuickResponse[]>([])
-    const [qrActiveIndex,setQrActiveIndex] = useState(0)
-    const [qrTriggerRange,setQrTriggerRange] = useState<{start:number;end:number}|null>(null)
+    const [quickResponses, setQuickResponses] = useState<QuickResponse[]>([])
+    const [qrOpen, setQrOpen] = useState(false)
+    const [qrFiltered, setQrFiltered] = useState<QuickResponse[]>([])
+    const [qrActiveIndex, setQrActiveIndex] = useState(0)
+    const [qrTriggerRange, setQrTriggerRange] = useState<{ start: number; end: number } | null>(null)
 
 
 
@@ -71,14 +71,14 @@ const Chats = () => {
 
     const location = useLocation()
     const navigate = useNavigate()
-    
-   
-    const id = useParams().id 
+
+
+    const id = useParams().id
     const queryParams = new URLSearchParams(location.search);
     const telefono = queryParams.get('telefono');
     const nombre = queryParams.get('nombre');
 
-  
+
 
     // Referencia para el contenedor de mensajes
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
@@ -424,33 +424,33 @@ const Chats = () => {
             const resp = await getUserData(telefono!);
             dispatch(setUserData(resp));
             dispatch(setViewSide(true))
-            
+
             if (resp.statusCode === 401) {
                 dispatch(openSessionExpired())
                 return
             }
         }
         ejecucion();
-    },[, location])
+    }, [, location])
 
     // Importante UX: NO marcamos menciones como leídas al abrir el chat.
     // Solo se marcarán como leídas cuando el usuario lo haga explícitamente (botón "Marcar como leído").
 
-  
 
-    
-    
-    useEffect(()=>{
+
+
+
+    useEffect(() => {
         dispatch(connectSocket())
         const socket = getSocket()
         setLoading(true)
-        socket?.emit('register',telefono)
+        socket?.emit('register', telefono)
         return () => {
             // dispatch(disconnectSocket())
         }
-    },[dispatch, telefono])
-    
-   
+    }, [dispatch, telefono])
+
+
 
     useEffect(() => {
         const socket = getSocket()
@@ -567,7 +567,7 @@ const Chats = () => {
                 dispatch(openSessionExpired())
                 return
             }
-            
+
             const rawItems: any[] = (data as any).items || []
             if (debugTimeline) {
                 console.log("[Chats] timeline raw items", {
@@ -580,10 +580,10 @@ const Chats = () => {
             const items = rawItems
                 .map(normalizeTimelineItem)
                 .sort((a, b) => {
-                const ta = new Date((a as any)?.createdAt ?? 0).getTime()
-                const tb = new Date((b as any)?.createdAt ?? 0).getTime()
-                return ta - tb
-            })
+                    const ta = new Date((a as any)?.createdAt ?? 0).getTime()
+                    const tb = new Date((b as any)?.createdAt ?? 0).getTime()
+                    return ta - tb
+                })
 
             setMensajes(items)
             if (debugTimeline) {
@@ -605,7 +605,7 @@ const Chats = () => {
             }
 
             setLoading(false)
-            
+
         }
         inicio()
     }, [id, token])
@@ -628,41 +628,91 @@ const Chats = () => {
             const list = Array.isArray((resp as any)?.items) ? (resp as any).items : []
             setQuickResponses(list)
         }
-        run().catch(() => {})
+        run().catch(() => { })
     }, [token])
 
-    const handleClickBtn = (e: FormEvent<HTMLFormElement>) => {
+    const handleClickBtn = async (e: FormEvent<HTMLFormElement>) => {
         try {
+
             e.preventDefault()
-            console.log(archivo == null);
-            
-            if(mensaje.length === 0 && archivo == null) {
+
+            if (mensaje.length === 0 && archivo == null) {
                 setErrorModalMessage('Debe escribir un mensaje')
                 setIsErrorModalOpen(true)
                 return
             }
+
             const socket = getSocket()
+
+            // 📂 CASO 1 — HAY ARCHIVO → HTTP
+            if (archivo) {
+
+                const formData = new FormData()
+
+                if (!id) {
+                    setErrorModalMessage("Chat inválido")
+                    setIsErrorModalOpen(true)
+                    return
+                }
+
+                formData.append("chatId", id)
+
+                if (mensaje)
+                    formData.append("text", mensaje)
+
+                formData.append("file", archivo)
+
+                await axios.post(
+                    `${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`,
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                )
+
+                setMensaje('')
+                setArchivo(null)
+
+                return
+            }
+
+            // 💬 CASO 2 — SOLO TEXTO → SOCKET
             if (socket && socket.connected) {
+
                 const objMsj = {
                     mensaje,
                     chatId: id,
                     telefono,
-                    token,
-                    archivo,
-                    fileName: archivo?.name,
-                    ext: archivo?.type.split('/')[1]
+                    token
                 }
+
+                socket.emit("enviar-mensaje", objMsj)
+
                 setMensaje('')
                 setArchivo(null)
-                socket.emit("enviar-mensaje", objMsj);
+
             } else {
-                console.warn("Socket desconectado, enviando por HTTP...");
-                //await axios.post("/api/mensajes", { contenido: mensaje, usuarioId: "12345", chatId: "67890" });
+
+                console.warn("Socket desconectado, enviando por HTTP...")
+
+                await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, {
+                    chatId: id,
+                    text: mensaje
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+
+                setMensaje('')
             }
+
         } catch (error) {
-            console.log(error);
+            console.log(error)
         }
-     
     }
 
     const handleArchivarClick = () => {
@@ -714,13 +764,13 @@ const Chats = () => {
         try {
             const socket = getSocket()
             if (socket && socket.connected) {
-               const objMsj = {
-                mensaje,
-                chatId: id,
-                telefono,
-                token
-               }
-               
+                const objMsj = {
+                    mensaje,
+                    chatId: id,
+                    telefono,
+                    token
+                }
+
                 if (debugTimeline) {
                     console.log("[socket] emit archivar", objMsj, {
                         connected: socket.connected,
@@ -809,7 +859,7 @@ const Chats = () => {
 
             // Base URL única: siempre salir vía VITE_URL_BACKEND (staging/prod)
             const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/messages`
-            
+
             const headers = {
                 authorization: `Bearer ${token}`
             }
@@ -879,31 +929,36 @@ const Chats = () => {
         setIsDeleteModalOpen(false);
     }
 
-    
 
-    
+
+
     // El tipo correcto para el evento de input tipo file es React.ChangeEvent<HTMLInputElement></HTMLInputElement>
     const handleAddFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files![0];
 
+        const file = e.target.files?.[0];
+        const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+        if (!file) return;
 
         const tipos = [
-        "application/pdf",
-        "image/jpeg",
-        "image/png",
-        ]
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ];
 
-        if(file.size >= 5242880 ){
-
-            toast.error(`El archivo debe pesar menos de 5MB`);
-            return
+        if (file.size >= MAX_FILE_SIZE) {
+            toast.error("El archivo debe pesar menos de 50MB");
+            return;
         }
 
-        // if (regex.test(file.name)) {
         if (tipos.includes(file.type)) {
             setArchivo(file);
+            e.target.value = "";
         } else {
-            toast.error(`Solo se permiten archivos pdf, jpeg, png`);
+            toast.error("Solo se permiten archivos pdf, jpeg, png");
         }
     };
 
@@ -1028,7 +1083,7 @@ const Chats = () => {
         // textareaRef.current!.focus();
     };
 
-   
+
 
     return (
         <div className='chats-container'>
@@ -1040,7 +1095,7 @@ const Chats = () => {
             {!loading && (
                 <div className='main-chat'>
                     <div className='header-chat'>
-                       
+
                         <div className='header-icon'>
                             <FaCircleUser size={25} />
                         </div>
@@ -1183,11 +1238,11 @@ const Chats = () => {
                             <p className='w-full p-1 text-red-600 text-center text-sm'>{archivo.name}</p>
                         )}
                         {condChat ? (
-                            
+
                             <form action="" className='enviar-msj gap-1 relative w-full ' onSubmit={handleClickBtn}>
-                                <input 
-                                    type="text" 
-                                    placeholder='Escriba un mensaje' 
+                                <input
+                                    type="text"
+                                    placeholder='Escriba un mensaje'
                                     className='input-msg'
                                     value={mensaje}
                                     onChange={handleChangeText}
@@ -1198,10 +1253,10 @@ const Chats = () => {
                                     type='button'
                                     onClick={handleClickFile}
                                 >
-                                    <IoIosAttach size={25} className='text-gray-700 cursor-pointer'/>
+                                    <IoIosAttach size={25} className='text-gray-700 cursor-pointer' />
                                     {/* Elimina cualquier texto o estilos extra, solo el input oculto */}
-                                   
-                                   
+
+
                                 </button>
 
                                 <input
@@ -1215,51 +1270,51 @@ const Chats = () => {
 
                                 {qrOpen && (
                                     <ul className="absolute bottom-12 left-2 w-96 max-h-60 overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden rounded-xl bg-slate-50/95 backdrop-blur-sm shadow-lg ring-1 ring-slate-200">
-                                    {qrFiltered.length ? (
-                                        qrFiltered.map((qr, idx) => (
-                                        <li
-                                            key={qr.id}
-                                            onMouseDown={(e) => {
-                                                e.preventDefault()
-                                                insertQuickResponse(qr)
-                                            }}
-                                            className={`px-3 py-2 cursor-pointer text-slate-700 text-left hover:bg-indigo-50 hover:text-slate-900 transition-colors ${idx === qrActiveIndex ? 'bg-indigo-50 text-slate-900' : ''}`}
-                                        >
-                                            <div className="font-semibold">/{qr.shortcut}</div>
-                                            <div className="text-xs text-slate-500 truncate">{qr.text}</div>
-                                        </li>
-                                        ))
-                                    ) : (
-                                        <li className="px-3 py-2 text-gray-400">No hay coincidencias</li>
-                                    )}
+                                        {qrFiltered.length ? (
+                                            qrFiltered.map((qr, idx) => (
+                                                <li
+                                                    key={qr.id}
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault()
+                                                        insertQuickResponse(qr)
+                                                    }}
+                                                    className={`px-3 py-2 cursor-pointer text-slate-700 text-left hover:bg-indigo-50 hover:text-slate-900 transition-colors ${idx === qrActiveIndex ? 'bg-indigo-50 text-slate-900' : ''}`}
+                                                >
+                                                    <div className="font-semibold">/{qr.shortcut}</div>
+                                                    <div className="text-xs text-slate-500 truncate">{qr.text}</div>
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <li className="px-3 py-2 text-gray-400">No hay coincidencias</li>
+                                        )}
                                     </ul>
                                 )}
                                 {showList && (
                                     <ul className="absolute bottom-12 left-2 w-80 max-h-48 overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden rounded-xl bg-slate-50/95 backdrop-blur-sm shadow-lg ring-1 ring-slate-200">
-                                    {filteredUsers.length ? (
-                                        filteredUsers.map((user) => (
-                                        <li
-                                            key={user.id}
-                                            onClick={() => handleSelectUser(user)}
-                                            className="px-3 py-2 cursor-pointer text-slate-700 text-left whitespace-nowrap overflow-hidden text-ellipsis hover:bg-indigo-50 hover:text-slate-900 transition-colors"
-                                        >
-                                            @{(user.nombre || '').toLowerCase().replace(/\s+/g, '')}{" "}
-                                            <span className="text-gray-500">— {toTitleCase(user.apellido)} {toTitleCase(user.nombre)}</span>
-                                        </li>
-                                        ))
-                                    ) : (
-                                        <li className="px-3 py-2 text-gray-400">No hay coincidencias</li>
-                                    )}
+                                        {filteredUsers.length ? (
+                                            filteredUsers.map((user) => (
+                                                <li
+                                                    key={user.id}
+                                                    onClick={() => handleSelectUser(user)}
+                                                    className="px-3 py-2 cursor-pointer text-slate-700 text-left whitespace-nowrap overflow-hidden text-ellipsis hover:bg-indigo-50 hover:text-slate-900 transition-colors"
+                                                >
+                                                    @{(user.nombre || '').toLowerCase().replace(/\s+/g, '')}{" "}
+                                                    <span className="text-gray-500">— {toTitleCase(user.apellido)} {toTitleCase(user.nombre)}</span>
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <li className="px-3 py-2 text-gray-400">No hay coincidencias</li>
+                                        )}
                                     </ul>
                                 )}
-                               {/*  <button
+                                {/*  <button
                                     type='button'
                                     onClick={() => alert('no implentado')}
                                 >
                                     <FaMicrophone size={25} className='text-gray-700 cursor-pointer'/>
                                 </button> */}
-                                <button 
-                                    type='button' 
+                                <button
+                                    type='button'
                                     className='btn-msg btn-plantilla'
                                     onClick={() => dispatch(switchModalPlantilla())}
                                 >
@@ -1274,7 +1329,7 @@ const Chats = () => {
                             </form>
                         ) : (
                             <div className='no-chat'>
-                               
+
                                 {/* <p className='no-chat-text'>No se pueden enviar mensajes</p> */}
                                 <button
                                     onClick={() => dispatch(switchModalPlantilla())}
@@ -1282,19 +1337,19 @@ const Chats = () => {
                                 >
                                     Enviar plantilla
                                 </button>
-                               
+
                             </div>
                         )}
-                        
+
                     </div>
                     <PlantillaModal />
-                    <UserSearchModal  />
-                    <ArchiveModal 
+                    <UserSearchModal />
+                    <ArchiveModal
                         isOpen={isArchiveModalOpen}
                         onClose={handleArchivarCancel}
                         onConfirm={handleArchivarConfirm}
                     />
-                    <DeleteModal 
+                    <DeleteModal
                         isOpen={isDeleteModalOpen}
                         onClose={handleDeleteCancel}
                         onConfirm={handleDeleteConfirm}
@@ -1316,7 +1371,7 @@ const Chats = () => {
                     />
                 </div>
             )}
-           
+
         </div>
     )
 }

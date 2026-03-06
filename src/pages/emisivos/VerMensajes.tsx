@@ -78,6 +78,7 @@ const VerMensajes = () => {
   const [filtroNotifMasivaId, setFiltroNotifMasivaId] = useState('');
   const [filtroCuil, setFiltroCuil] = useState('');
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [soloIndividuales, setSoloIndividuales] = useState(false);
 
   const fetchMensajes = useCallback(async (currentPage = 1) => {
     setIsLoading(true);
@@ -91,6 +92,7 @@ const VerMensajes = () => {
         ...(filtroEstado !== 'Todos' && { estado: filtroEstado }),
         ...(filtroCuil.trim() && { cuil: filtroCuil.trim() }),
         ...(filtroNotifMasivaId.trim() && { notifMasivaId: filtroNotifMasivaId.trim() }),
+        ...(soloIndividuales && { soloIndividuales: 'true' }),
       });
 
       const response = await fetch(
@@ -116,9 +118,9 @@ const VerMensajes = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filtroTipo, filtroEstado, filtroCuil, filtroNotifMasivaId]);
+  }, [filtroTipo, filtroEstado, filtroCuil, filtroNotifMasivaId, soloIndividuales]);
 
-  useEffect(() => { fetchMensajes(1); }, [filtroTipo, filtroEstado, filtroCuil, filtroNotifMasivaId]);
+  useEffect(() => { fetchMensajes(1); }, [filtroTipo, filtroEstado, filtroCuil, filtroNotifMasivaId, soloIndividuales]);
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '—';
@@ -195,6 +197,20 @@ const VerMensajes = () => {
               <option value="ERROR">Error</option>
             </select>
           </div>
+
+          <div className="ver-msj-filter-group ver-msj-filter-group-check">
+            <label className="ver-msj-checkbox-label">
+              <input
+                type="checkbox"
+                checked={soloIndividuales}
+                onChange={(e) => setSoloIndividuales(e.target.checked)}
+                className="ver-msj-checkbox"
+              />
+              <span className="ver-msj-checkbox-text">No mostrar Notif. Masivas</span>
+            </label>
+          </div>
+
+          {/* Actualizar */}
           <div className="ver-msj-filter-group ver-msj-filter-actions">
             <button onClick={() => fetchMensajes(page)} className="ver-msj-btn-refresh" disabled={isLoading}>
               <FaSync className={isLoading ? 'spinning' : ''} />

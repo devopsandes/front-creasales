@@ -622,3 +622,52 @@
   color: #6b7280;
   white-space: nowrap;
 }
+
+/* Checkbox filtro */
+.ver-msj-filter-group-check {
+  justify-content: flex-end;
+  padding-bottom: 0.1rem;
+}
+
+.ver-msj-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background-color: white;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.ver-msj-checkbox-label:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.ver-msj-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ver-msj-checkbox-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.ver-msj-checkbox-label:has(.ver-msj-checkbox:checked) {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  color: #1e40af;
+}
+
+.ver-msj-checkbox-label:has(.ver-msj-checkbox:checked) .ver-msj-checkbox-text {
+  color: #1e40af;
+}

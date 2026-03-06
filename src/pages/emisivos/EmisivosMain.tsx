@@ -1,3 +1,5 @@
+//EmisivosMain.tsx
+
 import { useState } from "react";
 import CrearNotificaciones from "./CrearNotificaciones";
 import VerNotificaciones from "./VerNotificaciones";
