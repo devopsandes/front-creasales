@@ -822,6 +822,25 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             ))}
                         </select>
                     </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ periodo, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
                 </>
             )}
 
@@ -851,11 +870,32 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
             )}
 
             {departamento === '564264000000179032' && tipificacion === 'Adherir Debito Automático' && (
-                <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
-                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
-                        AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA ADHESIÓN AL DÉBITO AUTOMÁTICO
-                    </p>
-                </div>
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                            AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA ADHESIÓN AL DÉBITO AUTOMÁTICO
+                        </p>
+                    </div>
+                </>
             )}
 
             {departamento === '564264000000179032' && tipificacion === 'Quiero mi Factura' && (
@@ -931,11 +971,6 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             ))}
                         </select>
                     </div>
-                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
-                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
-                            DESCRIPCIÓN
-                        </p>
-                    </div>
                 </>
             )}
 
@@ -1007,6 +1042,25 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                 updateData({ tipoReintegroFiscalizacion, descripcionCampo: e.target.value });
                             }}
                         />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ tipoReintegroFiscalizacion, descripcionCampo, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
                     </div>
                 </>
             )}

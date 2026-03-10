@@ -68,7 +68,7 @@ const TicketModal = () => {
         if (ticket?.idZoho && ticket?.departamento) {
             const departamentoUrlMap: { [key: string]: string } = {
                 '564264000000175045': 'prestaciones-médicas',
-                '564264000000179032': 'fiscalizacion',
+                '564264000000179032': 'fiscalización',
                 '564264000000181969': 'afiliaciones',
                 '564264000000184906': 'atencion-al-afiliado',
                 '564264000042384029': 'internaciones',
