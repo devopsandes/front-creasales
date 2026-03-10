@@ -48,24 +48,26 @@ const UserSearchModal = ( ) => {
   const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters);
   
   const token  = localStorage.getItem('token') || '';
-  const role = localStorage.getItem('role') || '';
 
   useEffect(() => {
     const ejecucion = async () => {
-      // Si el rol actual es USER, el backend devuelve 403 al listar usuarios.
-      // Evitamos el request y mantenemos solo el "BOT OPERADOR".
-      if (role === 'USER') {
-        return;
-      }
 
-      const respUsers = await usuariosXRole('USER', token);
-      const list = Array.isArray((respUsers as any)?.users) ? (respUsers as any).users : [];
-      setUsers((prev) => [...prev, ...list]);
-      
+      const respUsers = await usuariosXRole('', token);
+
+      const list: Usuario[] = Array.isArray((respUsers as any)?.users)
+        ? (respUsers as any).users
+        : [];
+
+      setUsers((prev) => {
+        const map = new Map<string, Usuario>(prev.map(u => [u.id, u]));
+        list.forEach(u => map.set(u.id, u));
+        return Array.from(map.values());
+      });
+
     }
     ejecucion();
-   
-  },[])
+
+  }, [])
 
   // Resetear selección cuando se cierra el modal
   useEffect(() => {

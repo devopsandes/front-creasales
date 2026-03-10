@@ -103,6 +103,8 @@ const Chats = () => {
     }, [token])
 
     const canToggleBot = useMemo(() => {
+        // Cualquier persona podria togglear el bot, porque es una acción de la conversación, no del usuario. El backend debería validar permisos por empresa, no por rol.
+        if (role === 'USER') return true
         if (role !== 'USER') return true
         if (!currentChat || !userIdFromToken) return false
 

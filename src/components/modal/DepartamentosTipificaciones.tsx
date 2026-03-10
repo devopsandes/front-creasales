@@ -146,7 +146,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
         },
         '564264000065821073': {
             nombre: 'GAPRI',
-            tipificaciones: ['Estudio o Práctica Médica']
+            tipificaciones: ['Estudio o Práctica Médica - GAPRI']
         }
     };
 
@@ -491,7 +491,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             onChange={(e) => {
                                 const files = Array.from(e.target.files || []);
                                 setArchivosImagenes(files);
-                                updateData({ diagnostico, archivosFiles: files });
+                                updateData({ tipoReintegro, observaciones, archivosFiles: files });
                             }}
                         />
                         {archivosImagenes.length > 0 && (
@@ -504,11 +504,32 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
             )}
 
             {departamento === '564264000000175045' && tipificacion === 'Carga Certificado Discapacidad' && (
-                <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px' }}>
-                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2' }}>
-                        AFILIADO {/* AQUÍ IRÍA EL CUIL */} ENTREGA CERTIFICADO ÚNICO DE DISCAPACIDAD
-                    </p>
-                </div>
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2' }}>
+                            AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} ENTREGA CERTIFICADO ÚNICO DE DISCAPACIDAD
+                        </p>
+                    </div>
+                </>
             )}
 
             {departamento === '564264000000175045' && tipificacion === 'Problemas al utilizar servicio' && (
@@ -565,20 +586,41 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
             )}
 
             {departamento === '564264000000175045' && tipificacion === 'Medicamentos' && (
-                <div className="ticket-modal-form-group">
-                    <label htmlFor="medicamento" className="ticket-modal-label">Medicamento</label>
-                    <input
-                        type="text"
-                        id="medicamento"
-                        placeholder="Ingrese nombre Medicamento"
-                        className="ticket-modal-input"
-                        value={medicamento}
-                        onChange={(e) => {
-                            setMedicamento(e.target.value);
-                            updateData({ medicamento: e.target.value });
-                        }}
-                    />
-                </div>
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label htmlFor="medicamento" className="ticket-modal-label">Medicamento</label>
+                        <input
+                            type="text"
+                            id="medicamento"
+                            placeholder="Ingrese nombre Medicamento"
+                            className="ticket-modal-input"
+                            value={medicamento}
+                            onChange={(e) => {
+                                setMedicamento(e.target.value);
+                                updateData({ medicamento: e.target.value });
+                            }}
+                        />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ medicamento, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
+                </>
             )}
 
             {departamento === '564264000000175045' && tipificacion === 'Estudio o Práctica Médica' && (
@@ -609,6 +651,25 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                 updateData({ prestador, observaciones: e.target.value });
                             }}
                         />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ prestador, observaciones, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
                     </div>
                 </>
             )}
@@ -1792,7 +1853,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
             {/* GAPRI (copia de Atención al Cliente + campo Monto) */}
 
             {/* 1. Estudio o Práctica Médica */}
-            {departamento === '564264000065821073' && tipificacion === 'Estudio o Práctica Médica' && (
+            {departamento === '564264000065821073' && tipificacion === 'Estudio o Práctica Médica - GAPRI' && (
                 <>
                     <div className="ticket-modal-form-group">
                         <label htmlFor="prestadorAtencion" className="ticket-modal-label">Prestador</label>

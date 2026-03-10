@@ -18,17 +18,16 @@ const estadoClase = {
   pendiente: "tickets-estado-pendiente",
 };
 
-const ITEMS_PER_PAGE = 7;
+const ITEMS_PER_PAGE = 10;
 
 const TableTickets = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState(1);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [total, setTotal] = useState(0);
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const totalPages = Math.ceil(tickets.length / ITEMS_PER_PAGE);
-  const startIndex = (page - 1) * ITEMS_PER_PAGE;
-  const currentTickets = tickets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
   const token = localStorage.getItem('token') || '';
 
@@ -36,12 +35,14 @@ const TableTickets = () => {
 
   useEffect(() => {
     const ejecucion = async () => {
-      const resp = await getTickets(token, { limit: '10', page: '1' })
+      setLoading(true);
+      const resp = await getTickets(token, { limit: '10', page: page.toString() })
       setTickets(resp.tickets);
+      setTotal(resp.total);
       setLoading(false)
     }
     ejecucion()
-  }, [])
+  }, [page])
 
   const handleOpenTicket = (id: string, e?: React.MouseEvent) => {
     if (e) {
@@ -119,10 +120,10 @@ const TableTickets = () => {
                 </tr>
               </thead>
               <tbody>
-                {currentTickets.map((ticket, index) => (
+                {tickets.map((ticket, index) => (
                   <tr key={ticket.id} className="tickets-table-row grid grid-cols-10" onClick={() => handleOpenTicket(ticket.id)}>
                     <td className="tickets-table-cell tickets-table-cell-numero col-span-1">
-                      {startIndex + index + 1} / #{ticket.nro}
+                      {(page - 1) * ITEMS_PER_PAGE + index + 1} / #{ticket.nro}
                     </td>
                     <td className="tickets-table-cell tickets-table-cell-asunto col-span-2">
                       {ticket.canal === 'SEDE' ? ticket.tipificacion : ticket.nombre}

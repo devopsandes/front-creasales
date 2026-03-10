@@ -8,6 +8,7 @@ export interface QueryParams {
 export interface TicketsResponse {
     statusCode: number;
     tickets:    Ticket[];
+    total:      number; 
 }
 
 export interface Ticket {
