@@ -9,7 +9,6 @@ import CrearUsuarioModal from "../../components/modal/CrearUsuarioModal";
 import { getChats } from "../../services/chats/chats.services";
 import { ChatState } from "../../interfaces/chats.interface";
 import { openModalUser, openModalEditUser } from "../../app/slices/actionSlice";
-import { updateUser } from "../../services/auth/auth.services";
 import EditarUsuarioModal from "../../components/modal/EditarUsuarioModal";
 import { toast } from 'react-toastify';
 import './usuarios.css';
