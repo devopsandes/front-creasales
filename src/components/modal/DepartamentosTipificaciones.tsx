@@ -67,6 +67,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
 
     // ESTADOS PARA GAPRI
     const [montoGapri, setMontoGapri] = useState('');
+    const [prestadorGapri, setPrestadorGapri] = useState('');
+    const [observacionesGapri, setObservacionesGapri] = useState('');
 
     // Configuración de departamentos
     const DEPARTAMENTOS = {
@@ -314,6 +316,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
 
         // Reset de campos de GAPRI
         setMontoGapri('');
+        setPrestadorGapri('');
+        setObservacionesGapri('');
     };
 
     // Actualizar datos cuando cambian los campos específicos
@@ -1903,45 +1907,40 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                     </div>
                 </>
             )}
+            
 
             {/* GAPRI (copia de Atención al Cliente + campo Monto) */}
-
-            {/* 1. Estudio o Práctica Médica */}
             {departamento === '564264000065821073' && tipificacion === 'Estudio o Práctica Médica - GAPRI' && (
                 <>
                     <div className="ticket-modal-form-group">
-                        <label htmlFor="prestadorAtencion" className="ticket-modal-label">Prestador</label>
+                        <label htmlFor="prestadorGapri" className="ticket-modal-label">Prestador</label>
                         <input
                             type="text"
-                            id="prestadorAtencion"
+                            id="prestadorGapri"
                             placeholder="Prestador preferido en la cartilla"
                             className="ticket-modal-input"
-                            value={prestadorAtencion}
+                            value={prestadorGapri}
                             onChange={(e) => {
-                                setPrestadorAtencion(e.target.value);
-                                updateData({ prestador: e.target.value, observaciones: observacionesAtencion, monto: montoGapri });
+                                setPrestadorGapri(e.target.value);
+                                updateData({ prestador: e.target.value, observaciones: observacionesGapri, monto: montoGapri });
                             }}
                         />
                     </div>
                     <div className="ticket-modal-form-group">
-                        <label htmlFor="observacionesAtencion" className="ticket-modal-label">Observaciones</label>
+                        <label htmlFor="observacionesGapri" className="ticket-modal-label">Observaciones</label>
                         <textarea
-                            id="observacionesAtencion"
+                            id="observacionesGapri"
                             placeholder="Ingrese una observación"
                             className="ticket-modal-textarea"
-                            value={observacionesAtencion}
+                            value={observacionesGapri}
                             onChange={(e) => {
-                                setObservacionesAtencion(e.target.value);
-                                updateData({ prestador: prestadorAtencion, observaciones: e.target.value, monto: montoGapri });
+                                setObservacionesGapri(e.target.value);
+                                updateData({ prestador: prestadorGapri, observaciones: e.target.value, monto: montoGapri });
                             }}
                         />
                     </div>
-
-                    {/* Input para archivos */}
                     <div className="ticket-modal-form-group">
-                        <label htmlFor="archivosGAPRI" className="ticket-modal-label">
-                            Adjunto (imágen):
-                        </label>
+                        <label htmlFor="archivosGAPRI" className="ticket-modal-label">Adjunto (imágen):</label>
                         <input
                             type="file"
                             id="archivosGAPRI"
@@ -1951,7 +1950,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             onChange={(e) => {
                                 const files = Array.from(e.target.files || []);
                                 setArchivosImagenes(files);
-                                updateData({ prestador, observaciones, archivosFiles: files });
+                                updateData({ prestador: prestadorGapri, observaciones: observacionesGapri, monto: montoGapri, archivosFiles: files });
                             }}
                         />
                         {archivosImagenes.length > 0 && (
@@ -1960,7 +1959,6 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             </p>
                         )}
                     </div>
-
                     <div className="ticket-modal-form-group">
                         <label htmlFor="montoGapri" className="ticket-modal-label">Monto</label>
                         <input
@@ -1970,7 +1968,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             value={montoGapri}
                             onChange={(e) => {
                                 setMontoGapri(e.target.value);
-                                updateData({ prestador: prestadorAtencion, observaciones: observacionesAtencion, monto: e.target.value });
+                                updateData({ prestador: prestadorGapri, observaciones: observacionesGapri, monto: e.target.value });
                             }}
                         />
                     </div>

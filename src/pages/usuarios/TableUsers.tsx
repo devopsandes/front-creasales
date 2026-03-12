@@ -1,14 +1,17 @@
 import { FaRegCommentDots, FaUser } from "react-icons/fa";
-import  { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import Switch from "../../components/switch/Switch";
-import { usuariosXRole } from "../../services/auth/auth.services";
-import {   Usuario } from "../../interfaces/auth.interface";
+import { usuariosXRole, deleteUser } from "../../services/auth/auth.services";
+import { Usuario } from "../../interfaces/auth.interface";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import {  openModalUser } from "../../app/slices/actionSlice";
 import CrearUsuarioModal from "../../components/modal/CrearUsuarioModal";
 import { getChats } from "../../services/chats/chats.services";
 import { ChatState } from "../../interfaces/chats.interface";
+import { openModalUser, openModalEditUser } from "../../app/slices/actionSlice";
+import { updateUser } from "../../services/auth/auth.services";
+import EditarUsuarioModal from "../../components/modal/EditarUsuarioModal";
+import { toast } from 'react-toastify';
 import './usuarios.css';
 
 
@@ -24,7 +27,7 @@ const TableUsers = () => {
   const [chatsCounts, setChatsCounts] = useState<{ [userId: string]: number }>({});
   const tooltipRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
-  const token  = localStorage.getItem('token') || '';
+  const token = localStorage.getItem('token') || '';
   const role = localStorage.getItem('role') || '';
   const navigate = useNavigate();
   const dispatch = useDispatch()
@@ -40,75 +43,120 @@ const TableUsers = () => {
   }, [])
 
   useEffect(() => {
-      const ejecucion = async () => {
-       
-        const respUsers = await usuariosXRole(role, token);
+    const ejecucion = async () => {
 
-        if (respUsers.statusCode === 401) {
-          alert('Su sesión ha expirado, por favor inicie sesión nuevamente');
-          navigate('/auth/signin');
-          return;
-        }
-        
-        setUsers(respUsers.users);
-        
-        // Obtener todos los chats para contar los asignados a cada usuario
-        try {
-          const respChats = await getChats(token, '1', '1000'); // Obtener muchos chats para contar todos
-          
-          // Contar chats asignados a cada usuario
-          const counts: { [userId: string]: number } = {};
-          
-          respUsers.users.forEach(user => {
-            counts[user.id] = respChats.chats.filter((chat: ChatState) => 
-              chat.operador?.id === user.id
-            ).length;
-          });
-          
-          setChatsCounts(counts);
-        } catch (error) {
-          console.error('Error al obtener chats:', error);
-          // Si falla, inicializar todos en 0
-          const counts: { [userId: string]: number } = {};
-          respUsers.users.forEach(user => {
-            counts[user.id] = 0;
-          });
-          setChatsCounts(counts);
-        }
-        
-        setLoading(false);
-        
+      const respUsers = await usuariosXRole(role, token);
+
+      if (respUsers.statusCode === 401) {
+        alert('Su sesión ha expirado, por favor inicie sesión nuevamente');
+        navigate('/auth/signin');
+        return;
       }
-      ejecucion();
-     
-    },[])
 
-    const handleClickChats = (user: Usuario) => {
-      navigate(`/dashboard/chats?userId=${user.id}`);
-    }
+      setUsers(respUsers.users);
 
-    const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>, userId: string) => {
-      const rect = e.currentTarget.getBoundingClientRect()
-      setTooltipPosition({
-        top: rect.top + rect.height / 2,
-        left: rect.right + 10
-      })
-      setShowTooltip(userId)
-    }
+      // Obtener todos los chats para contar los asignados a cada usuario
+      try {
+        const respChats = await getChats(token, '1', '1000'); // Obtener muchos chats para contar todos
 
-    const handleMouseLeave = () => {
-      setShowTooltip(null)
-    }
+        // Contar chats asignados a cada usuario
+        const counts: { [userId: string]: number } = {};
 
-    const handleSwitchChange = (userId: string, newActiveState: boolean) => {
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          user.id === userId 
-            ? { ...user, activo: newActiveState }
-            : user
-        )
-      );
+        respUsers.users.forEach(user => {
+          counts[user.id] = respChats.chats.filter((chat: ChatState) =>
+            chat.operador?.id === user.id
+          ).length;
+        });
+
+        setChatsCounts(counts);
+      } catch (error) {
+        console.error('Error al obtener chats:', error);
+        // Si falla, inicializar todos en 0
+        const counts: { [userId: string]: number } = {};
+        respUsers.users.forEach(user => {
+          counts[user.id] = 0;
+        });
+        setChatsCounts(counts);
+      }
+
+      setLoading(false);
+
     }
+    ejecucion();
+
+  }, [])
+
+  const handleClickChats = (user: Usuario) => {
+    navigate(`/dashboard/chats?userId=${user.id}`);
+  }
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>, userId: string) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setTooltipPosition({
+      top: rect.top + rect.height / 2,
+      left: rect.right + 10
+    })
+    setShowTooltip(userId)
+  }
+
+  const handleMouseLeave = () => {
+    setShowTooltip(null)
+  }
+
+  const handleSwitchChange = (userId: string, newActiveState: boolean) => {
+    setUsers(prevUsers =>
+      prevUsers.map(user =>
+        user.id === userId
+          ? { ...user, activo: newActiveState }
+          : user
+      )
+    );
+  }
+
+  const handleDeleteUser = async (user: Usuario) => {
+    const confirmacion = window.confirm(
+      `¿Estás seguro de que querés eliminar a ${user.nombre} ${user.apellido}?`
+    );
+
+    if (!confirmacion) return;
+
+    try {
+      const resp = await deleteUser(user.id, token);
+
+      if (resp.statusCode === 401) {
+        alert('Su sesión ha expirado, por favor inicie sesión nuevamente');
+        navigate('/auth/signin');
+        return;
+      }
+
+      if (resp.statusCode === 200 || resp.statusCode === 201) {
+        toast.success('Usuario eliminado correctamente');
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== user.id));
+      } else {
+        toast.error(resp.message?.toString() || 'Error al eliminar el usuario');
+      }
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+      toast.error('Error al eliminar el usuario');
+    }
+  }
+
+  const handleEditUser = (user: Usuario) => {
+    dispatch(openModalEditUser(user));
+  }
+
+  // Callback para refrescar la tabla después de editar
+  const handleUserUpdated = async () => {
+    setLoading(true);
+    const respUsers = await usuariosXRole(role, token);
+    if (respUsers.statusCode === 401) {
+      alert('Su sesión ha expirado, por favor inicie sesión nuevamente');
+      navigate('/auth/signin');
+      return;
+    }
+    setUsers(respUsers.users);
+    setLoading(false);
+  }
 
   return (
     <div className="usuarios-wrapper">
@@ -116,14 +164,14 @@ const TableUsers = () => {
       <div className="usuarios-header">
         <h2 className="usuarios-header-title">Usuarios del Sistema</h2>
         <p className="usuarios-header-description">
-          Administre los usuarios de su sistema. Cada usuario puede tener diferentes roles y permisos, 
-          estar asociado a departamentos específicos y gestionar chats con clientes. 
+          Administre los usuarios de su sistema. Cada usuario puede tener diferentes roles y permisos,
+          estar asociado a departamentos específicos y gestionar chats con clientes.
           Active o desactive usuarios según sea necesario.
         </p>
       </div>
 
       <div className="usuarios-container">
-       {loading ? (
+        {loading ? (
           <div className="usuarios-loader">
             <div className="loader2"></div>
           </div>
@@ -143,13 +191,13 @@ const TableUsers = () => {
                 </tr>
               </thead>
               <tbody>
-                {currentUsers.map((user,index) => (
+                {currentUsers.map((user, index) => (
                   <tr key={user.id} className="usuarios-table-row">
                     <td className="usuarios-table-cell usuarios-table-cell-id">
                       {index + 1}
                     </td>
                     <td className="usuarios-table-cell">
-                      <FaUser className="usuarios-icon-user" size={35}/>
+                      <FaUser className="usuarios-icon-user" size={35} />
                     </td>
                     <td className="usuarios-table-cell usuarios-table-cell-nombre">
                       <p className="usuarios-nombre">{user.nombre} {user.apellido}</p>
@@ -159,9 +207,9 @@ const TableUsers = () => {
                     <td className="usuarios-table-cell">{user.telefono}</td>
                     <td className="usuarios-table-cell">
                       <div className="usuarios-estado-container">
-                        <Switch 
-                          checked={user.activo} 
-                          label={''} 
+                        <Switch
+                          checked={user.activo}
+                          label={''}
                           id={user.id}
                           onChange={(checked) => handleSwitchChange(user.id, checked)}
                         />
@@ -170,35 +218,45 @@ const TableUsers = () => {
                         </span>
                       </div>
                     </td>
-                    
+
                     <td className="usuarios-table-cell">
-                        <div className="usuarios-chats-container">
-                          <button
-                            ref={(el) => tooltipRefs.current[user.id] = el}
-                            className="usuarios-button-chats" 
-                            onClick={() => handleClickChats(user)}
-                            onMouseEnter={(e) => handleMouseEnter(e, user.id)}
-                            onMouseLeave={handleMouseLeave}
+                      <div className="usuarios-chats-container">
+                        <button
+                          ref={(el) => tooltipRefs.current[user.id] = el}
+                          className="usuarios-button-chats"
+                          onClick={() => handleClickChats(user)}
+                          onMouseEnter={(e) => handleMouseEnter(e, user.id)}
+                          onMouseLeave={handleMouseLeave}
+                        >
+                          {chatsCounts[user.id] !== undefined ? chatsCounts[user.id] : 0} {'\t'}
+                          <FaRegCommentDots className="usuarios-chat-icon" size={18} />
+                        </button>
+                        {showTooltip === user.id && (
+                          <div
+                            className="usuarios-tooltip"
+                            style={{
+                              top: `${tooltipPosition.top}px`,
+                              left: `${tooltipPosition.left}px`
+                            }}
                           >
-                            {chatsCounts[user.id] !== undefined ? chatsCounts[user.id] : 0} {'\t'} 
-                            <FaRegCommentDots className="usuarios-chat-icon" size={18} />
-                          </button>
-                          {showTooltip === user.id && (
-                            <div 
-                              className="usuarios-tooltip"
-                              style={{
-                                top: `${tooltipPosition.top}px`,
-                                left: `${tooltipPosition.left}px`
-                              }}
-                            >
-                              Ver chats
-                            </div>
-                          )}
-                        </div>
+                            Ver chats
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="usuarios-actions-cell">
-                      <button className="usuarios-button-edit">Editar</button>
-                      <button className="usuarios-button-delete">Eliminar</button>
+                      <button
+                        className="usuarios-button-edit"
+                        onClick={() => handleEditUser(user)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="usuarios-button-delete"
+                        onClick={() => handleDeleteUser(user)}
+                      >
+                        Eliminar
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -206,32 +264,33 @@ const TableUsers = () => {
             </table>
           </div>
         )}
-      
-      {/* Pagination */}
-      <div className="usuarios-pagination-container">
-        <button 
-          onClick={() => dispatch(openModalUser())}
-          className="usuarios-button-create"
-        >
-          Crear Usuario
-        </button>
-        <button
-          onClick={() => setPage((p) => Math.max(p - 1, 1))}
-          disabled={page === 1}
-          className="usuarios-pagination-button"
-        >
-          Anterior
-        </button>
-        <span className="usuarios-pagination-info">{page} / {totalPages}</span>
-        <button
-          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-          disabled={page === totalPages}
-          className="usuarios-pagination-button"
-        >
-          Siguiente
-        </button>
-      </div>
-      <CrearUsuarioModal />
+
+        {/* Pagination */}
+        <div className="usuarios-pagination-container">
+          <button
+            onClick={() => dispatch(openModalUser())}
+            className="usuarios-button-create"
+          >
+            Crear Usuario
+          </button>
+          <button
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            disabled={page === 1}
+            className="usuarios-pagination-button"
+          >
+            Anterior
+          </button>
+          <span className="usuarios-pagination-info">{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            disabled={page === totalPages}
+            className="usuarios-pagination-button"
+          >
+            Siguiente
+          </button>
+        </div>
+        <CrearUsuarioModal />
+        <EditarUsuarioModal onUserUpdated={handleUserUpdated} />
       </div>
     </div>
   );

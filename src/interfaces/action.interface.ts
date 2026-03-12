@@ -1,7 +1,10 @@
 
 import { ChatState } from './chats.interface';
+import { Usuario } from './auth.interface.ts'
 
 export interface ActionState  {
+   modalEditUser: boolean;
+   editingUser: Usuario | null;
    modal: boolean;
    modalTag: boolean;
    modalTicket: boolean;

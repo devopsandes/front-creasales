@@ -211,7 +211,7 @@ const Dashboard = () => {
       <section className="dash-layout">
         <div 
           className={`dash-sidebar ${sidebarExpanded ? 'expanded' : ''}`}
-          onClick={handleSidebarClick}
+          onDoubleClick={handleSidebarClick}
         >
           <DashSidebar role={role!}/>
         </div>

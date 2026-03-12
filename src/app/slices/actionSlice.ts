@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { ActionState } from '../../interfaces/action.interface'
 
-const initialState : ActionState = {
+const initialState: ActionState = {
     modal: false,
     modalTag: false,
     modalTicket: false,
@@ -21,6 +21,8 @@ const initialState : ActionState = {
     mentionsMode: false,
     selectedMentionChatIds: [],
     selectedBulkReadChatIds: [],
+    modalEditUser: false,
+    editingUser: null,
 
     // Cache SPA-only para la vista /dashboard/chats
     chatListQueryKey: undefined,
@@ -74,13 +76,13 @@ const actionSlice = createSlice({
         closeModalTicket: (state) => {
             state.modalTicket = false
         },
-         openModalUser: (state) => {
+        openModalUser: (state) => {
             state.modalUser = true
         },
         closeModalUser: (state) => {
             state.modalUser = false
         },
-        openModalTeca: (state,action) => {
+        openModalTeca: (state, action) => {
             state.modalTeca = true
             state.ticketId = action.payload
         },
@@ -195,19 +197,27 @@ const actionSlice = createSlice({
         clearBulkReadChatSelection: (state) => {
             state.selectedBulkReadChatIds = []
         },
+        openModalEditUser: (state, action) => {
+            state.modalEditUser = true
+            state.editingUser = action.payload  // recibe el objeto Usuario
+        },
+        closeModalEditUser: (state) => {
+            state.modalEditUser = false
+            state.editingUser = null
+        },
     }
 })
 
-export const {  
-    openModal, 
-    closeModal, 
-    closeModalTag, 
-    openModalTag, 
-    throwAlert, 
-    setNewTag, 
-    setUserData, 
-    setViewSide, 
-    openModalTicket, 
+export const {
+    openModal,
+    closeModal,
+    closeModalTag,
+    openModalTag,
+    throwAlert,
+    setNewTag,
+    setUserData,
+    setViewSide,
+    openModalTicket,
     closeModalTicket,
     openModalUser,
     closeModalUser,
@@ -228,7 +238,10 @@ export const {
     toggleMentionChatSelection,
     clearMentionChatSelection,
     toggleBulkReadChatSelection,
-    clearBulkReadChatSelection
+    clearBulkReadChatSelection,
+    openModalEditUser,
+    closeModalEditUser
 } = actionSlice.actions
+
 export default actionSlice.reducer
 
