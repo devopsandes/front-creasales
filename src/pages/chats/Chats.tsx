@@ -18,7 +18,6 @@ import { Bot, BotOff, CheckCheck, Trash2 } from "lucide-react";
 import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired, clearMentionChatSelection, setChats } from '../../app/slices/actionSlice'
 import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
-/* import { FaMicrophone } from "react-icons/fa"; */
 import PlantillaModal from '../../components/modal/PlantillaModal'
 import './chats.css'
 import { toast } from 'react-toastify'
@@ -33,19 +32,18 @@ import { getQuickResponses } from '../../services/quickResponses/quickResponses.
 import { setChatReadState } from '../../services/chats/chats.services'
 import { jwtDecode } from "jwt-decode"
 
-
-
-
-
-
 const Chats = () => {
     const [usuarios, setUsuarios] = useState<Usuario[]>([])
     const [selectedMentionUser, setSelectedMentionUser] = useState<Usuario | null>(null)
     const [mensajes, setMensajes] = useState<TimelineItem[]>([])
+    const [timelineCursor, setTimelineCursor] = useState<string | null>(null)
+    const [timelineHasMore, setTimelineHasMore] = useState<boolean>(false)
+    const [timelineLoadingMore, setTimelineLoadingMore] = useState<boolean>(false)
+    const [docPreview, setDocPreview] = useState<{ url: string; name: string } | null>(null)
     const [mensaje, setMensaje] = useState<string>('')
     const [condChat, setCondChat] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
-    const [archivo, setArchivo] = useState<File | null>(null);
+    const [archivos, setArchivos] = useState<File[]>([])
     const [showList, setShowList] = useState(false);
     const [filteredUsers, setFilteredUsers] = useState<Usuario[]>([]);
     const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
@@ -55,7 +53,6 @@ const Chats = () => {
     const [showMentionReadSuccess, setShowMentionReadSuccess] = useState(false)
     const [mentionReadSuccessMsg, setMentionReadSuccessMsg] = useState<string>('El chat fue marcado como leído exitosamente.')
     const [isTogglingBot, setIsTogglingBot] = useState(false)
-
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const mensajeInputRef = useRef<HTMLInputElement | null>(null);
     const [quickResponses, setQuickResponses] = useState<QuickResponse[]>([])
@@ -64,7 +61,11 @@ const Chats = () => {
     const [qrActiveIndex, setQrActiveIndex] = useState(0)
     const [qrTriggerRange, setQrTriggerRange] = useState<{ start: number; end: number } | null>(null)
 
+    const isSendingRef = useRef(false)
+    const lastSentMessageRef = useRef<string | null>(null)
+    const uploadPreviewUrlsRef = useRef<Record<string, string>>({})
 
+    const MAX_FILES_PER_MESSAGE = 5
 
     const token = localStorage.getItem('token') || ''
     const role = localStorage.getItem('role') || ''
@@ -78,10 +79,9 @@ const Chats = () => {
     const telefono = queryParams.get('telefono');
     const nombre = queryParams.get('nombre');
 
-
-
     // Referencia para el contenedor de mensajes
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
+    const scrollRestoreRef = useRef<{ height: number; top: number } | null>(null)
     const dispatch = useDispatch()
     const dataUser = useSelector((state: RootState) => state.action.dataUser)
     const mentionsMode = useSelector((state: RootState) => state.action.mentionsMode)
@@ -135,6 +135,28 @@ const Chats = () => {
 
         // fallback: si no se puede inferir, lo dejamos como viene
         return it
+    }
+
+    const getTimelineKey = (it: any) => {
+        const id = it?.id
+        if (id) return `id:${id}`
+        const createdAt = it?.createdAt ?? ''
+        const kind = it?.kind ?? (it?.type ? 'event' : 'message')
+        const msgIn = it?.msg_entrada ?? ''
+        const msgOut = it?.msg_salida ?? ''
+        const text = it?.text ?? ''
+        return `k:${kind}|t:${createdAt}|in:${msgIn}|out:${msgOut}|text:${text}`
+    }
+
+    const mergeTimeline = (prev: TimelineItem[], incoming: TimelineItem[], mode: 'append' | 'prepend') => {
+        const seen = new Set<string>(prev.map(getTimelineKey))
+        const filtered = incoming.filter((it) => {
+            const key = getTimelineKey(it)
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+        })
+        return mode === 'prepend' ? [...filtered, ...prev] : [...prev, ...filtered]
     }
 
     const resolveEventText = (evt: any): string => {
@@ -213,24 +235,23 @@ const Chats = () => {
             const url = getMediaUrl(msg?.documentUrl)
             if (!url) return <span className="chat-text">{fallbackText}</span>
             const fileName = `${msg?.msg_entrada ?? msg?.msg_salida ?? "documento"}`
-            const isPdf = fileName.toLowerCase().endsWith(".pdf")
 
             return (
                 <div className="chat-media-doc">
-                    {isPdf && (
-                        <iframe
-                            src={url}
-                            title={fileName}
-                            className="chat-media-iframe"
-                        />
-                    )}
+                    <button
+                        type="button"
+                        className="chat-media-link"
+                        onClick={() => setDocPreview({ url, name: fileName })}
+                    >
+                        Ver documento
+                    </button>
                     <a
                         href={url}
                         target="_blank"
                         rel="noreferrer"
                         className="chat-media-link"
                     >
-                        Abrir / Descargar {isPdf ? "PDF" : "documento"}
+                        Abrir / Descargar documento
                     </a>
                 </div>
             )
@@ -438,19 +459,16 @@ const Chats = () => {
     // Importante UX: NO marcamos menciones como leídas al abrir el chat.
     // Solo se marcarán como leídas cuando el usuario lo haga explícitamente (botón "Marcar como leído").
 
-
-
-
-
     useEffect(() => {
         dispatch(connectSocket())
         const socket = getSocket()
         setLoading(true)
         socket?.emit('register', telefono)
+        if (id) socket?.emit('join-chat', id)
         return () => {
             // dispatch(disconnectSocket())
         }
-    }, [dispatch, telefono])
+    }, [dispatch, telefono, id])
 
 
 
@@ -472,6 +490,7 @@ const Chats = () => {
 
         const handleConnect = () => {
             if (debugTimeline) console.log("[socket] connect", { id: socket.id })
+            socket.emit('join-chat', id)
         }
 
         const handleDisconnect = (reason: any) => {
@@ -507,14 +526,20 @@ const Chats = () => {
         const handleNewMessage = (mensaje: any) => {
             const item: TimelineItem = { ...mensaje, kind: "message" as const }
             setCondChat(menos24hs(new Date(mensaje.createdAt)))
-            setMensajes(prev => [...prev, item])
+            setMensajes(prev => {
+                const merged = mergeTimeline(prev, [item], 'append')
+                return merged.length > 1000 ? merged.slice(-1000) : merged
+            })
             if (debugTimeline) console.log("[socket] new-message", messageEventName, mensaje)
         }
 
         const handleChatEvent = (evt: any) => {
             // Normalizamos porque algunos eventos pueden venir sin `kind`
             if (debugTimeline) console.log("[socket] chat-event", chatEventName, evt)
-            setMensajes(prev => [...prev, normalizeTimelineItem(evt)])
+            setMensajes(prev => {
+                const merged = mergeTimeline(prev, [normalizeTimelineItem(evt)], 'append')
+                return merged.length > 1000 ? merged.slice(-1000) : merged
+            })
         }
 
         const handleError = (error: any) => {
@@ -536,7 +561,10 @@ const Chats = () => {
         socket.on(chatEventName, handleChatEvent)
         socket.on('error', handleError)
 
+        socket.emit('join-chat', id)
+
         return () => {
+            socket.emit('leave-chat', id)
             socket.off("connect", handleConnect)
             socket.off("disconnect", handleDisconnect)
             socket.off("connect_error", handleConnectError)
@@ -554,17 +582,18 @@ const Chats = () => {
         // Obtener los mensajes del chat
         const inicio = async () => {
             if (!id) return
+            setTimelineCursor(null)
+            setTimelineHasMore(false)
 
             if (debugTimeline) {
                 console.log("[Chats] timeline load start", {
                     chatId: id,
                     backend: import.meta.env.VITE_URL_BACKEND,
-                    page: 1,
                     limit: 200,
                 })
             }
 
-            const data = await findChatTimeline(token!, id!, { page: 1, limit: 200 })
+            const data = await findChatTimeline(token!, id!, { limit: 200 })
             if (data.statusCode === 401) {
                 dispatch(openSessionExpired())
                 return
@@ -588,6 +617,8 @@ const Chats = () => {
                 })
 
             setMensajes(items)
+            setTimelineCursor((data as any)?.nextCursor ?? null)
+            setTimelineHasMore(Boolean((data as any)?.hasMore))
             if (debugTimeline) {
                 console.log("[Chats] timeline normalized items", {
                     count: items.length,
@@ -611,6 +642,64 @@ const Chats = () => {
         }
         inicio()
     }, [id, token])
+
+    const loadOlderTimeline = async () => {
+        if (!id || !token) return
+        if (!timelineHasMore || !timelineCursor || timelineLoadingMore) return
+
+        const container = mensajesContainerRef.current
+        if (container) {
+            scrollRestoreRef.current = {
+                height: container.scrollHeight,
+                top: container.scrollTop,
+            }
+        }
+
+        setTimelineLoadingMore(true)
+        try {
+            const data = await findChatTimeline(token!, id!, { limit: 200, cursor: timelineCursor })
+            if (data.statusCode === 401) {
+                dispatch(openSessionExpired())
+                return
+            }
+            const rawItems: any[] = (data as any).items || []
+            const items = rawItems
+                .map(normalizeTimelineItem)
+                .sort((a, b) => {
+                    const ta = new Date((a as any)?.createdAt ?? 0).getTime()
+                    const tb = new Date((b as any)?.createdAt ?? 0).getTime()
+                    return ta - tb
+                })
+
+            setMensajes((prev) => mergeTimeline(prev, items, 'prepend'))
+            setTimelineCursor((data as any)?.nextCursor ?? null)
+            setTimelineHasMore(Boolean((data as any)?.hasMore))
+        } finally {
+            setTimelineLoadingMore(false)
+            if (mensajesContainerRef.current && scrollRestoreRef.current) {
+                const prev = scrollRestoreRef.current
+                const newHeight = mensajesContainerRef.current.scrollHeight
+                mensajesContainerRef.current.scrollTop = newHeight - prev.height + prev.top
+                scrollRestoreRef.current = null
+            }
+        }
+    }
+
+    useEffect(() => {
+        const container = mensajesContainerRef.current
+        if (!container) return
+
+        const onScroll = () => {
+            if (container.scrollTop <= 120) {
+                loadOlderTimeline()
+            }
+        }
+
+        container.addEventListener('scroll', onScroll)
+        return () => {
+            container.removeEventListener('scroll', onScroll)
+        }
+    }, [timelineHasMore, timelineCursor, timelineLoadingMore, id, token])
 
     // Efecto para desplazar el scroll al final cuando se actualizan los mensajes
     useEffect(() => {
@@ -638,46 +727,122 @@ const Chats = () => {
 
             e.preventDefault()
 
-            if (mensaje.length === 0 && archivo == null) {
+            const trimmedMessage = mensaje.trim()
+            const hasFiles = archivos.length > 0
+
+            // evitar mensajes vacíos
+            if (trimmedMessage.length === 0 && !hasFiles) {
                 setErrorModalMessage('Debe escribir un mensaje')
                 setIsErrorModalOpen(true)
                 return
             }
 
+            // evitar doble envío
+            if (isSendingRef.current) return
+
+            // evitar reenviar mismo contenido
+            if (lastSentMessageRef.current === trimmedMessage && !hasFiles) {
+                return
+            }
+
+            isSendingRef.current = true
+
             const socket = getSocket()
 
-            // 📂 CASO 1 — HAY ARCHIVO → HTTP
-            if (archivo) {
-
-                const formData = new FormData()
-
+            // 📂 CASO 1 — HAY ARCHIVOS → HTTP (uno por archivo)
+            if (hasFiles) {
                 if (!id) {
                     setErrorModalMessage("Chat inválido")
                     setIsErrorModalOpen(true)
+                    isSendingRef.current = false
                     return
                 }
 
-                formData.append("chatId", id)
-
-                if (mensaje)
-                    formData.append("text", mensaje)
-
-                formData.append("file", archivo)
-
-                await axios.post(
-                    `${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`,
-                    formData,
-                    {
-                        headers: {
-                            "Content-Type": "multipart/form-data",
-                            Authorization: `Bearer ${token}`
-                        }
+                const createdAt = new Date().toISOString()
+                const optimisticItems = archivos.map((file, idx) => {
+                    const clientId = `local-upload:${Date.now()}-${idx}-${Math.random().toString(36).slice(2)}`
+                    const isImage = file.type.startsWith("image/")
+                    const previewUrl = URL.createObjectURL(file)
+                    uploadPreviewUrlsRef.current[clientId] = previewUrl
+                    return {
+                        id: clientId,
+                        kind: "message" as const,
+                        createdAt,
+                        msg_salida: file.name,
+                        type: isImage ? "image" : "document",
+                        imageUrl: isImage ? previewUrl : undefined,
+                        documentUrl: !isImage ? previewUrl : undefined,
+                        uploading: true,
                     }
-                )
+                })
+                const uploadQueue = optimisticItems.map((item, idx) => ({
+                    item,
+                    file: archivos[idx],
+                }))
 
-                setMensaje('')
-                setArchivo(null)
+                setMensajes((prev) => {
+                    const merged = mergeTimeline(prev, optimisticItems, "append")
+                    return merged.length > 1000 ? merged.slice(-1000) : merged
+                })
 
+                const removeOptimistic = (clientId: string) => {
+                    const url = uploadPreviewUrlsRef.current[clientId]
+                    if (url) {
+                        URL.revokeObjectURL(url)
+                        delete uploadPreviewUrlsRef.current[clientId]
+                    }
+                    setMensajes((prev) => prev.filter((m: any) => m?.id !== clientId))
+                }
+
+                // Si hay texto, lo enviamos como mensaje separado (una sola vez)
+                if (trimmedMessage.length > 0) {
+                    if (socket && socket.connected) {
+                        const objMsj = {
+                            mensaje: trimmedMessage,
+                            chatId: id,
+                            telefono,
+                            token
+                        }
+                        socket.emit("enviar-mensaje", objMsj)
+                    } else {
+                        await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, {
+                            chatId: id,
+                            text: trimmedMessage
+                        }, {
+                            headers: {
+                                Authorization: `Bearer ${token}`
+                            }
+                        })
+                    }
+                    lastSentMessageRef.current = trimmedMessage
+                    setMensaje("")
+                }
+
+                for (const { item, file } of uploadQueue) {
+                    const formData = new FormData()
+                    formData.append("chatId", id)
+                    formData.append("file", file)
+
+                    try {
+                        await axios.post(
+                            `${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`,
+                            formData,
+                            {
+                                headers: {
+                                    "Content-Type": "multipart/form-data",
+                                    Authorization: `Bearer ${token}`
+                                }
+                            }
+                        )
+                    } catch (err) {
+                        toast.error(`No se pudo subir ${file.name}`)
+                    } finally {
+                        removeOptimistic(item.id)
+                    }
+                }
+
+                setArchivos([])
+                isSendingRef.current = false
                 return
             }
 
@@ -693,8 +858,12 @@ const Chats = () => {
 
                 socket.emit("enviar-mensaje", objMsj)
 
+                lastSentMessageRef.current = trimmedMessage
+
                 setMensaje('')
-                setArchivo(null)
+                setArchivos([])
+
+                isSendingRef.current = false
 
             } else {
 
@@ -710,13 +879,14 @@ const Chats = () => {
                 })
 
                 setMensaje('')
+                isSendingRef.current = false
             }
 
         } catch (error) {
             console.log(error)
+            isSendingRef.current = false
         }
     }
-
     const handleArchivarClick = () => {
         setIsArchiveModalOpen(true);
     }
@@ -783,7 +953,7 @@ const Chats = () => {
                 const refreshTimeline = async () => {
                     try {
                         if (!id) return
-                        const data = await findChatTimeline(token!, id!, { page: 1, limit: 200 })
+                        const data = await findChatTimeline(token!, id!, { limit: 200 })
                         if (data.statusCode === 401) {
                             dispatch(openSessionExpired())
                             return
@@ -797,6 +967,8 @@ const Chats = () => {
                                     new Date((b as any)?.createdAt ?? 0).getTime()
                             )
                         setMensajes(items)
+                        setTimelineCursor((data as any)?.nextCursor ?? null)
+                        setTimelineHasMore(Boolean((data as any)?.hasMore))
                     } catch (e) {
                         if (debugTimeline) console.log("[Chats] timeline refresh after archivar failed", e)
                     }
@@ -877,7 +1049,7 @@ const Chats = () => {
                 // Limpiar estado local del chat eliminado para evitar UI colgada
                 setMensajes([])
                 setMensaje('')
-                setArchivo(null)
+                setArchivos([])
                 setCondChat(false)
                 dispatch(clearMentionChatSelection())
                 dispatch(clearBulkReadChatSelection())
@@ -932,15 +1104,13 @@ const Chats = () => {
     }
 
 
-
-
     // El tipo correcto para el evento de input tipo file es React.ChangeEvent<HTMLInputElement></HTMLInputElement>
     const handleAddFile = (e: React.ChangeEvent<HTMLInputElement>) => {
 
-        const file = e.target.files?.[0];
         const MAX_FILE_SIZE = 50 * 1024 * 1024;
+        const files = Array.from(e.target.files ?? [])
 
-        if (!file) return;
+        if (files.length === 0) return;
 
         const tipos = [
             "application/pdf",
@@ -951,17 +1121,39 @@ const Chats = () => {
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ];
 
-        if (file.size >= MAX_FILE_SIZE) {
-            toast.error("El archivo debe pesar menos de 50MB");
-            return;
+        const valid: File[] = []
+        let hasSizeError = false
+        let hasTypeError = false
+
+        for (const file of files) {
+            if (file.size >= MAX_FILE_SIZE) {
+                hasSizeError = true
+                continue
+            }
+            if (!tipos.includes(file.type)) {
+                hasTypeError = true
+                continue
+            }
+            valid.push(file)
         }
 
-        if (tipos.includes(file.type)) {
-            setArchivo(file);
-            e.target.value = "";
-        } else {
+        if (hasSizeError) {
+            toast.error("El archivo debe pesar menos de 50MB");
+        }
+        if (hasTypeError) {
             toast.error("Solo se permiten archivos pdf, jpeg, png");
         }
+
+        if (valid.length > MAX_FILES_PER_MESSAGE) {
+            toast.error(`Solo se permiten hasta ${MAX_FILES_PER_MESSAGE} archivos por mensaje`)
+            valid.splice(MAX_FILES_PER_MESSAGE)
+        }
+
+        if (valid.length > 0) {
+            setArchivos(valid);
+        }
+
+        e.target.value = "";
     };
 
     const handleClickFile = () => {
@@ -1173,6 +1365,11 @@ const Chats = () => {
                         </div>
                     </div>
                     <div className='body-chat' ref={mensajesContainerRef}>
+                        {timelineLoadingMore && (
+                            <div className='timeline-loader'>
+                                <div className='loader2'></div>
+                            </div>
+                        )}
                         {renderItems.map((msj: any, index) => {
                             const key = msj?.id ?? `${msj?.createdAt ?? "no-date"}-${index}`
 
@@ -1235,9 +1432,24 @@ const Chats = () => {
                             </div>
                         )}
                     </div>
+                    {docPreview && (
+                        <div className='doc-preview-overlay' onClick={() => setDocPreview(null)}>
+                            <div className='doc-preview-modal' onClick={(e) => e.stopPropagation()}>
+                                <div className='doc-preview-header'>
+                                    <span className='doc-preview-title'>{docPreview.name}</span>
+                                    <button className='doc-preview-close' onClick={() => setDocPreview(null)}>Cerrar</button>
+                                </div>
+                                <iframe src={docPreview.url} title={docPreview.name} className='doc-preview-iframe' />
+                            </div>
+                        </div>
+                    )}
                     <div className='footer-chat'>
-                        {archivo && (
-                            <p className='w-full p-1 text-red-600 text-center text-sm'>{archivo.name}</p>
+                        {archivos.length > 0 && (
+                            <div className='w-full p-1 text-red-600 text-center text-sm'>
+                                {archivos.length === 1
+                                    ? archivos[0].name
+                                    : `${archivos.length} archivos seleccionados: ${archivos.map((f) => f.name).join(', ')}`}
+                            </div>
                         )}
                         {condChat ? (
 
@@ -1263,10 +1475,11 @@ const Chats = () => {
 
                                 <input
                                     type="file"
-                                    accept="application/pdf, image/jpeg, image/png"
+                                    accept="application/pdf, image/jpeg, image/png, image/webp, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                     id="fileInput"
                                     ref={fileInputRef}
                                     style={{ display: "none" }}
+                                    multiple
                                     onChange={handleAddFile}
                                 />
 
@@ -1325,7 +1538,11 @@ const Chats = () => {
                                 <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>
                                     Nota Privada
                                 </button>
-                                <button type='submit' className='btn-msg'>
+                                <button
+                                    type='submit'
+                                    className='btn-msg'
+                                    disabled={isSendingRef.current}
+                                >
                                     Enviar
                                 </button>
                             </form>
@@ -1379,3 +1596,5 @@ const Chats = () => {
 }
 
 export default Chats
+
+
