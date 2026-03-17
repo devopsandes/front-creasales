@@ -16,6 +16,7 @@ import { RootState } from "../../app/store";
 import { setupAxiosInterceptors } from "../../utils/axiosInterceptor";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services";
+import { jwtDecode } from "jwt-decode";
 
 
 
@@ -27,6 +28,7 @@ const Dashboard = () => {
   const sessionExpired = useSelector((state: RootState) => state.action.sessionExpired)
   const warnedMissingEmpresaRef = useRef(false)
   const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
+  const mentionAudioRef = useRef(new Audio('/audio/mencion.mp3'))
   
   let socket: Socket | null = null
   
@@ -69,7 +71,15 @@ const Dashboard = () => {
   // Menciones realtime + contador global
   useEffect(() => {
     const token = localStorage.getItem('token') || ''
-    const myUserId = localStorage.getItem('userId') || ''
+    const myUserIdFromStorage = localStorage.getItem('userId') || ''
+    let myUserId = myUserIdFromStorage
+    if (!myUserId && token) {
+      try {
+        myUserId = jwtDecode<{ id?: string }>(token)?.id ?? ''
+      } catch {
+        myUserId = ''
+      }
+    }
     const socketInstance = getSocket()
 
     if (!token || !myUserId || !socketInstance || !socketConnected) return
@@ -104,6 +114,15 @@ const Dashboard = () => {
     const handler = (_payload: any) => {
       // opción robusta: pedir el contador real al backend
       refreshCount().catch(() => {})
+      // Aviso visible para el operador
+      toast.info('Te mencionaron en un chat')
+      // Sonido de mención
+      try {
+        const audio = mentionAudioRef.current
+        audio.currentTime = 0
+        audio.playbackRate = 1.2
+        audio.play().catch(() => {})
+      } catch {}
     }
 
     socketInstance.on(eventName, handler)
