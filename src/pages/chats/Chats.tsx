@@ -769,7 +769,7 @@ const Chats = () => {
                         kind: "message" as const,
                         createdAt,
                         msg_salida: file.name,
-                        type: isImage ? "image" : "document",
+                        type: (isImage ? "image" : "document") as "image" | "document",
                         imageUrl: isImage ? previewUrl : undefined,
                         documentUrl: !isImage ? previewUrl : undefined,
                         uploading: true,

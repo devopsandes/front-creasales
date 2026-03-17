@@ -14,6 +14,7 @@ export type TimelineItem =
           documentUrl?: MediaUrl;
           audioUrl?: MediaUrl;
           traduccion?: string | null;
+          uploading?: boolean;
       }
     | {
           kind: "event";
