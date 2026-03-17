@@ -576,7 +576,6 @@ const ListaChats = () => {
             const existing = chatsRef.current.find((c) => c.id === incoming.id)
             const normalizedIncoming = mergeChatPayload(existing, incoming)
             if (existing) {
-                const prevAssignment = getAssignment(existing)
                 const nextAssignment = getAssignment(normalizedIncoming)
                 const prevOperadorId = existing?.operador?.id ?? null
                 const nextOperadorId = normalizedIncoming?.operador?.id ?? null
@@ -658,7 +657,6 @@ const ListaChats = () => {
                 const existing = chatsRef.current.find((c) => c.id === chatFromPayload.id)
                 const normalized = mergeChatPayload(existing, chatFromPayload)
                 if (existing && normalized) {
-                    const prevAssignment = getAssignment(existing)
                     const nextAssignment = getAssignment(normalized)
                     const prevOperadorId = existing?.operador?.id ?? null
                     const nextOperadorId = normalized?.operador?.id ?? null

@@ -44,7 +44,6 @@ const UserSearchModal = ( ) => {
  
   const dispatch = useDispatch();
   const modalView = useSelector((state: RootState) => state.action.modal);
-  const chats = useSelector((state: RootState) => state.action.chats);
   const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters);
   
   const token  = localStorage.getItem('token') || '';
