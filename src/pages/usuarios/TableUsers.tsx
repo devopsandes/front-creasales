@@ -14,7 +14,6 @@ import { toast } from 'react-toastify';
 import './usuarios.css';
 
 
-
 const ITEMS_PER_PAGE = 15;
 
 const TableUsers = () => {
