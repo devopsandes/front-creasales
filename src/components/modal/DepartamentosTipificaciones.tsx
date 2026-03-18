@@ -1084,7 +1084,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             value={cuilAUnificar}
                             onChange={(e) => {
                                 setCuilAUnificar(e.target.value);
-                                updateData({ cuilAUnificar: e.target.value });
+                                updateData({ cuilAUnificar: e.target.value, archivosFiles: archivosImagenes });
                             }}
                         />
                     </div>
@@ -1096,6 +1096,25 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             <li>Incorporar familiar (hijo/a): DNI (frente y dorso), partida de nacimiento</li>
                             <li>Cambio categoría: MON (Formulario AFIP) - REL (último Bono) - ADHERENTE (nada)</li>
                         </ul>
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ cuilAUnificar, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
                     </div>
                 </>
             )}
@@ -1131,7 +1150,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             value={cuilNuevo}
                             onChange={(e) => {
                                 setCuilNuevo(e.target.value);
-                                updateData({ cuilNuevo: e.target.value, parentesco });
+                                updateData({ cuilNuevo: e.target.value, parentesco, archivosFiles: archivosImagenes });
                             }}
                         />
                     </div>
@@ -1143,7 +1162,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             value={parentesco}
                             onChange={(e) => {
                                 setParentesco(e.target.value);
-                                updateData({ cuilNuevo, parentesco: e.target.value });
+                                updateData({ cuilNuevo, parentesco: e.target.value, archivosFiles: archivosImagenes });
                             }}
                         >
                             <option value="">-- Seleccione Parentesco --</option>
@@ -1159,6 +1178,25 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             <li>Incorporar familiar (hijo/a): DNI (frente y dorso), partida de nacimiento</li>
                             <li>Cambio categoría: MON (Formulario AFIP) - REL (último Bono) - ADHERENTE (nada)</li>
                         </ul>
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ cuilNuevo, parentesco, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
                     </div>
                 </>
             )}
@@ -1215,7 +1253,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             value={nuevaCategoria}
                             onChange={(e) => {
                                 setNuevaCategoria(e.target.value);
-                                updateData({ nuevaCategoria: e.target.value });
+                                updateData({ nuevaCategoria: e.target.value, archivosFiles: archivosImagenes });
                             }}
                         >
                             <option value="">-- Seleccione Categoría --</option>
@@ -1232,6 +1270,25 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             <li>Incorporar familiar (hijo/a): DNI (frente y dorso), partida de nacimiento</li>
                             <li>Cambio categoría: MON (Formulario AFIP) - REL (último Bono) - ADHERENTE (nada)</li>
                         </ul>
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ nuevaCategoria, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
                     </div>
                 </>
             )}
@@ -1288,7 +1345,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             value={numeroTarjetaCBU}
                             onChange={(e) => {
                                 setNumeroTarjetaCBU(e.target.value);
-                                updateData({ numeroTarjetaCBU: e.target.value });
+                                updateData({ numeroTarjetaCBU: e.target.value, archivosFiles: archivosImagenes });
                             }}
                         />
                     </div>
@@ -1299,21 +1356,61 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             <li>BAJA: Nota de baja (opcional)</li>
                         </ul>
                     </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ numeroTarjetaCBU, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
                 </>
             )}
 
             {/* 10. Baja al débito automático */}
             {departamento === '564264000000181969' && tipificacion === 'Baja al débito automático' && (
-                <div className="ticket-modal-form-group" style={{ backgroundColor: '#d1ecf1', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
-                    <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Notas informativas:</p>
-                    <ul style={{ margin: 0, paddingLeft: '1.5rem', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                        <li>ALTA: Nota de adhesión, Imagen del frente de la tarjeta</li>
-                        <li>BAJA: Nota de baja (opcional)</li>
-                    </ul>
-                    <p style={{ margin: 0, fontSize: '0.875rem', fontStyle: 'italic' }}>
-                        Solo adjunte la documentación correspondiente.
-                    </p>
-                </div>
+                <>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#d1ecf1', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Notas informativas:</p>
+                        <ul style={{ margin: 0, paddingLeft: '1.5rem', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                            <li>ALTA: Nota de adhesión, Imagen del frente de la tarjeta</li>
+                            <li>BAJA: Nota de baja (opcional)</li>
+                        </ul>
+                        <p style={{ margin: 0, fontSize: '0.875rem', fontStyle: 'italic' }}>
+                            Solo adjunte la documentación correspondiente.
+                        </p>
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
+                </>
             )}
 
             {/* 11. Código de Obra Social */}
@@ -1349,7 +1446,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             value={prestadorAtencion}
                             onChange={(e) => {
                                 setPrestadorAtencion(e.target.value);
-                                updateData({ prestador: e.target.value, observaciones: observacionesAtencion });
+                                updateData({ prestador: e.target.value, observaciones: observacionesAtencion, archivosFiles: archivosImagenes });
                             }}
                         />
                     </div>
@@ -1362,9 +1459,28 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             value={observacionesAtencion}
                             onChange={(e) => {
                                 setObservacionesAtencion(e.target.value);
-                                updateData({ prestador: prestadorAtencion, observaciones: e.target.value });
+                                updateData({ prestador: prestadorAtencion, observaciones: e.target.value, archivosFiles: archivosImagenes });
                             }}
                         />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ prestador: prestadorAtencion, observaciones: observacionesAtencion, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
                     </div>
                 </>
             )}

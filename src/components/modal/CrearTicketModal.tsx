@@ -155,7 +155,7 @@ const CrearTicketModal = () => {
                 '564264000000175045': 'prestaciones-médicas',
                 '564264000000179032': 'fiscalización',
                 '564264000000181969': 'afiliaciones',
-                '564264000000184906': 'atencion-al-afiliado',
+                '564264000000184906': 'atención-al-afiliado',
                 '564264000042384029': 'internaciones',
                 '564264000000188843': 'preexistencias',
                 '564264000065821073': 'gapri'
