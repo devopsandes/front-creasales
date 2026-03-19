@@ -1624,20 +1624,62 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
 
             {/* 8. Plan Materno */}
             {departamento === '564264000000184906' && tipificacion === 'Plan Materno' && (
-                <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
-                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
-                        AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA INGRESAR A PLAN MATERNO
-                    </p>
-                </div>
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                            AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA INGRESAR A PLAN MATERNO
+                        </p>
+                    </div>
+                </>
             )}
 
             {/* 9. Solicitud de Plan Materno Infantil */}
             {departamento === '564264000000184906' && tipificacion === 'Solicitud de Plan Materno Infantil' && (
-                <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
-                    <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
-                        AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA INGRESAR A PLAN MATERNO INFANTIL
-                    </p>
-                </div>
+                <>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
+                    </div>
+                    <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
+                            AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} SOLICITA INGRESAR A PLAN MATERNO INFANTIL
+                        </p>
+                    </div>
+                </>
             )}
 
             {/* 10. Información de ópticas consultada */}
@@ -1659,7 +1701,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                     </div>
                     <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
                         <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
-                            SE LE INFORMO AL AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} LA COBERTURA ACTUAL DE ÓPTICAS
+                            SE LE INFORMO AL AFILIADO {afiliadoData?.cuil || 'SIN_DNI'} LA SITUACIÓN ACTUAL DE COSEGUROS
                         </p>
                     </div>
                 </>
@@ -1678,9 +1720,28 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             value={observacionesAtencion}
                             onChange={(e) => {
                                 setObservacionesAtencion(e.target.value);
-                                updateData({ observaciones: e.target.value });
+                                updateData({ observaciones: e.target.value, archivosFiles: archivosImagenes });
                             }}
                         />
+                    </div>
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({ observaciones: observacionesAtencion, archivosFiles: files });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
                     </div>
                     <div className="ticket-modal-form-group" style={{ backgroundColor: '#e3f2fd', padding: '1rem', borderRadius: '4px', marginTop: '1rem' }}>
                         <p style={{ margin: 0, fontSize: '0.875rem', color: '#1976d2', fontWeight: 500 }}>
@@ -1711,26 +1772,21 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                             value={observacionesAtencion}
                             onChange={(e) => {
                                 setObservacionesAtencion(e.target.value);
-                                updateData({ observaciones: e.target.value });
+                                updateData({ observaciones: e.target.value, archivosFiles: archivosImagenes });
                             }}
                         />
                     </div>
-
-                    {/* Input para archivos */}
                     <div className="ticket-modal-form-group">
-                        <label htmlFor="archivosCronicidad" className="ticket-modal-label">
-                            Adjunto (imágen):
-                        </label>
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
                         <input
                             type="file"
-                            id="archivosCronicidad"
                             accept="image/*"
                             multiple
                             className="ticket-modal-input"
                             onChange={(e) => {
                                 const files = Array.from(e.target.files || []);
                                 setArchivosImagenes(files);
-                                updateData({ diagnostico, archivosFiles: files });
+                                updateData({ observaciones: observacionesAtencion, archivosFiles: files });
                             }}
                         />
                         {archivosImagenes.length > 0 && (
@@ -1762,7 +1818,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     detalleDiagnostico,
                                     fechaAproximada,
                                     profesionalSolicitante,
-                                    observaciones: observacionInternacion
+                                    observaciones: observacionInternacion,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         />
@@ -1782,7 +1839,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     detalleDiagnostico,
                                     fechaAproximada,
                                     profesionalSolicitante,
-                                    observaciones: observacionInternacion
+                                    observaciones: observacionInternacion,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         >
@@ -1809,7 +1867,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     detalleDiagnostico: e.target.value,
                                     fechaAproximada,
                                     profesionalSolicitante,
-                                    observaciones: observacionInternacion
+                                    observaciones: observacionInternacion,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         />
@@ -1830,7 +1889,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     detalleDiagnostico,
                                     fechaAproximada: e.target.value,
                                     profesionalSolicitante,
-                                    observaciones: observacionInternacion
+                                    observaciones: observacionInternacion,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         />
@@ -1852,7 +1912,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     detalleDiagnostico,
                                     fechaAproximada,
                                     profesionalSolicitante: e.target.value,
-                                    observaciones: observacionInternacion
+                                    observaciones: observacionInternacion,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         />
@@ -1873,10 +1934,39 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     detalleDiagnostico,
                                     fechaAproximada,
                                     profesionalSolicitante,
-                                    observaciones: e.target.value
+                                    observaciones: e.target.value,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         />
+                    </div>
+
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({
+                                    prestadorSolicitado,
+                                    tipoIntervencion,
+                                    detalleDiagnostico,
+                                    fechaAproximada,
+                                    profesionalSolicitante,
+                                    observaciones: observacionInternacion,
+                                    archivosFiles: files
+                                });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
                     </div>
                 </>
             )}
@@ -1901,10 +1991,39 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     diagnostico: diagnosticoPreexistencia,
                                     ingreso,
                                     practicasSolicitadas,
-                                    horarioLlamada
+                                    horarioLlamada,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         />
+                    </div>
+
+                    <div className="ticket-modal-form-group">
+                        <label className="ticket-modal-label">Adjunto (imágen):</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="ticket-modal-input"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setArchivosImagenes(files);
+                                updateData({
+                                    observaciones: observacionesPreexistencia,
+                                    canal,
+                                    diagnostico: diagnosticoPreexistencia,
+                                    ingreso,
+                                    practicasSolicitadas,
+                                    horarioLlamada,
+                                    archivosFiles: files
+                                });
+                            }}
+                        />
+                        {archivosImagenes.length > 0 && (
+                            <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.5rem' }}>
+                                {archivosImagenes.length} archivo(s) seleccionado(s)
+                            </p>
+                        )}
                     </div>
 
                     <div className="ticket-modal-form-group">
@@ -1921,7 +2040,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     diagnostico: diagnosticoPreexistencia,
                                     ingreso,
                                     practicasSolicitadas,
-                                    horarioLlamada
+                                    horarioLlamada,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         >
@@ -1948,7 +2068,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     diagnostico: e.target.value,
                                     ingreso,
                                     practicasSolicitadas,
-                                    horarioLlamada
+                                    horarioLlamada,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         />
@@ -1969,7 +2090,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     diagnostico: diagnosticoPreexistencia,
                                     ingreso: e.target.value,
                                     practicasSolicitadas,
-                                    horarioLlamada
+                                    horarioLlamada,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         />
@@ -1991,7 +2113,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     diagnostico: diagnosticoPreexistencia,
                                     ingreso,
                                     practicasSolicitadas: e.target.value,
-                                    horarioLlamada
+                                    horarioLlamada,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         />
@@ -2011,7 +2134,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                                     diagnostico: diagnosticoPreexistencia,
                                     ingreso,
                                     practicasSolicitadas,
-                                    horarioLlamada: e.target.value
+                                    horarioLlamada: e.target.value,
+                                    archivosFiles: archivosImagenes
                                 });
                             }}
                         >
