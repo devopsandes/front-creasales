@@ -243,6 +243,73 @@
     text-decoration: underline;
 }
 
+.timeline-loader {
+    position: sticky;
+    top: 0.5rem;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 0.5rem 0;
+    z-index: 5;
+}
+
+.doc-preview-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 1rem;
+}
+
+.doc-preview-modal {
+    width: min(900px, 96vw);
+    height: min(85vh, 900px);
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.doc-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.doc-preview-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111827;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.doc-preview-close {
+    background: #111827;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.doc-preview-iframe {
+    flex: 1;
+    border: none;
+    width: 100%;
+    background: #fff;
+}
+
 .chat-media-transcripcion {
     margin-top: 0.5rem;
     font-size: 0.75rem;

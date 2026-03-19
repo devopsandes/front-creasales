@@ -14,6 +14,7 @@ export type TimelineItem =
           documentUrl?: MediaUrl;
           audioUrl?: MediaUrl;
           traduccion?: string | null;
+          uploading?: boolean;
       }
     | {
           kind: "event";
@@ -42,10 +43,12 @@ export type TimelineItem =
 
 export interface TimelineResponse {
     statusCode: number;
-    page: number;
+    page?: number;
     limit: number;
     total: number;
     items: TimelineItem[];
+    hasMore?: boolean;
+    nextCursor?: string | null;
 }
 
 export interface ChatTag {

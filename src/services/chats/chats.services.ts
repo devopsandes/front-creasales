@@ -29,7 +29,7 @@ const findChatById = async (token: string, id: string): Promise<ChatResponse & E
 const findChatTimeline = async (
     token: string,
     id: string,
-    params?: { page?: number; limit?: number }
+    params?: { page?: number; limit?: number; cursor?: string | null }
 ): Promise<TimelineResponse & ErrorResponse> => {
     try {
         const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`
@@ -38,9 +38,14 @@ const findChatTimeline = async (
             authorization: `Bearer ${token}`,
         }
 
-        const query = {
-            page: params?.page ?? 1,
+        const query: any = {
             limit: params?.limit ?? 200,
+        }
+
+        if (params?.cursor) {
+            query.cursor = params.cursor
+        } else {
+            query.page = params?.page ?? 1
         }
 
         const debug =
