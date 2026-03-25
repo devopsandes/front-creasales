@@ -36,6 +36,7 @@ import EliminarDatos from '../pages/legal/EliminarDatos'
 import MainView from '../pages/main/MainView'
 import TableIntegraciones from '../pages/integraciones/TableIntegraciones'
 import RespuestasRapidasPage from '../pages/respuestas-rapidas/RespuestasRapidasPage'
+import RespondHome from '../pages/RespondHome'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -188,6 +189,7 @@ const AppRouter = () => {
         </Route>
 
         <Route path='/' element={<MainView />} />
+        <Route path='/respond-home' element={<RespondHome />} />
 
         <Route path='/legal'>
 
