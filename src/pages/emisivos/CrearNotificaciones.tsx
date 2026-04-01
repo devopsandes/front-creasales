@@ -108,7 +108,6 @@ const CrearNotificaciones = () => {
     { value: "TARJETA DE CREDITO NARANJA", label: "TARJETA DE CREDITO NARANJA" },
     { value: "TARJETA DE CREDITO MASTERCARD", label: "TARJETA DE CREDITO MASTERCARD" },
     { value: "PAGO FACIL", label: "PAGO FACIL" },
-    { value: "EFECTIVO", label: "EFECTIVO" },
   ];
 
   const handleMontoInferiorChange = (value: string) => {
