@@ -1185,6 +1185,10 @@ const Chats = () => {
     }
 
     const handleKeyDownText = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            return
+        }
         if (!qrOpen) return
         if (e.key === 'Escape') {
             e.preventDefault()
@@ -1309,15 +1313,15 @@ const Chats = () => {
                                     <span>{effectiveBotEnabled ? "Desconectar Bot" : "Conectar Bot"}</span>
                                 </button>
                             )}
-                            {role !== 'USER' && (
-                                <button
-                                    onClick={() => dispatch(openModal())}
-                                    className="chat-action-button chat-button-assign"
-                                >
-                                    <IoPersonAdd />
-                                    <span>Asignar</span>
-                                </button>
-                            )}
+
+                            <button
+                                onClick={() => dispatch(openModal())}
+                                className="chat-action-button chat-button-assign"
+                            >
+                                <IoPersonAdd />
+                                <span>Asignar</span>
+                            </button>
+
                             <button
                                 onClick={handleArchivarClick}
                                 className="chat-action-button chat-button-archive"
