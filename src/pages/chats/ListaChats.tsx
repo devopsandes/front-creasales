@@ -461,7 +461,7 @@ const ListaChats = () => {
                 // noop
             })
             .finally(() => setLoading(false))
-    }, [hydrated, token, debouncedSearch, selectedTag, selectedOperator, styleBtn, chatListQueryKey, chatListUpdatedAt, dispatch])
+    }, [hydrated, token, debouncedSearch, selectedTag, selectedOperator, styleBtn, chatListQueryKey, dispatch])
 
     // Estado inicial: no estamos en "Menciones" hasta que el usuario toque esa pestaña
     useEffect(() => {
