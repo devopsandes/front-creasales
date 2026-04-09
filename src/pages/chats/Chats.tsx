@@ -968,39 +968,6 @@ const Chats = () => {
                                             </div>
                                         </div>
 
-                                        {/* Datos del chat */}
-                                        <div className='chat-info-panel-section'>
-                                            <div className='chat-info-panel-section-title'>Datos del Chat</div>
-                                            <div className='chat-info-panel-rows'>
-                                                <div className='chat-info-panel-row'>
-                                                    <span className='chat-info-panel-label'>Canal</span>
-                                                    <span className='chat-info-panel-value'>WhatsApp</span>
-                                                </div>
-                                                <div className='chat-info-panel-row'>
-                                                    <span className='chat-info-panel-label'>Estado</span>
-                                                    <span className='chat-info-panel-value'>Abierto</span>
-                                                </div>
-                                                <div className='chat-info-panel-row'>
-                                                    <span className='chat-info-panel-label'>ChatBot</span>
-                                                    <span className='chat-info-panel-value'>Sin Datos</span>
-                                                </div>
-                                                <div className='chat-info-panel-row'>
-                                                    <span className='chat-info-panel-label'>Departamento</span>
-                                                    <span className='chat-info-panel-value'>Sin Datos</span>
-                                                </div>
-                                                <div className='chat-info-panel-row'>
-                                                    <span className='chat-info-panel-label'>Asignado</span>
-                                                    <span className='chat-info-panel-value'>
-                                                        {operador ? `${operador.nombre} ${operador.apellido}` : 'Sin asignar'}
-                                                    </span>
-                                                </div>
-                                                <div className='chat-info-panel-row'>
-                                                    <span className='chat-info-panel-label'>Zoho Ticket</span>
-                                                    <span className='chat-info-panel-value'>Sin Datos</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
                                         {/* Datos del afiliado */}
                                         <div className='chat-info-panel-section'>
                                             <div className='chat-info-panel-section-title'>Datos del Afiliado</div>
@@ -1075,6 +1042,40 @@ const Chats = () => {
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* Datos del chat */}
+                                        <div className='chat-info-panel-section'>
+                                            <div className='chat-info-panel-section-title'>Datos del Chat</div>
+                                            <div className='chat-info-panel-rows'>
+                                                <div className='chat-info-panel-row'>
+                                                    <span className='chat-info-panel-label'>Canal</span>
+                                                    <span className='chat-info-panel-value'>WhatsApp</span>
+                                                </div>
+                                                <div className='chat-info-panel-row'>
+                                                    <span className='chat-info-panel-label'>Estado</span>
+                                                    <span className='chat-info-panel-value'>Abierto</span>
+                                                </div>
+                                                <div className='chat-info-panel-row'>
+                                                    <span className='chat-info-panel-label'>ChatBot</span>
+                                                    <span className='chat-info-panel-value'>Sin Datos</span>
+                                                </div>
+                                                <div className='chat-info-panel-row'>
+                                                    <span className='chat-info-panel-label'>Departamento</span>
+                                                    <span className='chat-info-panel-value'>Sin Datos</span>
+                                                </div>
+                                                <div className='chat-info-panel-row'>
+                                                    <span className='chat-info-panel-label'>Asignado</span>
+                                                    <span className='chat-info-panel-value'>
+                                                        {operador ? `${operador.nombre} ${operador.apellido}` : 'Sin asignar'}
+                                                    </span>
+                                                </div>
+                                                <div className='chat-info-panel-row'>
+                                                    <span className='chat-info-panel-label'>Zoho Ticket</span>
+                                                    <span className='chat-info-panel-value'>Sin Datos</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
                             )}
