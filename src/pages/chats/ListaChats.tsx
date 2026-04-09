@@ -23,7 +23,7 @@ const capitalizeText = (text: string | undefined | null): string => {
     if (!text || typeof text !== 'string') {
         return '';
     }
-    
+
     return text
         .toLowerCase()
         .split(' ')
@@ -49,14 +49,14 @@ const ListaChats = () => {
 
     const CHAT_PAGE_LIMIT = 100
     const SCROLL_BOTTOM_THRESHOLD_PX = 260
-    
-    const [chats1,setChats1] = useState<ChatState[]>([])
-    const [archivadas,setArchivadas] = useState<ChatState[]>([])
-    const [asignadas,setAsignadas] = useState<ChatState[]>([])
-    const [asignadasOtros,setAsignadasOtros] = useState<ChatState[]>([])
-    const [bots,setBots] = useState<ChatState[]>([])
-    const [sinAsignar,setSinAsignar] = useState<ChatState[]>([])
-    const [menciones,setMenciones] = useState<ChatState[]>([])
+
+    const [chats1, setChats1] = useState<ChatState[]>([])
+    const [archivadas, setArchivadas] = useState<ChatState[]>([])
+    const [asignadas, setAsignadas] = useState<ChatState[]>([])
+    const [asignadasOtros, setAsignadasOtros] = useState<ChatState[]>([])
+    const [bots, setBots] = useState<ChatState[]>([])
+    const [sinAsignar, setSinAsignar] = useState<ChatState[]>([])
+    const [menciones, setMenciones] = useState<ChatState[]>([])
     const [styleBtn, setStyleBtn] = useState<string>('otros')
 
     const [loading, setLoading] = useState<boolean>(true)
@@ -102,7 +102,7 @@ const ListaChats = () => {
 
     const socket = getSocket()
 
-    const token  = localStorage.getItem('token') || '';
+    const token = localStorage.getItem('token') || '';
     const role = localStorage.getItem('role') || '';
     const id = jwtDecode<{ id: string }>(token).id;
 
@@ -145,7 +145,7 @@ const ListaChats = () => {
         return merged
     }
 
-    
+
 
     const dispatch = useDispatch()
 
@@ -191,12 +191,12 @@ const ListaChats = () => {
 
     const mergeChatsById = (current: ChatState[], incoming: ChatState[]): ChatState[] => {
         const map = new Map<string, ChatState>()
-        ;(Array.isArray(current) ? current : []).forEach((c) => {
-            if (c?.id) map.set(c.id, c)
-        })
-        ;(Array.isArray(incoming) ? incoming : []).forEach((c) => {
-            if (c?.id) map.set(c.id, c)
-        })
+            ; (Array.isArray(current) ? current : []).forEach((c) => {
+                if (c?.id) map.set(c.id, c)
+            })
+            ; (Array.isArray(incoming) ? incoming : []).forEach((c) => {
+                if (c?.id) map.set(c.id, c)
+            })
         return Array.from(map.values()).sort(compareChatsForStore)
     }
 
@@ -269,7 +269,7 @@ const ListaChats = () => {
                     others: Number(c.others) || 0,
                 })
             })
-            .catch(() => {})
+            .catch(() => { })
     }, [token, debouncedSearch, selectedTag])
 
     useEffect(() => {
@@ -296,13 +296,13 @@ const ListaChats = () => {
         }))
     }, [hydrated, debouncedSearch, selectedTag, selectedOperator, styleBtn, ordenFecha, searchChat, dispatch])
 
-   
-
-    
 
 
-    useEffect(()=>{
-        
+
+
+
+    useEffect(() => {
+
         const ejecucion = async () => {
             let mentionTotal: number | null = null
 
@@ -340,7 +340,7 @@ const ListaChats = () => {
                 dispatch(setMentionUnreadCount(mentionTotal))
             }
             setLoading(false)
-            
+
             // Los usuarios con rol USER no tienen permiso para listar operadores (backend devuelve 403).
             // Para evitar errores, solo pedimos la lista si el rol actual NO es USER y además validamos el shape.
             if (role !== 'USER') {
@@ -349,29 +349,29 @@ const ListaChats = () => {
 
                 const usersIds = new Set<string>()
                 const uniqueUsers: Usuario[] = []
-                
+
                 list.forEach((user: Usuario) => {
-                    if(!usersIds.has(user.id)){
+                    if (!usersIds.has(user.id)) {
                         uniqueUsers.push(user)
                         usersIds.add(user.id)
                     }
                 })
-                
+
                 setUsers(uniqueUsers)
             } else {
                 setUsers([])
             }
-        
+
         }
-        
+
         dispatch(setUserData(null))
         dispatch(setViewSide(false))
 
         ejecucion();
-     
-        
-        
-    },[])
+
+
+
+    }, [])
 
     // Rehidratar UI/listado al volver a la vista (SPA navigation)
     useEffect(() => {
@@ -483,10 +483,10 @@ const ListaChats = () => {
                 })
                 setMentionChatIds(Array.from(new Set(ids)))
             })
-            .catch(() => {})
+            .catch(() => { })
     }, [mentionUnreadCount, token, mentionsRefreshNonce])
-    
-    
+
+
     const loadMoreChats = async () => {
         if (!token) return
         if (loading) return
@@ -529,8 +529,8 @@ const ListaChats = () => {
             loadMoreChats()
         }
     }
-    
-    
+
+
     useEffect(() => {
         if (!socket) return
 
@@ -558,7 +558,7 @@ const ListaChats = () => {
                             others: Number(c.others) || 0,
                         })
                     })
-                    .catch(() => {})
+                    .catch(() => { })
             }, 400)
         }
 
@@ -586,16 +586,16 @@ const ListaChats = () => {
                         const audio = assignAudioRef.current
                         audio.currentTime = 0
                         audio.playbackRate = 0.9
-                        audio.play().catch(() => {})
-                    } catch {}
+                        audio.play().catch(() => { })
+                    } catch { }
                 }
             } else if (normalizedIncoming?.operador?.id) {
                 try {
                     const audio = assignAudioRef.current
                     audio.currentTime = 0
                     audio.playbackRate = 0.9
-                    audio.play().catch(() => {})
-                } catch {}
+                    audio.play().catch(() => { })
+                } catch { }
             }
             const merged = mergeChatsById(chatsRef.current, [normalizedIncoming])
             dispatch(setChats(merged.slice(0, MAX_CACHE)))
@@ -609,7 +609,7 @@ const ListaChats = () => {
                 delete pendingChatRefreshRef.current[chatId]
                 try {
                     await refreshChatById(chatId)
-                } catch {}
+                } catch { }
             }, 250)
         }
 
@@ -632,7 +632,7 @@ const ListaChats = () => {
                     chatListUpdatedAt: Date.now(),
                 }))
                 scheduleCountsRefresh()
-            } catch {}
+            } catch { }
         }
 
         const handleRealtimeEvent = (eventName: string, payload: any) => {
@@ -667,8 +667,8 @@ const ListaChats = () => {
                             const audio = assignAudioRef.current
                             audio.currentTime = 0
                             audio.playbackRate = 0.9
-                            audio.play().catch(() => {})
-                        } catch {}
+                            audio.play().catch(() => { })
+                        } catch { }
                     }
                 }
                 const merged = mergeChatsById(chatsRef.current, [normalized])
@@ -714,7 +714,7 @@ const ListaChats = () => {
         const selectedValue = e.target.value
         setSelectedOperator(selectedValue)
         aplicarFiltros(selectedValue, selectedTag, undefined, searchChat)
-        
+
         const newSearchParams = new URLSearchParams(searchParams);
         if (selectedValue && selectedValue !== "TODOS" && selectedValue !== "BOT") {
             newSearchParams.set('userId', selectedValue);
@@ -756,22 +756,22 @@ const ListaChats = () => {
             const mentionIds = new Set<string>(mentionChatIds)
 
             chatsFromRedux.forEach(chat => {
-                if(chat.archivar){
+                if (chat.archivar) {
                     archivadasTemp.push(chat)
                 }
 
-                if(getAssignment(chat) === 'bot'){
-                    if(!botsIds.has(chat.id)){
+                if (getAssignment(chat) === 'bot') {
+                    if (!botsIds.has(chat.id)) {
                         botsTemp.push(chat)
                         botsIds.add(chat.id)
                     }
                 }
 
-                if(getAssignment(chat) === 'unassigned' && !chat.archivar){
+                if (getAssignment(chat) === 'unassigned' && !chat.archivar) {
                     sinAsignarTemp.push(chat)
                 }
 
-                if(getAssignment(chat) === 'assigned' && id === chat.operador?.id){
+                if (getAssignment(chat) === 'assigned' && id === chat.operador?.id) {
                     asignadasTemp.push(chat)
                 }
 
@@ -795,16 +795,16 @@ const ListaChats = () => {
             // Extraer tags únicos de todos los chats
             const tagsMap = new Map<string, { id: string; nombre: string }>()
             chatsFromRedux.forEach(chat => {
-                if(chat.tags && chat.tags.length > 0) {
+                if (chat.tags && chat.tags.length > 0) {
                     chat.tags.forEach(tag => {
-                        if(!tagsMap.has(tag.id)) {
+                        if (!tagsMap.has(tag.id)) {
                             tagsMap.set(tag.id, { id: tag.id, nombre: tag.nombre })
                         }
                     })
                 }
             })
             setAllTags(Array.from(tagsMap.values()))
-            
+
             let chatsBase: ChatState[] = chatsFromRedux
             if (styleBtn === "asig") {
                 chatsBase = asignadasTemp
@@ -826,7 +826,7 @@ const ListaChats = () => {
         }
     }, [chatsFromRedux, id, styleBtn, searchChat, selectedTag, mentionChatIds])
 
-  
+
 
     const handleClickLink = () => {
         dispatch(setViewSide(true))
@@ -917,356 +917,356 @@ const ListaChats = () => {
 
     // Marcado como leído se dispara desde la vista del chat (botón al lado de "Archivar")
 
-    
 
-  return (
-     <div className="chats-container">
-        <div className='main-chat'>
-            <div className="header-lista">
-                <div className={`header-item ${styleBtn === "sinAsignar" ? "header-item--active" : ""}`}>
-                    <button 
-                        onClick={() => {
-                            dispatch(setMentionsMode(false))
-                            dispatch(clearMentionChatSelection())
-                            dispatch(clearBulkReadChatSelection())
-                            setStyleBtn('sinAsignar')
-                            const operadorValue = selectRef.current?.value || ''
-                            aplicarFiltros(operadorValue, selectedTag, sinAsignar)
-                        }} 
-                        className="btn-item"
-                    >
-                        Sin asignar
-                        <span>{tabCounts.unassigned}</span>
-                    </button>
-                   
-                </div>
 
-                <div className={`header-item ${styleBtn === "asig" ? "header-item--active" : ""}`}>
-                    <button 
-                        onClick={() => {
-                            dispatch(setMentionsMode(false))
-                            dispatch(clearMentionChatSelection())
-                            dispatch(clearBulkReadChatSelection())
-                            setStyleBtn("asig")
-                            const operadorValue = selectRef.current?.value || ''
-                            aplicarFiltros(operadorValue, selectedTag, asignadas)
-                        }} 
-                        className="btn-item"
-                    >
-                        Asignadas a mí
-                        <span>{tabCounts.mine}</span>
-                    </button>
-                    
-                </div>
+    return (
+        <div className="chats-container">
+            <div className='main-chat'>
+                <div className="header-lista">
+                    <div className={`header-item ${styleBtn === "sinAsignar" ? "header-item--active" : ""}`}>
+                        <button
+                            onClick={() => {
+                                dispatch(setMentionsMode(false))
+                                dispatch(clearMentionChatSelection())
+                                dispatch(clearBulkReadChatSelection())
+                                setStyleBtn('sinAsignar')
+                                const operadorValue = selectRef.current?.value || ''
+                                aplicarFiltros(operadorValue, selectedTag, sinAsignar)
+                            }}
+                            className="btn-item"
+                        >
+                            Sin asignar
+                            <span>{tabCounts.unassigned}</span>
+                        </button>
 
-                 <div className={`header-item ${styleBtn === "otros" ? "header-item--active" : ""}`}>
-                     <button 
-                        onClick={() => {
-                            dispatch(setMentionsMode(false))
-                            dispatch(clearMentionChatSelection())
-                            dispatch(clearBulkReadChatSelection())
-                            setStyleBtn("otros")
-                            const operadorValue = selectRef.current?.value || ''
-                            aplicarFiltros(operadorValue, selectedTag, asignadasOtros)
-                        }} 
-                        className="btn-item"
-                    >
-                        Asignadas a otros
-                        <span>{tabCounts.others}</span>
-                    </button>
-                   
-                </div>
+                    </div>
 
-                <div className={`header-item ${styleBtn === "archi" ? "header-item--active" : ""}`}>
-                    <button 
-                        onClick={() => {
-                            dispatch(setMentionsMode(false))
-                            dispatch(clearMentionChatSelection())
-                            dispatch(clearBulkReadChatSelection())
-                            setStyleBtn("archi")
-                            const operadorValue = selectRef.current?.value || ''
-                            aplicarFiltros(operadorValue, selectedTag, archivadas)
-                        }} 
-                        className="btn-item"
-                    >
-                        Archivadas
-                        <span>{tabCounts.archived}</span>
-                    </button>
-                   
-                </div>
+                    <div className={`header-item ${styleBtn === "asig" ? "header-item--active" : ""}`}>
+                        <button
+                            onClick={() => {
+                                dispatch(setMentionsMode(false))
+                                dispatch(clearMentionChatSelection())
+                                dispatch(clearBulkReadChatSelection())
+                                setStyleBtn("asig")
+                                const operadorValue = selectRef.current?.value || ''
+                                aplicarFiltros(operadorValue, selectedTag, asignadas)
+                            }}
+                            className="btn-item"
+                        >
+                            Asignadas a mí
+                            <span>{tabCounts.mine}</span>
+                        </button>
 
-                 <div className={`header-item ${styleBtn === "menciones" ? "header-item--active" : ""}`}>
-                     <button 
-                        onClick={() => {
-                            setStyleBtn('menciones')
-                            dispatch(setMentionsMode(true))
-                            dispatch(clearBulkReadChatSelection())
-                            const operadorValue = selectRef.current?.value || ''
-                            aplicarFiltros(operadorValue, selectedTag, menciones)
-                        }} 
-                        className="btn-item"
-                    >
-                        Menciones
-                        <span>{mentionUnreadCount}</span>
-                    </button>
-                   
-                </div>
+                    </div>
 
-                 <div className={`header-item ${styleBtn === "bots" ? "header-item--active" : ""}`}>
-                     <button 
-                        onClick={() => {
-                            dispatch(setMentionsMode(false))
-                            dispatch(clearMentionChatSelection())
-                            dispatch(clearBulkReadChatSelection())
-                            setStyleBtn('bots')
-                            const operadorValue = selectRef.current?.value || ''
-                            aplicarFiltros(operadorValue, selectedTag, bots)
-                        }} 
-                        className="btn-item"
-                    >
-                        Bots
-                        <span>{tabCounts.bots}</span>
-                    </button>
-                   
+                    <div className={`header-item ${styleBtn === "otros" ? "header-item--active" : ""}`}>
+                        <button
+                            onClick={() => {
+                                dispatch(setMentionsMode(false))
+                                dispatch(clearMentionChatSelection())
+                                dispatch(clearBulkReadChatSelection())
+                                setStyleBtn("otros")
+                                const operadorValue = selectRef.current?.value || ''
+                                aplicarFiltros(operadorValue, selectedTag, asignadasOtros)
+                            }}
+                            className="btn-item"
+                        >
+                            Asignadas a otros
+                            <span>{tabCounts.others}</span>
+                        </button>
+
+                    </div>
+
+                    <div className={`header-item ${styleBtn === "archi" ? "header-item--active" : ""}`}>
+                        <button
+                            onClick={() => {
+                                dispatch(setMentionsMode(false))
+                                dispatch(clearMentionChatSelection())
+                                dispatch(clearBulkReadChatSelection())
+                                setStyleBtn("archi")
+                                const operadorValue = selectRef.current?.value || ''
+                                aplicarFiltros(operadorValue, selectedTag, archivadas)
+                            }}
+                            className="btn-item"
+                        >
+                            Archivadas
+                            <span>{tabCounts.archived}</span>
+                        </button>
+
+                    </div>
+
+                    <div className={`header-item ${styleBtn === "menciones" ? "header-item--active" : ""}`}>
+                        <button
+                            onClick={() => {
+                                setStyleBtn('menciones')
+                                dispatch(setMentionsMode(true))
+                                dispatch(clearBulkReadChatSelection())
+                                const operadorValue = selectRef.current?.value || ''
+                                aplicarFiltros(operadorValue, selectedTag, menciones)
+                            }}
+                            className="btn-item"
+                        >
+                            Menciones
+                            <span>{mentionUnreadCount}</span>
+                        </button>
+
+                    </div>
+
+                    <div className={`header-item ${styleBtn === "bots" ? "header-item--active" : ""}`}>
+                        <button
+                            onClick={() => {
+                                dispatch(setMentionsMode(false))
+                                dispatch(clearMentionChatSelection())
+                                dispatch(clearBulkReadChatSelection())
+                                setStyleBtn('bots')
+                                const operadorValue = selectRef.current?.value || ''
+                                aplicarFiltros(operadorValue, selectedTag, bots)
+                            }}
+                            className="btn-item"
+                        >
+                            Bots
+                            <span>{tabCounts.bots}</span>
+                        </button>
+
+                    </div>
                 </div>
-            </div>
-            <div className="lista-main">
-                <div className="col-lista" ref={listRef} onScroll={handleListScroll}>
-                    {chats1.length === 0 && !loading && (
-                        <p className="msg-error">No hay chats disponibles</p>
-                    )}
-                    {chats1.length > 0 && (
-                        <>
-                            <div className="chat-list-controls">
-                                <div className="w-full flex justify-between px-2 items-center mb-2 py-2">
-                                    <div className="flex gap-2 flex-wrap">
-                                        <div 
-                                            className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
-                                            onClick={handleOrdenarPorFecha}
-                                            title=""
-                                        >
-                                            {ordenFecha === 'desc' ? (
-                                                <LuArrowDownFromLine />
-                                            ) : (
-                                                <LuArrowUpFromLine />
-                                            )}
-                                            <span className="sort-tooltip">Ordenar por fecha</span>
-                                        </div>
-                                        <div 
-                                            className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
-                                            onClick={handleExportarConversaciones}
-                                            title=""
-                                        >
-                                            <LuDownload />
-                                            <span className="sort-tooltip">Exportar conversaciones</span>
-                                        </div>
-                                        <div 
-                                            className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
-                                            onClick={handleToggleFilter}
-                                            title=""
-                                        >
-                                            <LuFilter />
-                                            <span className="sort-tooltip">Filtrar conversaciones</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="w-full px-2 mb-2">
-                                <input
-                                    type="text"
-                                    value={searchChat}
-                                    onChange={(e) => {
-                                        const v = e.target.value
-                                        setSearchChat(v)
-                                        aplicarFiltros(selectRef.current?.value || '', selectedTag, undefined, v)
-                                    }}
-                                    placeholder="Buscar por nombre o teléfono..."
-                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"
-                                />
-                                </div>
-                                {showFilterSelect && (
-                                    <div className="w-full px-2 mb-2 space-y-2">
-                                        <div className="filter-input-row">
-                                            <User className="filter-input-icon" size={18} />
-                                            <select
-                                                ref={selectRef}
-                                                id="operador-select"
-                                                className={`filter-select ${selectedOperator === '' ? 'filter-select--placeholder' : ''}`}
-                                                onChange={handleChangeSelect}
+                <div className="lista-main">
+                    <div className="col-lista" ref={listRef} onScroll={handleListScroll}>
+                        {chats1.length === 0 && !loading && (
+                            <p className="msg-error">No hay chats disponibles</p>
+                        )}
+                        {chats1.length > 0 && (
+                            <>
+                                <div className="chat-list-controls">
+                                    <div className="w-full flex justify-between px-2 items-center mb-2 py-2">
+                                        <div className="flex gap-2 flex-wrap">
+                                            <div
+                                                className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
+                                                onClick={handleOrdenarPorFecha}
+                                                title=""
                                             >
-                                                <option value="">Filtrar por operador</option>
-                                                <option value="TODOS" className="bg-gray-500">TODOS</option>
-                                                <option value="BOT" className="bg-gray-500">BOT OPERADOR</option>
-                                                {users.map(user => (
-                                                    <option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="filter-input-row">
-                                            <TagIcon className="filter-input-icon" size={18} />
-                                            <select
-                                                id="tag-select"
-                                                className={`filter-select ${selectedTag === '' ? 'filter-select--placeholder' : ''}`}
-                                                onChange={handleChangeTagSelect}
-                                                value={selectedTag}
-                                            >
-                                                <option value="">Filtrar por etiqueta</option>
-                                                {allTags.map(tag => (
-                                                    <option key={tag.id} value={tag.id} className="bg-gray-500">{tag.nombre}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                )}
-                                {/* El botón "Marcar como leído" se muestra en la vista del chat (al lado de Archivar)
-                                   y solo si hay chats seleccionados en la pestaña Menciones */}
-                            </div>
-                            <div className="chat-list-spacing"></div>
-                            {filtrados != undefined && ordenarChatsPorFecha(filtrados, ordenFecha).map(chat => (
-                                (() => {
-                                    if (!chat?.id || !chat?.cliente) return null
-                                    const nombre = capitalizeText(chat.cliente?.nombre)
-                                    const telefono = chat.cliente?.telefono || ''
-                                    const unread = getUnreadCount(chat)
-                                    const lastIncoming = getLastIncomingAt(chat)
-                                    const lastIncomingLabel = formatRelativeLastIncoming(lastIncoming)
-                                    const manualUnread = isManuallyUnread(chat)
-                                    const showMarker = unread > 0 || manualUnread
-                                    const bulkChecked = (selectedBulkReadChatIds || []).includes(chat.id)
-                                    return (
-                                <Link 
-                                    to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente?.telefono || ''}&nombre=${chat.cliente?.nombre || ''}`} 
-                                    className={`item-lista text-left ${chat.id === activeChatId ? 'active' : ''}`}
-                                    key={chat.id}
-                                    onClick={handleOpenChat}
-                                >
-                                    <div className="chat-item-header">
-                                        <div className="chat-item-title">
-                                            <div className="chat-item-name-row">
-                                                <span className="chat-item-name">{nombre}</span>
-                                                {showMarker && (
-                                                    <span
-                                                        className="chat-unread-indicator"
-                                                        title={manualUnread ? "Marcado como no leído" : `${unread} mensaje(s) sin leer`}
-                                                        aria-label={manualUnread ? "Marcado como no leído" : `${unread} mensaje(s) sin leer`}
-                                                    >
-                                                        <span className="chat-unread-dot" />
-                                                    </span>
+                                                {ordenFecha === 'desc' ? (
+                                                    <LuArrowDownFromLine />
+                                                ) : (
+                                                    <LuArrowUpFromLine />
                                                 )}
-                                                {lastIncomingLabel && (
-                                                    <span className="chat-last-incoming">{lastIncomingLabel}</span>
-                                                )}
+                                                <span className="sort-tooltip">Ordenar por fecha</span>
                                             </div>
-                                            <div className="chat-item-phone">{telefono}</div>
+                                            <div
+                                                className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
+                                                onClick={handleExportarConversaciones}
+                                                title=""
+                                            >
+                                                <LuDownload />
+                                                <span className="sort-tooltip">Exportar conversaciones</span>
+                                            </div>
+                                            <div
+                                                className="sort-button-container border border-white rounded-none p-2 cursor-pointer relative"
+                                                onClick={handleToggleFilter}
+                                                title=""
+                                            >
+                                                <LuFilter />
+                                                <span className="sort-tooltip">Filtrar conversaciones</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="chat-tags-container">
-                                        {styleBtn === 'menciones' && (
-                                            <input
-                                                type="checkbox"
-                                                className="checkbox"
-                                                checked={(selectedMentionChatIds || []).includes(chat.id)}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onChange={(e) => {
-                                                    e.stopPropagation()
-                                                    dispatch(toggleMentionChatSelection(chat.id))
-                                                }}
-                                            />
-                                        )}
-                                        {styleBtn !== 'menciones' && (
-                                            <input
-                                                type="checkbox"
-                                                className="checkbox"
-                                                checked={bulkChecked}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onChange={(e) => {
-                                                    e.stopPropagation()
-                                                    dispatch(toggleBulkReadChatSelection(chat.id))
-                                                }}
-                                                title="Seleccionar para marcar como leído"
-                                            />
-                                        )}
-                                        {chat.tags && chat.tags.length > 0 ? (
-                                            chat.tags.map(tag => (
-                                                <p key={tag.id} className="chat-tag">{tag.nombre}</p>
-                                            ))
-                                        ) : null}
+                                    <div className="w-full px-2 mb-2">
+                                        <input
+                                            type="text"
+                                            value={searchChat}
+                                            onChange={(e) => {
+                                                const v = e.target.value
+                                                setSearchChat(v)
+                                                aplicarFiltros(selectRef.current?.value || '', selectedTag, undefined, v)
+                                            }}
+                                            placeholder="Buscar por nombre o teléfono..."
+                                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"
+                                        />
                                     </div>
-                                </Link>
-                                    )
-                                })()
-                            ))}
-                            {filtrados && filtrados.length === 0 && (
-                                <p className="msg-error px-2">No hay coincidencias</p>
-                            )}
-                        </>
-                    )}
-                
-                </div>
-                <div className="col-lista">
-                    {loading ? (
-                        <div className="chat-loader-center">
-                            <div className="loader2"></div>
-                        </div>
-                    ) : activeChatId ? (
-                        <Outlet />
-                    ) : (
-                        <div className="chat-empty-prompt">
-                            <p className="chat-empty-text">Presiona en un chat para comenzar</p>
-                        </div>
-                    )}
-                </div>
-                <div className="col-lista">
-                    {viewSide && (
-                        <>
-                            <div className="w-full">
-                                <p className="chat-info-label">Etiquetas</p>
-                                <div className="chat-tags-panel">
-                                    <p className="chat-tag">ac <span className="chat-tag-close">×</span></p>
-                                    <p className="chat-tag">black <span className="chat-tag-close">×</span></p>
-                                    <p className="chat-tag">deuda <span className="chat-tag-close">×</span></p>
+                                    {showFilterSelect && (
+                                        <div className="w-full px-2 mb-2 space-y-2">
+                                            <div className="filter-input-row">
+                                                <User className="filter-input-icon" size={18} />
+                                                <select
+                                                    ref={selectRef}
+                                                    id="operador-select"
+                                                    className={`filter-select ${selectedOperator === '' ? 'filter-select--placeholder' : ''}`}
+                                                    onChange={handleChangeSelect}
+                                                >
+                                                    <option value="">Filtrar por operador</option>
+                                                    <option value="TODOS" className="bg-gray-500">TODOS</option>
+                                                    <option value="BOT" className="bg-gray-500">BOT OPERADOR</option>
+                                                    {users.map(user => (
+                                                        <option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="filter-input-row">
+                                                <TagIcon className="filter-input-icon" size={18} />
+                                                <select
+                                                    id="tag-select"
+                                                    className={`filter-select ${selectedTag === '' ? 'filter-select--placeholder' : ''}`}
+                                                    onChange={handleChangeTagSelect}
+                                                    value={selectedTag}
+                                                >
+                                                    <option value="">Filtrar por etiqueta</option>
+                                                    {allTags.map(tag => (
+                                                        <option key={tag.id} value={tag.id} className="bg-gray-500">{tag.nombre}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* El botón "Marcar como leído" se muestra en la vista del chat (al lado de Archivar)
+                                   y solo si hay chats seleccionados en la pestaña Menciones */}
                                 </div>
+                                <div className="chat-list-spacing"></div>
+                                {filtrados != undefined && ordenarChatsPorFecha(filtrados, ordenFecha).map(chat => (
+                                    (() => {
+                                        if (!chat?.id || !chat?.cliente) return null
+                                        const nombre = capitalizeText(chat.cliente?.nombre)
+                                        const telefono = chat.cliente?.telefono || ''
+                                        const unread = getUnreadCount(chat)
+                                        const lastIncoming = getLastIncomingAt(chat)
+                                        const lastIncomingLabel = formatRelativeLastIncoming(lastIncoming)
+                                        const manualUnread = isManuallyUnread(chat)
+                                        const showMarker = unread > 0 || manualUnread
+                                        const bulkChecked = (selectedBulkReadChatIds || []).includes(chat.id)
+                                        return (
+                                            <Link
+                                                to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente?.telefono || ''}&nombre=${chat.cliente?.nombre || ''}`}
+                                                className={`item-lista text-left ${chat.id === activeChatId ? 'active' : ''}`}
+                                                key={chat.id}
+                                                onClick={handleOpenChat}
+                                            >
+                                                <div className="chat-item-header">
+                                                    <div className="chat-item-title">
+                                                        <div className="chat-item-name-row">
+                                                            <span className="chat-item-name">{nombre}</span>
+                                                            {showMarker && (
+                                                                <span
+                                                                    className="chat-unread-indicator"
+                                                                    title={manualUnread ? "Marcado como no leído" : `${unread} mensaje(s) sin leer`}
+                                                                    aria-label={manualUnread ? "Marcado como no leído" : `${unread} mensaje(s) sin leer`}
+                                                                >
+                                                                    <span className="chat-unread-dot" />
+                                                                </span>
+                                                            )}
+                                                            {lastIncomingLabel && (
+                                                                <span className="chat-last-incoming">{lastIncomingLabel}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="chat-item-phone">{telefono}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="chat-tags-container">
+                                                    {styleBtn === 'menciones' && (
+                                                        <input
+                                                            type="checkbox"
+                                                            className="checkbox"
+                                                            checked={(selectedMentionChatIds || []).includes(chat.id)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={(e) => {
+                                                                e.stopPropagation()
+                                                                dispatch(toggleMentionChatSelection(chat.id))
+                                                            }}
+                                                        />
+                                                    )}
+                                                    {styleBtn !== 'menciones' && (
+                                                        <input
+                                                            type="checkbox"
+                                                            className="checkbox"
+                                                            checked={bulkChecked}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={(e) => {
+                                                                e.stopPropagation()
+                                                                dispatch(toggleBulkReadChatSelection(chat.id))
+                                                            }}
+                                                            title="Seleccionar para marcar como leído"
+                                                        />
+                                                    )}
+                                                    {chat.tags && chat.tags.length > 0 ? (
+                                                        chat.tags.map(tag => (
+                                                            <p key={tag.id} className="chat-tag">{tag.nombre}</p>
+                                                        ))
+                                                    ) : null}
+                                                </div>
+                                            </Link>
+                                        )
+                                    })()
+                                ))}
+                                {filtrados && filtrados.length === 0 && (
+                                    <p className="msg-error px-2">No hay coincidencias</p>
+                                )}
+                            </>
+                        )}
+
+                    </div>
+                    <div className="col-lista">
+                        {loading ? (
+                            <div className="chat-loader-center">
+                                <div className="loader2"></div>
                             </div>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Canal: </span> Whatsapp</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Estado: </span>Abierto</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">ChatBot: </span>#andessalud</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Departamento: </span>Atención</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Asignado: </span>John Doe</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Email: </span>{dataUser?.mail}</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Telefono: </span>{dataUser?.celular}</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">TipoAltaBaja: </span>Alta</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Plan Prestacional: </span>{dataUser?.planAfiliado}</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Provincia: </span>{dataUser?.provinciaDom}</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Via Clinica: </span>CATEGORIA D;SC</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Cuil Afiliado: </span>{dataUser?.CUILTitular}</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Id Afiliado Titular: </span>{dataUser?.IdAfiliadoTitular}</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Fecha Alta: </span>{dataUser?.mesAlta}</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Obra social: </span>{dataUser?.OSAndes}</p>
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Localidad: </span>{dataUser?.localidadDom}</p>
-                            <p className="text-left text-gray-700 w-full p-1">
-                                &#9658;<span className="font-bold">DNI: </span>
-                                {dataUser?.CUILTitular ? dataUser.CUILTitular.toString().slice(2, -1) : ""}
-                            </p>
-                            {/* <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">DNI: </span>{dataUser?.CUILTitular.toString()}</p> */}
-                            <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Zoho Ticket id: </span>#260937</p>
+                        ) : activeChatId ? (
+                            <Outlet />
+                        ) : (
+                            <div className="chat-empty-prompt">
+                                <p className="chat-empty-text">Presiona en un chat para comenzar</p>
+                            </div>
+                        )}
+                    </div>
+                    <div className="col-lista">
+                        {viewSide && (
+                            <>
+                                <div className="w-full">
+                                    <p className="chat-info-label">Etiquetas</p>
+                                    <div className="chat-tags-panel">
+                                        <p className="chat-tag">ac <span className="chat-tag-close">×</span></p>
+                                        <p className="chat-tag">black <span className="chat-tag-close">×</span></p>
+                                        <p className="chat-tag">deuda <span className="chat-tag-close">×</span></p>
+                                    </div>
+                                </div>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Canal: </span> Whatsapp</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Estado: </span>Abierto</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">ChatBot: </span>#andessalud</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Departamento: </span>Atención</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Asignado: </span>John Doe</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Email: </span>{dataUser?.mail}</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Telefono: </span>{dataUser?.celular}</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">TipoAltaBaja: </span>Alta</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Plan Prestacional: </span>{dataUser?.planAfiliado}</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Provincia: </span>{dataUser?.provinciaDom}</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Via Clinica: </span>CATEGORIA D;SC</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Cuil Afiliado: </span>{dataUser?.CUILTitular}</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Id Afiliado Titular: </span>{dataUser?.IdAfiliadoTitular}</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Fecha Alta: </span>{dataUser?.mesAlta}</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Obra social: </span>{dataUser?.OSAndes}</p>
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Localidad: </span>{dataUser?.localidadDom}</p>
+                                <p className="text-left text-gray-700 w-full p-1">
+                                    &#9658;<span className="font-bold">DNI: </span>
+                                    {dataUser?.CUILTitular ? dataUser.CUILTitular.toString().slice(2, -1) : ""}
+                                </p>
+                                {/* <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">DNI: </span>{dataUser?.CUILTitular.toString()}</p> */}
+                                <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Zoho Ticket id: </span>#260937</p>
 
-                        </>
-                            
+                            </>
 
-                    )}
-                   
 
+                        )}
 
 
 
 
-               
-                
+
+
+
+
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-  )
+    )
 }
 
 export default ListaChats
