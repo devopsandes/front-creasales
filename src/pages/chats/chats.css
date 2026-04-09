@@ -1137,4 +1137,236 @@
     }
 }
 
+/* ================================================
+   PANEL LATERAL DE INFORMACIÓN DEL CHAT
+   Agregar al final de chats.css
+   ================================================ */
+
+/* Layout principal: chat + panel */
+.chat-with-panel {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Columna del chat (ocupa el espacio restante) */
+.chat-main-col {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Panel lateral */
+.chat-info-panel {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    flex-shrink: 0;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: white;
+    border-left: 1px solid #e5e7eb;
+}
+
+.chat-info-panel--open {
+    width: 280px;
+}
+
+.chat-info-panel--closed {
+    width: 28px;
+}
+
+/* Botón toggle del panel */
+.chat-info-panel-toggle {
+    position: absolute;
+    top: 50%;
+    left: -14px;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #6b7280;
+    transition: all 0.2s;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.chat-info-panel-toggle:hover {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+/* Contenido del panel */
+.chat-info-panel-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    animation: panelFadeIn 0.25s ease-out;
+}
+
+@keyframes panelFadeIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* Header del panel */
+.chat-info-panel-header {
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+    flex-shrink: 0;
+}
+
+.chat-info-panel-header h3 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin: 0;
+    letter-spacing: 0.3px;
+}
+
+/* Body del panel con scroll */
+.chat-info-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+    padding: 0.75rem 0;
+}
+
+.chat-info-panel-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.chat-info-panel-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-info-panel-body::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+    border-radius: 2px;
+}
+
+/* Secciones */
+.chat-info-panel-section {
+    padding: 0.5rem 1rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.chat-info-panel-section:last-child {
+    border-bottom: none;
+}
+
+.chat-info-panel-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 0.625rem;
+}
+
+/* Botón agregar tag dentro del panel */
+.chat-info-panel-add-tag {
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #9ca3af;
+    transition: all 0.2s;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.chat-info-panel-add-tag:hover {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+    color: #2563eb;
+}
+
+/* Filas de datos */
+.chat-info-panel-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.chat-info-panel-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.15s;
+}
+
+.chat-info-panel-row:hover {
+    background-color: #f8faff;
+}
+
+.chat-info-panel-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    line-height: 1.3;
+}
+
+.chat-info-panel-value {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #1f2937;
+    word-break: break-word;
+    line-height: 1.4;
+    cursor: text;
+    user-select: text;
+}
+
+.chat-info-panel-value::selection {
+    background-color: #bfdbfe;
+    color: #1e40af;
+}
+
+/* Estado vacío */
+.chat-info-empty {
+    font-size: 0.75rem;
+    color: #d1d5db;
+    font-style: italic;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Tags dentro del panel */
+.chat-info-panel-section .chat-tags-panel {
+    background-color: transparent;
+    border: none;
+    padding: 0.25rem 0;
+    gap: 0.375rem;
+}
+
 
