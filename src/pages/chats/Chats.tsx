@@ -11,10 +11,9 @@ import UserSearchModal from '../../components/modal/UserSearchModal'
 import ArchiveModal from '../../components/modal/ArchiveModal'
 import DeleteModal from '../../components/modal/DeleteModal'
 import ErrorModal from '../../components/modal/ErrorModal'
-import ChatInfoDropdown from '../../components/dropdown/ChatInfoDropdown'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
-import { Bot, BotOff, CheckCheck, ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
+import { Bot, BotOff, CheckCheck, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired, clearMentionChatSelection, setChats } from '../../app/slices/actionSlice'
 import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
