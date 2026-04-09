@@ -1281,6 +1281,20 @@ const Chats = () => {
         // textareaRef.current!.focus();
     };
 
+    const handlePasteInput = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        const items = e.clipboardData?.items
+        if (!items) return
+        for (const item of Array.from(items)) {
+            if (item.type.startsWith('image/')) {
+                const file = item.getAsFile()
+                if (file) {
+                    setArchivos([file])
+                    e.preventDefault()
+                }
+            }
+        }
+    }
+
 
 
     return (
@@ -1453,6 +1467,13 @@ const Chats = () => {
                                 {archivos.length === 1
                                     ? archivos[0].name
                                     : `${archivos.length} archivos seleccionados: ${archivos.map((f) => f.name).join(', ')}`}
+                                <button
+                                    type='button'
+                                    onClick={() => setArchivos([])}
+                                    className='text-red-600 hover:text-red-800 font-bold'
+                                >
+                                    ✕
+                                </button>
                             </div>
                         )}
                         {condChat ? (
@@ -1465,6 +1486,7 @@ const Chats = () => {
                                     value={mensaje}
                                     onChange={handleChangeText}
                                     onKeyDown={handleKeyDownText}
+                                    onPaste={handlePasteInput}
                                     ref={mensajeInputRef}
                                 />
                                 <button
