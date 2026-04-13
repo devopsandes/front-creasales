@@ -760,7 +760,7 @@ const ListaChats = () => {
                     archivadasTemp.push(chat)
                 }
 
-                if (getAssignment(chat) === 'bot') {
+                if (getAssignment(chat) === 'bot' && !chat.archivar) {
                     if (!botsIds.has(chat.id)) {
                         botsTemp.push(chat)
                         botsIds.add(chat.id)
