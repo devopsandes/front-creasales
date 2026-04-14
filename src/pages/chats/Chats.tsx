@@ -251,18 +251,42 @@ const Chats = () => {
     const renderItems = useMemo(() => withDateSeparators(mensajes), [mensajes])
     const debugTimeline = import.meta.env.DEV && localStorage.getItem("debugTimeline") === "1"
 
-    const handleNotaPrivada = () => {
-        if (!mensaje || mensaje.trim().length === 0) {
-            setErrorModalMessage('Debe escribir una nota')
+    const handleNotaPrivada = async () => {
+        if ((!mensaje || mensaje.trim().length === 0) && archivos.length === 0) {
+            setErrorModalMessage('Debe escribir una nota o pegar una imagen')
             setIsErrorModalOpen(true)
             return
         }
         const socket = getSocket()
         if (socket && socket.connected) {
-            const payload: any = { chatId: id, mensaje, token, mentions: selectedMentionUser ? [{ userId: selectedMentionUser.id }] : [] }
+            const payload: any = {
+                chatId: id,
+                mensaje: mensaje.trim() || null,
+                token,
+                mentions: selectedMentionUser ? [{ userId: selectedMentionUser.id }] : []
+            }
+
+            // Si hay imagen pegada, convertir a base64
+            if (archivos.length > 0 && archivos[0].type.startsWith('image/')) {
+                const file = archivos[0]
+                const ext = file.name.split('.').pop() || 'png'
+                const base64 = await new Promise<string>((resolve) => {
+                    const reader = new FileReader()
+                    reader.onload = () => {
+                        const result = reader.result as string
+                        resolve(result.split(',')[1])
+                    }
+                    reader.readAsDataURL(file)
+                })
+                payload.image = { base64, ext }
+            }
+
             setMensaje("")
+            setArchivos([])
             setSelectedMentionUser(null)
-            socket.emit("nota-privada", payload, (ack: any) => { if (debugTimeline) console.log("[nota-privada ACK]", ack) })
+            socket.emit("nota-privada", payload, (ack: any) => {
+                if (debugTimeline) console.log("[nota-privada ACK]", ack)
+            })
         }
     }
 
@@ -815,6 +839,15 @@ const Chats = () => {
                                                 <div className='contenedor-nota-privada' key={key}>
                                                     <div className='mensaje-nota-privada'>
                                                         <span className='mensaje-nota-privada-text'>{resolveEventText(msj)}</span>
+                                                        {msj?.payload?.imageUrl && (
+                                                            <img
+                                                                src={msj.payload.imageUrl}
+                                                                alt="imagen nota privada"
+                                                                className="chat-media-img"
+                                                                style={{ maxWidth: '300px', borderRadius: '0.5rem', marginTop: '0.5rem' }}
+                                                                loading="lazy"
+                                                            />
+                                                        )}
                                                         {msj?.payload?.authorName && <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>}
                                                     </div>
                                                     <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
