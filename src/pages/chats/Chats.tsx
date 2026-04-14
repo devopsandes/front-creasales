@@ -59,7 +59,7 @@ const Chats = () => {
     const [isRemoveTagModalOpen, setIsRemoveTagModalOpen] = useState(false)
     const [tagToRemove, setTagToRemove] = useState<ChatTag | null>(null)
     const fileInputRef = useRef<HTMLInputElement | null>(null);
-    const mensajeInputRef = useRef<HTMLInputElement | null>(null);
+    const mensajeInputRef = useRef<HTMLTextAreaElement | null>(null);
     const [quickResponses, setQuickResponses] = useState<QuickResponse[]>([])
     const [qrOpen, setQrOpen] = useState(false)
     const [qrFiltered, setQrFiltered] = useState<QuickResponse[]>([])
@@ -455,6 +455,14 @@ const Chats = () => {
         run().catch(() => { })
     }, [token])
 
+    useEffect(() => {
+        const el = mensajeInputRef.current
+        if (el) {
+            el.style.height = 'auto'
+            el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+        }
+    }, [mensaje])
+
     const handleTagConfirm = async (_tagId: string) => {
         try {
             const chatos = await getChats(token, '1', '100', chatListFilters)
@@ -659,8 +667,7 @@ const Chats = () => {
         requestAnimationFrame(() => { const caret = range.start + (qr.text || '').length; input.focus(); input.setSelectionRange(caret, caret) })
     }
 
-    const handleKeyDownText = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') { e.preventDefault(); return }
+    const handleKeyDownText = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (!qrOpen) return
         if (e.key === 'Escape') { e.preventDefault(); closeQuickMenu(); return }
         if (!qrFiltered.length) return
@@ -669,7 +676,7 @@ const Chats = () => {
         if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); const selected = qrFiltered[qrActiveIndex]; if (selected) insertQuickResponse(selected) }
     }
 
-    const handleChangeText = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChangeText = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setMensaje(value);
         const caretPos = e.target.selectionStart ?? value.length
@@ -707,7 +714,7 @@ const Chats = () => {
         setShowList(false);
     };
 
-    const handlePasteInput = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const handlePasteInput = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
         const items = e.clipboardData?.items
         if (!items) return
         for (const item of Array.from(items)) {
@@ -868,8 +875,7 @@ const Chats = () => {
                                 )}
                                 {condChat ? (
                                     <form action="" className='enviar-msj gap-1 relative w-full' onSubmit={handleClickBtn}>
-                                        <input
-                                            type="text"
+                                        <textarea
                                             placeholder='Escriba un mensaje'
                                             className='input-msg'
                                             value={mensaje}
@@ -877,6 +883,13 @@ const Chats = () => {
                                             onKeyDown={handleKeyDownText}
                                             onPaste={handlePasteInput}
                                             ref={mensajeInputRef}
+                                            rows={1}
+                                            style={{
+                                                resize: 'none',
+                                                overflowY: 'auto',
+                                                maxHeight: '120px',
+                                                lineHeight: '1.5rem',
+                                            }}
                                         />
                                         <button type='button' onClick={handleClickFile}>
                                             <IoIosAttach size={25} className='text-gray-700 cursor-pointer' />

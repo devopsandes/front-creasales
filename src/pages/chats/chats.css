@@ -67,7 +67,6 @@
 .footer-chat {
     width: 100%;
     min-height: 80px;
-    max-height: 80px;
     padding: 1rem 1.5rem;
     background-color: white;
     border-top: 1px solid #e5e7eb;
@@ -365,7 +364,7 @@
 
 .input-msg {
     flex: 1;
-    height: 42px;
+    min-height: 42px;
     border: 1px solid #d1d5db;
     background-color: #f9fafb;
     outline: none;
@@ -374,6 +373,8 @@
     padding: 0.625rem 0.875rem;
     font-size: 0.875rem;
     transition: all 0.2s;
+    font-family: inherit;
+    line-height: 1.5;
 }
 
 .input-msg:focus {

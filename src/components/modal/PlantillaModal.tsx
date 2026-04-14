@@ -40,7 +40,7 @@ const PlantillaModal = () => {
   const nombreAfiliado = currentChat?.cliente?.nombre && currentChat?.cliente?.apellido
     ? `${currentChat.cliente.nombre} ${currentChat.cliente.apellido}`
     : (dataUser?.apellnombAfilado || currentChat?.cliente?.nombre || 'Cliente');
-  const nombreOperador = user?.name || 'Operador';
+  const nombreOperador = (user?.name || 'Operador').split(' ')[0];
   // Obtener CUIL del chat o dataUser
   const cuilCliente = currentChat?.cliente?.cuil?.toString() || dataUser?.CUILAfiliado?.toString() || '';
   const cuilTitular = dataUser?.CUILTitular?.toString() || cuilCliente;
