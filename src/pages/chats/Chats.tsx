@@ -844,8 +844,9 @@ const Chats = () => {
                                                                 src={msj.payload.imageUrl}
                                                                 alt="imagen nota privada"
                                                                 className="chat-media-img"
-                                                                style={{ maxWidth: '300px', borderRadius: '0.5rem', marginTop: '0.5rem' }}
+                                                                style={{ maxWidth: '300px', borderRadius: '0.5rem', marginTop: '0.5rem', cursor: 'pointer' }}
                                                                 loading="lazy"
+                                                                onClick={() => setDocPreview({ url: msj.payload.imageUrl, name: 'Imagen nota privada' })}
                                                             />
                                                         )}
                                                         {msj?.payload?.authorName && <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>}
