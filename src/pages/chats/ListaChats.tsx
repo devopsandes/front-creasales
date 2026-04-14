@@ -771,7 +771,7 @@ const ListaChats = () => {
                     sinAsignarTemp.push(chat)
                 }
 
-                if (getAssignment(chat) === 'assigned' && id === chat.operador?.id) {
+                if (getAssignment(chat) === 'assigned' && id === chat.operador?.id && !chat.archivar) {
                     asignadasTemp.push(chat)
                 }
 
