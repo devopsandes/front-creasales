@@ -855,6 +855,14 @@ const Chats = () => {
                                                 </div>
                                             )
                                         }
+                                        if (msj?.type === "NEW_CONVERSATION_STARTED") {
+                                            return (
+                                                <div className='contenedor-nueva-conversacion' key={key}>
+                                                    <p className='mensaje-nueva-conversacion'>{resolveEventText(msj)}</p>
+                                                    <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
+                                                </div>
+                                            )
+                                        }
                                         return (
                                             <div className='contenedor-archivado' key={key}>
                                                 <p className='mensaje-archivado'>{resolveEventText(msj)}</p>
