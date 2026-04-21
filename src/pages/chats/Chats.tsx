@@ -65,6 +65,7 @@ const Chats = () => {
     const [qrFiltered, setQrFiltered] = useState<QuickResponse[]>([])
     const [qrActiveIndex, setQrActiveIndex] = useState(0)
     const [qrTriggerRange, setQrTriggerRange] = useState<{ start: number; end: number } | null>(null)
+    const [conversacionNumero, setConversacionNumero] = useState<number | null>(null)
 
     const isSendingRef = useRef(false)
     const lastSentMessageRef = useRef<string | null>(null)
@@ -374,7 +375,11 @@ const Chats = () => {
             setMensajes(prev => { const merged = mergeTimeline(prev, [item], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
         }
         const handleChatEvent = (evt: any) => {
-            setMensajes(prev => { const merged = mergeTimeline(prev, [normalizeTimelineItem(evt)], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
+            const normalized = normalizeTimelineItem(evt)
+            setMensajes(prev => { const merged = mergeTimeline(prev, [normalized], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
+            if ((normalized as any)?.type === 'NEW_CONVERSATION_STARTED' && (normalized as any)?.payload?.numeroConversacion) {
+                setConversacionNumero((normalized as any).payload.numeroConversacion)
+            }
         }
         const handleError = (error: any) => {
             if (error?.name === 'TokenExpiredError') { dispatch(openSessionExpired()); return }
@@ -406,6 +411,13 @@ const Chats = () => {
     useEffect(() => {
         const inicio = async () => {
             if (!id) return
+            // Obtener número de conversación
+            try {
+                const chatData = await axios.get(`${import.meta.env.VITE_URL_BACKEND}/chats/${id}`, {
+                    headers: { authorization: `Bearer ${token}` }
+                })
+                setConversacionNumero(chatData?.data?.chat?.lastConversacionNumero ?? null)
+            } catch { setConversacionNumero(null) }
             setTimelineCursor(null)
             setTimelineHasMore(false)
             const data = await findChatTimeline(token!, id!, { limit: 200 })
@@ -770,6 +782,9 @@ const Chats = () => {
                                     <span>{nombre}</span>
                                     <span>+{telefono}</span>
                                 </p>
+                                {conversacionNumero && (
+                                    <span className='chat-conversacion-id'>IdConversación: {conversacionNumero}</span>
+                                )}
                                 <div className='header-chat-actions'>
                                     {canToggleBot && (
                                         <button

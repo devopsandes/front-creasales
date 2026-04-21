@@ -1390,4 +1390,42 @@
     max-width: 90%;
 }
 
+.chat-conversacion-id {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: 8px;
+    align-self: center;
+}
+
+.header-item-search-conv {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.input-search-conversacion {
+    width: 140px;
+    padding: 4px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-search-conversacion:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.input-search-conversacion::placeholder {
+    color: #9ca3af;
+}
+
 

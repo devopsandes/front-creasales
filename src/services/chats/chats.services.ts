@@ -248,5 +248,22 @@ const setChatBotState = async (
     }
 }
 
+const searchByConversacion = async (
+    token: string,
+    numero: number
+): Promise<any> => {
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/search-conversacion?numero=${numero}`
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await axios.get(url, { headers })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data
+        }
+        throw error
+    }
+}
 
-export { findChatById, findChatTimeline, getUserData, getChats, getChatCounts, setChatReadState, setChatBotState }
+
+export { findChatById, findChatTimeline, getUserData, getChats, getChatCounts, setChatReadState, setChatBotState, searchByConversacion }

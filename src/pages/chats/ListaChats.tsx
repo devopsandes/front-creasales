@@ -1,4 +1,4 @@
-import { Link, Outlet, useParams, useSearchParams } from "react-router-dom"
+import { Link, Outlet, useParams, useSearchParams, useNavigate } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
@@ -14,7 +14,7 @@ import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnrea
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
-import { findChatById, getChatCounts, getChats } from "../../services/chats/chats.services"
+import { findChatById, getChatCounts, getChats, searchByConversacion } from "../../services/chats/chats.services"
 import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services"
 
 // Función auxiliar para capitalizar correctamente el texto
@@ -46,6 +46,7 @@ const ListaChats = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const selectRef = useRef<HTMLSelectElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const navigate = useNavigate()
 
     const CHAT_PAGE_LIMIT = 100
     const SCROLL_BOTTOM_THRESHOLD_PX = 260
@@ -58,6 +59,7 @@ const ListaChats = () => {
     const [sinAsignar, setSinAsignar] = useState<ChatState[]>([])
     const [menciones, setMenciones] = useState<ChatState[]>([])
     const [styleBtn, setStyleBtn] = useState<string>('otros')
+    const [searchConversacion, setSearchConversacion] = useState<string>('')
 
     const [loading, setLoading] = useState<boolean>(true)
     const [page, setPage] = useState<number>(1)
@@ -1028,6 +1030,40 @@ const ListaChats = () => {
                             <span>{tabCounts.bots}</span>
                         </button>
 
+                    </div>
+
+                    <div className="header-item header-item-search-conv">
+                        <input
+                            type="text"
+                            value={searchConversacion}
+                            onChange={(e) => setSearchConversacion(e.target.value)}
+                            onKeyDown={async (e) => {
+                                if (e.key !== 'Enter') return
+                                const v = searchConversacion.trim()
+                                if (!v || !/^\d+$/.test(v)) return
+                                const numero = parseInt(v, 10)
+                                if (isNaN(numero)) return
+                                try {
+                                    const resp = await searchByConversacion(token, numero)
+                                    if (resp?.statusCode === 200 && resp?.chat?.id) {
+                                        const chat = resp.chat
+                                        const tab = resp.tab || 'sinAsignar'
+                                        setStyleBtn(tab)
+                                        dispatch(setMentionsMode(tab === 'menciones'))
+                                        dispatch(clearMentionChatSelection())
+                                        dispatch(clearBulkReadChatSelection())
+                                        setSearchConversacion('')
+                                        const nombre = chat.cliente?.nombre || ''
+                                        const telefono = chat.cliente?.telefono || ''
+                                        dispatch(setChatListUiState({ chatListTab: tab }))
+                                        dispatch(setChatListCacheMeta({ chatListQueryKey: '', chatListUpdatedAt: 0 }))
+                                        navigate(`/dashboard/chats/${chat.id}?telefono=${telefono}&nombre=${nombre}`)
+                                    }
+                                } catch { }
+                            }}
+                            placeholder="IdConversación..."
+                            className="input-search-conversacion"
+                        />
                     </div>
                 </div>
                 <div className="lista-main">
