@@ -12,14 +12,14 @@ const findChatById = async (token: string, id: string): Promise<ChatResponse & E
         const headers = {
             authorization: `Bearer ${token}`
         }
-      
-        const { data } = await axios.get<ChatResponse & ErrorResponse>(url,{ headers })
+
+        const { data } = await axios.get<ChatResponse & ErrorResponse>(url, { headers })
 
 
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
-            const objeto:  ChatResponse & ErrorResponse  = error.response.data
+            const objeto: ChatResponse & ErrorResponse = error.response.data
             return objeto
         }
         throw error; // Lanza el error si no es del tipo esperado
@@ -97,7 +97,7 @@ const findChatTimeline = async (
     }
 }
 
-const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse>=> {
+const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse> => {
     try {
         const url = `https://tickets.createch.com.ar/mensajes/getUserData?telefono=${telefono}`
 
@@ -170,7 +170,7 @@ const getChats = async (
             authorization: `Bearer ${token}`
         }
 
-        const { data } = await axios.get<ChatsResponse & ErrorResponse>(url,{ headers })
+        const { data } = await axios.get<ChatsResponse & ErrorResponse>(url, { headers })
 
         return data
     } catch (error) {
@@ -222,12 +222,12 @@ const setChatBotState = async (
     reason?: string
 ): Promise<
     | ({
-          botEnabled?: boolean;
-          botDisabledAt?: string | Date | null;
-          botDisabledByUserId?: string | null;
-          botDisableReason?: string | null;
-          statusCode?: number;
-      } & ErrorResponse)
+        botEnabled?: boolean;
+        botDisabledAt?: string | Date | null;
+        botDisabledByUserId?: string | null;
+        botDisableReason?: string | null;
+        statusCode?: number;
+    } & ErrorResponse)
     | any
 > => {
     try {
@@ -265,5 +265,22 @@ const searchByConversacion = async (
     }
 }
 
+const desasignarChat = async (
+    token: string,
+    chatId: string
+): Promise<any> => {
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/unassign`
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await axios.post(url, { chatId }, { headers })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data
+        }
+        throw error
+    }
+}
 
-export { findChatById, findChatTimeline, getUserData, getChats, getChatCounts, setChatReadState, setChatBotState, searchByConversacion }
+
+export { findChatById, findChatTimeline, getUserData, getChats, getChatCounts, setChatReadState, setChatBotState, searchByConversacion, desasignarChat }
