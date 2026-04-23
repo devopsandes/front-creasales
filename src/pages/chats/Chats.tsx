@@ -932,6 +932,7 @@ const Chats = () => {
                                 )}
                                 {condChat ? (
                                     <form action="" className='enviar-msj gap-1 relative w-full' onSubmit={handleClickBtn}>
+                                        <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>Nota Privada</button>
                                         <textarea
                                             placeholder='Escriba un mensaje'
                                             className='input-msg'
@@ -981,7 +982,6 @@ const Chats = () => {
                                             </ul>
                                         )}
                                         <button type='button' className='btn-msg btn-plantilla' onClick={() => dispatch(switchModalPlantilla())}>Plantilla</button>
-                                        <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>Nota Privada</button>
                                         <button type='submit' className='btn-msg' disabled={isSendingRef.current}>Enviar</button>
                                     </form>
                                 ) : (
