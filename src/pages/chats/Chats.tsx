@@ -35,7 +35,7 @@ import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModa
 
 const Chats = () => {
     const [usuarios, setUsuarios] = useState<Usuario[]>([])
-    const [selectedMentionUser, setSelectedMentionUser] = useState<Usuario | null>(null)
+    const [selectedMentionUsers, setSelectedMentionUsers] = useState<Usuario[]>([])
     const [mensajes, setMensajes] = useState<TimelineItem[]>([])
     const [timelineCursor, setTimelineCursor] = useState<string | null>(null)
     const [timelineHasMore, setTimelineHasMore] = useState<boolean>(false)
@@ -174,6 +174,8 @@ const Chats = () => {
         return value.toLowerCase().split(' ').filter(Boolean).map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
     }
 
+    const getMentionHandle = (user: Pick<Usuario, 'nombre'>) => (user?.nombre || 'usuario').trim().toLowerCase().replace(/\s+/g, '')
+
     const toTitleCase = (value: any) => {
         if (!value || typeof value !== 'string') return ''
         return value.trim().toLowerCase().split(/\s+/).filter(Boolean).map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
@@ -260,11 +262,12 @@ const Chats = () => {
         }
         const socket = getSocket()
         if (socket && socket.connected) {
+            const mentions = selectedMentionUsers.map((user) => ({ userId: user.id }))
             const payload: any = {
                 chatId: id,
                 mensaje: mensaje.trim() || null,
                 token,
-                mentions: selectedMentionUser ? [{ userId: selectedMentionUser.id }] : []
+                mentions
             }
 
             // Si hay imagen pegada, convertir a base64
@@ -284,7 +287,7 @@ const Chats = () => {
 
             setMensaje("")
             setArchivos([])
-            setSelectedMentionUser(null)
+            setSelectedMentionUsers([])
             socket.emit("nota-privada", payload, (ack: any) => {
                 if (debugTimeline) console.log("[nota-privada ACK]", ack)
             })
@@ -525,6 +528,7 @@ const Chats = () => {
             e.preventDefault()
             const trimmedMessage = mensaje.trim()
             const hasFiles = archivos.length > 0
+            const mentions = selectedMentionUsers.map((user) => ({ userId: user.id }))
             if (trimmedMessage.length === 0 && !hasFiles) { setErrorModalMessage('Debe escribir un mensaje'); setIsErrorModalOpen(true); return }
             if (isSendingRef.current) return
             if (lastSentMessageRef.current === trimmedMessage && !hasFiles) return
@@ -548,10 +552,11 @@ const Chats = () => {
                     setMensajes((prev) => prev.filter((m: any) => m?.id !== clientId))
                 }
                 if (trimmedMessage.length > 0) {
-                    if (socket && socket.connected) { socket.emit("enviar-mensaje", { mensaje: trimmedMessage, chatId: id, telefono, token }) }
-                    else { await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, { chatId: id, text: trimmedMessage }, { headers: { Authorization: `Bearer ${token}` } }) }
+                    if (socket && socket.connected) { socket.emit("enviar-mensaje", { mensaje: trimmedMessage, chatId: id, telefono, token, mentions }) }
+                    else { await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, { chatId: id, text: trimmedMessage, mentions }, { headers: { Authorization: `Bearer ${token}` } }) }
                     lastSentMessageRef.current = trimmedMessage
                     setMensaje("")
+                    setSelectedMentionUsers([])
                 }
                 for (const { item, file } of uploadQueue) {
                     const formData = new FormData()
@@ -566,14 +571,16 @@ const Chats = () => {
                 return
             }
             if (socket && socket.connected) {
-                socket.emit("enviar-mensaje", { mensaje, chatId: id, telefono, token })
+                socket.emit("enviar-mensaje", { mensaje, chatId: id, telefono, token, mentions })
                 lastSentMessageRef.current = trimmedMessage
                 setMensaje('')
                 setArchivos([])
+                setSelectedMentionUsers([])
                 isSendingRef.current = false
             } else {
-                await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, { chatId: id, text: mensaje }, { headers: { Authorization: `Bearer ${token}` } })
+                await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, { chatId: id, text: mensaje, mentions }, { headers: { Authorization: `Bearer ${token}` } })
                 setMensaje('')
+                setSelectedMentionUsers([])
                 isSendingRef.current = false
             }
         } catch (error) { console.log(error); isSendingRef.current = false }
@@ -715,6 +722,7 @@ const Chats = () => {
     const handleChangeText = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setMensaje(value);
+        setSelectedMentionUsers((prev) => prev.filter((user) => value.includes(`@${getMentionHandle(user)}`)))
         const caretPos = e.target.selectionStart ?? value.length
         const leftText = value.slice(0, caretPos)
         const slashMatch = leftText.match(/\/(\w*)$/)
@@ -743,10 +751,13 @@ const Chats = () => {
     }
 
     const handleSelectUser = (user: any) => {
-        const toHandle = (u: Usuario) => (u?.nombre || 'usuario').trim().toLowerCase().replace(/\s+/g, '')
-        const handle = toHandle(user)
+        const handle = getMentionHandle(user as Usuario)
         setMensaje((prev) => prev.replace(/@([^\s@]*)$/, `@${handle} `));
-        setSelectedMentionUser(user as Usuario)
+        setSelectedMentionUsers((prev) => {
+            const next = [...prev]
+            if (!next.some((it) => it.id === user.id)) next.push(user as Usuario)
+            return next
+        })
         setShowList(false);
     };
 

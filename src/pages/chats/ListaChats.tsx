@@ -10,7 +10,7 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
 import { Tag as TagIcon, User } from "lucide-react"
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState, bumpMentionsRefreshNonce } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
@@ -145,6 +145,12 @@ const ListaChats = () => {
         if (incoming?.operador == null) merged.operador = existing.operador
         if (!Array.isArray(incoming?.tags)) merged.tags = existing.tags
         return merged
+    }
+
+    const extractMentionChat = (it: any): ChatState | null => {
+        const chat = it?.chat
+        if (chat && typeof chat === 'object' && typeof chat.id === 'string') return chat as ChatState
+        return null
     }
 
 
@@ -479,14 +485,56 @@ const ListaChats = () => {
             .then((resp: any) => {
                 const items = Array.isArray(resp?.items) ? resp.items : []
                 const ids: string[] = []
+                const embeddedChats: ChatState[] = []
                 items.forEach((it: any) => {
                     const chatId = extractMentionChatId(it)
                     if (chatId) ids.push(chatId)
+                    const embeddedChat = extractMentionChat(it)
+                    if (embeddedChat?.id) embeddedChats.push(embeddedChat)
                 })
                 setMentionChatIds(Array.from(new Set(ids)))
+                if (embeddedChats.length > 0) {
+                    const merged = mergeChatsById(chatsRef.current, embeddedChats)
+                    dispatch(setChats(merged.slice(0, 1000)))
+                }
             })
             .catch(() => { })
-    }, [mentionUnreadCount, token, mentionsRefreshNonce])
+    }, [mentionUnreadCount, token, mentionsRefreshNonce, dispatch])
+
+    useEffect(() => {
+        if (!token) return
+        if (styleBtn !== 'menciones') return
+        if (!Array.isArray(mentionChatIds) || mentionChatIds.length === 0) return
+
+        const existingIds = new Set((Array.isArray(chatsRef.current) ? chatsRef.current : []).map((chat) => chat.id))
+        const missingIds = mentionChatIds.filter((chatId) => !existingIds.has(chatId))
+        if (missingIds.length === 0) return
+
+        let cancelled = false
+        const hydrateMentionChats = async () => {
+            const responses = await Promise.all(
+                missingIds.map((chatId) => findChatById(token, chatId).catch(() => null))
+            )
+
+            if (cancelled) return
+            if (responses.some((resp: any) => resp?.statusCode === 401)) {
+                dispatch(openSessionExpired())
+                return
+            }
+
+            const incoming = responses
+                .map((resp: any) => resp?.chat)
+                .filter((chat: any) => chat && typeof chat.id === 'string') as ChatState[]
+
+            if (incoming.length > 0) {
+                const merged = mergeChatsById(chatsRef.current, incoming)
+                dispatch(setChats(merged.slice(0, 1000)))
+            }
+        }
+
+        hydrateMentionChats().catch(() => { })
+        return () => { cancelled = true }
+    }, [styleBtn, mentionChatIds, token, dispatch])
 
 
     const loadMoreChats = async () => {
@@ -1003,6 +1051,7 @@ const ListaChats = () => {
                                 setStyleBtn('menciones')
                                 dispatch(setMentionsMode(true))
                                 dispatch(clearBulkReadChatSelection())
+                                dispatch(bumpMentionsRefreshNonce())
                                 const operadorValue = selectRef.current?.value || ''
                                 aplicarFiltros(operadorValue, selectedTag, menciones)
                             }}
@@ -1050,6 +1099,7 @@ const ListaChats = () => {
                                         const tab = resp.tab || 'sinAsignar'
                                         setStyleBtn(tab)
                                         dispatch(setMentionsMode(tab === 'menciones'))
+                                        if (tab === 'menciones') dispatch(bumpMentionsRefreshNonce())
                                         dispatch(clearMentionChatSelection())
                                         dispatch(clearBulkReadChatSelection())
                                         setSearchConversacion('')
