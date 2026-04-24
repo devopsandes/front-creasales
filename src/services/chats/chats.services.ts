@@ -5,7 +5,11 @@ import { DataUser } from "../../interfaces/action.interface"
 
 
 
-const findChatById = async (token: string, id: string): Promise<ChatResponse & ErrorResponse> => {
+const findChatById = async (
+    token: string,
+    id: string,
+    options?: { signal?: AbortSignal }
+): Promise<ChatResponse & ErrorResponse> => {
     try {
         const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}`
 
@@ -13,7 +17,10 @@ const findChatById = async (token: string, id: string): Promise<ChatResponse & E
             authorization: `Bearer ${token}`
         }
 
-        const { data } = await axios.get<ChatResponse & ErrorResponse>(url, { headers })
+        const { data } = await axios.get<ChatResponse & ErrorResponse>(url, {
+            headers,
+            signal: options?.signal
+        })
 
 
         return data
@@ -29,7 +36,7 @@ const findChatById = async (token: string, id: string): Promise<ChatResponse & E
 const findChatTimeline = async (
     token: string,
     id: string,
-    params?: { page?: number; limit?: number; cursor?: string | null }
+    params?: { page?: number; limit?: number; cursor?: string | null; signal?: AbortSignal }
 ): Promise<TimelineResponse & ErrorResponse> => {
     try {
         const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`
@@ -39,7 +46,7 @@ const findChatTimeline = async (
         }
 
         const query: any = {
-            limit: params?.limit ?? 200,
+            limit: params?.limit ?? 50,
         }
 
         if (params?.cursor) {
@@ -60,6 +67,7 @@ const findChatTimeline = async (
         const { data } = await axios.get<TimelineResponse & ErrorResponse>(url, {
             headers,
             params: query,
+            signal: params?.signal,
         })
 
         if (debug) {
@@ -97,11 +105,16 @@ const findChatTimeline = async (
     }
 }
 
-const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse> => {
+const getUserData = async (
+    telefono: string,
+    options?: { signal?: AbortSignal }
+): Promise<DataUser & ErrorResponse> => {
     try {
         const url = `https://tickets.createch.com.ar/mensajes/getUserData?telefono=${telefono}`
 
-        const { data } = await axios.get<DataUser & ErrorResponse>(url)
+        const { data } = await axios.get<DataUser & ErrorResponse>(url, {
+            signal: options?.signal
+        })
 
         return data
     } catch (error) {
@@ -124,7 +137,8 @@ type GetChatsFilters = {
 
 const getChatCounts = async (
     token: string,
-    params?: { q?: string; tagId?: string }
+    params?: { q?: string; tagId?: string },
+    options?: { signal?: AbortSignal }
 ): Promise<ChatCountsResponse & ErrorResponse> => {
     try {
         const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats/counts`
@@ -134,7 +148,10 @@ const getChatCounts = async (
         const url = qs.toString() ? `${baseUrl}?${qs.toString()}` : baseUrl
 
         const headers = { authorization: `Bearer ${token}` }
-        const { data } = await axios.get<ChatCountsResponse & ErrorResponse>(url, { headers })
+        const { data } = await axios.get<ChatCountsResponse & ErrorResponse>(url, {
+            headers,
+            signal: options?.signal
+        })
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -148,7 +165,8 @@ const getChats = async (
     token: string,
     page: string,
     limit: string,
-    filters?: GetChatsFilters
+    filters?: GetChatsFilters,
+    options?: { signal?: AbortSignal }
 ): Promise<ChatsResponse & ErrorResponse> => {
     try {
         const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats`
@@ -170,7 +188,10 @@ const getChats = async (
             authorization: `Bearer ${token}`
         }
 
-        const { data } = await axios.get<ChatsResponse & ErrorResponse>(url, { headers })
+        const { data } = await axios.get<ChatsResponse & ErrorResponse>(url, {
+            headers,
+            signal: options?.signal
+        })
 
         return data
     } catch (error) {
@@ -250,12 +271,13 @@ const setChatBotState = async (
 
 const searchByConversacion = async (
     token: string,
-    numero: number
+    numero: number,
+    options?: { signal?: AbortSignal }
 ): Promise<any> => {
     try {
         const url = `${import.meta.env.VITE_URL_BACKEND}/chats/search-conversacion?numero=${numero}`
         const headers = { authorization: `Bearer ${token}` }
-        const { data } = await axios.get(url, { headers })
+        const { data } = await axios.get(url, { headers, signal: options?.signal })
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {

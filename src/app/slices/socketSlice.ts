@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { io, Socket } from "socket.io-client";
+import { recordSocketReconnect } from "../../utils/frontendObservability";
 
 /* // Variable externa para almacenar la instancia del socket
 export let socket: Socket | null = null;
@@ -71,6 +72,7 @@ const SOCKET_URL = `${import.meta.env.VITE_URL_BACK}`; // URL de tu backend con 
 
 
 let socket: Socket | null = null; // Variable externa para almacenar la instancia del socket
+let hasConnectedOnce = false
 
 interface SocketState {
     isConnected: boolean;
@@ -94,6 +96,12 @@ const socketSlice = createSlice({
             socket = io(SOCKET_URL,{
                 transports: ['websocket'],
                 withCredentials: true,
+                reconnection: true,
+                reconnectionAttempts: Infinity,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 30000,
+                randomizationFactor: 0.5,
+                timeout: 20000,
                 auth: {
                     token: localStorage.getItem('token')
                 }
@@ -103,6 +111,10 @@ const socketSlice = createSlice({
             // state.isConnected = true;
             socket.on('connect', () => {
                 // console.log('se conecta al socket');
+                if (hasConnectedOnce) {
+                    recordSocketReconnect()
+                }
+                hasConnectedOnce = true
             })
 
             socket.on('disconnect', () => {
@@ -115,6 +127,7 @@ const socketSlice = createSlice({
         // TODO: revisar error de conexión al socket
         socket?.disconnect();
         socket = null;
+        hasConnectedOnce = false
         state.isConnected = false;
       },
       addMessage: (state, action: PayloadAction<string>) => {

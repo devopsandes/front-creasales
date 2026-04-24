@@ -32,6 +32,8 @@ import { setChatReadState } from '../../services/chats/chats.services'
 import { jwtDecode } from "jwt-decode"
 import AddTagModal from '../../components/modal/AddTagModal'
 import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModal'
+import { recordOpenChatTiming } from '../../utils/frontendObservability'
+import { useLeaderTab } from '../../hooks/useLeaderTab'
 
 const Chats = () => {
     const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -86,7 +88,15 @@ const Chats = () => {
 
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
     const scrollRestoreRef = useRef<{ height: number; top: number } | null>(null)
+    const requestControllersRef = useRef<Record<string, AbortController | null>>({
+        "chat-detail": null,
+        "chat-timeline": null,
+        "chat-userdata": null,
+        "quick-responses": null,
+    })
+    const chatLoadSeqRef = useRef(0)
     const dispatch = useDispatch()
+    const { isLeader } = useLeaderTab()
     const dataUser = useSelector((state: RootState) => state.action.dataUser)
     const mentionsMode = useSelector((state: RootState) => state.action.mentionsMode)
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
@@ -253,6 +263,22 @@ const Chats = () => {
 
     const renderItems = useMemo(() => withDateSeparators(mensajes), [mensajes])
     const debugTimeline = import.meta.env.DEV && localStorage.getItem("debugTimeline") === "1"
+    const isAbortError = (error: any) => {
+        if (!error) return false
+        return error?.name === "AbortError" || error?.name === "CanceledError" || error?.code === "ERR_CANCELED"
+    }
+    const beginScopedRequest = (scope: string) => {
+        requestControllersRef.current[scope]?.abort()
+        const controller = new AbortController()
+        requestControllersRef.current[scope] = controller
+        return controller
+    }
+
+    useEffect(() => {
+        return () => {
+            Object.values(requestControllersRef.current).forEach((controller) => controller?.abort())
+        }
+    }, [])
 
     const handleNotaPrivada = async () => {
         if ((!mensaje || mensaje.trim().length === 0) && archivos.length === 0) {
@@ -340,24 +366,36 @@ const Chats = () => {
 
     useEffect(() => {
         const ejecucion = async () => {
-            const resp = await getUserData(telefono!);
-            dispatch(setUserData(resp));
-            dispatch(setViewSide(true))
-            if (resp.statusCode === 401) { dispatch(openSessionExpired()); return }
+            if (!telefono) return
+            const controller = beginScopedRequest("chat-userdata")
+            try {
+                const resp = await getUserData(telefono!, { signal: controller.signal });
+                if (controller.signal.aborted) return
+                dispatch(setUserData(resp));
+                dispatch(setViewSide(true))
+                if (resp.statusCode === 401) { dispatch(openSessionExpired()); return }
+            } catch (error) {
+                if (isAbortError(error)) return
+                // Servicio accesorio: no bloquea render principal del chat
+                dispatch(setUserData(null))
+                dispatch(setViewSide(true))
+            }
         }
         ejecucion();
     }, [, location])
 
     useEffect(() => {
+        if (!isLeader) return
         dispatch(connectSocket())
         const socket = getSocket()
         setLoading(true)
         socket?.emit('register', telefono)
         if (id) socket?.emit('join-chat', id)
         return () => { }
-    }, [dispatch, telefono, id])
+    }, [dispatch, telefono, id, isLeader])
 
     useEffect(() => {
+        if (!isLeader) return
         const socket = getSocket()
         if (!socket || !id) return
         const messageEventName = `new-message-${id}`
@@ -409,35 +447,51 @@ const Chats = () => {
             socket.off(chatEventName, handleChatEvent)
             socket.off('error', handleError)
         }
-    }, [id, dispatch])
+    }, [id, dispatch, isLeader])
 
     useEffect(() => {
         const inicio = async () => {
             if (!id) return
+            const openChatStart = performance.now()
+            const seq = ++chatLoadSeqRef.current
             // Obtener número de conversación
             try {
+                const detailController = beginScopedRequest("chat-detail")
                 const chatData = await axios.get(`${import.meta.env.VITE_URL_BACKEND}/chats/${id}`, {
-                    headers: { authorization: `Bearer ${token}` }
+                    headers: { authorization: `Bearer ${token}` },
+                    params: { includeMessages: false },
+                    signal: detailController.signal,
                 })
+                if (detailController.signal.aborted || seq !== chatLoadSeqRef.current) return
                 setConversacionNumero(chatData?.data?.chat?.lastConversacionNumero ?? null)
-            } catch { setConversacionNumero(null) }
+            } catch (error) {
+                if (!isAbortError(error) && seq === chatLoadSeqRef.current) setConversacionNumero(null)
+            }
             setTimelineCursor(null)
             setTimelineHasMore(false)
-            const data = await findChatTimeline(token!, id!, { limit: 200 })
-            if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
-            const rawItems: any[] = (data as any).items || []
-            const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
-                const ta = new Date((a as any)?.createdAt ?? 0).getTime()
-                const tb = new Date((b as any)?.createdAt ?? 0).getTime()
-                return ta - tb
-            })
-            setMensajes(items)
-            setTimelineCursor((data as any)?.nextCursor ?? null)
-            setTimelineHasMore(Boolean((data as any)?.hasMore))
-            const lastMessage = [...items].reverse().find((x: any) => x && x.kind === "message")
-            if (lastMessage?.createdAt) { setCondChat(menos24hs(new Date(lastMessage.createdAt))) }
-            else { setCondChat(false) }
-            setLoading(false)
+            try {
+                const timelineController = beginScopedRequest("chat-timeline")
+                const data = await findChatTimeline(token!, id!, { limit: 50, signal: timelineController.signal })
+                if (timelineController.signal.aborted || seq !== chatLoadSeqRef.current) return
+                if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
+                const rawItems: any[] = (data as any).items || []
+                const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
+                    const ta = new Date((a as any)?.createdAt ?? 0).getTime()
+                    const tb = new Date((b as any)?.createdAt ?? 0).getTime()
+                    return ta - tb
+                })
+                setMensajes(items)
+                setTimelineCursor((data as any)?.nextCursor ?? null)
+                setTimelineHasMore(Boolean((data as any)?.hasMore))
+                const lastMessage = [...items].reverse().find((x: any) => x && x.kind === "message")
+                if (lastMessage?.createdAt) { setCondChat(menos24hs(new Date(lastMessage.createdAt))) }
+                else { setCondChat(false) }
+                setLoading(false)
+                recordOpenChatTiming(performance.now() - openChatStart)
+            } catch (error) {
+                if (isAbortError(error)) return
+                setLoading(false)
+            }
         }
         inicio()
     }, [id, token])
@@ -449,7 +503,9 @@ const Chats = () => {
         if (container) { scrollRestoreRef.current = { height: container.scrollHeight, top: container.scrollTop } }
         setTimelineLoadingMore(true)
         try {
-            const data = await findChatTimeline(token!, id!, { limit: 200, cursor: timelineCursor })
+            const controller = beginScopedRequest("chat-timeline")
+            const data = await findChatTimeline(token!, id!, { limit: 50, cursor: timelineCursor, signal: controller.signal })
+            if (controller.signal.aborted) return
             if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
             const rawItems: any[] = (data as any).items || []
             const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
@@ -486,7 +542,9 @@ const Chats = () => {
     useEffect(() => {
         const run = async () => {
             if (!token) return
-            const resp = await getQuickResponses(token, { page: 1, limit: 200 })
+            const controller = beginScopedRequest("quick-responses")
+            const resp = await getQuickResponses(token, { page: 1, limit: 50 }, { signal: controller.signal })
+            if (controller.signal.aborted) return
             if ((resp as any)?.statusCode === 401) { dispatch(openSessionExpired()); return }
             const list = Array.isArray((resp as any)?.items) ? (resp as any).items : []
             setQuickResponses(list)
@@ -504,7 +562,7 @@ const Chats = () => {
 
     const handleTagConfirm = async (_tagId: string) => {
         try {
-            const chatos = await getChats(token, '1', '100', chatListFilters)
+            const chatos = await getChats(token, '1', '50', chatListFilters)
             const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
             dispatch(setChats(incoming))
         } catch (error) { console.error('Error refreshing chats after tag assignment:', error) }
@@ -517,7 +575,7 @@ const Chats = () => {
 
     const handleRemoveTagSuccess = async () => {
         try {
-            const chatos = await getChats(token, '1', '100', chatListFilters)
+            const chatos = await getChats(token, '1', '50', chatListFilters)
             const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
             dispatch(setChats(incoming))
         } catch (error) { console.error('Error refreshing chats:', error) }
@@ -614,7 +672,9 @@ const Chats = () => {
                 const refreshTimeline = async () => {
                     try {
                         if (!id) return
-                        const data = await findChatTimeline(token!, id!, { limit: 200 })
+                        const controller = beginScopedRequest("chat-timeline")
+                        const data = await findChatTimeline(token!, id!, { limit: 50, signal: controller.signal })
+                        if (controller.signal.aborted) return
                         if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
                         const rawItems: any[] = (data as any).items || []
                         const items = rawItems.map(normalizeTimelineItem).sort((a, b) => new Date((a as any)?.createdAt ?? 0).getTime() - new Date((b as any)?.createdAt ?? 0).getTime())
@@ -645,7 +705,7 @@ const Chats = () => {
                 setMensajes([]); setMensaje(''); setArchivos([]); setCondChat(false)
                 dispatch(clearMentionChatSelection()); dispatch(clearBulkReadChatSelection())
                 try {
-                    const chatos = await getChats(token, '1', '100', chatListFilters)
+                    const chatos = await getChats(token, '1', '50', chatListFilters)
                     if ((chatos as any)?.statusCode === 401) { dispatch(openSessionExpired()) }
                     else if (Array.isArray((chatos as any)?.chats)) {
                         const incoming = (chatos as any).chats as any[]
@@ -909,6 +969,9 @@ const Chats = () => {
                                             <div className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
                                                 <MessageContent msg={msj} />
                                             </div>
+                                            {!msj.msg_entrada && msj?.authorName && (
+                                                <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.authorName)}</span>
+                                            )}
                                             <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
                                         </div>
                                     )
@@ -943,6 +1006,7 @@ const Chats = () => {
                                 )}
                                 {condChat ? (
                                     <form action="" className='enviar-msj gap-1 relative w-full' onSubmit={handleClickBtn}>
+                                        <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>Nota Privada</button>
                                         <textarea
                                             placeholder='Escriba un mensaje'
                                             className='input-msg'
@@ -992,11 +1056,26 @@ const Chats = () => {
                                             </ul>
                                         )}
                                         <button type='button' className='btn-msg btn-plantilla' onClick={() => dispatch(switchModalPlantilla())}>Plantilla</button>
-                                        <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>Nota Privada</button>
                                         <button type='submit' className='btn-msg' disabled={isSendingRef.current}>Enviar</button>
                                     </form>
                                 ) : (
                                     <div className='no-chat'>
+                                        <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>Nota Privada</button>
+                                        <textarea
+                                            placeholder='Escribir nota privada...'
+                                            className='input-msg'
+                                            value={mensaje}
+                                            onChange={handleChangeText}
+                                            onPaste={handlePasteInput}
+                                            ref={mensajeInputRef}
+                                            rows={1}
+                                            style={{
+                                                resize: 'none',
+                                                overflowY: 'auto',
+                                                maxHeight: '120px',
+                                                lineHeight: '1.5rem',
+                                            }}
+                                        />
                                         <button onClick={() => dispatch(switchModalPlantilla())} className="btn flex gap-2 rounded-xl cursor-pointer bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 shadow transition duration-200">
                                             Enviar plantilla
                                         </button>
