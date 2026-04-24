@@ -909,6 +909,9 @@ const Chats = () => {
                                             <div className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
                                                 <MessageContent msg={msj} />
                                             </div>
+                                            {!msj.msg_entrada && msj?.authorName && (
+                                                <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.authorName)}</span>
+                                            )}
                                             <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
                                         </div>
                                     )
