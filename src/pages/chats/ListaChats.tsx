@@ -16,6 +16,7 @@ import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
 import { findChatById, getChatCounts, getChats, searchByConversacion } from "../../services/chats/chats.services"
 import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services"
+import { useLeaderTab } from "../../hooks/useLeaderTab"
 
 // Función auxiliar para capitalizar correctamente el texto
 const capitalizeText = (text: string | undefined | null): string => {
@@ -48,7 +49,7 @@ const ListaChats = () => {
     const listRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate()
 
-    const CHAT_PAGE_LIMIT = 100
+    const CHAT_PAGE_LIMIT = 50
     const SCROLL_BOTTOM_THRESHOLD_PX = 260
 
     const [chats1, setChats1] = useState<ChatState[]>([])
@@ -75,6 +76,7 @@ const ListaChats = () => {
     const [debouncedSearch, setDebouncedSearch] = useState<string>('')
     const [selectedOperator, setSelectedOperator] = useState<string>('')
     const [hydrated, setHydrated] = useState<boolean>(false)
+    const [socketDegraded, setSocketDegraded] = useState<boolean>(false)
     // selección de menciones vive en Redux (para compartir con la vista del chat)
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
@@ -111,9 +113,28 @@ const ListaChats = () => {
     const [mentionChatIds, setMentionChatIds] = useState<string[]>([])
     const pendingChatRefreshRef = useRef<Record<string, number>>({})
     const pendingCountsRefreshRef = useRef<number | null>(null)
+    const requestControllersRef = useRef<Record<string, AbortController | null>>({
+        "list-chats": null,
+        "mentions": null,
+        "counts": null,
+        "chat-detail": null,
+    })
+    const { isLeader } = useLeaderTab()
 
     const extractMentionChatId = (it: any): string | null => {
         return it?.chatId || it?.chat_id || it?.chat?.id || it?.id || null
+    }
+
+    const isAbortError = (error: any) => {
+        if (!error) return false
+        return error?.name === "AbortError" || error?.name === "CanceledError" || error?.code === "ERR_CANCELED"
+    }
+
+    const beginScopedRequest = (scope: string) => {
+        requestControllersRef.current[scope]?.abort()
+        const controller = new AbortController()
+        requestControllersRef.current[scope] = controller
+        return controller
     }
 
     const extractChatIdFromEventName = (eventName: string): string | null => {
@@ -176,6 +197,12 @@ const ListaChats = () => {
     useEffect(() => {
         chatsRef.current = Array.isArray(chatsFromRedux) ? chatsFromRedux : []
     }, [chatsFromRedux])
+
+    useEffect(() => {
+        return () => {
+            Object.values(requestControllersRef.current).forEach((controller) => controller?.abort())
+        }
+    }, [])
 
     const toMsSafe = (value: any): number => {
         if (!value) return 0
@@ -261,12 +288,14 @@ const ListaChats = () => {
         if (!token) return
         const q = `${debouncedSearch ?? ""}`.trim()
         const tagId = `${selectedTag ?? ""}`.trim()
+        const controller = beginScopedRequest("counts")
 
         getChatCounts(token, {
             q: q.length ? q : undefined,
             tagId: tagId.length ? tagId : undefined,
-        })
+        }, { signal: controller.signal })
             .then((resp: any) => {
+                if (controller.signal.aborted) return
                 const c = resp?.counts || {}
                 setTabCounts({
                     total: Number(c.total) || 0,
@@ -277,7 +306,9 @@ const ListaChats = () => {
                     others: Number(c.others) || 0,
                 })
             })
-            .catch(() => { })
+            .catch((error) => {
+                if (isAbortError(error)) return
+            })
     }, [token, debouncedSearch, selectedTag])
 
     useEffect(() => {
@@ -313,13 +344,15 @@ const ListaChats = () => {
 
         const ejecucion = async () => {
             let mentionTotal: number | null = null
+            const mentionsController = beginScopedRequest("mentions")
 
             // Intentamos obtener menciones (si backend aún no lo soporta, no rompemos nada)
             try {
                 const [countResp, chatsResp] = await Promise.all([
-                    getMentionsUnreadCount(token),
-                    getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 }),
+                    getMentionsUnreadCount(token, { signal: mentionsController.signal }),
+                    getMentionChats(token, { unreadOnly: true, page: 1, limit: 50, signal: mentionsController.signal }),
                 ])
+                if (mentionsController.signal.aborted) return
                 if (typeof (countResp as any)?.count === 'number') {
                     mentionTotal = (countResp as any).count
                 }
@@ -339,7 +372,8 @@ const ListaChats = () => {
                 if (items.length === 0) {
                     mentionTotal = 0
                 }
-            } catch {
+            } catch (error) {
+                if (isAbortError(error)) return
                 // noop
             }
 
@@ -447,9 +481,11 @@ const ListaChats = () => {
         setHasMore(true)
         setPage(1)
         if (!cachedOk) dispatch(setChats([]))
+        const listController = beginScopedRequest("list-chats")
 
-        getChats(token, "1", `${CHAT_PAGE_LIMIT}`, filters)
+        getChats(token, "1", `${CHAT_PAGE_LIMIT}`, filters, { signal: listController.signal })
             .then((resp: any) => {
+                if (listController.signal.aborted) return
                 const items: ChatState[] = Array.isArray(resp?.chats) ? resp.chats : []
                 // Si había cache, mergeamos para no "perder" páginas ya cargadas; sino reemplazo directo
                 const merged = cachedOk ? mergeChatsById(chatsRef.current, items) : items
@@ -465,7 +501,8 @@ const ListaChats = () => {
                     chatListFilters: filters,
                 }))
             })
-            .catch(() => {
+            .catch((error) => {
+                if (isAbortError(error)) return
                 // noop
             })
             .finally(() => setLoading(false))
@@ -481,8 +518,10 @@ const ListaChats = () => {
     // Realtime: cuando cambia el contador global (por socket), refrescamos la lista de chatIds mencionados
     useEffect(() => {
         if (!token) return
-        getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 })
+        const controller = beginScopedRequest("mentions")
+        getMentionChats(token, { unreadOnly: true, page: 1, limit: 50, signal: controller.signal })
             .then((resp: any) => {
+                if (controller.signal.aborted) return
                 const items = Array.isArray(resp?.items) ? resp.items : []
                 const ids: string[] = []
                 const embeddedChats: ChatState[] = []
@@ -498,7 +537,9 @@ const ListaChats = () => {
                     dispatch(setChats(merged.slice(0, 1000)))
                 }
             })
-            .catch(() => { })
+            .catch((error) => {
+                if (isAbortError(error)) return
+            })
     }, [mentionUnreadCount, token, mentionsRefreshNonce, dispatch])
 
     useEffect(() => {
@@ -512,11 +553,15 @@ const ListaChats = () => {
 
         let cancelled = false
         const hydrateMentionChats = async () => {
+            const detailController = beginScopedRequest("chat-detail")
             const responses = await Promise.all(
-                missingIds.map((chatId) => findChatById(token, chatId).catch(() => null))
+                missingIds.map((chatId) => findChatById(token, chatId, { signal: detailController.signal }).catch((error) => {
+                    if (isAbortError(error)) return null
+                    return null
+                }))
             )
 
-            if (cancelled) return
+            if (cancelled || detailController.signal.aborted) return
             if (responses.some((resp: any) => resp?.statusCode === 401)) {
                 dispatch(openSessionExpired())
                 return
@@ -547,7 +592,9 @@ const ListaChats = () => {
         setIsLoadingMore(true)
         try {
             const filters = activeFiltersRef.current || {}
-            const resp = await getChats(token, `${nextPage}`, `${CHAT_PAGE_LIMIT}`, filters)
+            const controller = beginScopedRequest("list-chats")
+            const resp = await getChats(token, `${nextPage}`, `${CHAT_PAGE_LIMIT}`, filters, { signal: controller.signal })
+            if (controller.signal.aborted) return
             const incoming: ChatState[] = Array.isArray((resp as any)?.chats) ? (resp as any).chats : []
             if (incoming.length === 0) {
                 setHasMore(false)
@@ -563,7 +610,8 @@ const ListaChats = () => {
                 chatListHasMore: resolveHasMore(resp, CHAT_PAGE_LIMIT),
                 chatListUpdatedAt: Date.now(),
             }))
-        } catch {
+        } catch (error) {
+            if (isAbortError(error)) return
             // noop: no frenamos la UX por un error puntual en scroll
         } finally {
             setIsLoadingMore(false)
@@ -580,9 +628,23 @@ const ListaChats = () => {
         }
     }
 
+    useEffect(() => {
+        if (!socket || !isLeader) return
+        const syncSocketState = () => setSocketDegraded(!socket.connected)
+        syncSocketState()
+        socket.on("connect", syncSocketState)
+        socket.on("disconnect", syncSocketState)
+        socket.on("connect_error", syncSocketState)
+        return () => {
+            socket.off("connect", syncSocketState)
+            socket.off("disconnect", syncSocketState)
+            socket.off("connect_error", syncSocketState)
+        }
+    }, [socket, isLeader])
+
 
     useEffect(() => {
-        if (!socket) return
+        if (!socket || !isLeader) return
 
         const MAX_CACHE = 1000
 
@@ -593,11 +655,13 @@ const ListaChats = () => {
                 if (!token) return
                 const q = `${debouncedSearch ?? ""}`.trim()
                 const tagId = `${selectedTag ?? ""}`.trim()
+                const countsController = beginScopedRequest("counts")
                 getChatCounts(token, {
                     q: q.length ? q : undefined,
                     tagId: tagId.length ? tagId : undefined,
-                })
+                }, { signal: countsController.signal })
                     .then((resp: any) => {
+                        if (countsController.signal.aborted) return
                         const c = resp?.counts || {}
                         setTabCounts({
                             total: Number(c.total) || 0,
@@ -608,13 +672,17 @@ const ListaChats = () => {
                             others: Number(c.others) || 0,
                         })
                     })
-                    .catch(() => { })
-            }, 400)
+                    .catch((error) => {
+                        if (isAbortError(error)) return
+                    })
+            }, 1000)
         }
 
         const refreshChatById = async (chatId: string) => {
             if (!token || !chatId) return
-            const resp: any = await findChatById(token, chatId)
+            const detailController = beginScopedRequest("chat-detail")
+            const resp: any = await findChatById(token, chatId, { signal: detailController.signal })
+            if (detailController.signal.aborted) return
             if (resp?.statusCode === 401) {
                 dispatch(openSessionExpired())
                 return
@@ -660,7 +728,7 @@ const ListaChats = () => {
                 try {
                     await refreshChatById(chatId)
                 } catch { }
-            }, 250)
+            }, 750)
         }
 
         const handleNuevoChat = async (_chat: ChatState) => {
@@ -672,7 +740,9 @@ const ListaChats = () => {
             }
             try {
                 const filters = activeFiltersRef.current || {}
-                const chatos = await getChats(token, '1', `${CHAT_PAGE_LIMIT}`, filters)
+                const listController = beginScopedRequest("list-chats")
+                const chatos = await getChats(token, '1', `${CHAT_PAGE_LIMIT}`, filters, { signal: listController.signal })
+                if (listController.signal.aborted) return
                 const firstPage: ChatState[] = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
                 const merged = mergeChatsById(chatsRef.current, firstPage)
                 dispatch(setChats(merged.slice(0, MAX_CACHE)))
@@ -758,7 +828,43 @@ const ListaChats = () => {
                 pendingCountsRefreshRef.current = null
             }
         }
-    }, [socket, token, dispatch, debouncedSearch, selectedTag])
+    }, [socket, token, dispatch, debouncedSearch, selectedTag, isLeader])
+
+    useEffect(() => {
+        if (!token || !isLeader || !socketDegraded) return
+        const intervalId = window.setInterval(async () => {
+            try {
+                const filters = activeFiltersRef.current || {}
+                const listController = beginScopedRequest("list-chats")
+                const [listResp, countsResp] = await Promise.all([
+                    getChats(token, "1", `${CHAT_PAGE_LIMIT}`, filters, { signal: listController.signal }),
+                    getChatCounts(token, {
+                        q: `${debouncedSearch ?? ""}`.trim() || undefined,
+                        tagId: `${selectedTag ?? ""}`.trim() || undefined,
+                    }),
+                ])
+                if (listController.signal.aborted) return
+                const incoming: ChatState[] = Array.isArray((listResp as any)?.chats) ? (listResp as any).chats : []
+                if (incoming.length > 0) {
+                    const merged = mergeChatsById(chatsRef.current, incoming)
+                    dispatch(setChats(merged.slice(0, 1000)))
+                    dispatch(setChatListCacheMeta({ chatListUpdatedAt: Date.now() }))
+                }
+                const c = (countsResp as any)?.counts || {}
+                setTabCounts({
+                    total: Number(c.total) || 0,
+                    archived: Number(c.archived) || 0,
+                    bots: Number(c.bots) || 0,
+                    unassigned: Number(c.unassigned) || 0,
+                    mine: Number(c.mine) || 0,
+                    others: Number(c.others) || 0,
+                })
+            } catch (error) {
+                if (isAbortError(error)) return
+            }
+        }, 20000)
+        return () => window.clearInterval(intervalId)
+    }, [token, isLeader, socketDegraded, debouncedSearch, selectedTag, dispatch])
 
     const handleChangeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedValue = e.target.value

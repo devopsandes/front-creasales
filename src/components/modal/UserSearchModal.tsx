@@ -106,7 +106,7 @@ const UserSearchModal = () => {
 
         // Actualizar la lista de chats
         try {
-          const chatos = await getChats(token, '1', '100', chatListFilters);
+          const chatos = await getChats(token, '1', '50', chatListFilters);
           const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : [];
           // Reemplazo directo para evitar reintroducir chats que ya no cumplen filtros (reduce "parpadeo").
           dispatch(setChats(incoming));
@@ -191,7 +191,7 @@ const UserSearchModal = () => {
                   const resp = await desasignarChat(token, chat_id);
                   if (resp.statusCode === 200) {
                     try {
-                      const chatos = await getChats(token, '1', '100', chatListFilters);
+                      const chatos = await getChats(token, '1', '50', chatListFilters);
                       const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : [];
                       dispatch(setChats(incoming));
                     } catch { }
