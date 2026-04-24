@@ -997,6 +997,22 @@ const Chats = () => {
                                     </form>
                                 ) : (
                                     <div className='no-chat'>
+                                        <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>Nota Privada</button>
+                                        <textarea
+                                            placeholder='Escribir nota privada...'
+                                            className='input-msg'
+                                            value={mensaje}
+                                            onChange={handleChangeText}
+                                            onPaste={handlePasteInput}
+                                            ref={mensajeInputRef}
+                                            rows={1}
+                                            style={{
+                                                resize: 'none',
+                                                overflowY: 'auto',
+                                                maxHeight: '120px',
+                                                lineHeight: '1.5rem',
+                                            }}
+                                        />
                                         <button onClick={() => dispatch(switchModalPlantilla())} className="btn flex gap-2 rounded-xl cursor-pointer bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 shadow transition duration-200">
                                             Enviar plantilla
                                         </button>
