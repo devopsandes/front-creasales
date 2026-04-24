@@ -9,6 +9,8 @@ export type TimelineItem =
           createdAt: string | Date;
           msg_entrada?: string | null;
           msg_salida?: string | null;
+          authorId?: string;
+          authorName?: string;
           type?: "text" | "image" | "document" | "audio";
           imageUrl?: MediaUrl;
           documentUrl?: MediaUrl;
@@ -32,6 +34,8 @@ export type TimelineItem =
           updatedAt?: string | Date;
           msg_entrada?: null | string;
           msg_salida?: null | string;
+          authorId?: string;
+          authorName?: string;
           nota?: any;
           leido?: boolean;
           type?: any;
