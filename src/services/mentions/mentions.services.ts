@@ -21,17 +21,11 @@ export type MentionChatsResponse = {
  * Backend requerido:
  * - GET /mentions/unread-count (auth requerida; roles USER|ADMIN|ROOT; scope empresa)
  */
-export const getMentionsUnreadCount = async (
-  token: string,
-  options?: { signal?: AbortSignal }
-): Promise<MentionsUnreadCountResponse> => {
+export const getMentionsUnreadCount = async (token: string): Promise<MentionsUnreadCountResponse> => {
   try {
     const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/unread-count`
     const headers = { authorization: `Bearer ${token}` }
-    const { data } = await axios.get<any>(url, {
-      headers,
-      signal: options?.signal
-    })
+    const { data } = await axios.get<any>(url, { headers })
 
     return {
       statusCode: data?.statusCode ?? 200,
@@ -56,7 +50,7 @@ export const getMentionsUnreadCount = async (
  */
 export const getMentionChats = async (
   token: string,
-  params?: { unreadOnly?: boolean; page?: number; limit?: number; signal?: AbortSignal }
+  params?: { unreadOnly?: boolean; page?: number; limit?: number }
 ): Promise<MentionChatsResponse> => {
   try {
     const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/chats`
@@ -64,13 +58,9 @@ export const getMentionChats = async (
     const query = {
       unreadOnly: params?.unreadOnly ? 1 : 0,
       page: params?.page ?? 1,
-      limit: params?.limit ?? 50,
+      limit: params?.limit ?? 100,
     }
-    const { data } = await axios.get<any>(url, {
-      headers,
-      params: query,
-      signal: params?.signal
-    })
+    const { data } = await axios.get<any>(url, { headers, params: query })
 
     const items = Array.isArray(data?.items) ? data.items : []
     return { statusCode: data?.statusCode ?? 200, items }

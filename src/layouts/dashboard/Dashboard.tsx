@@ -17,7 +17,6 @@ import { setupAxiosInterceptors } from "../../utils/axiosInterceptor";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services";
 import { jwtDecode } from "jwt-decode";
-import { useLeaderTab } from "../../hooks/useLeaderTab";
 
 
 
@@ -33,8 +32,6 @@ const Dashboard = () => {
   const authUserId = useSelector((state: RootState) => state.auth.user?.id)
   const authEmpresaId = useSelector((state: RootState) => state.auth.empresa?.id)
   const mentionAudioRef = useRef(new Audio('/audio/mencion.mp3'))
-  const mentionRequestControllerRef = useRef<AbortController | null>(null)
-  const { isLeader } = useLeaderTab()
   
   let socket: Socket | null = null
   
@@ -45,12 +42,6 @@ const Dashboard = () => {
 
   // Verificar periódicamente el estado del token
   useTokenRefresh(2, 5) // Verifica cada 2 minutos, alerta 5 minutos antes de expirar
-
-  useEffect(() => {
-    return () => {
-      mentionRequestControllerRef.current?.abort()
-    }
-  }, [])
 
   useEffect(() => {
     role = role ? localStorage.getItem('role') : null
@@ -65,7 +56,6 @@ const Dashboard = () => {
   },[mensaje]) */
 
   useEffect(() => {
-          if (!isLeader) return
           try {
               dispatch(connectSocket())
               socket = getSocket()
@@ -79,25 +69,20 @@ const Dashboard = () => {
           } catch (error) {
               console.error('Error conectando socket:', error);
           }
-    },[dispatch, isLeader])
+    },[dispatch])
 
   // Menciones realtime + contador global
   const refreshMentionCount = useCallback(async () => {
-    if (!isLeader) return
     const token = localStorage.getItem('token') || ''
     if (!token) return
-    mentionRequestControllerRef.current?.abort()
-    const controller = new AbortController()
-    mentionRequestControllerRef.current = controller
 
     // Reconciliación para evitar desync:
     // si el backend devuelve count viejo pero la lista unread está vacía,
     // forzamos el contador a 0 (fuente de verdad: /mentions/chats?unreadOnly=1).
     const [countResp, chatsResp] = await Promise.all([
-      getMentionsUnreadCount(token, { signal: controller.signal }),
-      getMentionChats(token, { unreadOnly: true, page: 1, limit: 50, signal: controller.signal }),
+      getMentionsUnreadCount(token),
+      getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 }),
     ])
-    if (controller.signal.aborted) return
 
     if ((countResp as any)?.statusCode === 401 || (chatsResp as any)?.statusCode === 401) {
       dispatch(openSessionExpired())
@@ -111,15 +96,13 @@ const Dashboard = () => {
     }
 
     dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
-  }, [dispatch, isLeader])
+  }, [dispatch])
 
   useEffect(() => {
-    if (!isLeader) return
     refreshMentionCount().catch(() => {})
-  }, [refreshMentionCount, authUserId, authEmpresaId, socketConnected, mentionsRefreshNonce, isLeader])
+  }, [refreshMentionCount, authUserId, authEmpresaId, socketConnected, mentionsRefreshNonce])
 
   useEffect(() => {
-    if (!isLeader) return
     const token = localStorage.getItem('token') || ''
     const myUserIdFromStorage = localStorage.getItem('userId') || ''
     let myUserId = myUserIdFromStorage
@@ -150,7 +133,7 @@ const Dashboard = () => {
     return () => {
       socketInstance.off(eventName, handler)
     }
-  }, [refreshMentionCount, socketConnected, isLeader])
+  }, [refreshMentionCount, socketConnected])
   
 
   const navigate = useNavigate()
