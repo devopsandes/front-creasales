@@ -211,6 +211,19 @@ const ListaChats = () => {
         return Number.isNaN(ms) ? 0 : ms
     }
 
+    const calcTabCounts = (chats: ChatState[], myId: string) => {
+        let bots = 0, unassigned = 0, mine = 0, others = 0, archived = 0
+        for (const c of chats) {
+            if (c.archivar) { archived++; continue }
+            const a = getAssignment(c)
+            if (a === 'bot') bots++
+            else if (a === 'unassigned') unassigned++
+            else if (a === 'assigned' && c.operador?.id === myId) mine++
+            else if (a === 'assigned' && c.operador?.id && c.operador.id !== myId) others++
+        }
+        return { total: chats.length, archived, bots, unassigned, mine, others }
+    }
+
     const compareChatsForStore = (a: ChatState, b: ChatState): number => {
         const aMs = toMsSafe((a as any)?.lastMessageAt) || toMsSafe(a.updatedAt) || toMsSafe(a.createdAt)
         const bMs = toMsSafe((b as any)?.lastMessageAt) || toMsSafe(b.updatedAt) || toMsSafe(b.createdAt)
@@ -652,30 +665,8 @@ const ListaChats = () => {
             if (pendingCountsRefreshRef.current) return
             pendingCountsRefreshRef.current = window.setTimeout(() => {
                 pendingCountsRefreshRef.current = null
-                if (!token) return
-                const q = `${debouncedSearch ?? ""}`.trim()
-                const tagId = `${selectedTag ?? ""}`.trim()
-                const countsController = beginScopedRequest("counts")
-                getChatCounts(token, {
-                    q: q.length ? q : undefined,
-                    tagId: tagId.length ? tagId : undefined,
-                }, { signal: countsController.signal })
-                    .then((resp: any) => {
-                        if (countsController.signal.aborted) return
-                        const c = resp?.counts || {}
-                        setTabCounts({
-                            total: Number(c.total) || 0,
-                            archived: Number(c.archived) || 0,
-                            bots: Number(c.bots) || 0,
-                            unassigned: Number(c.unassigned) || 0,
-                            mine: Number(c.mine) || 0,
-                            others: Number(c.others) || 0,
-                        })
-                    })
-                    .catch((error) => {
-                        if (isAbortError(error)) return
-                    })
-            }, 1000)
+                setTabCounts(calcTabCounts(chatsRef.current, id))
+            }, 400)
         }
 
         const refreshChatById = async (chatId: string) => {
@@ -937,6 +928,10 @@ const ListaChats = () => {
 
                 if (mentionIds.has(chat.id)) {
                     mencionesTemp.push(chat)
+                }
+
+                if (!debouncedSearch && !selectedTag) {
+                    setTabCounts(calcTabCounts(chatsFromRedux, id))
                 }
             })
 
