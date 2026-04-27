@@ -930,9 +930,9 @@ const ListaChats = () => {
                     mencionesTemp.push(chat)
                 }
 
-                if (!debouncedSearch && !selectedTag) {
-                    setTabCounts(calcTabCounts(chatsFromRedux, id))
-                }
+
+                setTabCounts(calcTabCounts(chatsFromRedux, id))
+
             })
 
             setArchivadas(archivadasTemp)
