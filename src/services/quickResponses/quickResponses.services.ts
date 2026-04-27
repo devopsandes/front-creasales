@@ -19,10 +19,18 @@ const apiBase=()=>{
 
 const baseUrl=()=>`${apiBase()}/quick-responses`
 
-export const getQuickResponses=async(token:string,params?:{search?:string;page?:number;limit?:number}):Promise<QuickResponsesListResponse>=>{
+export const getQuickResponses=async(
+  token:string,
+  params?:{search?:string;page?:number;limit?:number},
+  options?:{signal?:AbortSignal}
+):Promise<QuickResponsesListResponse>=>{
   try{
     const headers={authorization:`Bearer ${token}`}
-    const {data,status}=await axios.get<BackendListResponse>(baseUrl(),{headers,params})
+    const {data,status}=await axios.get<BackendListResponse>(baseUrl(),{
+      headers,
+      params,
+      signal: options?.signal
+    })
     const code=(data as any)?.statusCode??status
     const list=Array.isArray((data as any)?.quickResponses)?(data as any).quickResponses:[]
     return{statusCode:code,page:(data as any)?.page,limit:(data as any)?.limit,total:(data as any)?.total,paginas:(data as any)?.paginas,items:list,message:(data as any)?.message,error:(data as any)?.error}

@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { isTokenExpiredOrExpiring } from './tokenUtils'
+import { recordHttpRequest } from './frontendObservability'
 
 /**
  * Configura interceptores de axios para manejar tokens y renovación automática
@@ -37,9 +38,12 @@ export const setupAxiosInterceptors = () => {
   // Interceptor para manejar respuestas y renovar token si es necesario
   axios.interceptors.response.use(
     (response) => {
+      recordHttpRequest(response.config?.url, false)
       return response
     },
     async (error: AxiosError) => {
+      const aborted = error?.name === "CanceledError" || (error as any)?.code === "ERR_CANCELED"
+      recordHttpRequest(error.config?.url, aborted)
       const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
       // Si la petición falló con 401 y no hemos intentado renovar
