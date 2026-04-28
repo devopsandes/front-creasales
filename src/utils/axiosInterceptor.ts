@@ -1,6 +1,9 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { isTokenExpiredOrExpiring } from './tokenUtils'
 
+let requestInterceptorId: number | null = null
+let responseInterceptorId: number | null = null
+
 /**
  * Configura interceptores de axios para manejar tokens y renovación automática
  * 
@@ -8,8 +11,18 @@ import { isTokenExpiredOrExpiring } from './tokenUtils'
  * Si no existe, el interceptor solo verificará el token antes de las peticiones.
  */
 export const setupAxiosInterceptors = () => {
+  // Evitar interceptores duplicados en re-mount/HMR
+  if (requestInterceptorId !== null) {
+    axios.interceptors.request.eject(requestInterceptorId)
+    requestInterceptorId = null
+  }
+  if (responseInterceptorId !== null) {
+    axios.interceptors.response.eject(responseInterceptorId)
+    responseInterceptorId = null
+  }
+
   // Interceptor para agregar el token a todas las peticiones
-  axios.interceptors.request.use(
+  requestInterceptorId = axios.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
       const token = localStorage.getItem('token')
       
@@ -35,7 +48,7 @@ export const setupAxiosInterceptors = () => {
   )
 
   // Interceptor para manejar respuestas y renovar token si es necesario
-  axios.interceptors.response.use(
+  responseInterceptorId = axios.interceptors.response.use(
     (response) => {
       return response
     },
@@ -85,4 +98,3 @@ export const refreshToken = async (): Promise<string | null> => {
     return null
   }
 }
-

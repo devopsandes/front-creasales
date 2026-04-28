@@ -1,7 +1,7 @@
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatTimeline, getChats, getUserData, setChatBotState } from '../../services/chats/chats.services'
+import { findChatById, findChatTimeline, getUserData, setChatBotState } from '../../services/chats/chats.services'
 import { TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
@@ -32,6 +32,7 @@ import { setChatReadState } from '../../services/chats/chats.services'
 import { jwtDecode } from "jwt-decode"
 import AddTagModal from '../../components/modal/AddTagModal'
 import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModal'
+import { perfMark } from '../../utils/perfTracker'
 
 const Chats = () => {
     const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -92,7 +93,8 @@ const Chats = () => {
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
     const selectedBulkReadChatIds = useSelector((state: RootState) => state.action.selectedBulkReadChatIds)
     const chats = useSelector((state: RootState) => state.action.chats)
-    const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters)
+    const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
+    const chatsRef = useRef<any[]>(Array.isArray(chats) ? chats : [])
     const currentChat = chats.find(chat => chat.id === id)
     const chatTags: ChatTag[] = currentChat?.tags || []
     const botEnabled = (currentChat as any)?.botEnabled
@@ -254,6 +256,44 @@ const Chats = () => {
     const renderItems = useMemo(() => withDateSeparators(mensajes), [mensajes])
     const debugTimeline = import.meta.env.DEV && localStorage.getItem("debugTimeline") === "1"
 
+    useEffect(() => {
+        chatsRef.current = Array.isArray(chats) ? chats : []
+    }, [chats])
+
+
+    const dedupeTags = (tags: any): any[] => {
+        if (!Array.isArray(tags)) return []
+        const map = new Map<string, any>()
+        tags.forEach((tag: any) => {
+            if (tag?.id) { const key = String(tag.id); if (!map.has(key)) map.set(key, tag) }
+        })
+        return Array.from(map.values())
+    }
+
+    const normalizeChat = (chat: any): any => {
+        if (!chat || typeof chat !== 'object') return chat
+        return { ...chat, tags: dedupeTags(chat.tags) }
+    }
+    const patchCurrentChatInStore = (incomingChat: any) => {
+        if (!incomingChat?.id) return
+        const normalizedIncoming = normalizeChat(incomingChat)
+        const base = Array.isArray(chatsRef.current) ? chatsRef.current : []
+        let found = false
+        const patched = base.map((chat: any) => {
+            if (chat?.id !== normalizedIncoming.id) return chat
+            found = true
+            return {
+                ...chat,
+                ...normalizedIncoming,
+                cliente: normalizedIncoming?.cliente ?? chat?.cliente,
+                operador: normalizedIncoming?.operador ?? chat?.operador,
+                tags: dedupeTags(Array.isArray(normalizedIncoming?.tags) ? normalizedIncoming.tags : chat?.tags),
+            }
+        })
+        const next = found ? patched : [normalizedIncoming, ...patched]
+        dispatch(setChats(next))
+    }
+
     const handleNotaPrivada = async () => {
         if ((!mensaje || mensaje.trim().length === 0) && archivos.length === 0) {
             setErrorModalMessage('Debe escribir una nota o pegar una imagen')
@@ -349,13 +389,16 @@ const Chats = () => {
     }, [, location])
 
     useEffect(() => {
-        dispatch(connectSocket())
         const socket = getSocket()
+        if (!socket) {
+            dispatch(connectSocket())
+            return
+        }
         setLoading(true)
         socket?.emit('register', telefono)
         if (id) socket?.emit('join-chat', id)
         return () => { }
-    }, [dispatch, telefono, id])
+    }, [dispatch, telefono, id, socketConnected])
 
     useEffect(() => {
         const socket = getSocket()
@@ -367,22 +410,57 @@ const Chats = () => {
         const handleConnectError = (_err: any) => { }
         const handleArchivarAck = (_data: any) => { }
         const handleNotaPrivadaAck = (_data: any) => { }
-        const handleAny = (eventName: string, ...args: any[]) => {
-            if (!debugTimeline) return
-            const shouldLog = eventName === chatEventName || eventName === messageEventName || eventName === "archivar-ack" || eventName === "nota-privada-ack" || eventName === "error" || eventName.toLowerCase().includes("chat-event") || eventName.toLowerCase().includes("new-message")
-            if (shouldLog) console.log("[socket] onAny", eventName, ...args)
-        }
         const handleNewMessage = (mensaje: any) => {
+            const t0 = performance.now()
+            if (debugTimeline) console.log("[socket] new-message", messageEventName, mensaje)
             const item: TimelineItem = { ...mensaje, kind: "message" as const }
+            perfMark('socket.new-message.received', { chatId: id, messageId: mensaje?.id ?? null })
             setCondChat(menos24hs(new Date(mensaje.createdAt)))
             setMensajes(prev => { const merged = mergeTimeline(prev, [item], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
+            requestAnimationFrame(() => {
+                perfMark('ui.timeline.patched', {
+                    source: 'new-message',
+                    chatId: id,
+                    messageId: mensaje?.id ?? null,
+                    latencyMs: Math.round(performance.now() - t0),
+                })
+            })
         }
         const handleChatEvent = (evt: any) => {
+            if (debugTimeline) console.log("[socket] chat-event", chatEventName, evt)
             const normalized = normalizeTimelineItem(evt)
             setMensajes(prev => { const merged = mergeTimeline(prev, [normalized], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
             if ((normalized as any)?.type === 'NEW_CONVERSATION_STARTED' && (normalized as any)?.payload?.numeroConversacion) {
                 setConversacionNumero((normalized as any).payload.numeroConversacion)
             }
+        }
+        const handleChatUpdated = (payload: any) => {
+            const t0 = performance.now()
+            const incoming = payload?.chat && typeof payload.chat === 'object'
+                ? payload.chat
+                : (payload && typeof payload === 'object' ? payload : null)
+            if (!incoming?.id || incoming.id !== id) return
+            if (debugTimeline) console.log("[socket] chat.updated", incoming)
+            perfMark('socket.chat.updated.received', { chatId: id })
+            const current = chatsRef.current.find((c: any) => c?.id === id)
+            if (!current) return
+            const normalizedIncoming = normalizeChat(incoming)
+            const patched = {
+                ...current,
+                ...normalizedIncoming,
+                cliente: normalizedIncoming?.cliente ?? current?.cliente,
+                operador: normalizedIncoming?.operador ?? current?.operador,
+                tags: dedupeTags(Array.isArray(normalizedIncoming?.tags) ? normalizedIncoming.tags : current?.tags),
+            }
+            const next = chatsRef.current.map((c: any) => (c?.id === id ? patched : c))
+            dispatch(setChats(next))
+            requestAnimationFrame(() => {
+                perfMark('ui.chat.patched', {
+                    source: 'chat.updated',
+                    chatId: id,
+                    latencyMs: Math.round(performance.now() - t0),
+                })
+            })
         }
         const handleError = (error: any) => {
             if (error?.name === 'TokenExpiredError') { dispatch(openSessionExpired()); return }
@@ -392,9 +470,9 @@ const Chats = () => {
         socket.on("connect_error", handleConnectError)
         socket.on("archivar-ack", handleArchivarAck)
         socket.on("nota-privada-ack", handleNotaPrivadaAck)
-        socket.onAny(handleAny)
         socket.on(messageEventName, handleNewMessage)
         socket.on(chatEventName, handleChatEvent)
+        socket.on("chat.updated", handleChatUpdated)
         socket.on('error', handleError)
         socket.emit('join-chat', id)
         return () => {
@@ -404,12 +482,12 @@ const Chats = () => {
             socket.off("connect_error", handleConnectError)
             socket.off("archivar-ack", handleArchivarAck)
             socket.off("nota-privada-ack", handleNotaPrivadaAck)
-            socket.offAny(handleAny)
             socket.off(messageEventName, handleNewMessage)
             socket.off(chatEventName, handleChatEvent)
+            socket.off("chat.updated", handleChatUpdated)
             socket.off('error', handleError)
         }
-    }, [id, dispatch])
+    }, [id, dispatch, debugTimeline])
 
     useEffect(() => {
         const inicio = async () => {
@@ -504,9 +582,15 @@ const Chats = () => {
 
     const handleTagConfirm = async (_tagId: string) => {
         try {
-            const chatos = await getChats(token, '1', '100', chatListFilters)
-            const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
-            dispatch(setChats(incoming))
+            if (!id) return
+            const chatResp = await findChatById(token, id)
+            if ((chatResp as any)?.statusCode === 401) {
+                dispatch(openSessionExpired())
+                return
+            }
+            if ((chatResp as any)?.chat) {
+                patchCurrentChatInStore((chatResp as any).chat)
+            }
         } catch (error) { console.error('Error refreshing chats after tag assignment:', error) }
     }
 
@@ -517,9 +601,15 @@ const Chats = () => {
 
     const handleRemoveTagSuccess = async () => {
         try {
-            const chatos = await getChats(token, '1', '100', chatListFilters)
-            const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
-            dispatch(setChats(incoming))
+            if (!id) return
+            const chatResp = await findChatById(token, id)
+            if ((chatResp as any)?.statusCode === 401) {
+                dispatch(openSessionExpired())
+                return
+            }
+            if ((chatResp as any)?.chat) {
+                patchCurrentChatInStore((chatResp as any).chat)
+            }
         } catch (error) { console.error('Error refreshing chats:', error) }
     }
 
@@ -623,9 +713,11 @@ const Chats = () => {
                         setTimelineHasMore(Boolean((data as any)?.hasMore))
                     } catch (e) { }
                 }
-                socket.emit("archivar", objMsj, (ack: any) => { if (ack?.ok) { refreshTimeline() } })
-                refreshTimeline()
-                setTimeout(refreshTimeline, 800)
+                socket.emit("archivar", objMsj, (ack: any) => {
+                    if (ack?.ok) {
+                        refreshTimeline()
+                    }
+                })
             }
             setIsArchiveModalOpen(false);
         } catch (error) { console.log(error); }
@@ -644,24 +736,8 @@ const Chats = () => {
                 setIsDeleteModalOpen(false);
                 setMensajes([]); setMensaje(''); setArchivos([]); setCondChat(false)
                 dispatch(clearMentionChatSelection()); dispatch(clearBulkReadChatSelection())
-                try {
-                    const chatos = await getChats(token, '1', '100', chatListFilters)
-                    if ((chatos as any)?.statusCode === 401) { dispatch(openSessionExpired()) }
-                    else if (Array.isArray((chatos as any)?.chats)) {
-                        const incoming = (chatos as any).chats as any[]
-                        const base = Array.isArray(chats) ? chats.filter((c: any) => c?.id !== id) : []
-                        const map = new Map<string, any>()
-                        base.forEach((c: any) => { if (c?.id) map.set(c.id, c) })
-                        incoming.forEach((c: any) => { if (c?.id) map.set(c.id, c) })
-                        const merged = Array.from(map.values()).sort((a: any, b: any) => {
-                            const aMs = new Date(a?.lastMessageAt || a?.updatedAt || a?.createdAt || 0).getTime()
-                            const bMs = new Date(b?.lastMessageAt || b?.updatedAt || b?.createdAt || 0).getTime()
-                            if (aMs !== bMs) return bMs - aMs
-                            return `${b?.id ?? ""}`.localeCompare(`${a?.id ?? ""}`)
-                        })
-                        dispatch(setChats(merged))
-                    }
-                } catch { }
+                const next = (Array.isArray(chatsRef.current) ? chatsRef.current : []).filter((c: any) => c?.id !== id)
+                dispatch(setChats(next))
                 navigate('/dashboard/chats')
             }
         } catch (error) {
@@ -1197,3 +1273,5 @@ const Chats = () => {
 }
 
 export default Chats
+
+

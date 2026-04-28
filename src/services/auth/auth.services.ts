@@ -13,6 +13,19 @@ type Objeto = {
     role: string;
 }
 
+const USERS_TTL_MS = 30_000
+const usersRoleCache = new Map<string, { value: UsersResponse & ErrorResponse; expiresAt: number }>()
+const pendingUsersRole = new Map<string, Promise<UsersResponse & ErrorResponse>>()
+
+const getCachedUsersRole = (key: string): (UsersResponse & ErrorResponse) | null => {
+    const entry = usersRoleCache.get(key)
+    if (!entry) return null
+    if (entry.expiresAt <= Date.now()) {
+        usersRoleCache.delete(key)
+        return null
+    }
+    return entry.value
+}
 
 const authLogin = async ({ email, password }: DataLogin): Promise<LoginResponse & ErrorResponse> => {
     try {
@@ -117,27 +130,42 @@ const cambiarPassword = async (token: string, password: string): Promise<Success
 }
 
 const usuariosXRole = async (role: string, token: string): Promise<UsersResponse & ErrorResponse> => {
-    try {
-        let url = ''
-        if (role === '')
-            url = `https://sales.createch.com.ar/api/v1/auth/usuarios`
-        else
-            url = `https://sales.createch.com.ar/api/v1/auth/usuarios?role=${role}`
+    const normalizedRole = `${role ?? ''}`
+    const cacheKey = `${token}:${normalizedRole}`
+    const cached = getCachedUsersRole(cacheKey)
+    if (cached) return cached
 
-        const headers = {
-            authorization: `Bearer ${token}`
+    const inflight = pendingUsersRole.get(cacheKey)
+    if (inflight) return inflight
+
+    const task = (async (): Promise<UsersResponse & ErrorResponse> => {
+        try {
+            let url = ''
+            if (normalizedRole === '')
+                url = `https://sales.createch.com.ar/api/v1/auth/usuarios`
+            else
+                url = `https://sales.createch.com.ar/api/v1/auth/usuarios?role=${normalizedRole}`
+
+            const headers = {
+                authorization: `Bearer ${token}`
+            }
+
+            const { data } = await axios<UsersResponse & ErrorResponse>(url, { headers })
+            usersRoleCache.set(cacheKey, { value: data, expiresAt: Date.now() + USERS_TTL_MS })
+            return data
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                const objeto: ErrorResponse & UsersResponse = error.response.data
+                return objeto
+            }
+            throw error
+        } finally {
+            pendingUsersRole.delete(cacheKey)
         }
+    })()
 
-        const { data } = await axios<UsersResponse & ErrorResponse>(url, { headers })
-
-        return data
-    } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-            const objeto: ErrorResponse & UsersResponse = error.response.data
-            return objeto
-        }
-        throw error; // Lanza el error si no es del tipo esperado
-    }
+    pendingUsersRole.set(cacheKey, task)
+    return task
 }
 
 const switchActivo = async (userId: string | undefined, token: string, activo: boolean | undefined): Promise<SuccessResponse & ErrorResponse> => {
@@ -241,3 +269,6 @@ const updateUser = async (
 
 
 export { authLogin, authRegister, tokenValidacion, sendEmailRecuperarPass, cambiarPassword, usuariosXRole, asignarOperador, switchActivo, deleteUser, updateUser }
+
+
+

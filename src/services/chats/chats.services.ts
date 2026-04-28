@@ -1,7 +1,8 @@
 import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
-import { ChatCountsResponse, ChatResponse, ChatsResponse, TimelineResponse } from "../../interfaces/chats.interface"
+import { ChatCountsResponse, ChatResponse, ChatsResponse, OperatorChatCountsResponse, TimelineResponse } from "../../interfaces/chats.interface"
 import { DataUser } from "../../interfaces/action.interface"
+import { perfCounter, perfLog } from "../../utils/perfTracker"
 
 
 
@@ -31,6 +32,8 @@ const findChatTimeline = async (
     id: string,
     params?: { page?: number; limit?: number; cursor?: string | null }
 ): Promise<TimelineResponse & ErrorResponse> => {
+    const startedAt = performance.now()
+    perfCounter("findChatTimeline")
     try {
         const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`
 
@@ -60,6 +63,13 @@ const findChatTimeline = async (
         const { data } = await axios.get<TimelineResponse & ErrorResponse>(url, {
             headers,
             params: query,
+        })
+
+        perfLog("api.findChatTimeline", {
+            chatId: id,
+            durationMs: Math.round(performance.now() - startedAt),
+            rows: Array.isArray((data as any)?.items) ? (data as any).items.length : null,
+            cursor: Boolean(params?.cursor),
         })
 
         if (debug) {
@@ -126,6 +136,8 @@ const getChatCounts = async (
     token: string,
     params?: { q?: string; tagId?: string }
 ): Promise<ChatCountsResponse & ErrorResponse> => {
+    const startedAt = performance.now()
+    perfCounter("getChatCounts")
     try {
         const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats/counts`
         const qs = new URLSearchParams()
@@ -135,6 +147,11 @@ const getChatCounts = async (
 
         const headers = { authorization: `Bearer ${token}` }
         const { data } = await axios.get<ChatCountsResponse & ErrorResponse>(url, { headers })
+        perfLog("api.getChatCounts", {
+            durationMs: Math.round(performance.now() - startedAt),
+            q: params?.q ?? null,
+            tagId: params?.tagId ?? null,
+        })
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -150,6 +167,8 @@ const getChats = async (
     limit: string,
     filters?: GetChatsFilters
 ): Promise<ChatsResponse & ErrorResponse> => {
+    const startedAt = performance.now()
+    perfCounter("getChats")
     try {
         const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats`
         const params = new URLSearchParams()
@@ -172,6 +191,14 @@ const getChats = async (
 
         const { data } = await axios.get<ChatsResponse & ErrorResponse>(url, { headers })
 
+        perfLog("api.getChats", {
+            durationMs: Math.round(performance.now() - startedAt),
+            page,
+            limit,
+            rows: Array.isArray((data as any)?.chats) ? (data as any).chats.length : null,
+            filters: filters ?? null,
+        })
+
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -179,6 +206,28 @@ const getChats = async (
             return objeto
         }
         throw error; // Lanza el error si no es del tipo esperado
+    }
+}
+
+const getChatCountsByOperator = async (
+    token: string
+): Promise<OperatorChatCountsResponse & ErrorResponse> => {
+    const startedAt = performance.now()
+    perfCounter("getChatCountsByOperator")
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/counts-by-operator`
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await axios.get<OperatorChatCountsResponse & ErrorResponse>(url, { headers })
+        perfLog("api.getChatCountsByOperator", {
+            durationMs: Math.round(performance.now() - startedAt),
+            rows: Array.isArray((data as any)?.counts) ? (data as any).counts.length : null,
+        })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data as any
+        }
+        throw error
     }
 }
 
@@ -283,4 +332,4 @@ const desasignarChat = async (
 }
 
 
-export { findChatById, findChatTimeline, getUserData, getChats, getChatCounts, setChatReadState, setChatBotState, searchByConversacion, desasignarChat }
+export { findChatById, findChatTimeline, getUserData, getChats, getChatCounts, getChatCountsByOperator, setChatReadState, setChatBotState, searchByConversacion, desasignarChat }

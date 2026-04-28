@@ -1,130 +1,130 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+﻿import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { io, Socket } from "socket.io-client";
 
-/* // Variable externa para almacenar la instancia del socket
-export let socket: Socket | null = null;
+const SOCKET_URL = `${import.meta.env.VITE_URL_BACK}`;
 
-// Define el tipo para el estado inicial
+const perfEnabled = () =>
+  typeof window !== "undefined" && window.localStorage?.getItem("perfLogs") === "1";
+
+let socket: Socket | null = null;
+let listenersAttached = false;
+let handleConnect: (() => void) | null = null;
+let handleDisconnect: (() => void) | null = null;
+let handleConnectError: (() => void) | null = null;
+
+const emitSocketConnectionState = (connected: boolean) => {
+  import("../store")
+    .then((mod) => {
+      const reduxStore = mod.default as { dispatch: (action: { type: string; payload: boolean }) => void };
+      reduxStore.dispatch({ type: "socket/setSocketConnectedState", payload: connected });
+    })
+    .catch(() => {
+      // noop
+    });
+};
+
 interface SocketState {
-    isConnected: boolean; // Indica si el socket está conectado
-    socketId: string | null; // Almacena el ID del socket (opcional)
+  isConnected: boolean;
+  messages: string[];
 }
 
-// Estado inicial
 const initialState: SocketState = {
-    isConnected: false,
-    socketId: null,
+  isConnected: false,
+  messages: [],
 };
 
 const socketSlice = createSlice({
-    name: 'socket',
-    initialState,
-    reducers: {
-        // Conectar el socket
-        connectSocket: (state, action: PayloadAction<string>) => {
-            if (!socket) {
-                socket = io(action.payload, {
-                    transports: ['websocket'],
-                    withCredentials: true,
-                    auth: {
-                        token: localStorage.getItem('token'),
-                    },
-                });
-
-                socket.on('connect', () => {
-                    state.isConnected = true;
-                    state.socketId = socket?.id || null;
-                });
-
-                socket.on('disconnect', () => {
-                    state.isConnected = false;
-                    state.socketId = null;
-                });
-            }
-        },
-
-        // Desconectar el socket
-        disconnectSocket: (state) => {
-            if (socket) {
-                socket.disconnect();
-                socket = null;
-                state.isConnected = false;
-                state.socketId = null;
-            }
-        },
-
-
-        // Emitir eventos al socket (opcional)
-        emitEvent: (state, action: PayloadAction<{ event: string; data: any }>) => {
-            if (socket) {
-                socket.emit(action.payload.event, action.payload.data);
-            }
-        },
+  name: "socket",
+  initialState,
+  reducers: {
+    setSocketConnectedState: (state, action: PayloadAction<boolean>) => {
+      state.isConnected = action.payload;
     },
+    connectSocket: (state) => {
+      if (!socket) {
+        socket = io(SOCKET_URL, {
+          transports: ["websocket"],
+          withCredentials: true,
+          auth: {
+            token: localStorage.getItem("token"),
+          },
+        });
+      }
+
+      if (socket && !listenersAttached) {
+        handleConnect = () => {
+          if (perfEnabled()) {
+            console.log("[perf.front]", {
+              event: "socket.connected",
+              socketId: socket?.id ?? null,
+              connectListeners: socket?.listeners("connect")?.length ?? 0,
+              disconnectListeners: socket?.listeners("disconnect")?.length ?? 0,
+            });
+          }
+          emitSocketConnectionState(true);
+        };
+
+        handleDisconnect = () => {
+          if (perfEnabled()) {
+            console.log("[perf.front]", {
+              event: "socket.disconnected",
+              socketId: socket?.id ?? null,
+            });
+          }
+          emitSocketConnectionState(false);
+        };
+
+        handleConnectError = () => {
+          if (perfEnabled()) {
+            console.log("[perf.front]", {
+              event: "socket.connect_error",
+              socketId: socket?.id ?? null,
+            });
+          }
+          emitSocketConnectionState(false);
+        };
+
+        socket.on("connect", handleConnect);
+        socket.on("disconnect", handleDisconnect);
+        socket.on("connect_error", handleConnectError);
+        listenersAttached = true;
+      }
+
+      if (socket && perfEnabled()) {
+        console.log("[perf.front]", {
+          event: socket.connected ? "socket.reuse_connected" : "socket.reuse_disconnected",
+          socketId: socket.id ?? null,
+          connected: socket.connected,
+          connectListeners: socket.listeners("connect")?.length ?? 0,
+          disconnectListeners: socket.listeners("disconnect")?.length ?? 0,
+        });
+      }
+
+      state.isConnected = Boolean(socket?.connected);
+    },
+    disconnectSocket: (state) => {
+      if (socket && listenersAttached) {
+        if (handleConnect) socket.off("connect", handleConnect);
+        if (handleDisconnect) socket.off("disconnect", handleDisconnect);
+        if (handleConnectError) socket.off("connect_error", handleConnectError);
+      }
+
+      socket?.disconnect();
+      socket = null;
+      listenersAttached = false;
+      handleConnect = null;
+      handleDisconnect = null;
+      handleConnectError = null;
+      state.isConnected = false;
+    },
+    addMessage: (state, action: PayloadAction<string>) => {
+      state.messages.push(action.payload);
+    },
+  },
 });
 
-export const { connectSocket, disconnectSocket, emitEvent } = socketSlice.actions;
-export default socketSlice.reducer; */
+export const { connectSocket, disconnectSocket, addMessage, setSocketConnectedState } = socketSlice.actions;
+export default socketSlice.reducer;
 
+export const getSocket = () => socket;
 
-const SOCKET_URL = `${import.meta.env.VITE_URL_BACK}`; // URL de tu backend con Socket.IO
-
-
-let socket: Socket | null = null; // Variable externa para almacenar la instancia del socket
-
-interface SocketState {
-    isConnected: boolean;
-    messages: string[];
-}
-  
-
-const initialState: SocketState = {
-    isConnected: false,
-    messages: [],
-};
-
-const socketSlice = createSlice({
-    name: "socket",
-    initialState,
-    reducers: {
-      connectSocket: (state) => {
-        
-        if (!socket) {
-            
-            socket = io(SOCKET_URL,{
-                transports: ['websocket'],
-                withCredentials: true,
-                auth: {
-                    token: localStorage.getItem('token')
-                }
-            });
-
-            // TODO: revisar error de conexión al socket
-            // state.isConnected = true;
-            socket.on('connect', () => {
-                // console.log('se conecta al socket');
-            })
-
-            socket.on('disconnect', () => {
-                // alert('Su sesión ha caducado')
-            })
-        }
-        state.isConnected = true;
-      },
-      disconnectSocket: (state) => {
-        // TODO: revisar error de conexión al socket
-        socket?.disconnect();
-        socket = null;
-        state.isConnected = false;
-      },
-      addMessage: (state, action: PayloadAction<string>) => {
-        state.messages.push(action.payload);
-      },
-    },
-  });
-  
-  export const { connectSocket, disconnectSocket, addMessage } = socketSlice.actions;
-  export default socketSlice.reducer;
-  
-  // Exportamos la instancia del socket para poder usarla en los componentes
-  export const getSocket = () => socket;

@@ -174,6 +174,16 @@ export interface ChatCountsResponse {
     counts: ChatCounts;
 }
 
+export interface OperatorChatCount {
+    operatorId: string;
+    assignedCount: number;
+}
+
+export interface OperatorChatCountsResponse {
+    statusCode?: number;
+    counts: OperatorChatCount[];
+}
+
 export interface Chat {
     id:        string;
     thread_id: string;
@@ -203,5 +213,4 @@ export interface Operador {
     role:       string;
     activo:     boolean;
 }
-
 
