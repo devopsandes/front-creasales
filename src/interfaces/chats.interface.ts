@@ -9,6 +9,8 @@ export type TimelineItem =
           createdAt: string | Date;
           msg_entrada?: string | null;
           msg_salida?: string | null;
+          authorId?: string;
+          authorName?: string;
           type?: "text" | "image" | "document" | "audio";
           imageUrl?: MediaUrl;
           documentUrl?: MediaUrl;
@@ -32,6 +34,8 @@ export type TimelineItem =
           updatedAt?: string | Date;
           msg_entrada?: null | string;
           msg_salida?: null | string;
+          authorId?: string;
+          authorName?: string;
           nota?: any;
           leido?: boolean;
           type?: any;
@@ -170,6 +174,16 @@ export interface ChatCountsResponse {
     counts: ChatCounts;
 }
 
+export interface OperatorChatCount {
+    operatorId: string;
+    assignedCount: number;
+}
+
+export interface OperatorChatCountsResponse {
+    statusCode?: number;
+    counts: OperatorChatCount[];
+}
+
 export interface Chat {
     id:        string;
     thread_id: string;
@@ -199,5 +213,4 @@ export interface Operador {
     role:       string;
     activo:     boolean;
 }
-
 

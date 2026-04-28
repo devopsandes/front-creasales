@@ -1,7 +1,8 @@
 import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
-import { ChatCountsResponse, ChatResponse, ChatsResponse, TimelineResponse } from "../../interfaces/chats.interface"
+import { ChatCountsResponse, ChatResponse, ChatsResponse, OperatorChatCountsResponse, TimelineResponse } from "../../interfaces/chats.interface"
 import { DataUser } from "../../interfaces/action.interface"
+import { perfCounter, perfLog } from "../../utils/perfTracker"
 
 
 
@@ -12,14 +13,14 @@ const findChatById = async (token: string, id: string): Promise<ChatResponse & E
         const headers = {
             authorization: `Bearer ${token}`
         }
-      
-        const { data } = await axios.get<ChatResponse & ErrorResponse>(url,{ headers })
+
+        const { data } = await axios.get<ChatResponse & ErrorResponse>(url, { headers })
 
 
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
-            const objeto:  ChatResponse & ErrorResponse  = error.response.data
+            const objeto: ChatResponse & ErrorResponse = error.response.data
             return objeto
         }
         throw error; // Lanza el error si no es del tipo esperado
@@ -31,6 +32,8 @@ const findChatTimeline = async (
     id: string,
     params?: { page?: number; limit?: number; cursor?: string | null }
 ): Promise<TimelineResponse & ErrorResponse> => {
+    const startedAt = performance.now()
+    perfCounter("findChatTimeline")
     try {
         const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`
 
@@ -60,6 +63,13 @@ const findChatTimeline = async (
         const { data } = await axios.get<TimelineResponse & ErrorResponse>(url, {
             headers,
             params: query,
+        })
+
+        perfLog("api.findChatTimeline", {
+            chatId: id,
+            durationMs: Math.round(performance.now() - startedAt),
+            rows: Array.isArray((data as any)?.items) ? (data as any).items.length : null,
+            cursor: Boolean(params?.cursor),
         })
 
         if (debug) {
@@ -97,7 +107,7 @@ const findChatTimeline = async (
     }
 }
 
-const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse>=> {
+const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse> => {
     try {
         const url = `https://tickets.createch.com.ar/mensajes/getUserData?telefono=${telefono}`
 
@@ -126,6 +136,8 @@ const getChatCounts = async (
     token: string,
     params?: { q?: string; tagId?: string }
 ): Promise<ChatCountsResponse & ErrorResponse> => {
+    const startedAt = performance.now()
+    perfCounter("getChatCounts")
     try {
         const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats/counts`
         const qs = new URLSearchParams()
@@ -135,6 +147,11 @@ const getChatCounts = async (
 
         const headers = { authorization: `Bearer ${token}` }
         const { data } = await axios.get<ChatCountsResponse & ErrorResponse>(url, { headers })
+        perfLog("api.getChatCounts", {
+            durationMs: Math.round(performance.now() - startedAt),
+            q: params?.q ?? null,
+            tagId: params?.tagId ?? null,
+        })
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -150,6 +167,8 @@ const getChats = async (
     limit: string,
     filters?: GetChatsFilters
 ): Promise<ChatsResponse & ErrorResponse> => {
+    const startedAt = performance.now()
+    perfCounter("getChats")
     try {
         const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats`
         const params = new URLSearchParams()
@@ -170,7 +189,15 @@ const getChats = async (
             authorization: `Bearer ${token}`
         }
 
-        const { data } = await axios.get<ChatsResponse & ErrorResponse>(url,{ headers })
+        const { data } = await axios.get<ChatsResponse & ErrorResponse>(url, { headers })
+
+        perfLog("api.getChats", {
+            durationMs: Math.round(performance.now() - startedAt),
+            page,
+            limit,
+            rows: Array.isArray((data as any)?.chats) ? (data as any).chats.length : null,
+            filters: filters ?? null,
+        })
 
         return data
     } catch (error) {
@@ -179,6 +206,28 @@ const getChats = async (
             return objeto
         }
         throw error; // Lanza el error si no es del tipo esperado
+    }
+}
+
+const getChatCountsByOperator = async (
+    token: string
+): Promise<OperatorChatCountsResponse & ErrorResponse> => {
+    const startedAt = performance.now()
+    perfCounter("getChatCountsByOperator")
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/counts-by-operator`
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await axios.get<OperatorChatCountsResponse & ErrorResponse>(url, { headers })
+        perfLog("api.getChatCountsByOperator", {
+            durationMs: Math.round(performance.now() - startedAt),
+            rows: Array.isArray((data as any)?.counts) ? (data as any).counts.length : null,
+        })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data as any
+        }
+        throw error
     }
 }
 
@@ -222,12 +271,12 @@ const setChatBotState = async (
     reason?: string
 ): Promise<
     | ({
-          botEnabled?: boolean;
-          botDisabledAt?: string | Date | null;
-          botDisabledByUserId?: string | null;
-          botDisableReason?: string | null;
-          statusCode?: number;
-      } & ErrorResponse)
+        botEnabled?: boolean;
+        botDisabledAt?: string | Date | null;
+        botDisabledByUserId?: string | null;
+        botDisableReason?: string | null;
+        statusCode?: number;
+    } & ErrorResponse)
     | any
 > => {
     try {
@@ -248,5 +297,39 @@ const setChatBotState = async (
     }
 }
 
+const searchByConversacion = async (
+    token: string,
+    numero: number
+): Promise<any> => {
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/search-conversacion?numero=${numero}`
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await axios.get(url, { headers })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data
+        }
+        throw error
+    }
+}
 
-export { findChatById, findChatTimeline, getUserData, getChats, getChatCounts, setChatReadState, setChatBotState }
+const desasignarChat = async (
+    token: string,
+    chatId: string
+): Promise<any> => {
+    try {
+        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/unassign`
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await axios.post(url, { chatId }, { headers })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data
+        }
+        throw error
+    }
+}
+
+
+export { findChatById, findChatTimeline, getUserData, getChats, getChatCounts, getChatCountsByOperator, setChatReadState, setChatBotState, searchByConversacion, desasignarChat }

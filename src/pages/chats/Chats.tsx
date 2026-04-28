@@ -1,7 +1,7 @@
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatTimeline, getChats, getUserData, setChatBotState } from '../../services/chats/chats.services'
+import { findChatById, findChatTimeline, getUserData, setChatBotState } from '../../services/chats/chats.services'
 import { TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
@@ -32,10 +32,11 @@ import { setChatReadState } from '../../services/chats/chats.services'
 import { jwtDecode } from "jwt-decode"
 import AddTagModal from '../../components/modal/AddTagModal'
 import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModal'
+import { perfMark } from '../../utils/perfTracker'
 
 const Chats = () => {
     const [usuarios, setUsuarios] = useState<Usuario[]>([])
-    const [selectedMentionUser, setSelectedMentionUser] = useState<Usuario | null>(null)
+    const [selectedMentionUsers, setSelectedMentionUsers] = useState<Usuario[]>([])
     const [mensajes, setMensajes] = useState<TimelineItem[]>([])
     const [timelineCursor, setTimelineCursor] = useState<string | null>(null)
     const [timelineHasMore, setTimelineHasMore] = useState<boolean>(false)
@@ -65,6 +66,7 @@ const Chats = () => {
     const [qrFiltered, setQrFiltered] = useState<QuickResponse[]>([])
     const [qrActiveIndex, setQrActiveIndex] = useState(0)
     const [qrTriggerRange, setQrTriggerRange] = useState<{ start: number; end: number } | null>(null)
+    const [conversacionNumero, setConversacionNumero] = useState<number | null>(null)
 
     const isSendingRef = useRef(false)
     const lastSentMessageRef = useRef<string | null>(null)
@@ -91,7 +93,8 @@ const Chats = () => {
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
     const selectedBulkReadChatIds = useSelector((state: RootState) => state.action.selectedBulkReadChatIds)
     const chats = useSelector((state: RootState) => state.action.chats)
-    const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters)
+    const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
+    const chatsRef = useRef<any[]>(Array.isArray(chats) ? chats : [])
     const currentChat = chats.find(chat => chat.id === id)
     const chatTags: ChatTag[] = currentChat?.tags || []
     const botEnabled = (currentChat as any)?.botEnabled
@@ -173,6 +176,8 @@ const Chats = () => {
         return value.toLowerCase().split(' ').filter(Boolean).map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
     }
 
+    const getMentionHandle = (user: Pick<Usuario, 'nombre'>) => (user?.nombre || 'usuario').trim().toLowerCase().replace(/\s+/g, '')
+
     const toTitleCase = (value: any) => {
         if (!value || typeof value !== 'string') return ''
         return value.trim().toLowerCase().split(/\s+/).filter(Boolean).map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
@@ -251,18 +256,81 @@ const Chats = () => {
     const renderItems = useMemo(() => withDateSeparators(mensajes), [mensajes])
     const debugTimeline = import.meta.env.DEV && localStorage.getItem("debugTimeline") === "1"
 
-    const handleNotaPrivada = () => {
-        if (!mensaje || mensaje.trim().length === 0) {
-            setErrorModalMessage('Debe escribir una nota')
+    useEffect(() => {
+        chatsRef.current = Array.isArray(chats) ? chats : []
+    }, [chats])
+
+
+    const dedupeTags = (tags: any): any[] => {
+        if (!Array.isArray(tags)) return []
+        const map = new Map<string, any>()
+        tags.forEach((tag: any) => {
+            if (tag?.id) { const key = String(tag.id); if (!map.has(key)) map.set(key, tag) }
+        })
+        return Array.from(map.values())
+    }
+
+    const normalizeChat = (chat: any): any => {
+        if (!chat || typeof chat !== 'object') return chat
+        return { ...chat, tags: dedupeTags(chat.tags) }
+    }
+    const patchCurrentChatInStore = (incomingChat: any) => {
+        if (!incomingChat?.id) return
+        const normalizedIncoming = normalizeChat(incomingChat)
+        const base = Array.isArray(chatsRef.current) ? chatsRef.current : []
+        let found = false
+        const patched = base.map((chat: any) => {
+            if (chat?.id !== normalizedIncoming.id) return chat
+            found = true
+            return {
+                ...chat,
+                ...normalizedIncoming,
+                cliente: normalizedIncoming?.cliente ?? chat?.cliente,
+                operador: normalizedIncoming?.operador ?? chat?.operador,
+                tags: dedupeTags(Array.isArray(normalizedIncoming?.tags) ? normalizedIncoming.tags : chat?.tags),
+            }
+        })
+        const next = found ? patched : [normalizedIncoming, ...patched]
+        dispatch(setChats(next))
+    }
+
+    const handleNotaPrivada = async () => {
+        if ((!mensaje || mensaje.trim().length === 0) && archivos.length === 0) {
+            setErrorModalMessage('Debe escribir una nota o pegar una imagen')
             setIsErrorModalOpen(true)
             return
         }
         const socket = getSocket()
         if (socket && socket.connected) {
-            const payload: any = { chatId: id, mensaje, token, mentions: selectedMentionUser ? [{ userId: selectedMentionUser.id }] : [] }
+            const mentions = selectedMentionUsers.map((user) => ({ userId: user.id }))
+            const payload: any = {
+                chatId: id,
+                mensaje: mensaje.trim() || null,
+                token,
+                mentions
+            }
+
+            // Si hay imagen pegada, convertir a base64
+            if (archivos.length > 0 && archivos[0].type.startsWith('image/')) {
+                const file = archivos[0]
+                const ext = file.name.split('.').pop() || 'png'
+                const base64 = await new Promise<string>((resolve) => {
+                    const reader = new FileReader()
+                    reader.onload = () => {
+                        const result = reader.result as string
+                        resolve(result.split(',')[1])
+                    }
+                    reader.readAsDataURL(file)
+                })
+                payload.image = { base64, ext }
+            }
+
             setMensaje("")
-            setSelectedMentionUser(null)
-            socket.emit("nota-privada", payload, (ack: any) => { if (debugTimeline) console.log("[nota-privada ACK]", ack) })
+            setArchivos([])
+            setSelectedMentionUsers([])
+            socket.emit("nota-privada", payload, (ack: any) => {
+                if (debugTimeline) console.log("[nota-privada ACK]", ack)
+            })
         }
     }
 
@@ -321,13 +389,16 @@ const Chats = () => {
     }, [, location])
 
     useEffect(() => {
-        dispatch(connectSocket())
         const socket = getSocket()
+        if (!socket) {
+            dispatch(connectSocket())
+            return
+        }
         setLoading(true)
         socket?.emit('register', telefono)
         if (id) socket?.emit('join-chat', id)
         return () => { }
-    }, [dispatch, telefono, id])
+    }, [dispatch, telefono, id, socketConnected])
 
     useEffect(() => {
         const socket = getSocket()
@@ -339,18 +410,57 @@ const Chats = () => {
         const handleConnectError = (_err: any) => { }
         const handleArchivarAck = (_data: any) => { }
         const handleNotaPrivadaAck = (_data: any) => { }
-        const handleAny = (eventName: string, ...args: any[]) => {
-            if (!debugTimeline) return
-            const shouldLog = eventName === chatEventName || eventName === messageEventName || eventName === "archivar-ack" || eventName === "nota-privada-ack" || eventName === "error" || eventName.toLowerCase().includes("chat-event") || eventName.toLowerCase().includes("new-message")
-            if (shouldLog) console.log("[socket] onAny", eventName, ...args)
-        }
         const handleNewMessage = (mensaje: any) => {
+            const t0 = performance.now()
+            if (debugTimeline) console.log("[socket] new-message", messageEventName, mensaje)
             const item: TimelineItem = { ...mensaje, kind: "message" as const }
+            perfMark('socket.new-message.received', { chatId: id, messageId: mensaje?.id ?? null })
             setCondChat(menos24hs(new Date(mensaje.createdAt)))
             setMensajes(prev => { const merged = mergeTimeline(prev, [item], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
+            requestAnimationFrame(() => {
+                perfMark('ui.timeline.patched', {
+                    source: 'new-message',
+                    chatId: id,
+                    messageId: mensaje?.id ?? null,
+                    latencyMs: Math.round(performance.now() - t0),
+                })
+            })
         }
         const handleChatEvent = (evt: any) => {
-            setMensajes(prev => { const merged = mergeTimeline(prev, [normalizeTimelineItem(evt)], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
+            if (debugTimeline) console.log("[socket] chat-event", chatEventName, evt)
+            const normalized = normalizeTimelineItem(evt)
+            setMensajes(prev => { const merged = mergeTimeline(prev, [normalized], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
+            if ((normalized as any)?.type === 'NEW_CONVERSATION_STARTED' && (normalized as any)?.payload?.numeroConversacion) {
+                setConversacionNumero((normalized as any).payload.numeroConversacion)
+            }
+        }
+        const handleChatUpdated = (payload: any) => {
+            const t0 = performance.now()
+            const incoming = payload?.chat && typeof payload.chat === 'object'
+                ? payload.chat
+                : (payload && typeof payload === 'object' ? payload : null)
+            if (!incoming?.id || incoming.id !== id) return
+            if (debugTimeline) console.log("[socket] chat.updated", incoming)
+            perfMark('socket.chat.updated.received', { chatId: id })
+            const current = chatsRef.current.find((c: any) => c?.id === id)
+            if (!current) return
+            const normalizedIncoming = normalizeChat(incoming)
+            const patched = {
+                ...current,
+                ...normalizedIncoming,
+                cliente: normalizedIncoming?.cliente ?? current?.cliente,
+                operador: normalizedIncoming?.operador ?? current?.operador,
+                tags: dedupeTags(Array.isArray(normalizedIncoming?.tags) ? normalizedIncoming.tags : current?.tags),
+            }
+            const next = chatsRef.current.map((c: any) => (c?.id === id ? patched : c))
+            dispatch(setChats(next))
+            requestAnimationFrame(() => {
+                perfMark('ui.chat.patched', {
+                    source: 'chat.updated',
+                    chatId: id,
+                    latencyMs: Math.round(performance.now() - t0),
+                })
+            })
         }
         const handleError = (error: any) => {
             if (error?.name === 'TokenExpiredError') { dispatch(openSessionExpired()); return }
@@ -360,9 +470,9 @@ const Chats = () => {
         socket.on("connect_error", handleConnectError)
         socket.on("archivar-ack", handleArchivarAck)
         socket.on("nota-privada-ack", handleNotaPrivadaAck)
-        socket.onAny(handleAny)
         socket.on(messageEventName, handleNewMessage)
         socket.on(chatEventName, handleChatEvent)
+        socket.on("chat.updated", handleChatUpdated)
         socket.on('error', handleError)
         socket.emit('join-chat', id)
         return () => {
@@ -372,16 +482,23 @@ const Chats = () => {
             socket.off("connect_error", handleConnectError)
             socket.off("archivar-ack", handleArchivarAck)
             socket.off("nota-privada-ack", handleNotaPrivadaAck)
-            socket.offAny(handleAny)
             socket.off(messageEventName, handleNewMessage)
             socket.off(chatEventName, handleChatEvent)
+            socket.off("chat.updated", handleChatUpdated)
             socket.off('error', handleError)
         }
-    }, [id, dispatch])
+    }, [id, dispatch, debugTimeline])
 
     useEffect(() => {
         const inicio = async () => {
             if (!id) return
+            // Obtener número de conversación
+            try {
+                const chatData = await axios.get(`${import.meta.env.VITE_URL_BACKEND}/chats/${id}`, {
+                    headers: { authorization: `Bearer ${token}` }
+                })
+                setConversacionNumero(chatData?.data?.chat?.lastConversacionNumero ?? null)
+            } catch { setConversacionNumero(null) }
             setTimelineCursor(null)
             setTimelineHasMore(false)
             const data = await findChatTimeline(token!, id!, { limit: 200 })
@@ -465,9 +582,15 @@ const Chats = () => {
 
     const handleTagConfirm = async (_tagId: string) => {
         try {
-            const chatos = await getChats(token, '1', '100', chatListFilters)
-            const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
-            dispatch(setChats(incoming))
+            if (!id) return
+            const chatResp = await findChatById(token, id)
+            if ((chatResp as any)?.statusCode === 401) {
+                dispatch(openSessionExpired())
+                return
+            }
+            if ((chatResp as any)?.chat) {
+                patchCurrentChatInStore((chatResp as any).chat)
+            }
         } catch (error) { console.error('Error refreshing chats after tag assignment:', error) }
     }
 
@@ -478,9 +601,15 @@ const Chats = () => {
 
     const handleRemoveTagSuccess = async () => {
         try {
-            const chatos = await getChats(token, '1', '100', chatListFilters)
-            const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
-            dispatch(setChats(incoming))
+            if (!id) return
+            const chatResp = await findChatById(token, id)
+            if ((chatResp as any)?.statusCode === 401) {
+                dispatch(openSessionExpired())
+                return
+            }
+            if ((chatResp as any)?.chat) {
+                patchCurrentChatInStore((chatResp as any).chat)
+            }
         } catch (error) { console.error('Error refreshing chats:', error) }
     }
 
@@ -489,6 +618,7 @@ const Chats = () => {
             e.preventDefault()
             const trimmedMessage = mensaje.trim()
             const hasFiles = archivos.length > 0
+            const mentions = selectedMentionUsers.map((user) => ({ userId: user.id }))
             if (trimmedMessage.length === 0 && !hasFiles) { setErrorModalMessage('Debe escribir un mensaje'); setIsErrorModalOpen(true); return }
             if (isSendingRef.current) return
             if (lastSentMessageRef.current === trimmedMessage && !hasFiles) return
@@ -512,10 +642,11 @@ const Chats = () => {
                     setMensajes((prev) => prev.filter((m: any) => m?.id !== clientId))
                 }
                 if (trimmedMessage.length > 0) {
-                    if (socket && socket.connected) { socket.emit("enviar-mensaje", { mensaje: trimmedMessage, chatId: id, telefono, token }) }
-                    else { await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, { chatId: id, text: trimmedMessage }, { headers: { Authorization: `Bearer ${token}` } }) }
+                    if (socket && socket.connected) { socket.emit("enviar-mensaje", { mensaje: trimmedMessage, chatId: id, telefono, token, mentions }) }
+                    else { await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, { chatId: id, text: trimmedMessage, mentions }, { headers: { Authorization: `Bearer ${token}` } }) }
                     lastSentMessageRef.current = trimmedMessage
                     setMensaje("")
+                    setSelectedMentionUsers([])
                 }
                 for (const { item, file } of uploadQueue) {
                     const formData = new FormData()
@@ -530,14 +661,16 @@ const Chats = () => {
                 return
             }
             if (socket && socket.connected) {
-                socket.emit("enviar-mensaje", { mensaje, chatId: id, telefono, token })
+                socket.emit("enviar-mensaje", { mensaje, chatId: id, telefono, token, mentions })
                 lastSentMessageRef.current = trimmedMessage
                 setMensaje('')
                 setArchivos([])
+                setSelectedMentionUsers([])
                 isSendingRef.current = false
             } else {
-                await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, { chatId: id, text: mensaje }, { headers: { Authorization: `Bearer ${token}` } })
+                await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, { chatId: id, text: mensaje, mentions }, { headers: { Authorization: `Bearer ${token}` } })
                 setMensaje('')
+                setSelectedMentionUsers([])
                 isSendingRef.current = false
             }
         } catch (error) { console.log(error); isSendingRef.current = false }
@@ -580,9 +713,11 @@ const Chats = () => {
                         setTimelineHasMore(Boolean((data as any)?.hasMore))
                     } catch (e) { }
                 }
-                socket.emit("archivar", objMsj, (ack: any) => { if (ack?.ok) { refreshTimeline() } })
-                refreshTimeline()
-                setTimeout(refreshTimeline, 800)
+                socket.emit("archivar", objMsj, (ack: any) => {
+                    if (ack?.ok) {
+                        refreshTimeline()
+                    }
+                })
             }
             setIsArchiveModalOpen(false);
         } catch (error) { console.log(error); }
@@ -601,24 +736,8 @@ const Chats = () => {
                 setIsDeleteModalOpen(false);
                 setMensajes([]); setMensaje(''); setArchivos([]); setCondChat(false)
                 dispatch(clearMentionChatSelection()); dispatch(clearBulkReadChatSelection())
-                try {
-                    const chatos = await getChats(token, '1', '100', chatListFilters)
-                    if ((chatos as any)?.statusCode === 401) { dispatch(openSessionExpired()) }
-                    else if (Array.isArray((chatos as any)?.chats)) {
-                        const incoming = (chatos as any).chats as any[]
-                        const base = Array.isArray(chats) ? chats.filter((c: any) => c?.id !== id) : []
-                        const map = new Map<string, any>()
-                        base.forEach((c: any) => { if (c?.id) map.set(c.id, c) })
-                        incoming.forEach((c: any) => { if (c?.id) map.set(c.id, c) })
-                        const merged = Array.from(map.values()).sort((a: any, b: any) => {
-                            const aMs = new Date(a?.lastMessageAt || a?.updatedAt || a?.createdAt || 0).getTime()
-                            const bMs = new Date(b?.lastMessageAt || b?.updatedAt || b?.createdAt || 0).getTime()
-                            if (aMs !== bMs) return bMs - aMs
-                            return `${b?.id ?? ""}`.localeCompare(`${a?.id ?? ""}`)
-                        })
-                        dispatch(setChats(merged))
-                    }
-                } catch { }
+                const next = (Array.isArray(chatsRef.current) ? chatsRef.current : []).filter((c: any) => c?.id !== id)
+                dispatch(setChats(next))
                 navigate('/dashboard/chats')
             }
         } catch (error) {
@@ -679,6 +798,7 @@ const Chats = () => {
     const handleChangeText = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setMensaje(value);
+        setSelectedMentionUsers((prev) => prev.filter((user) => value.includes(`@${getMentionHandle(user)}`)))
         const caretPos = e.target.selectionStart ?? value.length
         const leftText = value.slice(0, caretPos)
         const slashMatch = leftText.match(/\/(\w*)$/)
@@ -707,10 +827,13 @@ const Chats = () => {
     }
 
     const handleSelectUser = (user: any) => {
-        const toHandle = (u: Usuario) => (u?.nombre || 'usuario').trim().toLowerCase().replace(/\s+/g, '')
-        const handle = toHandle(user)
+        const handle = getMentionHandle(user as Usuario)
         setMensaje((prev) => prev.replace(/@([^\s@]*)$/, `@${handle} `));
-        setSelectedMentionUser(user as Usuario)
+        setSelectedMentionUsers((prev) => {
+            const next = [...prev]
+            if (!next.some((it) => it.id === user.id)) next.push(user as Usuario)
+            return next
+        })
         setShowList(false);
     };
 
@@ -746,6 +869,9 @@ const Chats = () => {
                                     <span>{nombre}</span>
                                     <span>+{telefono}</span>
                                 </p>
+                                {conversacionNumero && (
+                                    <span className='chat-conversacion-id'>IdConversación: {conversacionNumero}</span>
+                                )}
                                 <div className='header-chat-actions'>
                                     {canToggleBot && (
                                         <button
@@ -815,8 +941,26 @@ const Chats = () => {
                                                 <div className='contenedor-nota-privada' key={key}>
                                                     <div className='mensaje-nota-privada'>
                                                         <span className='mensaje-nota-privada-text'>{resolveEventText(msj)}</span>
+                                                        {msj?.payload?.imageUrl && (
+                                                            <img
+                                                                src={msj.payload.imageUrl}
+                                                                alt="imagen nota privada"
+                                                                className="chat-media-img"
+                                                                style={{ maxWidth: '300px', borderRadius: '0.5rem', marginTop: '0.5rem', cursor: 'pointer' }}
+                                                                loading="lazy"
+                                                                onClick={() => setDocPreview({ url: msj.payload.imageUrl, name: 'Imagen nota privada' })}
+                                                            />
+                                                        )}
                                                         {msj?.payload?.authorName && <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>}
                                                     </div>
+                                                    <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
+                                                </div>
+                                            )
+                                        }
+                                        if (msj?.type === "NEW_CONVERSATION_STARTED") {
+                                            return (
+                                                <div className='contenedor-nueva-conversacion' key={key}>
+                                                    <p className='mensaje-nueva-conversacion'>{resolveEventText(msj)}</p>
                                                     <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
                                                 </div>
                                             )
@@ -841,6 +985,9 @@ const Chats = () => {
                                             <div className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
                                                 <MessageContent msg={msj} />
                                             </div>
+                                            {!msj.msg_entrada && msj?.authorName && (
+                                                <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.authorName)}</span>
+                                            )}
                                             <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
                                         </div>
                                     )
@@ -875,6 +1022,7 @@ const Chats = () => {
                                 )}
                                 {condChat ? (
                                     <form action="" className='enviar-msj gap-1 relative w-full' onSubmit={handleClickBtn}>
+                                        <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>Nota Privada</button>
                                         <textarea
                                             placeholder='Escriba un mensaje'
                                             className='input-msg'
@@ -924,11 +1072,26 @@ const Chats = () => {
                                             </ul>
                                         )}
                                         <button type='button' className='btn-msg btn-plantilla' onClick={() => dispatch(switchModalPlantilla())}>Plantilla</button>
-                                        <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>Nota Privada</button>
                                         <button type='submit' className='btn-msg' disabled={isSendingRef.current}>Enviar</button>
                                     </form>
                                 ) : (
                                     <div className='no-chat'>
+                                        <button type='button' className='btn-msg btn-nota-privada' onClick={handleNotaPrivada}>Nota Privada</button>
+                                        <textarea
+                                            placeholder='Escribir nota privada...'
+                                            className='input-msg'
+                                            value={mensaje}
+                                            onChange={handleChangeText}
+                                            onPaste={handlePasteInput}
+                                            ref={mensajeInputRef}
+                                            rows={1}
+                                            style={{
+                                                resize: 'none',
+                                                overflowY: 'auto',
+                                                maxHeight: '120px',
+                                                lineHeight: '1.5rem',
+                                            }}
+                                        />
                                         <button onClick={() => dispatch(switchModalPlantilla())} className="btn flex gap-2 rounded-xl cursor-pointer bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 shadow transition duration-200">
                                             Enviar plantilla
                                         </button>
@@ -1110,3 +1273,5 @@ const Chats = () => {
 }
 
 export default Chats
+
+

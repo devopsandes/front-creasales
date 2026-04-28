@@ -17,31 +17,63 @@ export type MentionChatsResponse = {
   items: MentionChatItem[]
 } & Partial<ErrorResponse>
 
+const TTL_MS = 5000
+const unreadCache = new Map<string, { value: MentionsUnreadCountResponse; expiresAt: number }>()
+const chatsCache = new Map<string, { value: MentionChatsResponse; expiresAt: number }>()
+const pendingUnread = new Map<string, Promise<MentionsUnreadCountResponse>>()
+const pendingChats = new Map<string, Promise<MentionChatsResponse>>()
+
+const getCached = <T>(store: Map<string, { value: T; expiresAt: number }>, key: string): T | null => {
+  const entry = store.get(key)
+  if (!entry) return null
+  if (entry.expiresAt <= Date.now()) {
+    store.delete(key)
+    return null
+  }
+  return entry.value
+}
+
 /**
  * Backend requerido:
  * - GET /mentions/unread-count (auth requerida; roles USER|ADMIN|ROOT; scope empresa)
  */
 export const getMentionsUnreadCount = async (token: string): Promise<MentionsUnreadCountResponse> => {
-  try {
-    const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/unread-count`
-    const headers = { authorization: `Bearer ${token}` }
-    const { data } = await axios.get<any>(url, { headers })
+  const cacheKey = token
+  const cached = getCached(unreadCache, cacheKey)
+  if (cached) return cached
 
-    return {
-      statusCode: data?.statusCode ?? 200,
-      count: typeof data?.count === "number" ? data.count : 0,
-    }
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      return {
-        statusCode: error.response.status,
-        count: 0,
-        message: error.response.data?.message,
-        error: error.response.data?.error,
+  const inflight = pendingUnread.get(cacheKey)
+  if (inflight) return inflight
+
+  const task = (async (): Promise<MentionsUnreadCountResponse> => {
+    try {
+      const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/unread-count`
+      const headers = { authorization: `Bearer ${token}` }
+      const { data } = await axios.get<any>(url, { headers })
+
+      const payload: MentionsUnreadCountResponse = {
+        statusCode: data?.statusCode ?? 200,
+        count: typeof data?.count === "number" ? data.count : 0,
       }
+      unreadCache.set(cacheKey, { value: payload, expiresAt: Date.now() + TTL_MS })
+      return payload
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return {
+          statusCode: error.response.status,
+          count: 0,
+          message: error.response.data?.message,
+          error: error.response.data?.error,
+        }
+      }
+      throw error
+    } finally {
+      pendingUnread.delete(cacheKey)
     }
-    throw error
-  }
+  })()
+
+  pendingUnread.set(cacheKey, task)
+  return task
 }
 
 /**
@@ -52,29 +84,45 @@ export const getMentionChats = async (
   token: string,
   params?: { unreadOnly?: boolean; page?: number; limit?: number }
 ): Promise<MentionChatsResponse> => {
-  try {
-    const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/chats`
-    const headers = { authorization: `Bearer ${token}` }
-    const query = {
-      unreadOnly: params?.unreadOnly ? 1 : 0,
-      page: params?.page ?? 1,
-      limit: params?.limit ?? 100,
-    }
-    const { data } = await axios.get<any>(url, { headers, params: query })
-
-    const items = Array.isArray(data?.items) ? data.items : []
-    return { statusCode: data?.statusCode ?? 200, items }
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      return {
-        statusCode: error.response.status,
-        items: [],
-        message: error.response.data?.message,
-        error: error.response.data?.error,
-      }
-    }
-    throw error
+  const query = {
+    unreadOnly: params?.unreadOnly ? 1 : 0,
+    page: params?.page ?? 1,
+    limit: params?.limit ?? 100,
   }
+  const cacheKey = `${token}:${query.unreadOnly}:${query.page}:${query.limit}`
+  const cached = getCached(chatsCache, cacheKey)
+  if (cached) return cached
+
+  const inflight = pendingChats.get(cacheKey)
+  if (inflight) return inflight
+
+  const task = (async (): Promise<MentionChatsResponse> => {
+    try {
+      const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/chats`
+      const headers = { authorization: `Bearer ${token}` }
+      const { data } = await axios.get<any>(url, { headers, params: query })
+
+      const items = Array.isArray(data?.items) ? data.items : []
+      const payload: MentionChatsResponse = { statusCode: data?.statusCode ?? 200, items }
+      chatsCache.set(cacheKey, { value: payload, expiresAt: Date.now() + TTL_MS })
+      return payload
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        return {
+          statusCode: error.response.status,
+          items: [],
+          message: error.response.data?.message,
+          error: error.response.data?.error,
+        }
+      }
+      throw error
+    } finally {
+      pendingChats.delete(cacheKey)
+    }
+  })()
+
+  pendingChats.set(cacheKey, task)
+  return task
 }
 
 /**
@@ -90,6 +138,12 @@ export const markMentionsRead = async (
     const headers = { authorization: `Bearer ${token}` }
     const body = Array.isArray(chatIdOrIds) ? { chatIds: chatIdOrIds } : { chatId: chatIdOrIds }
     const { data } = await axios.post<any>(url, body, { headers })
+
+    unreadCache.clear()
+    chatsCache.clear()
+    pendingUnread.clear()
+    pendingChats.clear()
+
     return { statusCode: data?.statusCode ?? 200 }
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -102,5 +156,3 @@ export const markMentionsRead = async (
     throw error
   }
 }
-
-

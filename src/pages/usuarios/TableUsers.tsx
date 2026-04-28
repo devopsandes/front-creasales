@@ -6,8 +6,7 @@ import { Usuario } from "../../interfaces/auth.interface";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import CrearUsuarioModal from "../../components/modal/CrearUsuarioModal";
-import { getChats } from "../../services/chats/chats.services";
-import { ChatState } from "../../interfaces/chats.interface";
+import { getChatCountsByOperator } from "../../services/chats/chats.services";
 import { openModalUser, openModalEditUser } from "../../app/slices/actionSlice";
 import EditarUsuarioModal from "../../components/modal/EditarUsuarioModal";
 import { toast } from 'react-toastify';
@@ -24,6 +23,7 @@ const TableUsers = () => {
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const [chatsCounts, setChatsCounts] = useState<{ [userId: string]: number }>({});
   const tooltipRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
+  const initializedRef = useRef(false);
 
   const token = localStorage.getItem('token') || '';
   const role = localStorage.getItem('role') || '';
@@ -41,6 +41,8 @@ const TableUsers = () => {
   }, [])
 
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
     const ejecucion = async () => {
 
       const respUsers = await usuariosXRole(role, token);
@@ -53,18 +55,17 @@ const TableUsers = () => {
 
       setUsers(respUsers.users);
 
-      // Obtener todos los chats para contar los asignados a cada usuario
+      // Obtener contadores de chats asignados por operador (query agregada, liviana)
       try {
-        const respChats = await getChats(token, '1', '1000'); // Obtener muchos chats para contar todos
-
-        // Contar chats asignados a cada usuario
+        const respCounts = await getChatCountsByOperator(token);
+        const rawCounts = Array.isArray((respCounts as any)?.counts) ? (respCounts as any).counts : [];
+        const countsMap = new Map<string, number>(
+          rawCounts
+            .filter((it: any) => it?.operatorId)
+            .map((it: any) => [String(it.operatorId), Number(it.assignedCount) || 0])
+        );
         const counts: { [userId: string]: number } = {};
-
-        respUsers.users.forEach(user => {
-          counts[user.id] = respChats.chats.filter((chat: ChatState) =>
-            chat.operador?.id === user.id
-          ).length;
-        });
+        respUsers.users.forEach(user => { counts[user.id] = countsMap.get(user.id) ?? 0; });
 
         setChatsCounts(counts);
       } catch (error) {
@@ -153,6 +154,20 @@ const TableUsers = () => {
       return;
     }
     setUsers(respUsers.users);
+    try {
+      const respCounts = await getChatCountsByOperator(token);
+      const rawCounts = Array.isArray((respCounts as any)?.counts) ? (respCounts as any).counts : [];
+      const countsMap = new Map<string, number>(
+        rawCounts
+          .filter((it: any) => it?.operatorId)
+          .map((it: any) => [String(it.operatorId), Number(it.assignedCount) || 0])
+      );
+      const counts: { [userId: string]: number } = {};
+      respUsers.users.forEach(user => { counts[user.id] = countsMap.get(user.id) ?? 0; });
+      setChatsCounts(counts);
+    } catch {
+      // noop
+    }
     setLoading(false);
   }
 

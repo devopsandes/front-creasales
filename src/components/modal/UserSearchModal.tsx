@@ -1,20 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {  useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { closeModal, setChats } from '../../app/slices/actionSlice';
-import {  UserCircle2, X, UserPlus, Search } from 'lucide-react';
+import { UserCircle2, X, UserPlus, Search } from 'lucide-react';
 import { asignarOperador, usuariosXRole } from '../../services/auth/auth.services';
 import { RootState } from '../../app/store';
-import {  Usuario } from '../../interfaces/auth.interface';
-import { getChats } from '../../services/chats/chats.services';
+import { Usuario } from '../../interfaces/auth.interface';
 import SuccessModal from './SuccessModal';
 import ErrorModal from './ErrorModal';
 import './user-search-modal.css';
+import { desasignarChat } from '../../services/chats/chats.services';
 
 
 
 
-const UserSearchModal = ( ) => {
+const UserSearchModal = () => {
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<Usuario | null>(null);
@@ -41,16 +41,18 @@ const UserSearchModal = ( ) => {
     activo: false
   }]);
   const chat_id = useParams().id || '';
- 
+
   const dispatch = useDispatch();
   const modalView = useSelector((state: RootState) => state.action.modal);
-  const chatListFilters = useSelector((state: RootState) => state.action.chatListFilters);
-  
-  const token  = localStorage.getItem('token') || '';
+  const chats = useSelector((state: RootState) => state.action.chats);
+
+  const token = localStorage.getItem('token') || '';
+  const usersLoadedRef = useRef(false);
 
   useEffect(() => {
+    if (!modalView) return;
+    if (usersLoadedRef.current) return;
     const ejecucion = async () => {
-
       const respUsers = await usuariosXRole('', token);
 
       const list: Usuario[] = Array.isArray((respUsers as any)?.users)
@@ -62,11 +64,11 @@ const UserSearchModal = ( ) => {
         list.forEach(u => map.set(u.id, u));
         return Array.from(map.values());
       });
+      usersLoadedRef.current = true;
 
     }
     ejecucion();
-
-  }, [])
+  }, [modalView, token])
 
   // Resetear selección cuando se cierra el modal
   useEffect(() => {
@@ -90,43 +92,53 @@ const UserSearchModal = ( ) => {
     setSelectedUser(user || null);
   }
 
+  const patchChatAssignmentLocal = (patch: any) => {
+    const base = Array.isArray(chats) ? chats : []
+    const next = base.map((chat: any) => {
+      if (chat?.id !== chat_id) return chat
+      return {
+        ...chat,
+        ...patch,
+        operador: patch?.operador !== undefined ? patch.operador : chat?.operador,
+      }
+    })
+    dispatch(setChats(next))
+  }
+
   const handleAsignar = async () => {
     if (!selectedUserId) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       const resp = await asignarOperador(chat_id, selectedUserId, token);
 
-      if(resp.statusCode === 200) {
+      if (resp.statusCode === 200) {
         // Guardar el nombre del usuario asignado antes de resetear
         const userName = selectedUser ? `${selectedUser.nombre} ${selectedUser.apellido}` : 'el usuario seleccionado';
         setAssignedUserName(userName);
-        
-        // Actualizar la lista de chats
-        try {
-          const chatos = await getChats(token, '1', '100', chatListFilters);
-          const incoming = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : [];
-          // Reemplazo directo para evitar reintroducir chats que ya no cumplen filtros (reduce "parpadeo").
-          dispatch(setChats(incoming));
-        } catch (error) {
-          // Error silencioso al actualizar chats
-        }
+
+        const isBot = selectedUserId === 'BOT'
+        patchChatAssignmentLocal({
+          assignment: isBot ? 'bot' : 'assigned',
+          operador: isBot ? null : (selectedUser || null),
+          botEnabled: isBot ? true : undefined,
+        })
 
         // Cerrar el modal de asignación primero
         dispatch(closeModal());
         setSelectedUserId(null);
         setSelectedUser(null);
         setSearch('');
-        
+
         // Mostrar modal de éxito después de un pequeño delay para asegurar que el modal principal se cierre primero
         setTimeout(() => {
           setShowSuccessModal(true);
         }, 100);
       } else {
         // Mostrar modal de error
-        const errorMsg = Array.isArray(resp.message) 
-          ? resp.message.join(', ') 
+        const errorMsg = Array.isArray(resp.message)
+          ? resp.message.join(', ')
           : (resp.message || 'Error al asignar el chat. Por favor, intenta nuevamente.');
         setErrorMessage(errorMsg);
         setShowErrorModal(true);
@@ -151,9 +163,9 @@ const UserSearchModal = ( ) => {
     }
   }
 
-  
 
- 
+
+
 
   return (
     <>
@@ -163,7 +175,7 @@ const UserSearchModal = ( ) => {
             <button className="assign-modal-close" onClick={handleCancelar}>
               <X size={20} />
             </button>
-            
+
             <div className="assign-modal-icon">
               <UserPlus size={32} />
             </div>
@@ -182,11 +194,41 @@ const UserSearchModal = ( ) => {
               />
             </div>
 
+            <button
+              className="assign-modal-unassign-button"
+              onClick={async () => {
+                setIsLoading(true);
+                try {
+                  const resp = await desasignarChat(token, chat_id);
+                  if (resp.statusCode === 200) {
+                    patchChatAssignmentLocal({
+                      assignment: 'unassigned',
+                      operador: null,
+                    })
+                    dispatch(closeModal());
+                    setAssignedUserName('Sin asignar');
+                    setTimeout(() => setShowSuccessModal(true), 100);
+                  } else {
+                    setErrorMessage(resp?.message || 'Error al desasignar');
+                    setShowErrorModal(true);
+                  }
+                } catch {
+                  setErrorMessage('Error inesperado');
+                  setShowErrorModal(true);
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              disabled={isLoading}
+            >
+              Enviar a Sin asignar
+            </button>
+
             <ul className="assign-modal-user-list">
               {filteredUsers.length > 0 ? (
                 filteredUsers.map(user => (
-                  <li 
-                    key={user.id} 
+                  <li
+                    key={user.id}
                     className={`assign-modal-user-item ${selectedUserId === user.id ? 'assign-modal-user-item--selected' : ''}`}
                     onClick={() => handleSelectUser(user.id)}
                   >
@@ -205,13 +247,13 @@ const UserSearchModal = ( ) => {
             </ul>
 
             <div className="assign-modal-actions">
-              <button 
+              <button
                 className="assign-modal-button assign-modal-cancel"
                 onClick={handleCancelar}
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 className="assign-modal-button assign-modal-confirm"
                 onClick={handleAsignar}
                 disabled={!selectedUserId || isLoading}
@@ -222,7 +264,7 @@ const UserSearchModal = ( ) => {
           </div>
         </div>
       )}
-      
+
       <SuccessModal
         isOpen={showSuccessModal}
         onClose={() => {
@@ -232,7 +274,7 @@ const UserSearchModal = ( ) => {
         title="Asignación exitosa"
         message={`El chat ha sido asignado correctamente a ${assignedUserName || 'el usuario seleccionado'}.`}
       />
-      
+
       <ErrorModal
         isOpen={showErrorModal}
         onClose={() => {

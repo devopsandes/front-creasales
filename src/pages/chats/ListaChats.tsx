@@ -1,4 +1,4 @@
-import { Link, Outlet, useParams, useSearchParams } from "react-router-dom"
+import { Link, Outlet, useParams, useSearchParams, useNavigate } from "react-router-dom"
 import { useEffect, useRef, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 // import { dividirArrayEnTres } from "../../utils/functions"
@@ -10,12 +10,13 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
 import { Tag as TagIcon, User } from "lucide-react"
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState, bumpMentionsRefreshNonce } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
-import { findChatById, getChatCounts, getChats } from "../../services/chats/chats.services"
+import { findChatById, getChatCounts, getChats, searchByConversacion } from "../../services/chats/chats.services"
 import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services"
+import { perfMark } from "../../utils/perfTracker"
 
 // Función auxiliar para capitalizar correctamente el texto
 const capitalizeText = (text: string | undefined | null): string => {
@@ -46,6 +47,7 @@ const ListaChats = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const selectRef = useRef<HTMLSelectElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const navigate = useNavigate()
 
     const CHAT_PAGE_LIMIT = 100
     const SCROLL_BOTTOM_THRESHOLD_PX = 260
@@ -58,6 +60,7 @@ const ListaChats = () => {
     const [sinAsignar, setSinAsignar] = useState<ChatState[]>([])
     const [menciones, setMenciones] = useState<ChatState[]>([])
     const [styleBtn, setStyleBtn] = useState<string>('otros')
+    const [searchConversacion, setSearchConversacion] = useState<string>('')
 
     const [loading, setLoading] = useState<boolean>(true)
     const [page, setPage] = useState<number>(1)
@@ -107,19 +110,12 @@ const ListaChats = () => {
     const id = jwtDecode<{ id: string }>(token).id;
 
     const [mentionChatIds, setMentionChatIds] = useState<string[]>([])
-    const pendingChatRefreshRef = useRef<Record<string, number>>({})
     const pendingCountsRefreshRef = useRef<number | null>(null)
+    const mentionFetchInFlightRef = useRef(false)
+    const mentionFetchLastAtRef = useRef(0)
 
     const extractMentionChatId = (it: any): string | null => {
         return it?.chatId || it?.chat_id || it?.chat?.id || it?.id || null
-    }
-
-    const extractChatIdFromEventName = (eventName: string): string | null => {
-        if (!eventName) return null
-        if (eventName.startsWith('chat-event-')) return eventName.slice('chat-event-'.length)
-        if (eventName.startsWith('new-message-')) return eventName.slice('new-message-'.length)
-        if (eventName.startsWith('chat-updated-')) return eventName.slice('chat-updated-'.length)
-        return null
     }
 
     const pickChatFromPayload = (payload: any): ChatState | null => {
@@ -136,13 +132,34 @@ const ListaChats = () => {
         return null
     }
 
+    
+    const dedupeTags = (tags: any): any[] => {
+        if (!Array.isArray(tags)) return []
+        const map = new Map<string, any>()
+        tags.forEach((tag: any) => {
+            if (tag?.id) { const key = String(tag.id); if (!map.has(key)) map.set(key, tag) }
+        })
+        return Array.from(map.values())
+    }
+
+    const normalizeChat = (chat: any): any => {
+        if (!chat || typeof chat !== 'object') return chat
+        return { ...chat, tags: dedupeTags(chat.tags) }
+    }
     const mergeChatPayload = (existing: ChatState | undefined, incoming: ChatState): ChatState => {
-        if (!existing) return incoming
-        const merged: any = { ...existing, ...incoming }
+        if (!existing) return normalizeChat(incoming)
+        const merged: any = { ...existing, ...normalizeChat(incoming) }
         if (incoming?.cliente == null) merged.cliente = existing.cliente
         if (incoming?.operador == null) merged.operador = existing.operador
         if (!Array.isArray(incoming?.tags)) merged.tags = existing.tags
+        merged.tags = dedupeTags(merged.tags)
         return merged
+    }
+
+    const extractMentionChat = (it: any): ChatState | null => {
+        const chat = it?.chat
+        if (chat && typeof chat === 'object' && typeof chat.id === 'string') return chat as ChatState
+        return null
     }
 
 
@@ -192,10 +209,10 @@ const ListaChats = () => {
     const mergeChatsById = (current: ChatState[], incoming: ChatState[]): ChatState[] => {
         const map = new Map<string, ChatState>()
             ; (Array.isArray(current) ? current : []).forEach((c) => {
-                if (c?.id) map.set(c.id, c)
+                if (c?.id) map.set(c.id, normalizeChat(c))
             })
             ; (Array.isArray(incoming) ? incoming : []).forEach((c) => {
-                if (c?.id) map.set(c.id, c)
+                if (c?.id) map.set(c.id, normalizeChat(c))
             })
         return Array.from(map.values()).sort(compareChatsForStore)
     }
@@ -473,18 +490,70 @@ const ListaChats = () => {
     // Realtime: cuando cambia el contador global (por socket), refrescamos la lista de chatIds mencionados
     useEffect(() => {
         if (!token) return
+        const now = Date.now()
+        if (mentionFetchInFlightRef.current) return
+        if (now - mentionFetchLastAtRef.current < 800) return
+
+        mentionFetchInFlightRef.current = true
+        mentionFetchLastAtRef.current = now
+
         getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 })
             .then((resp: any) => {
                 const items = Array.isArray(resp?.items) ? resp.items : []
                 const ids: string[] = []
+                const embeddedChats: ChatState[] = []
                 items.forEach((it: any) => {
                     const chatId = extractMentionChatId(it)
                     if (chatId) ids.push(chatId)
+                    const embeddedChat = extractMentionChat(it)
+                    if (embeddedChat?.id) embeddedChats.push(embeddedChat)
                 })
                 setMentionChatIds(Array.from(new Set(ids)))
+                if (embeddedChats.length > 0) {
+                    const merged = mergeChatsById(chatsRef.current, embeddedChats)
+                    dispatch(setChats(merged.slice(0, 1000)))
+                }
             })
             .catch(() => { })
-    }, [mentionUnreadCount, token, mentionsRefreshNonce])
+            .finally(() => {
+                mentionFetchInFlightRef.current = false
+            })
+    }, [token, mentionsRefreshNonce, dispatch])
+
+    useEffect(() => {
+        if (!token) return
+        if (styleBtn !== 'menciones') return
+        if (!Array.isArray(mentionChatIds) || mentionChatIds.length === 0) return
+
+        const existingIds = new Set((Array.isArray(chatsRef.current) ? chatsRef.current : []).map((chat) => chat.id))
+        const missingIds = mentionChatIds.filter((chatId) => !existingIds.has(chatId))
+        if (missingIds.length === 0) return
+
+        let cancelled = false
+        const hydrateMentionChats = async () => {
+            const responses = await Promise.all(
+                missingIds.map((chatId) => findChatById(token, chatId).catch(() => null))
+            )
+
+            if (cancelled) return
+            if (responses.some((resp: any) => resp?.statusCode === 401)) {
+                dispatch(openSessionExpired())
+                return
+            }
+
+            const incoming = responses
+                .map((resp: any) => resp?.chat)
+                .filter((chat: any) => chat && typeof chat.id === 'string') as ChatState[]
+
+            if (incoming.length > 0) {
+                const merged = mergeChatsById(chatsRef.current, incoming)
+                dispatch(setChats(merged.slice(0, 1000)))
+            }
+        }
+
+        hydrateMentionChats().catch(() => { })
+        return () => { cancelled = true }
+    }, [styleBtn, mentionChatIds, token, dispatch])
 
 
     const loadMoreChats = async () => {
@@ -562,98 +631,37 @@ const ListaChats = () => {
             }, 400)
         }
 
-        const refreshChatById = async (chatId: string) => {
-            if (!token || !chatId) return
-            const resp: any = await findChatById(token, chatId)
-            if (resp?.statusCode === 401) {
-                dispatch(openSessionExpired())
-                return
-            }
-            const incoming = resp?.chat as ChatState | undefined
-            if (!incoming || !incoming?.id) {
-                return
-            }
-            const existing = chatsRef.current.find((c) => c.id === incoming.id)
-            const normalizedIncoming = mergeChatPayload(existing, incoming)
-            if (existing) {
-                const nextAssignment = getAssignment(normalizedIncoming)
-                const prevOperadorId = existing?.operador?.id ?? null
-                const nextOperadorId = normalizedIncoming?.operador?.id ?? null
-                const isNewAssignment =
-                    nextAssignment === 'assigned' && nextOperadorId && prevOperadorId !== nextOperadorId
-                if (isNewAssignment) {
-                    try {
-                        const audio = assignAudioRef.current
-                        audio.currentTime = 0
-                        audio.playbackRate = 0.9
-                        audio.play().catch(() => { })
-                    } catch { }
-                }
-            } else if (normalizedIncoming?.operador?.id) {
-                try {
-                    const audio = assignAudioRef.current
-                    audio.currentTime = 0
-                    audio.playbackRate = 0.9
-                    audio.play().catch(() => { })
-                } catch { }
-            }
-            const merged = mergeChatsById(chatsRef.current, [normalizedIncoming])
-            dispatch(setChats(merged.slice(0, MAX_CACHE)))
-            dispatch(setChatListCacheMeta({ chatListUpdatedAt: Date.now() }))
-        }
-
-        const scheduleChatRefresh = (chatId: string) => {
-            if (!chatId) return
-            if (pendingChatRefreshRef.current[chatId]) return
-            pendingChatRefreshRef.current[chatId] = window.setTimeout(async () => {
-                delete pendingChatRefreshRef.current[chatId]
-                try {
-                    await refreshChatById(chatId)
-                } catch { }
-            }, 250)
-        }
-
         const handleNuevoChat = async (_chat: ChatState) => {
+            const t0 = performance.now()
             try {
                 audioRef.current.currentTime = 0
                 await audioRef.current.play()
             } catch {
                 // El navegador puede bloquear autoplay si no hubo interacción
             }
-            try {
-                const filters = activeFiltersRef.current || {}
-                const chatos = await getChats(token, '1', `${CHAT_PAGE_LIMIT}`, filters)
-                const firstPage: ChatState[] = Array.isArray((chatos as any)?.chats) ? (chatos as any).chats : []
-                const merged = mergeChatsById(chatsRef.current, firstPage)
+            perfMark('socket.nuevo-chat.received', { chatId: _chat?.id ?? null })
+            if (_chat?.id) {
+                const existing = chatsRef.current.find((c) => c.id === _chat.id)
+                const normalizedIncoming = mergeChatPayload(existing, _chat)
+                const merged = mergeChatsById(chatsRef.current, [normalizedIncoming])
                 dispatch(setChats(merged.slice(0, MAX_CACHE)))
-                setHasMore(resolveHasMore(chatos, CHAT_PAGE_LIMIT))
-                dispatch(setChatListCacheMeta({
-                    chatListHasMore: resolveHasMore(chatos, CHAT_PAGE_LIMIT),
-                    chatListUpdatedAt: Date.now(),
-                }))
-                scheduleCountsRefresh()
-            } catch { }
+                dispatch(setChatListCacheMeta({ chatListUpdatedAt: Date.now() }))
+                requestAnimationFrame(() => {
+                    perfMark('ui.chatlist.patched', {
+                        source: 'nuevo-chat',
+                        chatId: _chat.id,
+                        latencyMs: Math.round(performance.now() - t0),
+                    })
+                })
+            }
+            scheduleCountsRefresh()
         }
 
-        const handleRealtimeEvent = (eventName: string, payload: any) => {
-            if (!eventName) return
-            if (
-                !eventName.startsWith('chat-event-') &&
-                !eventName.startsWith('new-message-') &&
-                !eventName.startsWith('chat-updated-')
-            ) {
-                return
-            }
-
-            const chatId =
-                extractChatIdFromEventName(eventName) ||
-                payload?.chatId ||
-                payload?.chat_id ||
-                payload?.chat?.id ||
-                payload?.id
-
+        const handleChatUpdated = (payload: any) => {
+            const t0 = performance.now()
             const chatFromPayload = pickChatFromPayload(payload)
             if (chatFromPayload?.id) {
+                perfMark('socket.chat.updated.received', { chatId: chatFromPayload.id })
                 const existing = chatsRef.current.find((c) => c.id === chatFromPayload.id)
                 const normalized = mergeChatPayload(existing, chatFromPayload)
                 if (existing && normalized) {
@@ -674,14 +682,17 @@ const ListaChats = () => {
                 const merged = mergeChatsById(chatsRef.current, [normalized])
                 dispatch(setChats(merged.slice(0, MAX_CACHE)))
                 dispatch(setChatListCacheMeta({ chatListUpdatedAt: Date.now() }))
+                requestAnimationFrame(() => {
+                    perfMark('ui.chatlist.patched', {
+                        source: 'chat.updated',
+                        chatId: chatFromPayload.id,
+                        latencyMs: Math.round(performance.now() - t0),
+                    })
+                })
                 scheduleCountsRefresh()
                 return
             }
-
-            if (chatId) {
-                scheduleChatRefresh(`${chatId}`)
-                scheduleCountsRefresh()
-            }
+            scheduleCountsRefresh()
         }
 
         const handleError = (error: any) => {
@@ -694,15 +705,13 @@ const ListaChats = () => {
         }
 
         socket.on('nuevo-chat', handleNuevoChat)
-        socket.onAny(handleRealtimeEvent)
+        socket.on('chat.updated', handleChatUpdated)
         socket.on('error', handleError)
 
         return () => {
             socket.off('nuevo-chat', handleNuevoChat)
-            socket.offAny(handleRealtimeEvent)
+            socket.off('chat.updated', handleChatUpdated)
             socket.off('error', handleError)
-            Object.values(pendingChatRefreshRef.current).forEach((t) => window.clearTimeout(t))
-            pendingChatRefreshRef.current = {}
             if (pendingCountsRefreshRef.current) {
                 window.clearTimeout(pendingCountsRefreshRef.current)
                 pendingCountsRefreshRef.current = null
@@ -953,7 +962,7 @@ const ListaChats = () => {
                             }}
                             className="btn-item"
                         >
-                            Asignadas a mí
+                            Asignadas a mi
                             <span>{tabCounts.mine}</span>
                         </button>
 
@@ -1001,6 +1010,7 @@ const ListaChats = () => {
                                 setStyleBtn('menciones')
                                 dispatch(setMentionsMode(true))
                                 dispatch(clearBulkReadChatSelection())
+                                dispatch(bumpMentionsRefreshNonce())
                                 const operadorValue = selectRef.current?.value || ''
                                 aplicarFiltros(operadorValue, selectedTag, menciones)
                             }}
@@ -1028,6 +1038,41 @@ const ListaChats = () => {
                             <span>{tabCounts.bots}</span>
                         </button>
 
+                    </div>
+
+                    <div className="header-item header-item-search-conv">
+                        <input
+                            type="text"
+                            value={searchConversacion}
+                            onChange={(e) => setSearchConversacion(e.target.value)}
+                            onKeyDown={async (e) => {
+                                if (e.key !== 'Enter') return
+                                const v = searchConversacion.trim()
+                                if (!v || !/^\d+$/.test(v)) return
+                                const numero = parseInt(v, 10)
+                                if (isNaN(numero)) return
+                                try {
+                                    const resp = await searchByConversacion(token, numero)
+                                    if (resp?.statusCode === 200 && resp?.chat?.id) {
+                                        const chat = resp.chat
+                                        const tab = resp.tab || 'sinAsignar'
+                                        setStyleBtn(tab)
+                                        dispatch(setMentionsMode(tab === 'menciones'))
+                                        if (tab === 'menciones') dispatch(bumpMentionsRefreshNonce())
+                                        dispatch(clearMentionChatSelection())
+                                        dispatch(clearBulkReadChatSelection())
+                                        setSearchConversacion('')
+                                        const nombre = chat.cliente?.nombre || ''
+                                        const telefono = chat.cliente?.telefono || ''
+                                        dispatch(setChatListUiState({ chatListTab: tab }))
+                                        dispatch(setChatListCacheMeta({ chatListQueryKey: '', chatListUpdatedAt: 0 }))
+                                        navigate(`/dashboard/chats/${chat.id}?telefono=${telefono}&nombre=${nombre}`)
+                                    }
+                                } catch { }
+                            }}
+                            placeholder="IdConversación..."
+                            className="input-search-conversacion"
+                        />
                     </div>
                 </div>
                 <div className="lista-main">
@@ -1270,3 +1315,8 @@ const ListaChats = () => {
 }
 
 export default ListaChats
+
+
+
+
+

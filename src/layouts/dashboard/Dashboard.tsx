@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import DashSidebar from "../../components/sidebars/DashSidebar";
@@ -8,7 +8,6 @@ import { empresaXUser } from "../../services/empresas/empresa.services";
 import { usuariosXRole } from "../../services/auth/auth.services";
 import './dashboard.css'
 import { useDispatch, useSelector  } from "react-redux";
-import { Socket } from "socket.io-client";
 import { connectSocket,  getSocket } from "../../app/slices/socketSlice";
 import { setEmpresa, setUser } from "../../app/slices/authSlice";
 import { openSessionExpired, closeSessionExpired, setMentionUnreadCount } from "../../app/slices/actionSlice";
@@ -28,16 +27,19 @@ const Dashboard = () => {
   const sessionExpired = useSelector((state: RootState) => state.action.sessionExpired)
   const warnedMissingEmpresaRef = useRef(false)
   const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
+  const mentionsRefreshNonce = useSelector((state: RootState) => state.action.mentionsRefreshNonce)
+  const authUserId = useSelector((state: RootState) => state.auth.user?.id)
+  const authEmpresaId = useSelector((state: RootState) => state.auth.empresa?.id)
   const mentionAudioRef = useRef(new Audio('/audio/mencion.mp3'))
-  
-  let socket: Socket | null = null
+  const mentionFetchInFlightRef = useRef(false)
+  const mentionFetchLastAtRef = useRef(0)
   
   // Configurar interceptores de axios para manejo de tokens
   useEffect(() => {
     setupAxiosInterceptors()
   }, [])
 
-  // Verificar periódicamente el estado del token
+  // Verificar periÃ³dicamente el estado del token
   useTokenRefresh(2, 5) // Verifica cada 2 minutos, alerta 5 minutos antes de expirar
 
   useEffect(() => {
@@ -55,20 +57,47 @@ const Dashboard = () => {
   useEffect(() => {
           try {
               dispatch(connectSocket())
-              socket = getSocket()
-              
-              return () => {
-                  if(!socket?.connected){
-                  
-                  }
-                  // dispatch(disconnectSocket())
-              }
           } catch (error) {
               console.error('Error conectando socket:', error);
           }
     },[dispatch])
 
   // Menciones realtime + contador global
+  // Menciones realtime + contador global
+  const refreshMentionCount = useCallback(async () => {
+    const token = localStorage.getItem('token') || ''
+    if (!token) return
+    const now = Date.now()
+    if (mentionFetchInFlightRef.current) return
+    if (now - mentionFetchLastAtRef.current < 800) return
+    mentionFetchInFlightRef.current = true
+    mentionFetchLastAtRef.current = now
+
+    const [countResp, chatsResp] = await Promise.all([
+      getMentionsUnreadCount(token),
+      getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 }),
+    ])
+
+    if ((countResp as any)?.statusCode === 401 || (chatsResp as any)?.statusCode === 401) {
+      dispatch(openSessionExpired())
+      mentionFetchInFlightRef.current = false
+      return
+    }
+
+    const items = Array.isArray((chatsResp as any)?.items) ? (chatsResp as any).items : []
+    if (items.length === 0) {
+      dispatch(setMentionUnreadCount(0))
+      mentionFetchInFlightRef.current = false
+      return
+    }
+
+    dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
+    mentionFetchInFlightRef.current = false
+  }, [dispatch])
+  useEffect(() => {
+    refreshMentionCount().catch(() => { mentionFetchInFlightRef.current = false })
+  }, [refreshMentionCount, authUserId, authEmpresaId, socketConnected, mentionsRefreshNonce])
+
   useEffect(() => {
     const token = localStorage.getItem('token') || ''
     const myUserIdFromStorage = localStorage.getItem('userId') || ''
@@ -84,39 +113,10 @@ const Dashboard = () => {
 
     if (!token || !myUserId || !socketInstance || !socketConnected) return
 
-    const refreshCount = async () => {
-      // Reconciliación para evitar desync:
-      // si el backend devuelve count viejo pero la lista unread está vacía,
-      // forzamos el contador a 0 (fuente de verdad: /mentions/chats?unreadOnly=1).
-      const [countResp, chatsResp] = await Promise.all([
-        getMentionsUnreadCount(token),
-        getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 }),
-      ])
-
-      if ((countResp as any)?.statusCode === 401 || (chatsResp as any)?.statusCode === 401) {
-        dispatch(openSessionExpired())
-        return
-      }
-
-      const items = Array.isArray((chatsResp as any)?.items) ? (chatsResp as any).items : []
-      if (items.length === 0) {
-        dispatch(setMentionUnreadCount(0))
-        return
-      }
-
-      dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
-    }
-
-    // carga inicial
-    refreshCount().catch(() => {})
-
     const eventName = `mention-${myUserId}`
     const handler = (_payload: any) => {
-      // opción robusta: pedir el contador real al backend
-      refreshCount().catch(() => {})
-      // Aviso visible para el operador
+      refreshMentionCount().catch(() => { mentionFetchInFlightRef.current = false })
       toast.info('Te mencionaron en un chat')
-      // Sonido de mención
       try {
         const audio = mentionAudioRef.current
         audio.currentTime = 0
@@ -129,7 +129,7 @@ const Dashboard = () => {
     return () => {
       socketInstance.off(eventName, handler)
     }
-  }, [dispatch, socketConnected])
+  }, [refreshMentionCount, socketConnected])
   
 
   const navigate = useNavigate()
@@ -188,10 +188,9 @@ const Dashboard = () => {
   },[])
 
    useEffect(()=>{
-  
-          
+          const socket = getSocket()
           if(!socket) return
-          
+
           const handleOperadorAsignado = (payload: string) => {
             toast.success(payload)
           }
@@ -217,7 +216,7 @@ const Dashboard = () => {
               socket!.off('error', handleError)
               socket!.off('operador-asignado', handleOperadorAsignado)
           }
-      },[socket]) 
+      },[socketConnected, dispatch]) 
   
   
   const handleSidebarClick = () => {
@@ -277,7 +276,7 @@ const Dashboard = () => {
             e.currentTarget.style.transform = 'scale(1)'
           }}
         >
-          🧪 Probar Modal Sesión
+          ðŸ§ª Probar Modal SesiÃ³n
         </button> */}
       </section>
     </>
@@ -285,3 +284,7 @@ const Dashboard = () => {
 }
 
 export default Dashboard
+
+
+
+
