@@ -6,6 +6,20 @@ import { perfCounter, perfLog } from "../../utils/perfTracker"
 
 
 
+const pendingTimeline = new Map<string, Promise<TimelineResponse & ErrorResponse>>()
+const pendingCounts = new Map<string, Promise<ChatCountsResponse & ErrorResponse>>()
+const pendingChats = new Map<string, Promise<ChatsResponse & ErrorResponse>>()
+
+const withPending = async <T>(store: Map<string, Promise<T>>, key: string, taskFactory: () => Promise<T>): Promise<T> => {
+    const inflight = store.get(key)
+    if (inflight) return inflight
+    const task = taskFactory().finally(() => {
+        store.delete(key)
+    })
+    store.set(key, task)
+    return task
+}
+
 const findChatById = async (token: string, id: string): Promise<ChatResponse & ErrorResponse> => {
     try {
         const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}`
@@ -32,79 +46,87 @@ const findChatTimeline = async (
     id: string,
     params?: { page?: number; limit?: number; cursor?: string | null }
 ): Promise<TimelineResponse & ErrorResponse> => {
-    const startedAt = performance.now()
-    perfCounter("findChatTimeline")
-    try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`
+    const query = {
+        limit: params?.limit ?? 200,
+        cursor: params?.cursor ?? null,
+        page: params?.cursor ? null : (params?.page ?? 1),
+    }
+    const pendingKey = `${token}:${id}:${query.limit}:${query.cursor ?? ""}:${query.page ?? ""}`
+    return withPending(pendingTimeline, pendingKey, async () => {
+        const startedAt = performance.now()
+        perfCounter("findChatTimeline")
+        try {
+            const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`
 
-        const headers = {
-            authorization: `Bearer ${token}`,
-        }
+            const headers = {
+                authorization: `Bearer ${token}`,
+            }
 
-        const query: any = {
-            limit: params?.limit ?? 200,
-        }
+            const requestQuery: any = {
+                limit: query.limit,
+            }
 
-        if (params?.cursor) {
-            query.cursor = params.cursor
-        } else {
-            query.page = params?.page ?? 1
-        }
+            if (query.cursor) {
+                requestQuery.cursor = query.cursor
+            } else {
+                requestQuery.page = query.page ?? 1
+            }
 
-        const debug =
-            import.meta.env.DEV &&
-            typeof window !== "undefined" &&
-            window.localStorage?.getItem("debugTimeline") === "1"
+            const debug =
+                import.meta.env.DEV &&
+                typeof window !== "undefined" &&
+                window.localStorage?.getItem("debugTimeline") === "1"
 
-        if (debug) {
-            console.log("[findChatTimeline] GET", url, { params: query })
-        }
-
-        const { data } = await axios.get<TimelineResponse & ErrorResponse>(url, {
-            headers,
-            params: query,
-        })
-
-        perfLog("api.findChatTimeline", {
-            chatId: id,
-            durationMs: Math.round(performance.now() - startedAt),
-            rows: Array.isArray((data as any)?.items) ? (data as any).items.length : null,
-            cursor: Boolean(params?.cursor),
-        })
-
-        if (debug) {
-            console.log("[findChatTimeline] OK", {
-                statusCode: (data as any)?.statusCode,
-                page: (data as any)?.page,
-                limit: (data as any)?.limit,
-                total: (data as any)?.total,
-                itemsPreview: Array.isArray((data as any)?.items) ? (data as any).items.slice(0, 3) : (data as any)?.items,
-            })
-        }
-
-        return data
-    } catch (error) {
-        const debug =
-            import.meta.env.DEV &&
-            typeof window !== "undefined" &&
-            window.localStorage?.getItem("debugTimeline") === "1"
-
-        if (axios.isAxiosError(error) && error.response) {
             if (debug) {
-                console.log("[findChatTimeline] ERROR", {
-                    url: `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`,
-                    status: error.response.status,
-                    data: error.response.data,
+                console.log("[findChatTimeline] GET", url, { params: requestQuery })
+            }
+
+            const { data } = await axios.get<TimelineResponse & ErrorResponse>(url, {
+                headers,
+                params: requestQuery,
+            })
+
+            perfLog("api.findChatTimeline", {
+                chatId: id,
+                durationMs: Math.round(performance.now() - startedAt),
+                rows: Array.isArray((data as any)?.items) ? (data as any).items.length : null,
+                cursor: Boolean(query.cursor),
+            })
+
+            if (debug) {
+                console.log("[findChatTimeline] OK", {
+                    statusCode: (data as any)?.statusCode,
+                    page: (data as any)?.page,
+                    limit: (data as any)?.limit,
+                    total: (data as any)?.total,
+                    itemsPreview: Array.isArray((data as any)?.items) ? (data as any).items.slice(0, 3) : (data as any)?.items,
                 })
             }
-            const objeto: TimelineResponse & ErrorResponse = error.response.data
-            return objeto
+
+            return data
+        } catch (error) {
+            const debug =
+                import.meta.env.DEV &&
+                typeof window !== "undefined" &&
+                window.localStorage?.getItem("debugTimeline") === "1"
+
+            if (axios.isAxiosError(error) && error.response) {
+                if (debug) {
+                    console.log("[findChatTimeline] ERROR", {
+                        url: `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`,
+                        status: error.response.status,
+                        data: error.response.data,
+                    })
+                }
+                const objeto: TimelineResponse & ErrorResponse = error.response.data
+                return objeto
+            }
+            if (debug) {
+                console.log("[findChatTimeline] ERROR (no response)", error)
+            }
+            throw error
         }
-        if (debug) {
-            console.log("[findChatTimeline] ERROR (no response)", error)
-        }
-        throw error
-    }
+    })
 }
 
 const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse> => {
@@ -136,29 +158,32 @@ const getChatCounts = async (
     token: string,
     params?: { q?: string; tagId?: string }
 ): Promise<ChatCountsResponse & ErrorResponse> => {
-    const startedAt = performance.now()
-    perfCounter("getChatCounts")
-    try {
-        const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats/counts`
-        const qs = new URLSearchParams()
-        if (params?.q) qs.set("q", `${params.q}`)
-        if (params?.tagId) qs.set("tagId", `${params.tagId}`)
-        const url = qs.toString() ? `${baseUrl}?${qs.toString()}` : baseUrl
+    const pendingKey = `${token}:${params?.q ?? ""}:${params?.tagId ?? ""}`
+    return withPending(pendingCounts, pendingKey, async () => {
+        const startedAt = performance.now()
+        perfCounter("getChatCounts")
+        try {
+            const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats/counts`
+            const qs = new URLSearchParams()
+            if (params?.q) qs.set("q", `${params.q}`)
+            if (params?.tagId) qs.set("tagId", `${params.tagId}`)
+            const url = qs.toString() ? `${baseUrl}?${qs.toString()}` : baseUrl
 
-        const headers = { authorization: `Bearer ${token}` }
-        const { data } = await axios.get<ChatCountsResponse & ErrorResponse>(url, { headers })
-        perfLog("api.getChatCounts", {
-            durationMs: Math.round(performance.now() - startedAt),
-            q: params?.q ?? null,
-            tagId: params?.tagId ?? null,
-        })
-        return data
-    } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-            return error.response.data as any
+            const headers = { authorization: `Bearer ${token}` }
+            const { data } = await axios.get<ChatCountsResponse & ErrorResponse>(url, { headers })
+            perfLog("api.getChatCounts", {
+                durationMs: Math.round(performance.now() - startedAt),
+                q: params?.q ?? null,
+                tagId: params?.tagId ?? null,
+            })
+            return data
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                return error.response.data as any
+            }
+            throw error
         }
-        throw error
-    }
+    })
 }
 
 const getChats = async (
@@ -167,46 +192,49 @@ const getChats = async (
     limit: string,
     filters?: GetChatsFilters
 ): Promise<ChatsResponse & ErrorResponse> => {
-    const startedAt = performance.now()
-    perfCounter("getChats")
-    try {
-        const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats`
-        const params = new URLSearchParams()
-        params.set("page", `${page}`)
-        params.set("limit", `${limit}`)
+    const pendingKey = `${token}:${page}:${limit}:${JSON.stringify(filters ?? {})}`
+    return withPending(pendingChats, pendingKey, async () => {
+        const startedAt = performance.now()
+        perfCounter("getChats")
+        try {
+            const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats`
+            const params = new URLSearchParams()
+            params.set("page", `${page}`)
+            params.set("limit", `${limit}`)
 
-        if (filters?.q) params.set("q", `${filters.q}`)
-        if (filters?.operatorId) params.set("operatorId", `${filters.operatorId}`)
-        if (filters?.assignment) params.set("assignment", `${filters.assignment}`)
-        if (filters?.tagId) params.set("tagId", `${filters.tagId}`)
-        if (filters?.archived !== undefined && filters?.archived !== null && `${filters.archived}` !== "") {
-            params.set("archived", `${filters.archived}`)
+            if (filters?.q) params.set("q", `${filters.q}`)
+            if (filters?.operatorId) params.set("operatorId", `${filters.operatorId}`)
+            if (filters?.assignment) params.set("assignment", `${filters.assignment}`)
+            if (filters?.tagId) params.set("tagId", `${filters.tagId}`)
+            if (filters?.archived !== undefined && filters?.archived !== null && `${filters.archived}` !== "") {
+                params.set("archived", `${filters.archived}`)
+            }
+
+            const url = `${baseUrl}?${params.toString()}`
+
+            const headers = {
+                authorization: `Bearer ${token}`
+            }
+
+            const { data } = await axios.get<ChatsResponse & ErrorResponse>(url, { headers })
+
+            perfLog("api.getChats", {
+                durationMs: Math.round(performance.now() - startedAt),
+                page,
+                limit,
+                rows: Array.isArray((data as any)?.chats) ? (data as any).chats.length : null,
+                filters: filters ?? null,
+            })
+
+            return data
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                const objeto: ChatsResponse & ErrorResponse = error.response.data
+                return objeto
+            }
+            throw error
         }
-
-        const url = `${baseUrl}?${params.toString()}`
-
-        const headers = {
-            authorization: `Bearer ${token}`
-        }
-
-        const { data } = await axios.get<ChatsResponse & ErrorResponse>(url, { headers })
-
-        perfLog("api.getChats", {
-            durationMs: Math.round(performance.now() - startedAt),
-            page,
-            limit,
-            rows: Array.isArray((data as any)?.chats) ? (data as any).chats.length : null,
-            filters: filters ?? null,
-        })
-
-        return data
-    } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-            const objeto: ChatsResponse & ErrorResponse = error.response.data
-            return objeto
-        }
-        throw error; // Lanza el error si no es del tipo esperado
-    }
+    })
 }
 
 const getChatCountsByOperator = async (

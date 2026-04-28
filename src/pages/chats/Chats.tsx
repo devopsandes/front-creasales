@@ -71,6 +71,7 @@ const Chats = () => {
     const isSendingRef = useRef(false)
     const lastSentMessageRef = useRef<string | null>(null)
     const uploadPreviewUrlsRef = useRef<Record<string, string>>({})
+    const pendingChatRefreshRef = useRef<number | null>(null)
 
     const MAX_FILES_PER_MESSAGE = 5
 
@@ -292,6 +293,27 @@ const Chats = () => {
         })
         const next = found ? patched : [normalizedIncoming, ...patched]
         dispatch(setChats(next))
+    }
+
+    const scheduleRefreshCurrentChat = () => {
+        if (!id || !token) return
+        if (pendingChatRefreshRef.current) {
+            window.clearTimeout(pendingChatRefreshRef.current)
+            pendingChatRefreshRef.current = null
+        }
+        pendingChatRefreshRef.current = window.setTimeout(async () => {
+            pendingChatRefreshRef.current = null
+            try {
+                const chatResp = await findChatById(token, id)
+                if ((chatResp as any)?.statusCode === 401) {
+                    dispatch(openSessionExpired())
+                    return
+                }
+                if ((chatResp as any)?.chat) {
+                    patchCurrentChatInStore((chatResp as any).chat)
+                }
+            } catch { }
+        }, 350)
     }
 
     const handleNotaPrivada = async () => {
@@ -581,17 +603,7 @@ const Chats = () => {
     }, [mensaje])
 
     const handleTagConfirm = async (_tagId: string) => {
-        try {
-            if (!id) return
-            const chatResp = await findChatById(token, id)
-            if ((chatResp as any)?.statusCode === 401) {
-                dispatch(openSessionExpired())
-                return
-            }
-            if ((chatResp as any)?.chat) {
-                patchCurrentChatInStore((chatResp as any).chat)
-            }
-        } catch (error) { console.error('Error refreshing chats after tag assignment:', error) }
+        scheduleRefreshCurrentChat()
     }
 
     const handleTagRemoveClick = (tag: ChatTag) => {
@@ -600,17 +612,7 @@ const Chats = () => {
     }
 
     const handleRemoveTagSuccess = async () => {
-        try {
-            if (!id) return
-            const chatResp = await findChatById(token, id)
-            if ((chatResp as any)?.statusCode === 401) {
-                dispatch(openSessionExpired())
-                return
-            }
-            if ((chatResp as any)?.chat) {
-                patchCurrentChatInStore((chatResp as any).chat)
-            }
-        } catch (error) { console.error('Error refreshing chats:', error) }
+        scheduleRefreshCurrentChat()
     }
 
     const handleClickBtn = async (e: FormEvent<HTMLFormElement>) => {
@@ -701,27 +703,32 @@ const Chats = () => {
             const socket = getSocket()
             if (socket && socket.connected) {
                 const objMsj = { mensaje, chatId: id, telefono, token }
-                const refreshTimeline = async () => {
-                    try {
-                        if (!id) return
-                        const data = await findChatTimeline(token!, id!, { limit: 200 })
-                        if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
-                        const rawItems: any[] = (data as any).items || []
-                        const items = rawItems.map(normalizeTimelineItem).sort((a, b) => new Date((a as any)?.createdAt ?? 0).getTime() - new Date((b as any)?.createdAt ?? 0).getTime())
-                        setMensajes(items)
-                        setTimelineCursor((data as any)?.nextCursor ?? null)
-                        setTimelineHasMore(Boolean((data as any)?.hasMore))
-                    } catch (e) { }
-                }
                 socket.emit("archivar", objMsj, (ack: any) => {
-                    if (ack?.ok) {
-                        refreshTimeline()
-                    }
+                    if (!ack?.ok) return
+                    setMensajes((prev) => {
+                        const evt: TimelineItem = {
+                            kind: "event" as const,
+                            createdAt: new Date().toISOString(),
+                            type: "CHAT_ARCHIVED",
+                            text: "Archivado",
+                        } as any
+                        const merged = mergeTimeline(prev, [evt], "append")
+                        return merged.length > 1000 ? merged.slice(-1000) : merged
+                    })
                 })
             }
             setIsArchiveModalOpen(false);
         } catch (error) { console.log(error); }
     }
+
+    useEffect(() => {
+        return () => {
+            if (pendingChatRefreshRef.current) {
+                window.clearTimeout(pendingChatRefreshRef.current)
+                pendingChatRefreshRef.current = null
+            }
+        }
+    }, [])
 
     const handleArchivarCancel = () => { setIsArchiveModalOpen(false); }
     const handleDeleteClick = () => { setIsDeleteModalOpen(true); }

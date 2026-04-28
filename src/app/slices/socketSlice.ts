@@ -45,6 +45,11 @@ const socketSlice = createSlice({
         socket = io(SOCKET_URL, {
           transports: ["websocket"],
           withCredentials: true,
+          reconnection: true,
+          reconnectionAttempts: 12,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 30000,
+          randomizationFactor: 0.4,
           auth: {
             token: localStorage.getItem("token"),
           },

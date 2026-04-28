@@ -111,6 +111,7 @@ const ListaChats = () => {
 
     const [mentionChatIds, setMentionChatIds] = useState<string[]>([])
     const pendingCountsRefreshRef = useRef<number | null>(null)
+    const pendingMentionsRefreshRef = useRef<number | null>(null)
     const mentionFetchInFlightRef = useRef(false)
     const mentionFetchLastAtRef = useRef(0)
 
@@ -490,34 +491,46 @@ const ListaChats = () => {
     // Realtime: cuando cambia el contador global (por socket), refrescamos la lista de chatIds mencionados
     useEffect(() => {
         if (!token) return
-        const now = Date.now()
-        if (mentionFetchInFlightRef.current) return
-        if (now - mentionFetchLastAtRef.current < 800) return
+        if (pendingMentionsRefreshRef.current) {
+            window.clearTimeout(pendingMentionsRefreshRef.current)
+            pendingMentionsRefreshRef.current = null
+        }
+        pendingMentionsRefreshRef.current = window.setTimeout(() => {
+            pendingMentionsRefreshRef.current = null
+            const now = Date.now()
+            if (mentionFetchInFlightRef.current) return
+            if (now - mentionFetchLastAtRef.current < 2500) return
+            mentionFetchInFlightRef.current = true
+            mentionFetchLastAtRef.current = now
 
-        mentionFetchInFlightRef.current = true
-        mentionFetchLastAtRef.current = now
-
-        getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 })
-            .then((resp: any) => {
-                const items = Array.isArray(resp?.items) ? resp.items : []
-                const ids: string[] = []
-                const embeddedChats: ChatState[] = []
-                items.forEach((it: any) => {
-                    const chatId = extractMentionChatId(it)
-                    if (chatId) ids.push(chatId)
-                    const embeddedChat = extractMentionChat(it)
-                    if (embeddedChat?.id) embeddedChats.push(embeddedChat)
+            getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 })
+                .then((resp: any) => {
+                    const items = Array.isArray(resp?.items) ? resp.items : []
+                    const ids: string[] = []
+                    const embeddedChats: ChatState[] = []
+                    items.forEach((it: any) => {
+                        const chatId = extractMentionChatId(it)
+                        if (chatId) ids.push(chatId)
+                        const embeddedChat = extractMentionChat(it)
+                        if (embeddedChat?.id) embeddedChats.push(embeddedChat)
+                    })
+                    setMentionChatIds(Array.from(new Set(ids)))
+                    if (embeddedChats.length > 0) {
+                        const merged = mergeChatsById(chatsRef.current, embeddedChats)
+                        dispatch(setChats(merged.slice(0, 1000)))
+                    }
                 })
-                setMentionChatIds(Array.from(new Set(ids)))
-                if (embeddedChats.length > 0) {
-                    const merged = mergeChatsById(chatsRef.current, embeddedChats)
-                    dispatch(setChats(merged.slice(0, 1000)))
-                }
-            })
-            .catch(() => { })
-            .finally(() => {
-                mentionFetchInFlightRef.current = false
-            })
+                .catch(() => { })
+                .finally(() => {
+                    mentionFetchInFlightRef.current = false
+                })
+        }, 350)
+        return () => {
+            if (pendingMentionsRefreshRef.current) {
+                window.clearTimeout(pendingMentionsRefreshRef.current)
+                pendingMentionsRefreshRef.current = null
+            }
+        }
     }, [token, mentionsRefreshNonce, dispatch])
 
     useEffect(() => {

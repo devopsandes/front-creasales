@@ -33,6 +33,7 @@ const Dashboard = () => {
   const mentionAudioRef = useRef(new Audio('/audio/mencion.mp3'))
   const mentionFetchInFlightRef = useRef(false)
   const mentionFetchLastAtRef = useRef(0)
+  const mentionRefreshTimerRef = useRef<number | null>(null)
   
   // Configurar interceptores de axios para manejo de tokens
   useEffect(() => {
@@ -69,7 +70,7 @@ const Dashboard = () => {
     if (!token) return
     const now = Date.now()
     if (mentionFetchInFlightRef.current) return
-    if (now - mentionFetchLastAtRef.current < 800) return
+    if (now - mentionFetchLastAtRef.current < 2500) return
     mentionFetchInFlightRef.current = true
     mentionFetchLastAtRef.current = now
 
@@ -95,7 +96,20 @@ const Dashboard = () => {
     mentionFetchInFlightRef.current = false
   }, [dispatch])
   useEffect(() => {
-    refreshMentionCount().catch(() => { mentionFetchInFlightRef.current = false })
+    if (mentionRefreshTimerRef.current) {
+      window.clearTimeout(mentionRefreshTimerRef.current)
+      mentionRefreshTimerRef.current = null
+    }
+    mentionRefreshTimerRef.current = window.setTimeout(() => {
+      mentionRefreshTimerRef.current = null
+      refreshMentionCount().catch(() => { mentionFetchInFlightRef.current = false })
+    }, 300)
+    return () => {
+      if (mentionRefreshTimerRef.current) {
+        window.clearTimeout(mentionRefreshTimerRef.current)
+        mentionRefreshTimerRef.current = null
+      }
+    }
   }, [refreshMentionCount, authUserId, authEmpresaId, socketConnected, mentionsRefreshNonce])
 
   useEffect(() => {
