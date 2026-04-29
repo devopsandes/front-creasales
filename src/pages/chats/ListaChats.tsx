@@ -49,7 +49,7 @@ const ListaChats = () => {
     const listRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate()
 
-    const CHAT_PAGE_LIMIT = 100
+    const CHAT_PAGE_LIMIT = 50
     const SCROLL_BOTTOM_THRESHOLD_PX = 260
     const MAX_CHAT_CACHE = 1000
 
@@ -86,7 +86,7 @@ const ListaChats = () => {
     const dataUser = useSelector((state: RootState) => state.action.dataUser);
     const viewSide = useSelector((state: RootState) => state.action.viewSide);
     const chatsFromRedux = useSelector((state: RootState) => state.action.chats);
-    const chatListQueryKey = useSelector((state: RootState) => state.action.chatListQueryKey);
+    const chatListLoadedQueryKey = useSelector((state: RootState) => state.action.chatListLoadedQueryKey);
     const chatListPage = useSelector((state: RootState) => state.action.chatListPage);
     const chatListHasMore = useSelector((state: RootState) => state.action.chatListHasMore);
     const chatListUpdatedAt = useSelector((state: RootState) => state.action.chatListUpdatedAt);
@@ -121,6 +121,7 @@ const ListaChats = () => {
     const mentionsControllerRef = useRef<AbortController | null>(null)
     const chatPatchTimersRef = useRef<Map<string, number>>(new Map())
     const chatPatchPayloadRef = useRef<Map<string, ChatState>>(new Map())
+    const listRequestSeqRef = useRef(0)
 
     const extractMentionChatId = (it: any): string | null => {
         return it?.chatId || it?.chat_id || it?.chat?.id || it?.id || null
@@ -466,8 +467,8 @@ const ListaChats = () => {
         const cachedOk =
             Array.isArray(chatsFromRedux) &&
             chatsFromRedux.length > 0 &&
-            typeof chatListQueryKey === "string" &&
-            chatListQueryKey === nextKey
+            typeof chatListLoadedQueryKey === "string" &&
+            chatListLoadedQueryKey === nextKey
 
         // Si volvimos a la vista y el cache coincide, no resetear; opcional refresh silencioso por TTL
         const TTL_MS = 15_000
@@ -483,13 +484,14 @@ const ListaChats = () => {
         setIsLoadingMore(false)
         setHasMore(true)
         setPage(1)
-        if (!cachedOk) dispatch(setChats([]))
         chatsLoadControllerRef.current?.abort()
         const controller = new AbortController()
         chatsLoadControllerRef.current = controller
+        const requestSeq = ++listRequestSeqRef.current
 
         getChats(token, "1", `${CHAT_PAGE_LIMIT}`, filters, { signal: controller.signal, rateLimitMs: 1200 })
             .then((resp: any) => {
+                if (requestSeq !== listRequestSeqRef.current) return
                 const items: ChatState[] = Array.isArray(resp?.chats) ? resp.chats : []
                 // Si había cache, mergeamos para no "perder" páginas ya cargadas; sino reemplazo directo
                 const merged = cachedOk ? mergeChatsById(chatsRef.current, items) : items
@@ -498,6 +500,7 @@ const ListaChats = () => {
                 setHasMore(resolveHasMore(resp, CHAT_PAGE_LIMIT))
                 dispatch(setChatListCacheMeta({
                     chatListQueryKey: nextKey,
+                    chatListLoadedQueryKey: nextKey,
                     chatListHasMore: resolveHasMore(resp, CHAT_PAGE_LIMIT),
                     chatListPage: 1,
                     chatListUpdatedAt: Date.now(),
@@ -508,6 +511,7 @@ const ListaChats = () => {
                 // noop
             })
             .finally(() => {
+                if (requestSeq !== listRequestSeqRef.current) return
                 if (chatsLoadControllerRef.current === controller) {
                     chatsLoadControllerRef.current = null
                 }
@@ -519,7 +523,7 @@ const ListaChats = () => {
                 chatsLoadControllerRef.current = null
             }
         }
-    }, [hydrated, token, debouncedSearch, selectedTag, selectedOperator, styleBtn, chatListQueryKey, dispatch])
+    }, [hydrated, token, debouncedSearch, selectedTag, selectedOperator, styleBtn, chatListLoadedQueryKey, chatListUpdatedAt, dispatch])
 
     // Estado inicial: no estamos en "Menciones" hasta que el usuario toque esa pestaña
     useEffect(() => {
@@ -1147,7 +1151,7 @@ const ListaChats = () => {
                                         const nombre = chat.cliente?.nombre || ''
                                         const telefono = chat.cliente?.telefono || ''
                                         dispatch(setChatListUiState({ chatListTab: tab }))
-                                        dispatch(setChatListCacheMeta({ chatListQueryKey: '', chatListUpdatedAt: 0 }))
+                                        dispatch(setChatListCacheMeta({ chatListQueryKey: '', chatListLoadedQueryKey: '', chatListUpdatedAt: 0 }))
                                         navigate(`/dashboard/chats/${chat.id}?telefono=${telefono}&nombre=${nombre}`)
                                     }
                                 } catch { }

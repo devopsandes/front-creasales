@@ -26,6 +26,7 @@ const initialState: ActionState = {
 
     // Cache SPA-only para la vista /dashboard/chats
     chatListQueryKey: undefined,
+    chatListLoadedQueryKey: undefined,
     chatListPage: 1,
     chatListHasMore: true,
     chatListUpdatedAt: 0,
@@ -107,6 +108,7 @@ const actionSlice = createSlice({
         setChatListCacheMeta: (state, action) => {
             const patch = action.payload || {}
             if (patch.chatListQueryKey !== undefined) state.chatListQueryKey = patch.chatListQueryKey
+            if (patch.chatListLoadedQueryKey !== undefined) state.chatListLoadedQueryKey = patch.chatListLoadedQueryKey
             if (patch.chatListPage !== undefined) state.chatListPage = patch.chatListPage
             if (patch.chatListHasMore !== undefined) state.chatListHasMore = patch.chatListHasMore
             if (patch.chatListUpdatedAt !== undefined) state.chatListUpdatedAt = patch.chatListUpdatedAt

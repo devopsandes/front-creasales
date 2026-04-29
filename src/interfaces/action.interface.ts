@@ -34,6 +34,7 @@ export interface ActionState  {
     * Permite volver a /dashboard/chats sin recargar desde cero.
     */
    chatListQueryKey?: string;
+   chatListLoadedQueryKey?: string;
    chatListPage?: number;
    chatListHasMore?: boolean;
    chatListUpdatedAt?: number;
