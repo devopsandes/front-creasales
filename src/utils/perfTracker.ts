@@ -3,15 +3,17 @@ type PerfStore = {
   marks: Array<Record<string, any>>;
   requestBuckets: Record<string, number[]>;
   reconnectAttempts: number[];
+  requestEvents: Array<{ ts: number; endpoint: string }>;
+  navigationEvents: Array<{ ts: number; source: string; payload?: Record<string, any> }>;
 };
 
 const getStore = (): PerfStore => {
   if (typeof window === 'undefined') {
-    return { counters: {}, marks: [], requestBuckets: {}, reconnectAttempts: [] };
+    return { counters: {}, marks: [], requestBuckets: {}, reconnectAttempts: [], requestEvents: [], navigationEvents: [] };
   }
   const w = window as any;
   if (!w.__creasalesPerf) {
-    w.__creasalesPerf = { counters: {}, marks: [], requestBuckets: {}, reconnectAttempts: [] };
+    w.__creasalesPerf = { counters: {}, marks: [], requestBuckets: {}, reconnectAttempts: [], requestEvents: [], navigationEvents: [] };
   }
   return w.__creasalesPerf as PerfStore;
 };
@@ -38,6 +40,8 @@ const ensureMetricsInterval = () => {
     if (perfEnabled() && reconnectRecent.length > 0) {
       console.log('[perf.front]', { event: 'socket.reconnect_burst_15s', attempts: reconnectRecent.length });
     }
+    store.requestEvents = (store.requestEvents || []).filter((evt) => now - evt.ts <= 120_000);
+    store.navigationEvents = (store.navigationEvents || []).filter((evt) => now - evt.ts <= 120_000);
   }, 15_000);
 };
 
@@ -58,6 +62,10 @@ export const perfTrackRequest = (endpoint: string) => {
     store.requestBuckets[endpoint] = [];
   }
   store.requestBuckets[endpoint].push(now);
+  store.requestEvents.push({ ts: now, endpoint });
+  if (store.requestEvents.length > 5000) {
+    store.requestEvents = store.requestEvents.slice(-5000);
+  }
   if (store.requestBuckets[endpoint].length > 2000) {
     store.requestBuckets[endpoint] = store.requestBuckets[endpoint].slice(-2000);
   }
@@ -86,6 +94,36 @@ export const perfTrackMemory = (context: string, payload?: Record<string, any>) 
     jsHeapSizeLimit: mem?.jsHeapSizeLimit ?? null,
     ...(payload || {}),
   });
+};
+
+export const perfTrackNavigation = (source: string, payload?: Record<string, any>) => {
+  if (typeof window === 'undefined') return;
+  const now = Date.now();
+  const store = getStore();
+  store.navigationEvents.push({ ts: now, source, payload });
+  if (store.navigationEvents.length > 1000) {
+    store.navigationEvents = store.navigationEvents.slice(-1000);
+  }
+  perfMark('ui.navigation', { source, ...(payload || {}) });
+  window.setTimeout(() => {
+    const snapshot = getStore();
+    const from = now;
+    const to = now + 10_000;
+    const burstEvents = (snapshot.requestEvents || []).filter((evt) => evt.ts >= from && evt.ts <= to);
+    const breakdown = burstEvents.reduce((acc: Record<string, number>, evt) => {
+      acc[evt.endpoint] = (acc[evt.endpoint] || 0) + 1;
+      return acc;
+    }, {});
+    if (perfEnabled()) {
+      console.log('[perf.front]', {
+        event: 'api.burst_after_navigation_10s',
+        source,
+        totalRequests: burstEvents.length,
+        breakdown,
+      });
+    }
+  }, 10_000);
+  ensureMetricsInterval();
 };
 
 export const perfMark = (event: string, payload?: Record<string, any>) => {
@@ -117,7 +155,7 @@ export const perfSnapshot = () => {
 export const perfReset = () => {
   if (typeof window === 'undefined') return;
   const w = window as any;
-  w.__creasalesPerf = { counters: {}, marks: [], requestBuckets: {}, reconnectAttempts: [] };
+  w.__creasalesPerf = { counters: {}, marks: [], requestBuckets: {}, reconnectAttempts: [], requestEvents: [], navigationEvents: [] };
 };
 
 if (typeof window !== 'undefined') {

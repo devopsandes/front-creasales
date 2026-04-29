@@ -17,6 +17,7 @@ const initialState: ActionState = {
     sessionExpired: false,
     chats: [],
     mentionUnreadCount: 0,
+    mentionChatIds: [],
     mentionsRefreshNonce: 0,
     mentionsMode: false,
     selectedMentionChatIds: [],
@@ -171,6 +172,9 @@ const actionSlice = createSlice({
         setMentionUnreadCount: (state, action) => {
             state.mentionUnreadCount = action.payload
         },
+        setMentionChatIds: (state, action) => {
+            state.mentionChatIds = Array.isArray(action.payload) ? action.payload : []
+        },
         bumpMentionsRefreshNonce: (state) => {
             state.mentionsRefreshNonce = (state.mentionsRefreshNonce || 0) + 1
         },
@@ -235,6 +239,7 @@ export const {
     markChatReadLocal,
     markChatUnreadLocal,
     setMentionUnreadCount,
+    setMentionChatIds,
     bumpMentionsRefreshNonce,
     setMentionsMode,
     toggleMentionChatSelection,

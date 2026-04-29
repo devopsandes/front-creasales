@@ -4,7 +4,7 @@ import { jwtDecode } from "jwt-decode"
 import { toast } from "react-toastify"
 import { RootState } from "../app/store"
 import { getSocket } from "../app/slices/socketSlice"
-import { bumpMentionsRefreshNonce, openSessionExpired, setMentionUnreadCount } from "../app/slices/actionSlice"
+import { bumpMentionsRefreshNonce, openSessionExpired, setMentionChatIds, setMentionUnreadCount } from "../app/slices/actionSlice"
 import { getMentionChats, getMentionsUnreadCount } from "../services/mentions/mentions.services"
 
 export const useMentionsSync = () => {
@@ -43,6 +43,12 @@ export const useMentionsSync = () => {
         return
       }
       const items = Array.isArray((chatsResp as any)?.items) ? (chatsResp as any).items : []
+      const ids: string[] = []
+      items.forEach((it: any) => {
+        const chatId = it?.chatId || it?.chat_id || it?.chat?.id || it?.id || null
+        if (chatId) ids.push(`${chatId}`)
+      })
+      dispatch(setMentionChatIds(Array.from(new Set(ids))))
       if (items.length === 0) {
         dispatch(setMentionUnreadCount(0))
       } else {

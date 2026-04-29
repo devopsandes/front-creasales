@@ -32,7 +32,7 @@ import { setChatReadState } from '../../services/chats/chats.services'
 import { jwtDecode } from "jwt-decode"
 import AddTagModal from '../../components/modal/AddTagModal'
 import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModal'
-import { perfMark, perfTrackMemory } from '../../utils/perfTracker'
+import { perfMark, perfTrackMemory, perfTrackNavigation } from '../../utils/perfTracker'
 
 const Chats = () => {
     const TIMELINE_WINDOW_LIMIT = 50
@@ -615,6 +615,11 @@ const Chats = () => {
     useEffect(() => {
         mensajesLenRef.current = Array.isArray(mensajes) ? mensajes.length : 0
     }, [mensajes])
+
+    useEffect(() => {
+        if (!id) return
+        perfTrackNavigation('chat_open', { chatId: id })
+    }, [id])
 
     useEffect(() => {
         const interval = window.setInterval(() => {
