@@ -41,6 +41,16 @@ const getAssignment = (chat: ChatState): ChatAssignment => {
     return chat.operador ? 'assigned' : 'unassigned'
 };
 
+const getEmptyStateMessageByTab = (tab: string): string => {
+    if (tab === "sinAsignar") return "No tienes chats sin asignar"
+    if (tab === "asig") return "No tienes chats asignados"
+    if (tab === "otros") return "No se registran chats asignados a otros"
+    if (tab === "archi") return "No tienes chats archivados"
+    if (tab === "menciones") return "No tienes menciones"
+    if (tab === "bots") return "No tienes chats de bots"
+    return "No tienes chats disponibles"
+}
+
 const ListaChats = () => {
     const { id: activeChatId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -423,10 +433,9 @@ const ListaChats = () => {
         })
 
         const cachedOk =
-            Array.isArray(chatsFromRedux) &&
-            chatsFromRedux.length > 0 &&
             typeof chatListLoadedQueryKey === "string" &&
-            chatListLoadedQueryKey === nextKey
+            chatListLoadedQueryKey === nextKey &&
+            Array.isArray(chatsFromRedux)
 
         // Si volvimos a la vista y el cache coincide, no resetear; opcional refresh silencioso por TTL
         const TTL_MS = 15_000
@@ -908,6 +917,15 @@ const ListaChats = () => {
     }
 
     useEffect(() => {
+        if (loading) return
+        if (!activeChatId) return
+        const visible = Array.isArray(filtrados) && filtrados.some((chat) => chat?.id === activeChatId)
+        if (!visible) {
+            navigate('/dashboard/chats', { replace: true })
+        }
+    }, [loading, activeChatId, filtrados, navigate])
+
+    useEffect(() => {
         if (!styleBtn) return
         perfTrackNavigation('chat_tab', { tab: styleBtn })
     }, [styleBtn])
@@ -1276,11 +1294,15 @@ const ListaChats = () => {
                                 <div className="loader2"></div>
                                 <p className="chat-empty-text">Aguarda un momento mientras cargamos la información.</p>
                             </div>
-                        ) : activeChatId ? (
+                        ) : activeChatId && Array.isArray(filtrados) && filtrados.some((chat) => chat?.id === activeChatId) ? (
                             <Outlet />
                         ) : (
                             <div className="chat-empty-prompt">
-                                <p className="chat-empty-text">Presiona en un chat para comenzar</p>
+                                <p className="chat-empty-text">
+                                    {Array.isArray(filtrados) && filtrados.length === 0
+                                        ? getEmptyStateMessageByTab(styleBtn)
+                                        : "Presiona en un chat para comenzar"}
+                                </p>
                             </div>
                         )}
                     </div>
