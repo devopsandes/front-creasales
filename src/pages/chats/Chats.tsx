@@ -35,6 +35,7 @@ import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModa
 import { perfMark, perfTrackMemory } from '../../utils/perfTracker'
 
 const Chats = () => {
+    const TIMELINE_WINDOW_LIMIT = 50
     const [usuarios, setUsuarios] = useState<Usuario[]>([])
     const [selectedMentionUsers, setSelectedMentionUsers] = useState<Usuario[]>([])
     const [mensajes, setMensajes] = useState<TimelineItem[]>([])
@@ -540,7 +541,7 @@ const Chats = () => {
             setTimelineCursor(null)
             setTimelineHasMore(false)
             try {
-                const data = await findChatTimeline(token!, id!, { limit: 200 }, { signal: timelineLoadControllerRef.current?.signal, rateLimitMs: 1000 })
+                const data = await findChatTimeline(token!, id!, { limit: TIMELINE_WINDOW_LIMIT }, { signal: timelineLoadControllerRef.current?.signal, rateLimitMs: 1000 })
                 if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
                 const rawItems: any[] = (data as any).items || []
                 const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
@@ -574,7 +575,7 @@ const Chats = () => {
         const controller = new AbortController()
         timelineOlderControllerRef.current = controller
         try {
-            const data = await findChatTimeline(token!, id!, { limit: 200, cursor: timelineCursor }, { signal: controller.signal, rateLimitMs: 1000 })
+            const data = await findChatTimeline(token!, id!, { limit: TIMELINE_WINDOW_LIMIT, cursor: timelineCursor }, { signal: controller.signal, rateLimitMs: 1000 })
             if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
             const rawItems: any[] = (data as any).items || []
             const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {

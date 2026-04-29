@@ -1333,6 +1333,7 @@ const ListaChats = () => {
                         {loading ? (
                             <div className="chat-loader-center">
                                 <div className="loader2"></div>
+                                <p className="chat-empty-text">Aguarda un momento mientras cargamos la información.</p>
                             </div>
                         ) : activeChatId ? (
                             <Outlet />

@@ -86,9 +86,9 @@ const findChatTimeline = async (
     options?: { signal?: AbortSignal; rateLimitMs?: number }
 ): Promise<TimelineResponse & ErrorResponse> => {
     const query = {
-        limit: params?.limit ?? 200,
+        limit: params?.limit ?? 50,
         cursor: params?.cursor ?? null,
-        page: params?.cursor ? null : (params?.page ?? 1),
+        page: params?.cursor ? null : 1,
     }
     const pendingKey = `${token}:${id}:${query.limit}:${query.cursor ?? ""}:${query.page ?? ""}`
     return withPending(pendingTimeline, pendingKey, async () => {
