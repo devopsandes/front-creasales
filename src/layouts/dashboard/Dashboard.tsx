@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import DashSidebar from "../../components/sidebars/DashSidebar";
@@ -10,12 +10,11 @@ import './dashboard.css'
 import { useDispatch, useSelector  } from "react-redux";
 import { connectSocket,  getSocket } from "../../app/slices/socketSlice";
 import { setEmpresa, setUser } from "../../app/slices/authSlice";
-import { openSessionExpired, closeSessionExpired, setMentionUnreadCount } from "../../app/slices/actionSlice";
+import { openSessionExpired, closeSessionExpired } from "../../app/slices/actionSlice";
 import { RootState } from "../../app/store";
 import { setupAxiosInterceptors } from "../../utils/axiosInterceptor";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
-import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services";
-import { jwtDecode } from "jwt-decode";
+import { useMentionsSync } from "../../hooks/useMentionsSync";
 
 
 
@@ -27,13 +26,7 @@ const Dashboard = () => {
   const sessionExpired = useSelector((state: RootState) => state.action.sessionExpired)
   const warnedMissingEmpresaRef = useRef(false)
   const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
-  const mentionsRefreshNonce = useSelector((state: RootState) => state.action.mentionsRefreshNonce)
-  const authUserId = useSelector((state: RootState) => state.auth.user?.id)
-  const authEmpresaId = useSelector((state: RootState) => state.auth.empresa?.id)
-  const mentionAudioRef = useRef(new Audio('/audio/mencion.mp3'))
-  const mentionFetchInFlightRef = useRef(false)
-  const mentionFetchLastAtRef = useRef(0)
-  const mentionRefreshTimerRef = useRef<number | null>(null)
+  useMentionsSync()
   
   // Configurar interceptores de axios para manejo de tokens
   useEffect(() => {
@@ -62,89 +55,6 @@ const Dashboard = () => {
               console.error('Error conectando socket:', error);
           }
     },[dispatch])
-
-  // Menciones realtime + contador global
-  // Menciones realtime + contador global
-  const refreshMentionCount = useCallback(async () => {
-    const token = localStorage.getItem('token') || ''
-    if (!token) return
-    const now = Date.now()
-    if (mentionFetchInFlightRef.current) return
-    if (now - mentionFetchLastAtRef.current < 2500) return
-    mentionFetchInFlightRef.current = true
-    mentionFetchLastAtRef.current = now
-
-    const [countResp, chatsResp] = await Promise.all([
-      getMentionsUnreadCount(token),
-      getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 }),
-    ])
-
-    if ((countResp as any)?.statusCode === 401 || (chatsResp as any)?.statusCode === 401) {
-      dispatch(openSessionExpired())
-      mentionFetchInFlightRef.current = false
-      return
-    }
-
-    const items = Array.isArray((chatsResp as any)?.items) ? (chatsResp as any).items : []
-    if (items.length === 0) {
-      dispatch(setMentionUnreadCount(0))
-      mentionFetchInFlightRef.current = false
-      return
-    }
-
-    dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
-    mentionFetchInFlightRef.current = false
-  }, [dispatch])
-  useEffect(() => {
-    if (mentionRefreshTimerRef.current) {
-      window.clearTimeout(mentionRefreshTimerRef.current)
-      mentionRefreshTimerRef.current = null
-    }
-    mentionRefreshTimerRef.current = window.setTimeout(() => {
-      mentionRefreshTimerRef.current = null
-      refreshMentionCount().catch(() => { mentionFetchInFlightRef.current = false })
-    }, 300)
-    return () => {
-      if (mentionRefreshTimerRef.current) {
-        window.clearTimeout(mentionRefreshTimerRef.current)
-        mentionRefreshTimerRef.current = null
-      }
-    }
-  }, [refreshMentionCount, authUserId, authEmpresaId, socketConnected, mentionsRefreshNonce])
-
-  useEffect(() => {
-    const token = localStorage.getItem('token') || ''
-    const myUserIdFromStorage = localStorage.getItem('userId') || ''
-    let myUserId = myUserIdFromStorage
-    if (!myUserId && token) {
-      try {
-        myUserId = jwtDecode<{ id?: string }>(token)?.id ?? ''
-      } catch {
-        myUserId = ''
-      }
-    }
-    const socketInstance = getSocket()
-
-    if (!token || !myUserId || !socketInstance || !socketConnected) return
-
-    const eventName = `mention-${myUserId}`
-    const handler = (_payload: any) => {
-      refreshMentionCount().catch(() => { mentionFetchInFlightRef.current = false })
-      toast.info('Te mencionaron en un chat')
-      try {
-        const audio = mentionAudioRef.current
-        audio.currentTime = 0
-        audio.playbackRate = 1.2
-        audio.play().catch(() => {})
-      } catch {}
-    }
-
-    socketInstance.on(eventName, handler)
-    return () => {
-      socketInstance.off(eventName, handler)
-    }
-  }, [refreshMentionCount, socketConnected])
-  
 
   const navigate = useNavigate()
 

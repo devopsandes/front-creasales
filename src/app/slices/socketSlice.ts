@@ -1,5 +1,6 @@
 ﻿import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { io, Socket } from "socket.io-client";
+import { perfTrackReconnectAttempt } from "../../utils/perfTracker";
 
 const SOCKET_URL = `${import.meta.env.VITE_URL_BACK}`;
 
@@ -70,6 +71,7 @@ const socketSlice = createSlice({
         };
 
         handleDisconnect = () => {
+          perfTrackReconnectAttempt("socket.disconnect");
           if (perfEnabled()) {
             console.log("[perf.front]", {
               event: "socket.disconnected",
@@ -80,6 +82,7 @@ const socketSlice = createSlice({
         };
 
         handleConnectError = () => {
+          perfTrackReconnectAttempt("socket.connect_error");
           if (perfEnabled()) {
             console.log("[perf.front]", {
               event: "socket.connect_error",

@@ -32,7 +32,7 @@ import { setChatReadState } from '../../services/chats/chats.services'
 import { jwtDecode } from "jwt-decode"
 import AddTagModal from '../../components/modal/AddTagModal'
 import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModal'
-import { perfMark } from '../../utils/perfTracker'
+import { perfMark, perfTrackMemory } from '../../utils/perfTracker'
 
 const Chats = () => {
     const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -72,6 +72,11 @@ const Chats = () => {
     const lastSentMessageRef = useRef<string | null>(null)
     const uploadPreviewUrlsRef = useRef<Record<string, string>>({})
     const pendingChatRefreshRef = useRef<number | null>(null)
+    const mensajesLenRef = useRef(0)
+    const chatLoadControllerRef = useRef<AbortController | null>(null)
+    const timelineLoadControllerRef = useRef<AbortController | null>(null)
+    const timelineOlderControllerRef = useRef<AbortController | null>(null)
+    const refreshCurrentChatControllerRef = useRef<AbortController | null>(null)
 
     const MAX_FILES_PER_MESSAGE = 5
 
@@ -304,13 +309,19 @@ const Chats = () => {
         pendingChatRefreshRef.current = window.setTimeout(async () => {
             pendingChatRefreshRef.current = null
             try {
-                const chatResp = await findChatById(token, id)
+                refreshCurrentChatControllerRef.current?.abort()
+                const controller = new AbortController()
+                refreshCurrentChatControllerRef.current = controller
+                const chatResp = await findChatById(token, id, { signal: controller.signal, rateLimitMs: 900 })
                 if ((chatResp as any)?.statusCode === 401) {
                     dispatch(openSessionExpired())
                     return
                 }
                 if ((chatResp as any)?.chat) {
                     patchCurrentChatInStore((chatResp as any).chat)
+                }
+                if (refreshCurrentChatControllerRef.current === controller) {
+                    refreshCurrentChatControllerRef.current = null
                 }
             } catch { }
         }, 350)
@@ -516,31 +527,42 @@ const Chats = () => {
             if (!id) return
             // Obtener número de conversación
             try {
-                const chatData = await axios.get(`${import.meta.env.VITE_URL_BACKEND}/chats/${id}`, {
-                    headers: { authorization: `Bearer ${token}` }
-                })
-                setConversacionNumero(chatData?.data?.chat?.lastConversacionNumero ?? null)
+                chatLoadControllerRef.current?.abort()
+                timelineLoadControllerRef.current?.abort()
+                const chatController = new AbortController()
+                const timelineController = new AbortController()
+                chatLoadControllerRef.current = chatController
+                timelineLoadControllerRef.current = timelineController
+                const chatData = await findChatById(token, id, { signal: chatController.signal, rateLimitMs: 900 })
+                if ((chatData as any)?.statusCode === 401) { dispatch(openSessionExpired()); return }
+                setConversacionNumero((chatData as any)?.chat?.lastConversacionNumero ?? null)
             } catch { setConversacionNumero(null) }
             setTimelineCursor(null)
             setTimelineHasMore(false)
-            const data = await findChatTimeline(token!, id!, { limit: 200 })
-            if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
-            const rawItems: any[] = (data as any).items || []
-            const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
-                const ta = new Date((a as any)?.createdAt ?? 0).getTime()
-                const tb = new Date((b as any)?.createdAt ?? 0).getTime()
-                return ta - tb
-            })
-            setMensajes(items)
-            setTimelineCursor((data as any)?.nextCursor ?? null)
-            setTimelineHasMore(Boolean((data as any)?.hasMore))
-            const lastMessage = [...items].reverse().find((x: any) => x && x.kind === "message")
-            if (lastMessage?.createdAt) { setCondChat(menos24hs(new Date(lastMessage.createdAt))) }
-            else { setCondChat(false) }
-            setLoading(false)
+            try {
+                const data = await findChatTimeline(token!, id!, { limit: 200 }, { signal: timelineLoadControllerRef.current?.signal, rateLimitMs: 1000 })
+                if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
+                const rawItems: any[] = (data as any).items || []
+                const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
+                    const ta = new Date((a as any)?.createdAt ?? 0).getTime()
+                    const tb = new Date((b as any)?.createdAt ?? 0).getTime()
+                    return ta - tb
+                })
+                setMensajes(items)
+                setTimelineCursor((data as any)?.nextCursor ?? null)
+                setTimelineHasMore(Boolean((data as any)?.hasMore))
+                const lastMessage = [...items].reverse().find((x: any) => x && x.kind === "message")
+                if (lastMessage?.createdAt) { setCondChat(menos24hs(new Date(lastMessage.createdAt))) }
+                else { setCondChat(false) }
+                setLoading(false)
+            } catch { }
         }
         inicio()
-    }, [id, token])
+        return () => {
+            chatLoadControllerRef.current?.abort()
+            timelineLoadControllerRef.current?.abort()
+        }
+    }, [id, token, dispatch])
 
     const loadOlderTimeline = async () => {
         if (!id || !token) return
@@ -548,8 +570,11 @@ const Chats = () => {
         const container = mensajesContainerRef.current
         if (container) { scrollRestoreRef.current = { height: container.scrollHeight, top: container.scrollTop } }
         setTimelineLoadingMore(true)
+        timelineOlderControllerRef.current?.abort()
+        const controller = new AbortController()
+        timelineOlderControllerRef.current = controller
         try {
-            const data = await findChatTimeline(token!, id!, { limit: 200, cursor: timelineCursor })
+            const data = await findChatTimeline(token!, id!, { limit: 200, cursor: timelineCursor }, { signal: controller.signal, rateLimitMs: 1000 })
             if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
             const rawItems: any[] = (data as any).items || []
             const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
@@ -560,7 +585,10 @@ const Chats = () => {
             setMensajes((prev) => mergeTimeline(prev, items, 'prepend'))
             setTimelineCursor((data as any)?.nextCursor ?? null)
             setTimelineHasMore(Boolean((data as any)?.hasMore))
-        } finally {
+        } catch { } finally {
+            if (timelineOlderControllerRef.current === controller) {
+                timelineOlderControllerRef.current = null
+            }
             setTimelineLoadingMore(false)
             if (mensajesContainerRef.current && scrollRestoreRef.current) {
                 const prev = scrollRestoreRef.current
@@ -582,6 +610,23 @@ const Chats = () => {
     useEffect(() => {
         if (mensajesContainerRef.current) { mensajesContainerRef.current.scrollTop = mensajesContainerRef.current.scrollHeight }
     }, [mensajes])
+
+    useEffect(() => {
+        mensajesLenRef.current = Array.isArray(mensajes) ? mensajes.length : 0
+    }, [mensajes])
+
+    useEffect(() => {
+        const interval = window.setInterval(() => {
+            perfTrackMemory('chats.timeline', {
+                chatId: id ?? null,
+                timelineItems: mensajesLenRef.current,
+                chatsCacheSize: Array.isArray(chatsRef.current) ? chatsRef.current.length : 0,
+            })
+        }, 60_000)
+        return () => {
+            window.clearInterval(interval)
+        }
+    }, [id])
 
     useEffect(() => {
         const run = async () => {
@@ -727,6 +772,10 @@ const Chats = () => {
                 window.clearTimeout(pendingChatRefreshRef.current)
                 pendingChatRefreshRef.current = null
             }
+            refreshCurrentChatControllerRef.current?.abort()
+            chatLoadControllerRef.current?.abort()
+            timelineLoadControllerRef.current?.abort()
+            timelineOlderControllerRef.current?.abort()
         }
     }, [])
 

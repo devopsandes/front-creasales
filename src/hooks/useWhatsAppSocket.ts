@@ -13,8 +13,6 @@ export const useWhatsAppSocket = ({
 }: UseWhatsAppSocketProps = {}) => {
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reconnectAttemptRef = useRef(0);
 
   // Obtener la instancia del socket global
   useEffect(() => {
@@ -28,29 +26,12 @@ export const useWhatsAppSocket = ({
       const handleConnect = () => {
         console.log('Socket.io connected');
         setIsConnected(true);
-        reconnectAttemptRef.current = 0;
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-          reconnectTimeoutRef.current = null;
-        }
       };
       
       // Listener de desconexión
       const handleDisconnect = () => {
         console.log('Socket.io disconnected');
         setIsConnected(false);
-
-        const attempt = reconnectAttemptRef.current + 1;
-        reconnectAttemptRef.current = attempt;
-        const baseDelay = Math.min(30000, 1000 * Math.pow(2, Math.min(attempt - 1, 5)));
-        const jitter = Math.floor(Math.random() * 400);
-        const delay = baseDelay + jitter;
-
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (socketRef.current) {
-            socketRef.current.connect();
-          }
-        }, delay);
       };
       
       socket.on('connect', handleConnect);
@@ -59,9 +40,6 @@ export const useWhatsAppSocket = ({
       return () => {
         socket.off('connect', handleConnect);
         socket.off('disconnect', handleDisconnect);
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-        }
       };
     }
   }, []);

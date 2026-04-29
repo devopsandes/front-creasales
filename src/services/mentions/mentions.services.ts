@@ -1,5 +1,6 @@
 import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
+import { perfTrackRequest } from "../../utils/perfTracker"
 
 export type MentionChatItem = {
   chatId: string
@@ -22,6 +23,7 @@ const unreadCache = new Map<string, { value: MentionsUnreadCountResponse; expire
 const chatsCache = new Map<string, { value: MentionChatsResponse; expiresAt: number }>()
 const pendingUnread = new Map<string, Promise<MentionsUnreadCountResponse>>()
 const pendingChats = new Map<string, Promise<MentionChatsResponse>>()
+const endpointLastAt = new Map<string, number>()
 
 const getCached = <T>(store: Map<string, { value: T; expiresAt: number }>, key: string): T | null => {
   const entry = store.get(key)
@@ -33,11 +35,41 @@ const getCached = <T>(store: Map<string, { value: T; expiresAt: number }>, key: 
   return entry.value
 }
 
+const waitForEndpointSlot = async (endpoint: string, minIntervalMs: number, signal?: AbortSignal): Promise<void> => {
+  if (!minIntervalMs || minIntervalMs <= 0) return
+  while (true) {
+    if (signal?.aborted) throw new DOMException("Request aborted", "AbortError")
+    const now = Date.now()
+    const lastAt = endpointLastAt.get(endpoint) ?? 0
+    const elapsed = now - lastAt
+    if (elapsed >= minIntervalMs) {
+      endpointLastAt.set(endpoint, now)
+      return
+    }
+    const waitMs = Math.max(0, minIntervalMs - elapsed)
+    await new Promise<void>((resolve, reject) => {
+      const timer = window.setTimeout(() => {
+        signal?.removeEventListener("abort", onAbort)
+        resolve()
+      }, waitMs)
+      const onAbort = () => {
+        window.clearTimeout(timer)
+        signal?.removeEventListener("abort", onAbort)
+        reject(new DOMException("Request aborted", "AbortError"))
+      }
+      signal?.addEventListener("abort", onAbort)
+    })
+  }
+}
+
 /**
  * Backend requerido:
  * - GET /mentions/unread-count (auth requerida; roles USER|ADMIN|ROOT; scope empresa)
  */
-export const getMentionsUnreadCount = async (token: string): Promise<MentionsUnreadCountResponse> => {
+export const getMentionsUnreadCount = async (
+  token: string,
+  options?: { signal?: AbortSignal; rateLimitMs?: number }
+): Promise<MentionsUnreadCountResponse> => {
   const cacheKey = token
   const cached = getCached(unreadCache, cacheKey)
   if (cached) return cached
@@ -49,7 +81,9 @@ export const getMentionsUnreadCount = async (token: string): Promise<MentionsUnr
     try {
       const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/unread-count`
       const headers = { authorization: `Bearer ${token}` }
-      const { data } = await axios.get<any>(url, { headers })
+      await waitForEndpointSlot("/mentions/unread-count", options?.rateLimitMs ?? 1200, options?.signal)
+      perfTrackRequest("/mentions/unread-count")
+      const { data } = await axios.get<any>(url, { headers, signal: options?.signal })
 
       const payload: MentionsUnreadCountResponse = {
         statusCode: data?.statusCode ?? 200,
@@ -58,6 +92,9 @@ export const getMentionsUnreadCount = async (token: string): Promise<MentionsUnr
       unreadCache.set(cacheKey, { value: payload, expiresAt: Date.now() + TTL_MS })
       return payload
     } catch (error) {
+      if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
+        throw error
+      }
       if (axios.isAxiosError(error) && error.response) {
         return {
           statusCode: error.response.status,
@@ -82,7 +119,8 @@ export const getMentionsUnreadCount = async (token: string): Promise<MentionsUnr
  */
 export const getMentionChats = async (
   token: string,
-  params?: { unreadOnly?: boolean; page?: number; limit?: number }
+  params?: { unreadOnly?: boolean; page?: number; limit?: number },
+  options?: { signal?: AbortSignal; rateLimitMs?: number }
 ): Promise<MentionChatsResponse> => {
   const query = {
     unreadOnly: params?.unreadOnly ? 1 : 0,
@@ -100,13 +138,18 @@ export const getMentionChats = async (
     try {
       const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/chats`
       const headers = { authorization: `Bearer ${token}` }
-      const { data } = await axios.get<any>(url, { headers, params: query })
+      await waitForEndpointSlot("/mentions/chats", options?.rateLimitMs ?? 1200, options?.signal)
+      perfTrackRequest("/mentions/chats")
+      const { data } = await axios.get<any>(url, { headers, params: query, signal: options?.signal })
 
       const items = Array.isArray(data?.items) ? data.items : []
       const payload: MentionChatsResponse = { statusCode: data?.statusCode ?? 200, items }
       chatsCache.set(cacheKey, { value: payload, expiresAt: Date.now() + TTL_MS })
       return payload
     } catch (error) {
+      if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
+        throw error
+      }
       if (axios.isAxiosError(error) && error.response) {
         return {
           statusCode: error.response.status,
@@ -137,6 +180,7 @@ export const markMentionsRead = async (
     const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/mark-read`
     const headers = { authorization: `Bearer ${token}` }
     const body = Array.isArray(chatIdOrIds) ? { chatIds: chatIdOrIds } : { chatId: chatIdOrIds }
+    perfTrackRequest("/mentions/mark-read")
     const { data } = await axios.post<any>(url, body, { headers })
 
     unreadCache.clear()

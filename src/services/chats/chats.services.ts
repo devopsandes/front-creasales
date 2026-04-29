@@ -2,13 +2,15 @@ import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
 import { ChatCountsResponse, ChatResponse, ChatsResponse, OperatorChatCountsResponse, TimelineResponse } from "../../interfaces/chats.interface"
 import { DataUser } from "../../interfaces/action.interface"
-import { perfCounter, perfLog } from "../../utils/perfTracker"
+import { perfCounter, perfLog, perfTrackRequest } from "../../utils/perfTracker"
 
 
 
 const pendingTimeline = new Map<string, Promise<TimelineResponse & ErrorResponse>>()
 const pendingCounts = new Map<string, Promise<ChatCountsResponse & ErrorResponse>>()
 const pendingChats = new Map<string, Promise<ChatsResponse & ErrorResponse>>()
+const pendingChatById = new Map<string, Promise<ChatResponse & ErrorResponse>>()
+const endpointLastAt = new Map<string, number>()
 
 const withPending = async <T>(store: Map<string, Promise<T>>, key: string, taskFactory: () => Promise<T>): Promise<T> => {
     const inflight = store.get(key)
@@ -20,31 +22,68 @@ const withPending = async <T>(store: Map<string, Promise<T>>, key: string, taskF
     return task
 }
 
-const findChatById = async (token: string, id: string): Promise<ChatResponse & ErrorResponse> => {
-    try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}`
-
-        const headers = {
-            authorization: `Bearer ${token}`
+const waitForEndpointSlot = async (endpoint: string, minIntervalMs: number, signal?: AbortSignal): Promise<void> => {
+    if (!minIntervalMs || minIntervalMs <= 0) return
+    while (true) {
+        if (signal?.aborted) throw new DOMException("Request aborted", "AbortError")
+        const lastAt = endpointLastAt.get(endpoint) ?? 0
+        const now = Date.now()
+        const elapsed = now - lastAt
+        if (elapsed >= minIntervalMs) {
+            endpointLastAt.set(endpoint, now)
+            return
         }
-
-        const { data } = await axios.get<ChatResponse & ErrorResponse>(url, { headers })
-
-
-        return data
-    } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-            const objeto: ChatResponse & ErrorResponse = error.response.data
-            return objeto
-        }
-        throw error; // Lanza el error si no es del tipo esperado
+        const waitMs = Math.max(0, minIntervalMs - elapsed)
+        await new Promise<void>((resolve, reject) => {
+            const timer = window.setTimeout(() => {
+                signal?.removeEventListener("abort", onAbort)
+                resolve()
+            }, waitMs)
+            const onAbort = () => {
+                window.clearTimeout(timer)
+                signal?.removeEventListener("abort", onAbort)
+                reject(new DOMException("Request aborted", "AbortError"))
+            }
+            signal?.addEventListener("abort", onAbort)
+        })
     }
+}
+
+const findChatById = async (
+    token: string,
+    id: string,
+    options?: { signal?: AbortSignal; rateLimitMs?: number }
+): Promise<ChatResponse & ErrorResponse> => {
+    const pendingKey = `${token}:${id}`
+    return withPending(pendingChatById, pendingKey, async () => {
+        try {
+            const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}`
+            const headers = {
+                authorization: `Bearer ${token}`
+            }
+            perfCounter("findChatById")
+            await waitForEndpointSlot("/chats/:id", options?.rateLimitMs ?? 800, options?.signal)
+            perfTrackRequest("/chats/:id")
+            const { data } = await axios.get<ChatResponse & ErrorResponse>(url, { headers, signal: options?.signal })
+            return data
+        } catch (error) {
+            if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
+                throw error
+            }
+            if (axios.isAxiosError(error) && error.response) {
+                const objeto: ChatResponse & ErrorResponse = error.response.data
+                return objeto
+            }
+            throw error
+        }
+    })
 }
 
 const findChatTimeline = async (
     token: string,
     id: string,
-    params?: { page?: number; limit?: number; cursor?: string | null }
+    params?: { page?: number; limit?: number; cursor?: string | null },
+    options?: { signal?: AbortSignal; rateLimitMs?: number }
 ): Promise<TimelineResponse & ErrorResponse> => {
     const query = {
         limit: params?.limit ?? 200,
@@ -81,10 +120,13 @@ const findChatTimeline = async (
                 console.log("[findChatTimeline] GET", url, { params: requestQuery })
             }
 
+            await waitForEndpointSlot("/chats/:id/timeline", options?.rateLimitMs ?? 900, options?.signal)
             const { data } = await axios.get<TimelineResponse & ErrorResponse>(url, {
                 headers,
                 params: requestQuery,
+                signal: options?.signal,
             })
+            perfTrackRequest("/chats/:id/timeline")
 
             perfLog("api.findChatTimeline", {
                 chatId: id,
@@ -105,6 +147,9 @@ const findChatTimeline = async (
 
             return data
         } catch (error) {
+            if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
+                throw error
+            }
             const debug =
                 import.meta.env.DEV &&
                 typeof window !== "undefined" &&
@@ -156,7 +201,8 @@ type GetChatsFilters = {
 
 const getChatCounts = async (
     token: string,
-    params?: { q?: string; tagId?: string }
+    params?: { q?: string; tagId?: string },
+    options?: { signal?: AbortSignal; rateLimitMs?: number }
 ): Promise<ChatCountsResponse & ErrorResponse> => {
     const pendingKey = `${token}:${params?.q ?? ""}:${params?.tagId ?? ""}`
     return withPending(pendingCounts, pendingKey, async () => {
@@ -170,7 +216,9 @@ const getChatCounts = async (
             const url = qs.toString() ? `${baseUrl}?${qs.toString()}` : baseUrl
 
             const headers = { authorization: `Bearer ${token}` }
-            const { data } = await axios.get<ChatCountsResponse & ErrorResponse>(url, { headers })
+            await waitForEndpointSlot("/chats/counts", options?.rateLimitMs ?? 1200, options?.signal)
+            perfTrackRequest("/chats/counts")
+            const { data } = await axios.get<ChatCountsResponse & ErrorResponse>(url, { headers, signal: options?.signal })
             perfLog("api.getChatCounts", {
                 durationMs: Math.round(performance.now() - startedAt),
                 q: params?.q ?? null,
@@ -178,6 +226,9 @@ const getChatCounts = async (
             })
             return data
         } catch (error) {
+            if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
+                throw error
+            }
             if (axios.isAxiosError(error) && error.response) {
                 return error.response.data as any
             }
@@ -190,7 +241,8 @@ const getChats = async (
     token: string,
     page: string,
     limit: string,
-    filters?: GetChatsFilters
+    filters?: GetChatsFilters,
+    options?: { signal?: AbortSignal; rateLimitMs?: number }
 ): Promise<ChatsResponse & ErrorResponse> => {
     const pendingKey = `${token}:${page}:${limit}:${JSON.stringify(filters ?? {})}`
     return withPending(pendingChats, pendingKey, async () => {
@@ -215,8 +267,9 @@ const getChats = async (
             const headers = {
                 authorization: `Bearer ${token}`
             }
-
-            const { data } = await axios.get<ChatsResponse & ErrorResponse>(url, { headers })
+            await waitForEndpointSlot("/chats", options?.rateLimitMs ?? 1200, options?.signal)
+            perfTrackRequest("/chats")
+            const { data } = await axios.get<ChatsResponse & ErrorResponse>(url, { headers, signal: options?.signal })
 
             perfLog("api.getChats", {
                 durationMs: Math.round(performance.now() - startedAt),
@@ -228,6 +281,9 @@ const getChats = async (
 
             return data
         } catch (error) {
+            if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
+                throw error
+            }
             if (axios.isAxiosError(error) && error.response) {
                 const objeto: ChatsResponse & ErrorResponse = error.response.data
                 return objeto

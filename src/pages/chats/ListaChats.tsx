@@ -10,12 +10,12 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
 import { Tag as TagIcon, User } from "lucide-react"
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired, setChats, setMentionUnreadCount, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState, bumpMentionsRefreshNonce } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState, bumpMentionsRefreshNonce } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
 import { findChatById, getChatCounts, getChats, searchByConversacion } from "../../services/chats/chats.services"
-import { getMentionChats, getMentionsUnreadCount } from "../../services/mentions/mentions.services"
+import { getMentionChats } from "../../services/mentions/mentions.services"
 import { perfMark } from "../../utils/perfTracker"
 
 // Función auxiliar para capitalizar correctamente el texto
@@ -51,6 +51,7 @@ const ListaChats = () => {
 
     const CHAT_PAGE_LIMIT = 100
     const SCROLL_BOTTOM_THRESHOLD_PX = 260
+    const MAX_CHAT_CACHE = 1000
 
     const [chats1, setChats1] = useState<ChatState[]>([])
     const [archivadas, setArchivadas] = useState<ChatState[]>([])
@@ -114,6 +115,12 @@ const ListaChats = () => {
     const pendingMentionsRefreshRef = useRef<number | null>(null)
     const mentionFetchInFlightRef = useRef(false)
     const mentionFetchLastAtRef = useRef(0)
+    const chatsLoadControllerRef = useRef<AbortController | null>(null)
+    const loadMoreControllerRef = useRef<AbortController | null>(null)
+    const countsControllerRef = useRef<AbortController | null>(null)
+    const mentionsControllerRef = useRef<AbortController | null>(null)
+    const chatPatchTimersRef = useRef<Map<string, number>>(new Map())
+    const chatPatchPayloadRef = useRef<Map<string, ChatState>>(new Map())
 
     const extractMentionChatId = (it: any): string | null => {
         return it?.chatId || it?.chat_id || it?.chat?.id || it?.id || null
@@ -218,6 +225,29 @@ const ListaChats = () => {
         return Array.from(map.values()).sort(compareChatsForStore)
     }
 
+    const scheduleChatPatch = (incoming: ChatState) => {
+        if (!incoming?.id) return
+        const chatId = incoming.id
+        chatPatchPayloadRef.current.set(chatId, incoming)
+        const existingTimer = chatPatchTimersRef.current.get(chatId)
+        if (existingTimer) {
+            window.clearTimeout(existingTimer)
+            chatPatchTimersRef.current.delete(chatId)
+        }
+        const timer = window.setTimeout(() => {
+            chatPatchTimersRef.current.delete(chatId)
+            const payload = chatPatchPayloadRef.current.get(chatId)
+            chatPatchPayloadRef.current.delete(chatId)
+            if (!payload) return
+            const existing = chatsRef.current.find((c) => c.id === payload.id)
+            const normalized = mergeChatPayload(existing, payload)
+            const merged = mergeChatsById(chatsRef.current, [normalized])
+            dispatch(setChats(merged.slice(0, MAX_CHAT_CACHE)))
+            dispatch(setChatListCacheMeta({ chatListUpdatedAt: Date.now() }))
+        }, 280)
+        chatPatchTimersRef.current.set(chatId, timer)
+    }
+
     const resolveHasMore = (resp: any, limit: number): boolean => {
         if (typeof resp?.hasMore === "boolean") return resp.hasMore
         const items = Array.isArray(resp?.chats) ? resp.chats : []
@@ -271,11 +301,14 @@ const ListaChats = () => {
         if (!token) return
         const q = `${debouncedSearch ?? ""}`.trim()
         const tagId = `${selectedTag ?? ""}`.trim()
+        countsControllerRef.current?.abort()
+        const controller = new AbortController()
+        countsControllerRef.current = controller
 
         getChatCounts(token, {
             q: q.length ? q : undefined,
             tagId: tagId.length ? tagId : undefined,
-        })
+        }, { signal: controller.signal, rateLimitMs: 1200 })
             .then((resp: any) => {
                 const c = resp?.counts || {}
                 setTabCounts({
@@ -288,6 +321,12 @@ const ListaChats = () => {
                 })
             })
             .catch(() => { })
+        return () => {
+            if (countsControllerRef.current === controller) {
+                countsControllerRef.current.abort()
+                countsControllerRef.current = null
+            }
+        }
     }, [token, debouncedSearch, selectedTag])
 
     useEffect(() => {
@@ -322,41 +361,26 @@ const ListaChats = () => {
     useEffect(() => {
 
         const ejecucion = async () => {
-            let mentionTotal: number | null = null
-
-            // Intentamos obtener menciones (si backend aún no lo soporta, no rompemos nada)
             try {
-                const [countResp, chatsResp] = await Promise.all([
-                    getMentionsUnreadCount(token),
-                    getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 }),
-                ])
-                if (typeof (countResp as any)?.count === 'number') {
-                    mentionTotal = (countResp as any).count
-                }
+                mentionsControllerRef.current?.abort()
+                const controller = new AbortController()
+                mentionsControllerRef.current = controller
+                const chatsResp = await getMentionChats(
+                    token,
+                    { unreadOnly: true, page: 1, limit: 200 },
+                    { signal: controller.signal, rateLimitMs: 1200 }
+                )
                 const items = Array.isArray((chatsResp as any)?.items) ? (chatsResp as any).items : []
                 const ids: string[] = []
                 items.forEach((it: any) => {
                     const chatId = extractMentionChatId(it)
                     if (chatId) ids.push(chatId)
-                    // Si el backend no envía el count global, podemos sumar desde los items como fallback
-                    if (typeof it?.unreadCount === 'number' && mentionTotal === null) {
-                        mentionTotal = (mentionTotal ?? 0) + it.unreadCount
-                    }
                 })
                 setMentionChatIds(Array.from(new Set(ids)))
-
-                // Reconciliación: si no hay ítems unread, el contador debe ser 0
-                if (items.length === 0) {
-                    mentionTotal = 0
-                }
             } catch {
                 // noop
             }
 
-            // Carga de chats se maneja en un effect aparte (según filtros/buscador)
-            if (mentionTotal !== null) {
-                dispatch(setMentionUnreadCount(mentionTotal))
-            }
             setLoading(false)
 
             // Los usuarios con rol USER no tienen permiso para listar operadores (backend devuelve 403).
@@ -388,7 +412,10 @@ const ListaChats = () => {
         ejecucion();
 
 
-
+        return () => {
+            mentionsControllerRef.current?.abort()
+            mentionsControllerRef.current = null
+        }
     }, [])
 
     // Rehidratar UI/listado al volver a la vista (SPA navigation)
@@ -457,14 +484,16 @@ const ListaChats = () => {
         setHasMore(true)
         setPage(1)
         if (!cachedOk) dispatch(setChats([]))
+        chatsLoadControllerRef.current?.abort()
+        const controller = new AbortController()
+        chatsLoadControllerRef.current = controller
 
-        getChats(token, "1", `${CHAT_PAGE_LIMIT}`, filters)
+        getChats(token, "1", `${CHAT_PAGE_LIMIT}`, filters, { signal: controller.signal, rateLimitMs: 1200 })
             .then((resp: any) => {
                 const items: ChatState[] = Array.isArray(resp?.chats) ? resp.chats : []
                 // Si había cache, mergeamos para no "perder" páginas ya cargadas; sino reemplazo directo
                 const merged = cachedOk ? mergeChatsById(chatsRef.current, items) : items
-                const MAX_CACHE = 1000
-                const nextList = Array.isArray(merged) ? merged.slice(0, MAX_CACHE) : merged
+                const nextList = Array.isArray(merged) ? merged.slice(0, MAX_CHAT_CACHE) : merged
                 dispatch(setChats(nextList))
                 setHasMore(resolveHasMore(resp, CHAT_PAGE_LIMIT))
                 dispatch(setChatListCacheMeta({
@@ -478,7 +507,18 @@ const ListaChats = () => {
             .catch(() => {
                 // noop
             })
-            .finally(() => setLoading(false))
+            .finally(() => {
+                if (chatsLoadControllerRef.current === controller) {
+                    chatsLoadControllerRef.current = null
+                }
+                setLoading(false)
+            })
+        return () => {
+            if (chatsLoadControllerRef.current === controller) {
+                chatsLoadControllerRef.current.abort()
+                chatsLoadControllerRef.current = null
+            }
+        }
     }, [hydrated, token, debouncedSearch, selectedTag, selectedOperator, styleBtn, chatListQueryKey, dispatch])
 
     // Estado inicial: no estamos en "Menciones" hasta que el usuario toque esa pestaña
@@ -502,8 +542,11 @@ const ListaChats = () => {
             if (now - mentionFetchLastAtRef.current < 2500) return
             mentionFetchInFlightRef.current = true
             mentionFetchLastAtRef.current = now
+            mentionsControllerRef.current?.abort()
+            const controller = new AbortController()
+            mentionsControllerRef.current = controller
 
-            getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 })
+            getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 }, { signal: controller.signal, rateLimitMs: 1200 })
                 .then((resp: any) => {
                     const items = Array.isArray(resp?.items) ? resp.items : []
                     const ids: string[] = []
@@ -522,6 +565,9 @@ const ListaChats = () => {
                 })
                 .catch(() => { })
                 .finally(() => {
+                    if (mentionsControllerRef.current === controller) {
+                        mentionsControllerRef.current = null
+                    }
                     mentionFetchInFlightRef.current = false
                 })
         }, 350)
@@ -530,6 +576,7 @@ const ListaChats = () => {
                 window.clearTimeout(pendingMentionsRefreshRef.current)
                 pendingMentionsRefreshRef.current = null
             }
+            mentionsControllerRef.current?.abort()
         }
     }, [token, mentionsRefreshNonce, dispatch])
 
@@ -543,9 +590,10 @@ const ListaChats = () => {
         if (missingIds.length === 0) return
 
         let cancelled = false
+        const controller = new AbortController()
         const hydrateMentionChats = async () => {
             const responses = await Promise.all(
-                missingIds.map((chatId) => findChatById(token, chatId).catch(() => null))
+                missingIds.map((chatId) => findChatById(token, chatId, { signal: controller.signal, rateLimitMs: 900 }).catch(() => null))
             )
 
             if (cancelled) return
@@ -565,7 +613,10 @@ const ListaChats = () => {
         }
 
         hydrateMentionChats().catch(() => { })
-        return () => { cancelled = true }
+        return () => {
+            cancelled = true
+            controller.abort()
+        }
     }, [styleBtn, mentionChatIds, token, dispatch])
 
 
@@ -577,17 +628,19 @@ const ListaChats = () => {
 
         const nextPage = page + 1
         setIsLoadingMore(true)
+        loadMoreControllerRef.current?.abort()
+        const controller = new AbortController()
+        loadMoreControllerRef.current = controller
         try {
             const filters = activeFiltersRef.current || {}
-            const resp = await getChats(token, `${nextPage}`, `${CHAT_PAGE_LIMIT}`, filters)
+            const resp = await getChats(token, `${nextPage}`, `${CHAT_PAGE_LIMIT}`, filters, { signal: controller.signal, rateLimitMs: 1200 })
             const incoming: ChatState[] = Array.isArray((resp as any)?.chats) ? (resp as any).chats : []
             if (incoming.length === 0) {
                 setHasMore(false)
                 return
             }
             const merged = mergeChatsById(chatsFromRedux, incoming)
-            const MAX_CACHE = 1000
-            dispatch(setChats(merged.slice(0, MAX_CACHE)))
+            dispatch(setChats(merged.slice(0, MAX_CHAT_CACHE)))
             setPage(nextPage)
             setHasMore(resolveHasMore(resp, CHAT_PAGE_LIMIT))
             dispatch(setChatListCacheMeta({
@@ -598,6 +651,9 @@ const ListaChats = () => {
         } catch {
             // noop: no frenamos la UX por un error puntual en scroll
         } finally {
+            if (loadMoreControllerRef.current === controller) {
+                loadMoreControllerRef.current = null
+            }
             setIsLoadingMore(false)
         }
     }
@@ -616,8 +672,6 @@ const ListaChats = () => {
     useEffect(() => {
         if (!socket) return
 
-        const MAX_CACHE = 1000
-
         const scheduleCountsRefresh = () => {
             if (pendingCountsRefreshRef.current) return
             pendingCountsRefreshRef.current = window.setTimeout(() => {
@@ -625,10 +679,13 @@ const ListaChats = () => {
                 if (!token) return
                 const q = `${debouncedSearch ?? ""}`.trim()
                 const tagId = `${selectedTag ?? ""}`.trim()
+                countsControllerRef.current?.abort()
+                const controller = new AbortController()
+                countsControllerRef.current = controller
                 getChatCounts(token, {
                     q: q.length ? q : undefined,
                     tagId: tagId.length ? tagId : undefined,
-                })
+                }, { signal: controller.signal, rateLimitMs: 1200 })
                     .then((resp: any) => {
                         const c = resp?.counts || {}
                         setTabCounts({
@@ -641,6 +698,11 @@ const ListaChats = () => {
                         })
                     })
                     .catch(() => { })
+                    .finally(() => {
+                        if (countsControllerRef.current === controller) {
+                            countsControllerRef.current = null
+                        }
+                    })
             }, 400)
         }
 
@@ -654,11 +716,7 @@ const ListaChats = () => {
             }
             perfMark('socket.nuevo-chat.received', { chatId: _chat?.id ?? null })
             if (_chat?.id) {
-                const existing = chatsRef.current.find((c) => c.id === _chat.id)
-                const normalizedIncoming = mergeChatPayload(existing, _chat)
-                const merged = mergeChatsById(chatsRef.current, [normalizedIncoming])
-                dispatch(setChats(merged.slice(0, MAX_CACHE)))
-                dispatch(setChatListCacheMeta({ chatListUpdatedAt: Date.now() }))
+                scheduleChatPatch(_chat)
                 requestAnimationFrame(() => {
                     perfMark('ui.chatlist.patched', {
                         source: 'nuevo-chat',
@@ -692,9 +750,7 @@ const ListaChats = () => {
                         } catch { }
                     }
                 }
-                const merged = mergeChatsById(chatsRef.current, [normalized])
-                dispatch(setChats(merged.slice(0, MAX_CACHE)))
-                dispatch(setChatListCacheMeta({ chatListUpdatedAt: Date.now() }))
+                scheduleChatPatch(normalized)
                 requestAnimationFrame(() => {
                     perfMark('ui.chatlist.patched', {
                         source: 'chat.updated',
@@ -729,6 +785,7 @@ const ListaChats = () => {
                 window.clearTimeout(pendingCountsRefreshRef.current)
                 pendingCountsRefreshRef.current = null
             }
+            countsControllerRef.current?.abort()
         }
     }, [socket, token, dispatch, debouncedSearch, selectedTag])
 
@@ -936,6 +993,18 @@ const ListaChats = () => {
     const handleToggleFilter = () => {
         setShowFilterSelect(!showFilterSelect)
     }
+
+    useEffect(() => {
+        return () => {
+            chatsLoadControllerRef.current?.abort()
+            loadMoreControllerRef.current?.abort()
+            countsControllerRef.current?.abort()
+            mentionsControllerRef.current?.abort()
+            chatPatchTimersRef.current.forEach((timer) => window.clearTimeout(timer))
+            chatPatchTimersRef.current.clear()
+            chatPatchPayloadRef.current.clear()
+        }
+    }, [])
 
     // Marcado como leído se dispara desde la vista del chat (botón al lado de "Archivar")
 
