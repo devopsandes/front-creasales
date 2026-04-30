@@ -1,8 +1,8 @@
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatById, findChatTimeline, getUserData, setChatBotState } from '../../services/chats/chats.services'
-import { TimelineItem } from '../../interfaces/chats.interface'
+import { findChatById, findChatMessagesLite, findChatTimeline, getUserData, setChatBotState } from '../../services/chats/chats.services'
+import { MessageLiteItem, TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
 import { useDispatch, useSelector } from 'react-redux'
@@ -46,6 +46,7 @@ const Chats = () => {
     const [timelineCursor, setTimelineCursor] = useState<string | null>(null)
     const [timelineHasMore, setTimelineHasMore] = useState<boolean>(false)
     const [timelineLoadingMore, setTimelineLoadingMore] = useState<boolean>(false)
+    const [timelineSource, setTimelineSource] = useState<'timeline' | 'messages-lite'>('timeline')
     const [docPreview, setDocPreview] = useState<{ url: string; name: string } | null>(null)
     const [mensaje, setMensaje] = useState<string>('')
     const [condChat, setCondChat] = useState<boolean>(false)
@@ -139,6 +140,40 @@ const Chats = () => {
         if (it?.type && it?.text !== undefined) return { ...it, kind: "event" as const }
         if (it?.msg_entrada !== undefined || it?.msg_salida !== undefined) return { ...it, kind: "message" as const }
         return it
+    }
+
+    const mapMessagesLiteItemToTimeline = (item: MessageLiteItem): TimelineItem => {
+        const baseText = `${item?.text ?? ''}`.trim()
+        const mediaPlaceholder =
+            item?.mediaKey
+                ? item.type === 'image'
+                    ? '[Imagen]'
+                    : item.type === 'audio'
+                        ? '[Audio]'
+                        : item.type === 'document'
+                            ? '[Documento]'
+                            : ''
+                : ''
+        const noteText = `${item?.note ?? ''}`.trim()
+        const resolvedText = baseText || mediaPlaceholder || noteText
+        if (item.direction === 'incoming') {
+            return {
+                kind: "message",
+                id: item.id,
+                createdAt: item.createdAt,
+                msg_entrada: resolvedText,
+                type: item.type,
+                leido: Boolean(item.read),
+            } as any
+        }
+        return {
+            kind: "message",
+            id: item.id,
+            createdAt: item.createdAt,
+            msg_salida: resolvedText,
+            type: item.type,
+            leido: Boolean(item.read),
+        } as any
     }
 
     const getTimelineKey = (it: any) => {
@@ -544,9 +579,14 @@ const Chats = () => {
             } catch { setConversacionNumero(null) }
             setTimelineCursor(null)
             setTimelineHasMore(false)
+            setTimelineSource('timeline')
             try {
                 const data = await findChatTimeline(token!, id!, { limit: TIMELINE_WINDOW_LIMIT }, { signal: timelineLoadControllerRef.current?.signal, rateLimitMs: 1000 })
                 if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
+                const timelineOk = ((data as any)?.statusCode ?? 200) < 400 && Array.isArray((data as any)?.items)
+                if (!timelineOk) {
+                    throw new Error('timeline_unavailable')
+                }
                 const rawItems: any[] = (data as any).items || []
                 const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
                     const ta = new Date((a as any)?.createdAt ?? 0).getTime()
@@ -561,8 +601,27 @@ const Chats = () => {
                 else { setCondChat(true) }
                 setLoading(false)
             } catch {
-                setCondChat(true)
-                setLoading(false)
+                try {
+                    const liteData = await findChatMessagesLite(token!, id!, { limit: TIMELINE_WINDOW_LIMIT }, { signal: timelineLoadControllerRef.current?.signal, rateLimitMs: 1000 })
+                    if (liteData.statusCode === 401) { dispatch(openSessionExpired()); return }
+                    const rawLiteItems: any[] = (liteData as any).items || []
+                    const liteItems = rawLiteItems.map(mapMessagesLiteItemToTimeline).sort((a, b) => {
+                        const ta = new Date((a as any)?.createdAt ?? 0).getTime()
+                        const tb = new Date((b as any)?.createdAt ?? 0).getTime()
+                        return ta - tb
+                    })
+                    setTimelineSource('messages-lite')
+                    setMensajes(liteItems)
+                    setTimelineCursor((liteData as any)?.nextBefore ?? null)
+                    setTimelineHasMore(Boolean((liteData as any)?.hasMore))
+                    const lastMessage = [...liteItems].reverse().find((x: any) => x && x.kind === "message")
+                    if (lastMessage?.createdAt) { setCondChat(menos24hs(new Date(lastMessage.createdAt))) }
+                    else { setCondChat(true) }
+                    setLoading(false)
+                } catch {
+                    setCondChat(true)
+                    setLoading(false)
+                }
             }
         }
         inicio()
@@ -582,17 +641,31 @@ const Chats = () => {
         const controller = new AbortController()
         timelineOlderControllerRef.current = controller
         try {
-            const data = await findChatTimeline(token!, id!, { limit: TIMELINE_WINDOW_LIMIT, cursor: timelineCursor }, { signal: controller.signal, rateLimitMs: 1000 })
-            if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
-            const rawItems: any[] = (data as any).items || []
-            const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
-                const ta = new Date((a as any)?.createdAt ?? 0).getTime()
-                const tb = new Date((b as any)?.createdAt ?? 0).getTime()
-                return ta - tb
-            })
-            setMensajes((prev) => mergeTimeline(prev, items, 'prepend'))
-            setTimelineCursor((data as any)?.nextCursor ?? null)
-            setTimelineHasMore(Boolean((data as any)?.hasMore))
+            if (timelineSource === 'messages-lite') {
+                const data = await findChatMessagesLite(token!, id!, { limit: TIMELINE_WINDOW_LIMIT, before: timelineCursor }, { signal: controller.signal, rateLimitMs: 1000 })
+                if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
+                const rawItems: any[] = (data as any).items || []
+                const items = rawItems.map(mapMessagesLiteItemToTimeline).sort((a, b) => {
+                    const ta = new Date((a as any)?.createdAt ?? 0).getTime()
+                    const tb = new Date((b as any)?.createdAt ?? 0).getTime()
+                    return ta - tb
+                })
+                setMensajes((prev) => mergeTimeline(prev, items, 'prepend'))
+                setTimelineCursor((data as any)?.nextBefore ?? null)
+                setTimelineHasMore(Boolean((data as any)?.hasMore))
+            } else {
+                const data = await findChatTimeline(token!, id!, { limit: TIMELINE_WINDOW_LIMIT, cursor: timelineCursor }, { signal: controller.signal, rateLimitMs: 1000 })
+                if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
+                const rawItems: any[] = (data as any).items || []
+                const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
+                    const ta = new Date((a as any)?.createdAt ?? 0).getTime()
+                    const tb = new Date((b as any)?.createdAt ?? 0).getTime()
+                    return ta - tb
+                })
+                setMensajes((prev) => mergeTimeline(prev, items, 'prepend'))
+                setTimelineCursor((data as any)?.nextCursor ?? null)
+                setTimelineHasMore(Boolean((data as any)?.hasMore))
+            }
         } catch { } finally {
             if (timelineOlderControllerRef.current === controller) {
                 timelineOlderControllerRef.current = null
@@ -613,7 +686,7 @@ const Chats = () => {
         const onScroll = () => { if (container.scrollTop <= 120) { loadOlderTimeline() } }
         container.addEventListener('scroll', onScroll)
         return () => { container.removeEventListener('scroll', onScroll) }
-    }, [timelineHasMore, timelineCursor, timelineLoadingMore, id, token])
+    }, [timelineHasMore, timelineCursor, timelineLoadingMore, id, token, timelineSource])
 
     useEffect(() => {
         if (mensajesContainerRef.current) { mensajesContainerRef.current.scrollTop = mensajesContainerRef.current.scrollHeight }
