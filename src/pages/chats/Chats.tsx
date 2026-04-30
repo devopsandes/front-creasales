@@ -1,8 +1,8 @@
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatById, findChatTimeline, getUserData, setChatBotState } from '../../services/chats/chats.services'
-import { TimelineItem } from '../../interfaces/chats.interface'
+import { findChatById, findChatMessagesLite, getUserData, setChatBotState } from '../../services/chats/chats.services'
+import { MessageLiteItem, TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
 import { useDispatch, useSelector } from 'react-redux'
@@ -36,11 +36,10 @@ import { perfMark, perfTrackMemory, perfTrackNavigation } from '../../utils/perf
 import { isLightFeatureDisabled } from '../../config/runtimeConfig'
 
 const Chats = () => {
-    const timelineDisabled = isLightFeatureDisabled('timeline')
     const mentionsDisabled = isLightFeatureDisabled('mentions')
     const tagsDisabled = isLightFeatureDisabled('tags')
     const quickResponsesDisabled = isLightFeatureDisabled('quickResponses')
-    const TIMELINE_WINDOW_LIMIT = 50
+    const MESSAGE_LITE_LIMIT = 30
     const [usuarios, setUsuarios] = useState<Usuario[]>([])
     const [selectedMentionUsers, setSelectedMentionUsers] = useState<Usuario[]>([])
     const [mensajes, setMensajes] = useState<TimelineItem[]>([])
@@ -140,6 +139,40 @@ const Chats = () => {
         if (it?.type && it?.text !== undefined) return { ...it, kind: "event" as const }
         if (it?.msg_entrada !== undefined || it?.msg_salida !== undefined) return { ...it, kind: "message" as const }
         return it
+    }
+
+    const mapMessagesLiteItemToTimeline = (item: MessageLiteItem): TimelineItem => {
+        const baseText = `${item?.text ?? ''}`.trim()
+        const mediaPlaceholder =
+            item?.mediaKey
+                ? item.type === 'image'
+                    ? '[Imagen]'
+                    : item.type === 'audio'
+                        ? '[Audio]'
+                        : item.type === 'document'
+                            ? '[Documento]'
+                            : ''
+                : ''
+        const noteText = `${item?.note ?? ''}`.trim()
+        const resolvedText = baseText || mediaPlaceholder || noteText
+        if (item.direction === 'incoming') {
+            return {
+                kind: "message",
+                id: item.id,
+                createdAt: item.createdAt,
+                msg_entrada: resolvedText,
+                type: item.type,
+                leido: Boolean(item.read),
+            } as any
+        }
+        return {
+            kind: "message",
+            id: item.id,
+            createdAt: item.createdAt,
+            msg_salida: resolvedText,
+            type: item.type,
+            leido: Boolean(item.read),
+        } as any
     }
 
     const getTimelineKey = (it: any) => {
@@ -467,7 +500,6 @@ const Chats = () => {
             })
         }
         const handleChatEvent = (evt: any) => {
-            if (timelineDisabled) return
             if (debugTimeline) console.log("[socket] chat-event", chatEventName, evt)
             const normalized = normalizeTimelineItem(evt)
             setMensajes(prev => { const merged = mergeTimeline(prev, [normalized], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
@@ -528,12 +560,11 @@ const Chats = () => {
             socket.off("chat.updated", handleChatUpdated)
             socket.off('error', handleError)
         }
-    }, [id, dispatch, debugTimeline, timelineDisabled])
+    }, [id, dispatch, debugTimeline])
 
     useEffect(() => {
         const inicio = async () => {
             if (!id) return
-            // Obtener número de conversación
             try {
                 chatLoadControllerRef.current?.abort()
                 timelineLoadControllerRef.current?.abort()
@@ -547,39 +578,34 @@ const Chats = () => {
             } catch { setConversacionNumero(null) }
             setTimelineCursor(null)
             setTimelineHasMore(false)
-            if (timelineDisabled) {
-                setMensajes([])
-                setCondChat(true)
-                setLoading(false)
-                return
-            }
             try {
-                const data = await findChatTimeline(token!, id!, { limit: TIMELINE_WINDOW_LIMIT }, { signal: timelineLoadControllerRef.current?.signal, rateLimitMs: 1000 })
+                const data = await findChatMessagesLite(token!, id!, { limit: MESSAGE_LITE_LIMIT }, { signal: timelineLoadControllerRef.current?.signal, rateLimitMs: 1000 })
                 if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
                 const rawItems: any[] = (data as any).items || []
-                const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
+                const items = rawItems.map(mapMessagesLiteItemToTimeline).sort((a, b) => {
                     const ta = new Date((a as any)?.createdAt ?? 0).getTime()
                     const tb = new Date((b as any)?.createdAt ?? 0).getTime()
                     return ta - tb
                 })
                 setMensajes(items)
-                setTimelineCursor((data as any)?.nextCursor ?? null)
+                setTimelineCursor((data as any)?.nextBefore ?? null)
                 setTimelineHasMore(Boolean((data as any)?.hasMore))
                 const lastMessage = [...items].reverse().find((x: any) => x && x.kind === "message")
                 if (lastMessage?.createdAt) { setCondChat(menos24hs(new Date(lastMessage.createdAt))) }
                 else { setCondChat(false) }
                 setLoading(false)
-            } catch { }
+            } catch {
+                setLoading(false)
+            }
         }
         inicio()
         return () => {
             chatLoadControllerRef.current?.abort()
             timelineLoadControllerRef.current?.abort()
         }
-    }, [id, token, dispatch, timelineDisabled])
+    }, [id, token, dispatch])
 
     const loadOlderTimeline = async () => {
-        if (timelineDisabled) return
         if (!id || !token) return
         if (!timelineHasMore || !timelineCursor || timelineLoadingMore) return
         const container = mensajesContainerRef.current
@@ -589,16 +615,16 @@ const Chats = () => {
         const controller = new AbortController()
         timelineOlderControllerRef.current = controller
         try {
-            const data = await findChatTimeline(token!, id!, { limit: TIMELINE_WINDOW_LIMIT, cursor: timelineCursor }, { signal: controller.signal, rateLimitMs: 1000 })
+            const data = await findChatMessagesLite(token!, id!, { limit: MESSAGE_LITE_LIMIT, before: timelineCursor }, { signal: controller.signal, rateLimitMs: 1000 })
             if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
             const rawItems: any[] = (data as any).items || []
-            const items = rawItems.map(normalizeTimelineItem).sort((a, b) => {
+            const items = rawItems.map(mapMessagesLiteItemToTimeline).sort((a, b) => {
                 const ta = new Date((a as any)?.createdAt ?? 0).getTime()
                 const tb = new Date((b as any)?.createdAt ?? 0).getTime()
                 return ta - tb
             })
             setMensajes((prev) => mergeTimeline(prev, items, 'prepend'))
-            setTimelineCursor((data as any)?.nextCursor ?? null)
+            setTimelineCursor((data as any)?.nextBefore ?? null)
             setTimelineHasMore(Boolean((data as any)?.hasMore))
         } catch { } finally {
             if (timelineOlderControllerRef.current === controller) {
@@ -615,13 +641,12 @@ const Chats = () => {
     }
 
     useEffect(() => {
-        if (timelineDisabled) return
         const container = mensajesContainerRef.current
         if (!container) return
         const onScroll = () => { if (container.scrollTop <= 120) { loadOlderTimeline() } }
         container.addEventListener('scroll', onScroll)
         return () => { container.removeEventListener('scroll', onScroll) }
-    }, [timelineHasMore, timelineCursor, timelineLoadingMore, id, token, timelineDisabled])
+    }, [timelineHasMore, timelineCursor, timelineLoadingMore, id, token])
 
     useEffect(() => {
         if (mensajesContainerRef.current) { mensajesContainerRef.current.scrollTop = mensajesContainerRef.current.scrollHeight }
@@ -1020,17 +1045,12 @@ const Chats = () => {
                             </div>
 
                             <div className='body-chat' ref={mensajesContainerRef}>
-                                {timelineDisabled && (
-                                    <div className='chat-empty-prompt'>
-                                        <p className='chat-empty-text'>Timeline temporalmente deshabilitado</p>
-                                    </div>
-                                )}
-                                {!timelineDisabled && timelineLoadingMore && (
+                                {timelineLoadingMore && (
                                     <div className='timeline-loader'>
                                         <div className='loader2'></div>
                                     </div>
                                 )}
-                                {!timelineDisabled && renderItems.map((msj: any, index) => {
+                                {renderItems.map((msj: any, index) => {
                                     const key = msj?.id ?? `${msj?.createdAt ?? "no-date"}-${index}`
                                     if (msj?.kind === "date_separator") {
                                         return (
@@ -1097,7 +1117,7 @@ const Chats = () => {
                                         </div>
                                     )
                                 })}
-                                {!timelineDisabled && !condChat && (
+                                {!condChat && (
                                     <div className='contenedor-archivado contenedor-aviso-24h'>
                                         <p className='mensaje-archivado mensaje-aviso-24h'>
                                             Como pasaron 24 horas del último mensaje recibido debes iniciar esta conversación con una plantilla, cuando te responda podrás conversar libremente.

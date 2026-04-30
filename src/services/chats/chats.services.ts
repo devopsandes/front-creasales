@@ -1,12 +1,13 @@
 import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
-import { ChatCountsResponse, ChatResponse, ChatsResponse, OperatorChatCountsResponse, TimelineResponse } from "../../interfaces/chats.interface"
+import { ChatCountsResponse, ChatResponse, ChatsResponse, MessagesLiteResponse, OperatorChatCountsResponse, TimelineResponse } from "../../interfaces/chats.interface"
 import { DataUser } from "../../interfaces/action.interface"
 import { perfCounter, perfLog, perfTrackRequest } from "../../utils/perfTracker"
 
 
 
 const pendingTimeline = new Map<string, Promise<TimelineResponse & ErrorResponse>>()
+const pendingMessagesLite = new Map<string, Promise<MessagesLiteResponse & ErrorResponse>>()
 const pendingCounts = new Map<string, Promise<ChatCountsResponse & ErrorResponse>>()
 const pendingChats = new Map<string, Promise<ChatsResponse & ErrorResponse>>()
 const pendingChatById = new Map<string, Promise<ChatResponse & ErrorResponse>>()
@@ -168,6 +169,54 @@ const findChatTimeline = async (
             }
             if (debug) {
                 console.log("[findChatTimeline] ERROR (no response)", error)
+            }
+            throw error
+        }
+    })
+}
+
+const findChatMessagesLite = async (
+    token: string,
+    id: string,
+    params?: { limit?: number; before?: string | null },
+    options?: { signal?: AbortSignal; rateLimitMs?: number }
+): Promise<MessagesLiteResponse & ErrorResponse> => {
+    const limit = params?.limit ?? 30
+    const before = params?.before ?? null
+    const pendingKey = `${token}:${id}:${limit}:${before ?? ""}`
+    return withPending(pendingMessagesLite, pendingKey, async () => {
+        const startedAt = performance.now()
+        perfCounter("findChatMessagesLite")
+        try {
+            const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/messages-lite`
+            const headers = {
+                authorization: `Bearer ${token}`,
+            }
+
+            const requestQuery: any = { limit }
+            if (before) requestQuery.before = before
+
+            await waitForEndpointSlot("/chats/:id/messages-lite", options?.rateLimitMs ?? 900, options?.signal)
+            const { data } = await axios.get<MessagesLiteResponse & ErrorResponse>(url, {
+                headers,
+                params: requestQuery,
+                signal: options?.signal,
+            })
+            perfTrackRequest("/chats/:id/messages-lite")
+            perfLog("api.findChatMessagesLite", {
+                chatId: id,
+                durationMs: Math.round(performance.now() - startedAt),
+                rows: Array.isArray((data as any)?.items) ? (data as any).items.length : null,
+                before: before ?? null,
+            })
+            return data
+        } catch (error) {
+            if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
+                throw error
+            }
+            if (axios.isAxiosError(error) && error.response) {
+                const objeto: MessagesLiteResponse & ErrorResponse = error.response.data
+                return objeto
             }
             throw error
         }
@@ -416,4 +465,4 @@ const desasignarChat = async (
 }
 
 
-export { findChatById, findChatTimeline, getUserData, getChats, getChatCounts, getChatCountsByOperator, setChatReadState, setChatBotState, searchByConversacion, desasignarChat }
+export { findChatById, findChatTimeline, findChatMessagesLite, getUserData, getChats, getChatCounts, getChatCountsByOperator, setChatReadState, setChatBotState, searchByConversacion, desasignarChat }

@@ -55,6 +55,27 @@ export interface TimelineResponse {
     nextCursor?: string | null;
 }
 
+export interface MessageLiteItem {
+    id: string;
+    createdAt: string | Date;
+    direction: 'incoming' | 'outgoing';
+    type: 'text' | 'image' | 'audio' | 'document';
+    text?: string | null;
+    mediaKey?: string | null;
+    note?: string | null;
+    waId?: string | null;
+    read?: boolean;
+}
+
+export interface MessagesLiteResponse {
+    statusCode: number;
+    chatId: string;
+    limit: number;
+    hasMore: boolean;
+    nextBefore: string | null;
+    items: MessageLiteItem[];
+}
+
 export interface ChatTag {
     id:        string;
     nombre:    string;
