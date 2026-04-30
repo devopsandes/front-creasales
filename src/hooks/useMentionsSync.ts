@@ -6,8 +6,10 @@ import { RootState } from "../app/store"
 import { getSocket } from "../app/slices/socketSlice"
 import { bumpMentionsRefreshNonce, openSessionExpired, setMentionChatIds, setMentionUnreadCount } from "../app/slices/actionSlice"
 import { getMentionChats, getMentionsUnreadCount } from "../services/mentions/mentions.services"
+import { isLightFeatureDisabled } from "../config/runtimeConfig"
 
 export const useMentionsSync = () => {
+  const mentionsDisabled = isLightFeatureDisabled('mentions')
   const dispatch = useDispatch()
   const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
   const authUserId = useSelector((state: RootState) => state.auth.user?.id)
@@ -22,6 +24,7 @@ export const useMentionsSync = () => {
   const chatsControllerRef = useRef<AbortController | null>(null)
 
   const refreshMentionCount = useCallback(async (source: "bootstrap" | "socket" | "nonce" = "bootstrap") => {
+    if (mentionsDisabled) return
     const token = localStorage.getItem("token") || ""
     if (!token) return
     if (inFlightRef.current) return
@@ -62,9 +65,10 @@ export const useMentionsSync = () => {
       chatsControllerRef.current = null
       inFlightRef.current = false
     }
-  }, [dispatch])
+  }, [dispatch, mentionsDisabled])
 
   const scheduleRefresh = useCallback((source: "bootstrap" | "socket" | "nonce" = "bootstrap") => {
+    if (mentionsDisabled) return
     if (scheduleRef.current) {
       window.clearTimeout(scheduleRef.current)
       scheduleRef.current = null
@@ -75,9 +79,16 @@ export const useMentionsSync = () => {
         inFlightRef.current = false
       })
     }, 300)
-  }, [refreshMentionCount])
+  }, [refreshMentionCount, mentionsDisabled])
 
   useEffect(() => {
+    if (!mentionsDisabled) return
+    dispatch(setMentionUnreadCount(0))
+    dispatch(setMentionChatIds([]))
+  }, [mentionsDisabled, dispatch])
+
+  useEffect(() => {
+    if (mentionsDisabled) return
     scheduleRefresh("bootstrap")
     return () => {
       if (scheduleRef.current) {
@@ -87,14 +98,16 @@ export const useMentionsSync = () => {
       unreadControllerRef.current?.abort()
       chatsControllerRef.current?.abort()
     }
-  }, [scheduleRefresh, authUserId, authEmpresaId, socketConnected])
+  }, [scheduleRefresh, authUserId, authEmpresaId, socketConnected, mentionsDisabled])
 
   useEffect(() => {
+    if (mentionsDisabled) return
     if (!mentionsRefreshNonce) return
     scheduleRefresh("nonce")
-  }, [mentionsRefreshNonce, scheduleRefresh])
+  }, [mentionsRefreshNonce, scheduleRefresh, mentionsDisabled])
 
   useEffect(() => {
+    if (mentionsDisabled) return
     const token = localStorage.getItem("token") || ""
     const socket = getSocket()
     let myUserId = localStorage.getItem("userId") || ""
@@ -121,6 +134,6 @@ export const useMentionsSync = () => {
     return () => {
       socket.off(eventName, handler)
     }
-  }, [socketConnected, scheduleRefresh])
+  }, [socketConnected, scheduleRefresh, mentionsDisabled])
 }
 

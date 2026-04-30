@@ -33,8 +33,13 @@ import { jwtDecode } from "jwt-decode"
 import AddTagModal from '../../components/modal/AddTagModal'
 import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModal'
 import { perfMark, perfTrackMemory, perfTrackNavigation } from '../../utils/perfTracker'
+import { isLightFeatureDisabled } from '../../config/runtimeConfig'
 
 const Chats = () => {
+    const timelineDisabled = isLightFeatureDisabled('timeline')
+    const mentionsDisabled = isLightFeatureDisabled('mentions')
+    const tagsDisabled = isLightFeatureDisabled('tags')
+    const quickResponsesDisabled = isLightFeatureDisabled('quickResponses')
     const TIMELINE_WINDOW_LIMIT = 50
     const [usuarios, setUsuarios] = useState<Usuario[]>([])
     const [selectedMentionUsers, setSelectedMentionUsers] = useState<Usuario[]>([])
@@ -336,7 +341,7 @@ const Chats = () => {
         }
         const socket = getSocket()
         if (socket && socket.connected) {
-            const mentions = selectedMentionUsers.map((user) => ({ userId: user.id }))
+            const mentions = mentionsDisabled ? [] : selectedMentionUsers.map((user) => ({ userId: user.id }))
             const payload: any = {
                 chatId: id,
                 mensaje: mensaje.trim() || null,
@@ -369,6 +374,7 @@ const Chats = () => {
     }
 
     const handleMarkMentionRead = async () => {
+        if (mentionsDisabled) return
         if (!token) return
         const ids = Array.isArray(selectedMentionChatIds) ? selectedMentionChatIds : []
         if (!mentionsMode || ids.length === 0) return
@@ -461,6 +467,7 @@ const Chats = () => {
             })
         }
         const handleChatEvent = (evt: any) => {
+            if (timelineDisabled) return
             if (debugTimeline) console.log("[socket] chat-event", chatEventName, evt)
             const normalized = normalizeTimelineItem(evt)
             setMensajes(prev => { const merged = mergeTimeline(prev, [normalized], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
@@ -521,7 +528,7 @@ const Chats = () => {
             socket.off("chat.updated", handleChatUpdated)
             socket.off('error', handleError)
         }
-    }, [id, dispatch, debugTimeline])
+    }, [id, dispatch, debugTimeline, timelineDisabled])
 
     useEffect(() => {
         const inicio = async () => {
@@ -540,6 +547,12 @@ const Chats = () => {
             } catch { setConversacionNumero(null) }
             setTimelineCursor(null)
             setTimelineHasMore(false)
+            if (timelineDisabled) {
+                setMensajes([])
+                setCondChat(true)
+                setLoading(false)
+                return
+            }
             try {
                 const data = await findChatTimeline(token!, id!, { limit: TIMELINE_WINDOW_LIMIT }, { signal: timelineLoadControllerRef.current?.signal, rateLimitMs: 1000 })
                 if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
@@ -563,9 +576,10 @@ const Chats = () => {
             chatLoadControllerRef.current?.abort()
             timelineLoadControllerRef.current?.abort()
         }
-    }, [id, token, dispatch])
+    }, [id, token, dispatch, timelineDisabled])
 
     const loadOlderTimeline = async () => {
+        if (timelineDisabled) return
         if (!id || !token) return
         if (!timelineHasMore || !timelineCursor || timelineLoadingMore) return
         const container = mensajesContainerRef.current
@@ -601,12 +615,13 @@ const Chats = () => {
     }
 
     useEffect(() => {
+        if (timelineDisabled) return
         const container = mensajesContainerRef.current
         if (!container) return
         const onScroll = () => { if (container.scrollTop <= 120) { loadOlderTimeline() } }
         container.addEventListener('scroll', onScroll)
         return () => { container.removeEventListener('scroll', onScroll) }
-    }, [timelineHasMore, timelineCursor, timelineLoadingMore, id, token])
+    }, [timelineHasMore, timelineCursor, timelineLoadingMore, id, token, timelineDisabled])
 
     useEffect(() => {
         if (mensajesContainerRef.current) { mensajesContainerRef.current.scrollTop = mensajesContainerRef.current.scrollHeight }
@@ -635,6 +650,17 @@ const Chats = () => {
     }, [id])
 
     useEffect(() => {
+        if (!mentionsDisabled) return
+        setSelectedMentionUsers([])
+    }, [mentionsDisabled])
+
+    useEffect(() => {
+        if (quickResponsesDisabled) {
+            setQuickResponses([])
+            setQrOpen(false)
+            setQrFiltered([])
+            return
+        }
         const run = async () => {
             if (!token) return
             const resp = await getQuickResponses(token, { page: 1, limit: 200 })
@@ -643,7 +669,7 @@ const Chats = () => {
             setQuickResponses(list)
         }
         run().catch(() => { })
-    }, [token])
+    }, [token, quickResponsesDisabled])
 
     useEffect(() => {
         const el = mensajeInputRef.current
@@ -654,15 +680,18 @@ const Chats = () => {
     }, [mensaje])
 
     const handleTagConfirm = async (_tagId: string) => {
+        if (tagsDisabled) return
         scheduleRefreshCurrentChat()
     }
 
     const handleTagRemoveClick = (tag: ChatTag) => {
+        if (tagsDisabled) return
         setTagToRemove(tag)
         setIsRemoveTagModalOpen(true)
     }
 
     const handleRemoveTagSuccess = async () => {
+        if (tagsDisabled) return
         scheduleRefreshCurrentChat()
     }
 
@@ -671,7 +700,7 @@ const Chats = () => {
             e.preventDefault()
             const trimmedMessage = mensaje.trim()
             const hasFiles = archivos.length > 0
-            const mentions = selectedMentionUsers.map((user) => ({ userId: user.id }))
+            const mentions = mentionsDisabled ? [] : selectedMentionUsers.map((user) => ({ userId: user.id }))
             if (trimmedMessage.length === 0 && !hasFiles) { setErrorModalMessage('Debe escribir un mensaje'); setIsErrorModalOpen(true); return }
             if (isSendingRef.current) return
             if (lastSentMessageRef.current === trimmedMessage && !hasFiles) return
@@ -860,11 +889,15 @@ const Chats = () => {
     const handleChangeText = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setMensaje(value);
-        setSelectedMentionUsers((prev) => prev.filter((user) => value.includes(`@${getMentionHandle(user)}`)))
+        if (!mentionsDisabled) {
+            setSelectedMentionUsers((prev) => prev.filter((user) => value.includes(`@${getMentionHandle(user)}`)))
+        } else if (selectedMentionUsers.length > 0) {
+            setSelectedMentionUsers([])
+        }
         const caretPos = e.target.selectionStart ?? value.length
         const leftText = value.slice(0, caretPos)
         const slashMatch = leftText.match(/\/(\w*)$/)
-        if (slashMatch) {
+        if (!quickResponsesDisabled && slashMatch) {
             const q = (slashMatch[1] || '').toLowerCase()
             const start = caretPos - slashMatch[0].length
             const end = caretPos
@@ -877,6 +910,11 @@ const Chats = () => {
             setShowList(false)
             return
         } else { closeQuickMenu() }
+        if (mentionsDisabled) {
+            setShowList(false);
+            return
+        }
+
         const match = value.match(/@([^\s@]*)$/);
         if (match) {
             const query = (match[1] || '').toLowerCase();
@@ -966,7 +1004,7 @@ const Chats = () => {
                                             </button>
                                         </>
                                     )}
-                                    {mentionsMode && Array.isArray(selectedMentionChatIds) && selectedMentionChatIds.length > 0 && (
+                                    {!mentionsDisabled && mentionsMode && Array.isArray(selectedMentionChatIds) && selectedMentionChatIds.length > 0 && (
                                         <button onClick={handleMarkMentionRead} className="chat-action-button chat-button-mention-read">
                                             <CheckCheck size={16} />
                                             <span>Marcar como leído</span>
@@ -982,12 +1020,17 @@ const Chats = () => {
                             </div>
 
                             <div className='body-chat' ref={mensajesContainerRef}>
-                                {timelineLoadingMore && (
+                                {timelineDisabled && (
+                                    <div className='chat-empty-prompt'>
+                                        <p className='chat-empty-text'>Timeline temporalmente deshabilitado</p>
+                                    </div>
+                                )}
+                                {!timelineDisabled && timelineLoadingMore && (
                                     <div className='timeline-loader'>
                                         <div className='loader2'></div>
                                     </div>
                                 )}
-                                {renderItems.map((msj: any, index) => {
+                                {!timelineDisabled && renderItems.map((msj: any, index) => {
                                     const key = msj?.id ?? `${msj?.createdAt ?? "no-date"}-${index}`
                                     if (msj?.kind === "date_separator") {
                                         return (
@@ -1054,7 +1097,7 @@ const Chats = () => {
                                         </div>
                                     )
                                 })}
-                                {!condChat && (
+                                {!timelineDisabled && !condChat && (
                                     <div className='contenedor-archivado contenedor-aviso-24h'>
                                         <p className='mensaje-archivado mensaje-aviso-24h'>
                                             Como pasaron 24 horas del último mensaje recibido debes iniciar esta conversación con una plantilla, cuando te responda podrás conversar libremente.
@@ -1119,7 +1162,7 @@ const Chats = () => {
                                                 )}
                                             </ul>
                                         )}
-                                        {showList && (
+                                        {!mentionsDisabled && showList && (
                                             <ul className="absolute bottom-12 left-2 w-80 max-h-48 overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden rounded-xl bg-slate-50/95 backdrop-blur-sm shadow-lg ring-1 ring-slate-200">
                                                 {filteredUsers.length ? (
                                                     filteredUsers.map((user) => (
@@ -1184,16 +1227,20 @@ const Chats = () => {
                                         <div className='chat-info-panel-section'>
                                             <div className='chat-info-panel-section-title'>
                                                 <span>Etiquetas</span>
-                                                <button
-                                                    className='chat-info-panel-add-tag'
-                                                    onClick={() => setIsAddTagModalOpen(true)}
-                                                    title='Agregar etiqueta'
-                                                >
-                                                    <Plus size={12} />
-                                                </button>
+                                                {!tagsDisabled && (
+                                                    <button
+                                                        className='chat-info-panel-add-tag'
+                                                        onClick={() => setIsAddTagModalOpen(true)}
+                                                        title='Agregar etiqueta'
+                                                    >
+                                                        <Plus size={12} />
+                                                    </button>
+                                                )}
                                             </div>
                                             <div className='chat-tags-panel'>
-                                                {chatTags && chatTags.length > 0 ? (
+                                                {tagsDisabled ? (
+                                                    <span className='chat-info-empty'>Temporalmente deshabilitada</span>
+                                                ) : chatTags && chatTags.length > 0 ? (
                                                     chatTags.map(tag => (
                                                         <p key={tag.id} className='chat-tag'>
                                                             {tag.nombre}
@@ -1326,8 +1373,8 @@ const Chats = () => {
                     <DeleteModal isOpen={isDeleteModalOpen} onClose={handleDeleteCancel} onConfirm={handleDeleteConfirm} />
                     <ErrorModal isOpen={isErrorModalOpen} onClose={() => { setIsErrorModalOpen(false); setErrorModalMessage('') }} title="Atención" message={errorModalMessage || 'Debe escribir un mensaje'} />
                     <SuccessModal isOpen={showMentionReadSuccess} onClose={() => setShowMentionReadSuccess(false)} title="Listo" message={mentionReadSuccessMsg} />
-                    <AddTagModal isOpen={isAddTagModalOpen} onClose={() => setIsAddTagModalOpen(false)} onConfirm={handleTagConfirm} chatId={id} />
-                    <RemoveTagFromChatModal isOpen={isRemoveTagModalOpen} onClose={() => { setIsRemoveTagModalOpen(false); setTagToRemove(null) }} tag={tagToRemove} chatId={id} onSuccess={handleRemoveTagSuccess} />
+                    {!tagsDisabled && <AddTagModal isOpen={isAddTagModalOpen} onClose={() => setIsAddTagModalOpen(false)} onConfirm={handleTagConfirm} chatId={id} />}
+                    {!tagsDisabled && <RemoveTagFromChatModal isOpen={isRemoveTagModalOpen} onClose={() => { setIsRemoveTagModalOpen(false); setTagToRemove(null) }} tag={tagToRemove} chatId={id} onSuccess={handleRemoveTagSuccess} />}
                 </div>
             )}
         </div>

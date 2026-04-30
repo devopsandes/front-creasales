@@ -16,6 +16,7 @@ import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
 import { findChatById, getChatCounts, getChats, searchByConversacion } from "../../services/chats/chats.services"
 import { perfMark, perfTrackNavigation } from "../../utils/perfTracker"
+import { isLightFeatureDisabled } from "../../config/runtimeConfig"
 
 // Función auxiliar para capitalizar correctamente el texto
 const capitalizeText = (text: string | undefined | null): string => {
@@ -57,6 +58,8 @@ const ListaChats = () => {
     const selectRef = useRef<HTMLSelectElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate()
+    const mentionsEnabled = !isLightFeatureDisabled('mentions')
+    const tagsDisabled = isLightFeatureDisabled('tags')
 
     const CHAT_PAGE_LIMIT = 50
     const SCROLL_BOTTOM_THRESHOLD_PX = 260
@@ -258,7 +261,7 @@ const ListaChats = () => {
 
         const filters: any = {}
         if (q) filters.q = q
-        if (tagId) filters.tagId = tagId
+        if (!tagsDisabled && tagId) filters.tagId = tagId
 
         // Operador (UI) -> query params
         if (operatorValue && operatorValue !== "TODOS") {
@@ -291,11 +294,26 @@ const ListaChats = () => {
         return () => window.clearTimeout(t)
     }, [searchChat])
 
+    useEffect(() => {
+        if (!tagsDisabled) return
+        if (selectedTag) setSelectedTag('')
+    }, [tagsDisabled, selectedTag])
+
+    useEffect(() => {
+        if (mentionsEnabled) return
+        dispatch(setMentionsMode(false))
+        dispatch(clearMentionChatSelection())
+        dispatch(clearBulkReadChatSelection())
+        if (styleBtn === 'menciones') {
+            setStyleBtn('otros')
+        }
+    }, [mentionsEnabled, styleBtn, dispatch])
+
     // Contadores de pestañas fieles a BD (solo dependen de q y tagId)
     useEffect(() => {
         if (!token) return
         const q = `${debouncedSearch ?? ""}`.trim()
-        const tagId = `${selectedTag ?? ""}`.trim()
+        const tagId = tagsDisabled ? '' : `${selectedTag ?? ""}`.trim()
         countsControllerRef.current?.abort()
         const controller = new AbortController()
         countsControllerRef.current = controller
@@ -322,7 +340,7 @@ const ListaChats = () => {
                 countsControllerRef.current = null
             }
         }
-    }, [token, debouncedSearch, selectedTag])
+    }, [token, debouncedSearch, selectedTag, tagsDisabled])
 
     useEffect(() => {
         if (!hydrated) return
@@ -501,6 +519,7 @@ const ListaChats = () => {
 
     useEffect(() => {
         if (!token) return
+        if (!mentionsEnabled) return
         if (styleBtn !== 'menciones') return
         if (!Array.isArray(mentionChatIds) || mentionChatIds.length === 0) return
 
@@ -536,7 +555,7 @@ const ListaChats = () => {
             cancelled = true
             controller.abort()
         }
-    }, [styleBtn, mentionChatIds, token, dispatch])
+    }, [styleBtn, mentionChatIds, token, dispatch, mentionsEnabled])
 
 
     const loadMoreChats = async () => {
@@ -607,7 +626,7 @@ const ListaChats = () => {
                 if (typeof document !== 'undefined' && document.hidden) return
                 if (!countsDirtyRef.current) return
                 const q = `${debouncedSearch ?? ""}`.trim()
-                const tagId = `${selectedTag ?? ""}`.trim()
+                const tagId = tagsDisabled ? '' : `${selectedTag ?? ""}`.trim()
                 countsControllerRef.current?.abort()
                 const controller = new AbortController()
                 countsControllerRef.current = controller
@@ -733,7 +752,7 @@ const ListaChats = () => {
             }
             countsControllerRef.current?.abort()
         }
-    }, [socket, token, dispatch, debouncedSearch, selectedTag])
+    }, [socket, token, dispatch, debouncedSearch, selectedTag, tagsDisabled])
 
     const handleChangeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedValue = e.target.value
@@ -1045,23 +1064,25 @@ const ListaChats = () => {
 
                     </div>
 
-                    <div className={`header-item ${styleBtn === "menciones" ? "header-item--active" : ""}`}>
-                        <button
-                            onClick={() => {
-                                setStyleBtn('menciones')
-                                dispatch(setMentionsMode(true))
-                                dispatch(clearBulkReadChatSelection())
-                                dispatch(bumpMentionsRefreshNonce())
-                                const operadorValue = selectRef.current?.value || ''
-                                aplicarFiltros(operadorValue, selectedTag, menciones)
-                            }}
-                            className="btn-item"
-                        >
-                            Menciones
-                            <span>{mentionUnreadCount}</span>
-                        </button>
+                    {mentionsEnabled && (
+                        <div className={`header-item ${styleBtn === "menciones" ? "header-item--active" : ""}`}>
+                            <button
+                                onClick={() => {
+                                    setStyleBtn('menciones')
+                                    dispatch(setMentionsMode(true))
+                                    dispatch(clearBulkReadChatSelection())
+                                    dispatch(bumpMentionsRefreshNonce())
+                                    const operadorValue = selectRef.current?.value || ''
+                                    aplicarFiltros(operadorValue, selectedTag, menciones)
+                                }}
+                                className="btn-item"
+                            >
+                                Menciones
+                                <span>{mentionUnreadCount}</span>
+                            </button>
 
-                    </div>
+                        </div>
+                    )}
 
                     <div className={`header-item ${styleBtn === "bots" ? "header-item--active" : ""}`}>
                         <button
@@ -1096,7 +1117,8 @@ const ListaChats = () => {
                                     const resp = await searchByConversacion(token, numero)
                                     if (resp?.statusCode === 200 && resp?.chat?.id) {
                                         const chat = resp.chat
-                                        const tab = resp.tab || 'sinAsignar'
+                                        const requestedTab = resp.tab || 'sinAsignar'
+                                        const tab = !mentionsEnabled && requestedTab === 'menciones' ? 'otros' : requestedTab
                                         setStyleBtn(tab)
                                         dispatch(setMentionsMode(tab === 'menciones'))
                                         if (tab === 'menciones') dispatch(bumpMentionsRefreshNonce())
@@ -1187,20 +1209,22 @@ const ListaChats = () => {
                                                     ))}
                                                 </select>
                                             </div>
-                                            <div className="filter-input-row">
-                                                <TagIcon className="filter-input-icon" size={18} />
-                                                <select
-                                                    id="tag-select"
-                                                    className={`filter-select ${selectedTag === '' ? 'filter-select--placeholder' : ''}`}
-                                                    onChange={handleChangeTagSelect}
-                                                    value={selectedTag}
-                                                >
-                                                    <option value="">Filtrar por etiqueta</option>
-                                                    {allTags.map(tag => (
-                                                        <option key={tag.id} value={tag.id} className="bg-gray-500">{tag.nombre}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                            {!tagsDisabled && (
+                                                <div className="filter-input-row">
+                                                    <TagIcon className="filter-input-icon" size={18} />
+                                                    <select
+                                                        id="tag-select"
+                                                        className={`filter-select ${selectedTag === '' ? 'filter-select--placeholder' : ''}`}
+                                                        onChange={handleChangeTagSelect}
+                                                        value={selectedTag}
+                                                    >
+                                                        <option value="">Filtrar por etiqueta</option>
+                                                        {allTags.map(tag => (
+                                                            <option key={tag.id} value={tag.id} className="bg-gray-500">{tag.nombre}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     {/* El botón "Marcar como leído" se muestra en la vista del chat (al lado de Archivar)

@@ -22,6 +22,7 @@ import LogoutModal from '../modal/LogoutModal'
 import './dashsidebar.css'
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { isLightFeatureDisabled } from "../../config/runtimeConfig";
 
 type Props = {
   role: string  
@@ -30,6 +31,9 @@ type Props = {
 
 
 const DashSidebar = ({ role }: Props) => {
+  const ticketsDisabled = isLightFeatureDisabled('tickets')
+  const tagsDisabled = isLightFeatureDisabled('tags')
+  const quickResponsesDisabled = isLightFeatureDisabled('quickResponses')
 
   const navigate = useNavigate();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -54,9 +58,9 @@ const DashSidebar = ({ role }: Props) => {
             <DashItem icon={Building2} path='/dashboard/empresa' titulo="Empresa"/>
             <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
             <DashItem icon={MailCheckIcon} path='/dashboard/emisivos' titulo="Emisivos"/>
-            <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
+            {!ticketsDisabled && <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>}
             <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes"/>
-            <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas"/>
+            {!quickResponsesDisabled && <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas"/>}
             <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta"/>
             <DashItem icon={UsersRound} path='/dashboard/usuarios' titulo="Usuarios"/>
             <DashItem icon={Bot} path='/dashboard/bot' titulo="BOT/IA"/>
@@ -64,7 +68,7 @@ const DashSidebar = ({ role }: Props) => {
             <DashItem icon={Boxes} path='/dashboard/modulos' titulo="Modulos"/>
             <DashItem icon={Grid3x3} path='/dashboard/categorias' titulo="Categorias"/>
             <DashItem icon={CheckSquare} path='/dashboard/acciones' titulo="Acciones"/>
-            <DashItem icon={Tag} path='/dashboard/tags' titulo="Etiquetas"/>
+            {!tagsDisabled && <DashItem icon={Tag} path='/dashboard/tags' titulo="Etiquetas"/>}
             <DashItem icon={Settings} path='/dashboard/configuracion' titulo="Configuración"/>
             <DashItem icon={Plug2} path='/dashboard/integraciones' titulo="Integraciones"/>
 
@@ -76,9 +80,9 @@ const DashSidebar = ({ role }: Props) => {
         {role === 'USER' && (
           <>
             <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
-            <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>
+            {!ticketsDisabled && <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>}
             <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes"/>
-            <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas"/>
+            {!quickResponsesDisabled && <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas"/>}
 
             <div className="dashsidebar-logout" onClick={handleLogoutClick}>
               <LogOut size={25} strokeWidth={1.5}/>

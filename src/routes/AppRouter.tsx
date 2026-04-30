@@ -36,12 +36,17 @@ import EliminarDatos from '../pages/legal/EliminarDatos'
 import MainView from '../pages/main/MainView'
 import TableIntegraciones from '../pages/integraciones/TableIntegraciones'
 import RespuestasRapidasPage from '../pages/respuestas-rapidas/RespuestasRapidasPage'
+import FeatureDisabledNotice from '../components/common/FeatureDisabledNotice'
+import { isLightFeatureDisabled } from '../config/runtimeConfig'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
   const role = localStorage.getItem('role')
+  const ticketsDisabled = isLightFeatureDisabled('tickets')
+  const tagsDisabled = isLightFeatureDisabled('tags')
+  const quickResponsesDisabled = isLightFeatureDisabled('quickResponses')
   useEffect(() => {},[])
 
  
@@ -159,7 +164,7 @@ const AppRouter = () => {
           </Route>
 
           <Route path='tickets' element={<NavTag tags={navTickets} />}>
-            <Route index element={<TableTickets/>}/>
+            <Route index element={ticketsDisabled ? <FeatureDisabledNotice /> : <TableTickets/>}/>
           </Route>
 
           <Route path='emisivos' element={<NavTag tags={navEmisivos} />}>
@@ -171,11 +176,11 @@ const AppRouter = () => {
           </Route>
 
           <Route path='respuestas-rapidas' element={<NavTag tags={navRespuestasRapidas} />}>
-            <Route index element={<RespuestasRapidasPage/>}/>
+            <Route index element={quickResponsesDisabled ? <FeatureDisabledNotice /> : <RespuestasRapidasPage/>}/>
           </Route>
 
           <Route path='tags' element={<NavTag tags={navTags} />}>
-            <Route index element={<TableTags/>}/>
+            <Route index element={tagsDisabled ? <FeatureDisabledNotice /> : <TableTags/>}/>
           </Route>
 
           <Route path='integraciones' element={<NavTag tags={navIntegraciones} />}>

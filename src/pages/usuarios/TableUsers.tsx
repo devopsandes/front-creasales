@@ -11,11 +11,13 @@ import { openModalUser, openModalEditUser } from "../../app/slices/actionSlice";
 import EditarUsuarioModal from "../../components/modal/EditarUsuarioModal";
 import { toast } from 'react-toastify';
 import './usuarios.css';
+import { isLightFeatureDisabled } from "../../config/runtimeConfig";
 
 
 const ITEMS_PER_PAGE = 15;
 
 const TableUsers = () => {
+  const countsByOperatorDisabled = isLightFeatureDisabled('countsByOperator')
   const [page, setPage] = useState(1);
   const [users, setUsers] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState<boolean>();
@@ -56,21 +58,28 @@ const TableUsers = () => {
       setUsers(respUsers.users);
 
       // Obtener contadores de chats asignados por operador (query agregada, liviana)
-      try {
-        const respCounts = await getChatCountsByOperator(token);
-        const rawCounts = Array.isArray((respCounts as any)?.counts) ? (respCounts as any).counts : [];
-        const countsMap = new Map<string, number>(
-          rawCounts
-            .filter((it: any) => it?.operatorId)
-            .map((it: any) => [String(it.operatorId), Number(it.assignedCount) || 0])
-        );
-        const counts: { [userId: string]: number } = {};
-        respUsers.users.forEach(user => { counts[user.id] = countsMap.get(user.id) ?? 0; });
+      if (!countsByOperatorDisabled) {
+        try {
+          const respCounts = await getChatCountsByOperator(token);
+          const rawCounts = Array.isArray((respCounts as any)?.counts) ? (respCounts as any).counts : [];
+          const countsMap = new Map<string, number>(
+            rawCounts
+              .filter((it: any) => it?.operatorId)
+              .map((it: any) => [String(it.operatorId), Number(it.assignedCount) || 0])
+          );
+          const counts: { [userId: string]: number } = {};
+          respUsers.users.forEach(user => { counts[user.id] = countsMap.get(user.id) ?? 0; });
 
-        setChatsCounts(counts);
-      } catch (error) {
-        console.error('Error al obtener chats:', error);
-        // Si falla, inicializar todos en 0
+          setChatsCounts(counts);
+        } catch (error) {
+          console.error('Error al obtener chats:', error);
+          const counts: { [userId: string]: number } = {};
+          respUsers.users.forEach(user => {
+            counts[user.id] = 0;
+          });
+          setChatsCounts(counts);
+        }
+      } else {
         const counts: { [userId: string]: number } = {};
         respUsers.users.forEach(user => {
           counts[user.id] = 0;
@@ -154,19 +163,27 @@ const TableUsers = () => {
       return;
     }
     setUsers(respUsers.users);
-    try {
-      const respCounts = await getChatCountsByOperator(token);
-      const rawCounts = Array.isArray((respCounts as any)?.counts) ? (respCounts as any).counts : [];
-      const countsMap = new Map<string, number>(
-        rawCounts
-          .filter((it: any) => it?.operatorId)
-          .map((it: any) => [String(it.operatorId), Number(it.assignedCount) || 0])
-      );
+    if (!countsByOperatorDisabled) {
+      try {
+        const respCounts = await getChatCountsByOperator(token);
+        const rawCounts = Array.isArray((respCounts as any)?.counts) ? (respCounts as any).counts : [];
+        const countsMap = new Map<string, number>(
+          rawCounts
+            .filter((it: any) => it?.operatorId)
+            .map((it: any) => [String(it.operatorId), Number(it.assignedCount) || 0])
+        );
+        const counts: { [userId: string]: number } = {};
+        respUsers.users.forEach(user => { counts[user.id] = countsMap.get(user.id) ?? 0; });
+        setChatsCounts(counts);
+      } catch {
+        // noop
+      }
+    } else {
       const counts: { [userId: string]: number } = {};
-      respUsers.users.forEach(user => { counts[user.id] = countsMap.get(user.id) ?? 0; });
+      respUsers.users.forEach(user => {
+        counts[user.id] = 0;
+      });
       setChatsCounts(counts);
-    } catch {
-      // noop
     }
     setLoading(false);
   }
