@@ -86,8 +86,9 @@ const findChatTimeline = async (
     params?: { page?: number; limit?: number; cursor?: string | null },
     options?: { signal?: AbortSignal; rateLimitMs?: number }
 ): Promise<TimelineResponse & ErrorResponse> => {
+    const limit = Math.min(params?.limit ?? 30, 30)
     const query = {
-        limit: params?.limit ?? 50,
+        limit,
         cursor: params?.cursor ?? null,
         page: params?.cursor ? null : 1,
     }
@@ -181,7 +182,7 @@ const findChatMessagesLite = async (
     params?: { limit?: number; before?: string | null },
     options?: { signal?: AbortSignal; rateLimitMs?: number }
 ): Promise<MessagesLiteResponse & ErrorResponse> => {
-    const limit = params?.limit ?? 30
+    const limit = Math.min(params?.limit ?? 30, 30)
     const before = params?.before ?? null
     const pendingKey = `${token}:${id}:${limit}:${before ?? ""}`
     return withPending(pendingMessagesLite, pendingKey, async () => {

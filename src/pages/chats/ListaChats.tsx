@@ -789,6 +789,19 @@ const ListaChats = () => {
     }, [users, searchParams])
 
     useEffect(() => {
+        if (chatsFromRedux.length === 0) {
+            setArchivadas([])
+            setBots([])
+            setAsignadas([])
+            setAsignadasOtros([])
+            setSinAsignar([])
+            setMenciones([])
+            setChats1([])
+            setAllTags([])
+            setFiltrados([])
+            return
+        }
+
         if (chatsFromRedux.length > 0) {
             const archivadasTemp: ChatState[] = []
             const botsTemp: ChatState[] = []
@@ -837,17 +850,21 @@ const ListaChats = () => {
             setChats1(chatsFromRedux)
 
             // Extraer tags únicos de todos los chats
-            const tagsMap = new Map<string, { id: string; nombre: string }>()
-            chatsFromRedux.forEach(chat => {
-                if (chat.tags && chat.tags.length > 0) {
-                    chat.tags.forEach(tag => {
-                        if (!tagsMap.has(tag.id)) {
-                            tagsMap.set(tag.id, { id: tag.id, nombre: tag.nombre })
-                        }
-                    })
-                }
-            })
-            setAllTags(Array.from(tagsMap.values()))
+            if (tagsDisabled) {
+                setAllTags([])
+            } else {
+                const tagsMap = new Map<string, { id: string; nombre: string }>()
+                chatsFromRedux.forEach(chat => {
+                    if (chat.tags && chat.tags.length > 0) {
+                        chat.tags.forEach(tag => {
+                            if (!tagsMap.has(tag.id)) {
+                                tagsMap.set(tag.id, { id: tag.id, nombre: tag.nombre })
+                            }
+                        })
+                    }
+                })
+                setAllTags(Array.from(tagsMap.values()))
+            }
 
             let chatsBase: ChatState[] = chatsFromRedux
             if (styleBtn === "asig") {
@@ -868,7 +885,7 @@ const ListaChats = () => {
             const operadorValue = selectRef.current?.value || ''
             aplicarFiltros(operadorValue, selectedTag, chatsBase, searchChat)
         }
-    }, [chatsFromRedux, id, styleBtn, searchChat, selectedTag, mentionChatIds])
+    }, [chatsFromRedux, id, styleBtn, searchChat, selectedTag, mentionChatIds, tagsDisabled])
 
 
 
@@ -1295,7 +1312,7 @@ const ListaChats = () => {
                                                             title="Seleccionar para marcar como leído"
                                                         />
                                                     )}
-                                                    {chat.tags && chat.tags.length > 0 ? (
+                                                    {!tagsDisabled && chat.tags && chat.tags.length > 0 ? (
                                                         chat.tags.map(tag => (
                                                             <p key={tag.id} className="chat-tag">{tag.nombre}</p>
                                                         ))
@@ -1333,14 +1350,16 @@ const ListaChats = () => {
                     <div className="col-lista">
                         {viewSide && (
                             <>
-                                <div className="w-full">
-                                    <p className="chat-info-label">Etiquetas</p>
-                                    <div className="chat-tags-panel">
-                                        <p className="chat-tag">ac <span className="chat-tag-close">×</span></p>
-                                        <p className="chat-tag">black <span className="chat-tag-close">×</span></p>
-                                        <p className="chat-tag">deuda <span className="chat-tag-close">×</span></p>
+                                {!tagsDisabled && (
+                                    <div className="w-full">
+                                        <p className="chat-info-label">Etiquetas</p>
+                                        <div className="chat-tags-panel">
+                                            <p className="chat-tag">ac <span className="chat-tag-close">×</span></p>
+                                            <p className="chat-tag">black <span className="chat-tag-close">×</span></p>
+                                            <p className="chat-tag">deuda <span className="chat-tag-close">×</span></p>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                                 <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Canal: </span> Whatsapp</p>
                                 <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Estado: </span>Abierto</p>
                                 <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">ChatBot: </span>#andessalud</p>

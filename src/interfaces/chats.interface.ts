@@ -58,6 +58,7 @@ export interface TimelineResponse {
 export interface MessageLiteItem {
     id: string;
     createdAt: string | Date;
+    dayKey?: string | null;
     direction: 'incoming' | 'outgoing';
     type: 'text' | 'image' | 'audio' | 'document';
     text?: string | null;

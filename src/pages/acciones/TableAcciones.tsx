@@ -4,6 +4,7 @@ import CrearTagModal from "../../components/modal/CrearTagModal";
 import { useDispatch } from "react-redux";
 import { openModalTag } from "../../app/slices/actionSlice";
 import "./acciones.css";
+import { isLightFeatureDisabled } from "../../config/runtimeConfig";
 // import { getTags } from "../../services/tags/tags.services";
 // import { Tag } from "../../interfaces/tags.interface";
 // import { RootState } from "../../app/store";
@@ -35,6 +36,7 @@ const acciones = [
 
 
 const TableAcciones = () => {
+  const tagsDisabled = isLightFeatureDisabled('tags')
   const [page, setPage] = useState(1);
   // const [tags, setTags] = useState<Tag[]>([]);
   const totalPages = Math.ceil(acciones!.length / ITEMS_PER_PAGE);
@@ -88,11 +90,13 @@ const TableAcciones = () => {
               <th className="acciones-table-header-cell">Nombre</th>
               <th className="acciones-table-header-cell">Descripción</th>
               <th className="acciones-table-header-cell">
-                <CiSquarePlus
-                  size={35}
-                  onClick={() => dispatch(openModalTag())}
-                  className="acciones-button-add"
-                />
+                {!tagsDisabled && (
+                  <CiSquarePlus
+                    size={35}
+                    onClick={() => dispatch(openModalTag())}
+                    className="acciones-button-add"
+                  />
+                )}
               </th>
               <th className="acciones-table-header-cell"></th>
             </tr>
@@ -149,7 +153,7 @@ const TableAcciones = () => {
         </button>
       </div>
 
-      <CrearTagModal />
+      {!tagsDisabled && <CrearTagModal />}
       </div>
     </div>
   );

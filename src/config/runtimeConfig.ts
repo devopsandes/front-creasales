@@ -7,7 +7,6 @@ export type LightFeature =
   | 'tickets'
 
 const DEFAULT_DISABLED_IN_LIGHT_MODE: LightFeature[] = [
-  'timeline',
   'countsByOperator',
   'mentions',
   'tags',
