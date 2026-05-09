@@ -1,16 +1,17 @@
 import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
 import { QueryParams, TicketsResponse, TicketResponse } from "../../interfaces/tickets.interface"
+import { resolveClient } from "../apiClient"
+
+const ticketsClient = resolveClient("tickets")
 
 const buscarAfiliado = async (token: string, search: string) => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tickets/buscar-afiliado/${search}`
-
         const headers = {
             authorization: `Bearer ${token}`
         }
 
-        const { data } = await axios.get(url, { headers })
+        const { data } = await ticketsClient.get(`/tickets/buscar-afiliado/${search}`, { headers })
 
         return data
     } catch (error) {
@@ -23,13 +24,14 @@ const buscarAfiliado = async (token: string, search: string) => {
 
 const getTickets = async (token: string, { limit, page }: QueryParams): Promise<TicketsResponse & ErrorResponse> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tickets?limit=${limit}&page=${page}`
-
         const headers = {
             authorization: `Bearer ${token}`
         }
 
-        const { data } = await axios<TicketsResponse & ErrorResponse>(url, { headers })
+        const { data } = await ticketsClient.get<TicketsResponse & ErrorResponse>('/tickets', {
+            headers,
+            params: { limit, page }
+        })
 
         return data
     } catch (error) {
@@ -43,13 +45,11 @@ const getTickets = async (token: string, { limit, page }: QueryParams): Promise<
 
 const getTicketById = async (token: string, id: string): Promise<TicketResponse & ErrorResponse> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tickets/${id}`
-
         const headers = {
             authorization: `Bearer ${token}`
         }
 
-        const { data } = await axios<TicketResponse & ErrorResponse>(url, { headers })
+        const { data } = await ticketsClient.get<TicketResponse & ErrorResponse>(`/tickets/${id}`, { headers })
 
         return data
     } catch (error) {
@@ -74,15 +74,13 @@ const createTicket = async (
     }
 ): Promise<TicketResponse & ErrorResponse> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tickets`
-
         const headers = {
             authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
         }
 
-        const { data } = await axios.post<TicketResponse & ErrorResponse>(
-            url,
+        const { data } = await ticketsClient.post<TicketResponse & ErrorResponse>(
+            '/tickets',
             ticketData,
             { headers }
         )
@@ -98,13 +96,11 @@ const createTicket = async (
 
 const deleteTicket = async (token: string, id: string): Promise<any> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tickets/${id}`
-
         const headers = {
             authorization: `Bearer ${token}`
         }
 
-        const { data } = await axios.delete(url, { headers })
+        const { data } = await ticketsClient.delete(`/tickets/${id}`, { headers })
 
         return data
     } catch (error) {
@@ -143,13 +139,11 @@ const uploadArchivos = async (token: string, ticketId: string, files: File[]) =>
             formData.append('files', file);
         });
 
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tickets/${ticketId}/archivos`;
-
         const headers = {
             authorization: `Bearer ${token}`
         };
 
-        const { data } = await axios.post(url, formData, { headers });
+        const { data } = await ticketsClient.post(`/tickets/${ticketId}/archivos`, formData, { headers });
 
         return data;
     } catch (error) {
@@ -162,9 +156,8 @@ const uploadArchivos = async (token: string, ticketId: string, files: File[]) =>
 
 export const irAZoho = async (token: string, ticketId: string) => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tickets/${ticketId}/ir-a-zoho`;
         const headers = { authorization: `Bearer ${token}` };
-        const { data } = await axios.post(url, {}, { headers });
+        const { data } = await ticketsClient.post(`/tickets/${ticketId}/ir-a-zoho`, {}, { headers });
         return data;
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {

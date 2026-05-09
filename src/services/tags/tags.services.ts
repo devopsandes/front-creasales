@@ -1,18 +1,19 @@
 import axios from "axios"
 import { ErrorResponse, SuccessResponse } from "../../interfaces/auth.interface"
 import { TagsResponse } from "../../interfaces/tags.interface"
+import { resolveClient } from "../apiClient"
 
 
+
+const tagsClient = resolveClient("tags")
 
 const createTag = async (token: string, nombre: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tags`
-
         const headers = {
             authorization: `Bearer ${token}`
         }
       
-        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url,{ nombre },{ headers })
+        const { data } = await tagsClient.post<SuccessResponse & ErrorResponse>('/tags',{ nombre },{ headers })
 
 
         return data
@@ -28,13 +29,11 @@ const createTag = async (token: string, nombre: string): Promise<SuccessResponse
 
 const getTags = async (token: string): Promise<TagsResponse & ErrorResponse> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tags`
-
         const headers = {
             authorization: `Bearer ${token}`
         }
       
-        const { data } = await axios<TagsResponse & ErrorResponse>(url,{ headers })
+        const { data } = await tagsClient.get<TagsResponse & ErrorResponse>('/tags',{ headers })
 
 
         return data
@@ -50,14 +49,13 @@ const getTags = async (token: string): Promise<TagsResponse & ErrorResponse> => 
 
 const asignarTag = async (token: string, chatId: string, tagId: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tags/assignate`
         const body = { chatId, tagId }
 
         const headers = {
             authorization: `Bearer ${token}`
         }
       
-        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url, body, { headers })
+        const { data } = await tagsClient.post<SuccessResponse & ErrorResponse>('/tags/assignate', body, { headers })
 
         return data
     } catch (error) {
@@ -71,13 +69,11 @@ const asignarTag = async (token: string, chatId: string, tagId: string): Promise
 
 const updateTag = async (token: string, tagId: string, nombre: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tags/${tagId}`
-
         const headers = {
             authorization: `Bearer ${token}`
         }
       
-        const { data } = await axios.patch<SuccessResponse & ErrorResponse>(url, { nombre }, { headers })
+        const { data } = await tagsClient.patch<SuccessResponse & ErrorResponse>(`/tags/${tagId}`, { nombre }, { headers })
 
         return data
     } catch (error) {
@@ -91,13 +87,11 @@ const updateTag = async (token: string, tagId: string, nombre: string): Promise<
 
 const deleteTag = async (token: string, tagId: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tags/${tagId}`
-
         const headers = {
             authorization: `Bearer ${token}`
         }
       
-        const { data } = await axios.delete<SuccessResponse & ErrorResponse>(url, { headers })
+        const { data } = await tagsClient.delete<SuccessResponse & ErrorResponse>(`/tags/${tagId}`, { headers })
 
         return data
     } catch (error) {
@@ -111,11 +105,10 @@ const deleteTag = async (token: string, tagId: string): Promise<SuccessResponse 
 
 const removeTagFromChat = async (token: string, chatId: string, tagId: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/tags/assignate`
         const headers = {
             authorization: `Bearer ${token}`
         }
-        const { data } = await axios.delete<SuccessResponse & ErrorResponse>(url, {
+        const { data } = await tagsClient.delete<SuccessResponse & ErrorResponse>('/tags/assignate', {
             headers,
             data: { chatId, tagId }
         })

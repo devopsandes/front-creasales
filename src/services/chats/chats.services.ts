@@ -3,6 +3,7 @@ import { ErrorResponse } from "../../interfaces/auth.interface"
 import { ChatCountsResponse, ChatResponse, ChatsResponse, MessagesLiteResponse, OperatorChatCountsResponse, TimelineResponse } from "../../interfaces/chats.interface"
 import { DataUser } from "../../interfaces/action.interface"
 import { perfCounter, perfLog, perfTrackRequest } from "../../utils/perfTracker"
+import { resolveClient } from "../apiClient"
 
 
 
@@ -12,6 +13,7 @@ const pendingCounts = new Map<string, Promise<ChatCountsResponse & ErrorResponse
 const pendingChats = new Map<string, Promise<ChatsResponse & ErrorResponse>>()
 const pendingChatById = new Map<string, Promise<ChatResponse & ErrorResponse>>()
 const endpointLastAt = new Map<string, number>()
+const chatsClient = resolveClient("chats")
 
 const withPending = async <T>(store: Map<string, Promise<T>>, key: string, taskFactory: () => Promise<T>): Promise<T> => {
     const inflight = store.get(key)
@@ -58,14 +60,13 @@ const findChatById = async (
     const pendingKey = `${token}:${id}`
     return withPending(pendingChatById, pendingKey, async () => {
         try {
-            const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}`
             const headers = {
                 authorization: `Bearer ${token}`
             }
             perfCounter("findChatById")
             await waitForEndpointSlot("/chats/:id", options?.rateLimitMs ?? 800, options?.signal)
             perfTrackRequest("/chats/:id")
-            const { data } = await axios.get<ChatResponse & ErrorResponse>(url, { headers, signal: options?.signal })
+            const { data } = await chatsClient.get<ChatResponse & ErrorResponse>(`/chats/${id}`, { headers, signal: options?.signal })
             return data
         } catch (error) {
             if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
@@ -97,8 +98,6 @@ const findChatTimeline = async (
         const startedAt = performance.now()
         perfCounter("findChatTimeline")
         try {
-            const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`
-
             const headers = {
                 authorization: `Bearer ${token}`,
             }
@@ -119,11 +118,11 @@ const findChatTimeline = async (
                 window.localStorage?.getItem("debugTimeline") === "1"
 
             if (debug) {
-                console.log("[findChatTimeline] GET", url, { params: requestQuery })
+                console.log("[findChatTimeline] GET", `${chatsClient.defaults.baseURL}/chats/${id}/timeline`, { params: requestQuery })
             }
 
             await waitForEndpointSlot("/chats/:id/timeline", options?.rateLimitMs ?? 900, options?.signal)
-            const { data } = await axios.get<TimelineResponse & ErrorResponse>(url, {
+            const { data } = await chatsClient.get<TimelineResponse & ErrorResponse>(`/chats/${id}/timeline`, {
                 headers,
                 params: requestQuery,
                 signal: options?.signal,
@@ -160,7 +159,8 @@ const findChatTimeline = async (
             if (axios.isAxiosError(error) && error.response) {
                 if (debug) {
                     console.log("[findChatTimeline] ERROR", {
-                        url: `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/timeline`,
+                        url: `${chatsClient.defaults.baseURL}/chats/${id}/timeline`,
+                        baseURL: chatsClient.defaults.baseURL,
                         status: error.response.status,
                         data: error.response.data,
                     })
@@ -189,7 +189,6 @@ const findChatMessagesLite = async (
         const startedAt = performance.now()
         perfCounter("findChatMessagesLite")
         try {
-            const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/messages-lite`
             const headers = {
                 authorization: `Bearer ${token}`,
             }
@@ -198,7 +197,7 @@ const findChatMessagesLite = async (
             if (before) requestQuery.before = before
 
             await waitForEndpointSlot("/chats/:id/messages-lite", options?.rateLimitMs ?? 900, options?.signal)
-            const { data } = await axios.get<MessagesLiteResponse & ErrorResponse>(url, {
+            const { data } = await chatsClient.get<MessagesLiteResponse & ErrorResponse>(`/chats/${id}/messages-lite`, {
                 headers,
                 params: requestQuery,
                 signal: options?.signal,
@@ -259,16 +258,18 @@ const getChatCounts = async (
         const startedAt = performance.now()
         perfCounter("getChatCounts")
         try {
-            const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats/counts`
             const qs = new URLSearchParams()
             if (params?.q) qs.set("q", `${params.q}`)
             if (params?.tagId) qs.set("tagId", `${params.tagId}`)
-            const url = qs.toString() ? `${baseUrl}?${qs.toString()}` : baseUrl
 
             const headers = { authorization: `Bearer ${token}` }
             await waitForEndpointSlot("/chats/counts", options?.rateLimitMs ?? 1200, options?.signal)
             perfTrackRequest("/chats/counts")
-            const { data } = await axios.get<ChatCountsResponse & ErrorResponse>(url, { headers, signal: options?.signal })
+            const { data } = await chatsClient.get<ChatCountsResponse & ErrorResponse>('/chats/counts', {
+                headers,
+                signal: options?.signal,
+                params: Object.fromEntries(qs.entries()),
+            })
             perfLog("api.getChatCounts", {
                 durationMs: Math.round(performance.now() - startedAt),
                 q: params?.q ?? null,
@@ -299,7 +300,6 @@ const getChats = async (
         const startedAt = performance.now()
         perfCounter("getChats")
         try {
-            const baseUrl = `${import.meta.env.VITE_URL_BACKEND}/chats`
             const params = new URLSearchParams()
             params.set("page", `${page}`)
             params.set("limit", `${limit}`)
@@ -312,14 +312,16 @@ const getChats = async (
                 params.set("archived", `${filters.archived}`)
             }
 
-            const url = `${baseUrl}?${params.toString()}`
-
             const headers = {
                 authorization: `Bearer ${token}`
             }
             await waitForEndpointSlot("/chats", options?.rateLimitMs ?? 1200, options?.signal)
             perfTrackRequest("/chats")
-            const { data } = await axios.get<ChatsResponse & ErrorResponse>(url, { headers, signal: options?.signal })
+            const { data } = await chatsClient.get<ChatsResponse & ErrorResponse>('/chats', {
+                headers,
+                signal: options?.signal,
+                params: Object.fromEntries(params.entries()),
+            })
 
             perfLog("api.getChats", {
                 durationMs: Math.round(performance.now() - startedAt),
@@ -349,9 +351,8 @@ const getChatCountsByOperator = async (
     const startedAt = performance.now()
     perfCounter("getChatCountsByOperator")
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/counts-by-operator`
         const headers = { authorization: `Bearer ${token}` }
-        const { data } = await axios.get<OperatorChatCountsResponse & ErrorResponse>(url, { headers })
+        const { data } = await chatsClient.get<OperatorChatCountsResponse & ErrorResponse>('/chats/counts-by-operator', { headers })
         perfLog("api.getChatCountsByOperator", {
             durationMs: Math.round(performance.now() - startedAt),
             rows: Array.isArray((data as any)?.counts) ? (data as any).counts.length : null,
@@ -379,9 +380,8 @@ const setChatReadState = async (
     | any
 > => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${chatId}/read-state`
         const headers = { authorization: `Bearer ${token}` }
-        const { data } = await axios.patch(url, { state }, { headers })
+        const { data } = await chatsClient.patch(`/chats/${chatId}/read-state`, { state }, { headers })
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -414,13 +414,12 @@ const setChatBotState = async (
     | any
 > => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${chatId}/bot-state`
         const headers = { authorization: `Bearer ${token}` }
         const body: any = { enabled }
         if (typeof reason === "string" && reason.trim().length > 0) {
             body.reason = reason.trim().slice(0, 255)
         }
-        const { data } = await axios.patch(url, body, { headers })
+        const { data } = await chatsClient.patch(`/chats/${chatId}/bot-state`, body, { headers })
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -436,9 +435,8 @@ const searchByConversacion = async (
     numero: number
 ): Promise<any> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/search-conversacion?numero=${numero}`
         const headers = { authorization: `Bearer ${token}` }
-        const { data } = await axios.get(url, { headers })
+        const { data } = await chatsClient.get('/chats/search-conversacion', { headers, params: { numero } })
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -453,9 +451,8 @@ const desasignarChat = async (
     chatId: string
 ): Promise<any> => {
     try {
-        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/unassign`
         const headers = { authorization: `Bearer ${token}` }
-        const { data } = await axios.post(url, { chatId }, { headers })
+        const { data } = await chatsClient.post('/chats/unassign', { chatId }, { headers })
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
