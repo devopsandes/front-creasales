@@ -530,11 +530,19 @@ const Chats = () => {
             dispatch(connectSocket())
             return
         }
-        setLoading(true)
-        socket?.emit('register', telefono)
-        if (id) socket?.emit('join-chat', id)
-        return () => { }
-    }, [dispatch, telefono, id, socketConnected])
+        socket.emit('register', telefono)
+        if (id) socket.emit('join-chat', id)
+
+        // Re-unirse al chat cuando el socket se reconecta
+        const handleReconnect = () => {
+            socket.emit('register', telefono)
+            if (id) socket.emit('join-chat', id)
+        }
+        socket.on('connect', handleReconnect)
+        return () => {
+            socket.off('connect', handleReconnect)
+        }
+    }, [dispatch, telefono, id])  // ← sacamos socketConnected
 
     useEffect(() => {
         const socket = getSocket()
