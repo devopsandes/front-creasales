@@ -33,7 +33,7 @@ import { jwtDecode } from "jwt-decode"
 import AddTagModal from '../../components/modal/AddTagModal'
 import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModal'
 import { perfMark, perfTrackMemory, perfTrackNavigation } from '../../utils/perfTracker'
-import { isLightFeatureDisabled } from '../../config/runtimeConfig'
+import { getTimelineEventsSource, isLightFeatureDisabled } from '../../config/runtimeConfig'
 import { convClient } from '../../services/apiClient'
 
 const Chats = () => {
@@ -85,6 +85,8 @@ const Chats = () => {
     const timelineLoadControllerRef = useRef<AbortController | null>(null)
     const timelineOlderControllerRef = useRef<AbortController | null>(null)
     const refreshCurrentChatControllerRef = useRef<AbortController | null>(null)
+    const hasSocketConnectedOnceRef = useRef(false)
+    const renderedEventKeysRef = useRef<Set<string>>(new Set())
 
     const MAX_FILES_PER_MESSAGE = 5
 
@@ -138,9 +140,10 @@ const Chats = () => {
 
     const normalizeTimelineItem = (raw: any): TimelineItem => {
         const it = raw?.item ?? raw?.event ?? raw
-        if (it?.kind === "event" || it?.kind === "message") return it
-        if (it?.type && it?.text !== undefined) return { ...it, kind: "event" as const }
-        if (it?.msg_entrada !== undefined || it?.msg_salida !== undefined) return { ...it, kind: "message" as const }
+        const createdAt = it?.createdAt ?? it?.created_at ?? it?.timestamp ?? null
+        if (it?.kind === "event" || it?.kind === "message") return createdAt ? { ...it, createdAt } : it
+        if (it?.type && (it?.text !== undefined || it?.payload !== undefined)) return createdAt ? { ...it, kind: "event" as const, createdAt } : { ...it, kind: "event" as const }
+        if (it?.msg_entrada !== undefined || it?.msg_salida !== undefined) return createdAt ? { ...it, kind: "message" as const, createdAt } : { ...it, kind: "message" as const }
         return it
     }
 
@@ -185,10 +188,12 @@ const Chats = () => {
         if (id) return `id:${id}`
         const createdAt = it?.createdAt ?? ''
         const kind = it?.kind ?? (it?.type ? 'event' : 'message')
+        const evtType = it?.type ?? ''
+        const ticketNro = getTicketNumberFromPayload(it?.payload)
         const msgIn = it?.msg_entrada ?? ''
         const msgOut = it?.msg_salida ?? ''
         const text = it?.text ?? ''
-        return `k:${kind}|t:${createdAt}|in:${msgIn}|out:${msgOut}|text:${text}`
+        return `k:${kind}|t:${createdAt}|type:${evtType}|ticket:${ticketNro}|in:${msgIn}|out:${msgOut}|text:${text}`
     }
 
     const mergeTimeline = (prev: TimelineItem[], incoming: TimelineItem[], mode: 'append' | 'prepend') => {
@@ -206,6 +211,10 @@ const Chats = () => {
         const text = `${evt?.text ?? ""}`.trim()
         if (text) return text
         switch (evt?.type) {
+            case "TICKET_CREATED": {
+                const ticketNro = getTicketNumberFromPayload(evt?.payload)
+                return ticketNro ? `Se creó el ticket #${ticketNro}` : "Se creó un ticket"
+            }
             case "CHAT_ASSIGNED": {
                 const toName = evt?.payload?.toName ?? null
                 const byName = evt?.payload?.byName ?? null
@@ -310,7 +319,137 @@ const Chats = () => {
     }
 
     const renderItems = useMemo(() => withDateSeparators(mensajes), [mensajes])
-    const debugTimeline = import.meta.env.DEV && localStorage.getItem("debugTimeline") === "1"
+    const debugTimeline = typeof window !== 'undefined' && window.localStorage?.getItem("debugTimeline") === "1"
+    const timelineEventsSource = getTimelineEventsSource()
+    const SOCKET_EVENTS_CACHE_PREFIX = 'timeline_socket_events_v1'
+    const SOCKET_EVENTS_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+    const SOCKET_EVENTS_CACHE_MAX_PER_CHAT = 120
+
+    type CachedSocketEvent = {
+        chatId: string
+        id?: string
+        kind: "event"
+        type?: string
+        text?: string
+        payload?: any
+        createdAt: string
+        cachedAt: number
+    }
+
+    const debugSocketLog = (phase: string, payload?: Record<string, any>) => {
+        if (!debugTimeline) return
+        console.log('[timeline.debug]', {
+            phase,
+            chatId: id ?? null,
+            timestamp: new Date().toISOString(),
+            ...(payload || {}),
+        })
+    }
+
+    const getTicketNumberFromPayload = (payload: any): string => {
+        const direct = payload?.nro ?? payload?.ticketNro ?? payload?.ticket?.nro ?? payload?.ticket?.ticketNro
+        if (direct === undefined || direct === null) return ''
+        return `${direct}`.trim()
+    }
+
+    const getEventCacheKey = (evt: any, chatId: string): string => {
+        if (evt?.id) return `id:${evt.id}`
+        const createdAt = `${evt?.createdAt ?? ''}`
+        const type = `${evt?.type ?? ''}`
+        const ticketNro = getTicketNumberFromPayload(evt?.payload)
+        return `hash:${type}|${createdAt}|${ticketNro}|${chatId}`
+    }
+
+    const getSocketEventCacheStorageKey = (chatId: string) => `${SOCKET_EVENTS_CACHE_PREFIX}:${chatId}`
+
+    const readSocketEventCache = (chatId: string): CachedSocketEvent[] => {
+        if (!chatId) return []
+        try {
+            const raw = localStorage.getItem(getSocketEventCacheStorageKey(chatId))
+            if (!raw) return []
+            const parsed = JSON.parse(raw)
+            const list: CachedSocketEvent[] = Array.isArray(parsed?.events)
+                ? parsed.events
+                : Array.isArray(parsed)
+                    ? parsed
+                    : []
+            const now = Date.now()
+            return list.filter((evt) => {
+                const cachedAt = Number(evt?.cachedAt || 0)
+                const createdAt = new Date(`${evt?.createdAt ?? ''}`).getTime()
+                const isFreshByCache = cachedAt > 0 && now - cachedAt <= SOCKET_EVENTS_CACHE_TTL_MS
+                const isFreshByCreatedAt = Number.isFinite(createdAt) && now - createdAt <= SOCKET_EVENTS_CACHE_TTL_MS
+                return evt?.kind === 'event' && Boolean(evt?.createdAt) && (isFreshByCache || isFreshByCreatedAt)
+            })
+        } catch {
+            return []
+        }
+    }
+
+    const writeSocketEventCache = (chatId: string, events: CachedSocketEvent[]) => {
+        if (!chatId) return
+        try {
+            localStorage.setItem(
+                getSocketEventCacheStorageKey(chatId),
+                JSON.stringify({
+                    updatedAt: Date.now(),
+                    events: events.slice(-SOCKET_EVENTS_CACHE_MAX_PER_CHAT),
+                })
+            )
+        } catch { }
+    }
+
+    const cacheSocketEvent = (chatId: string, evt: any) => {
+        if (!chatId || timelineEventsSource === 'legacy') return
+        if (!evt || evt?.kind !== 'event') return
+        const parsedCreatedAt = new Date(`${evt?.createdAt ?? ''}`)
+        const normalizedCreatedAt = Number.isNaN(parsedCreatedAt.getTime())
+            ? new Date().toISOString()
+            : parsedCreatedAt.toISOString()
+        const cacheItem: CachedSocketEvent = {
+            chatId,
+            id: evt?.id,
+            kind: 'event',
+            type: evt?.type,
+            text: evt?.text,
+            payload: evt?.payload,
+            createdAt: normalizedCreatedAt,
+            cachedAt: Date.now(),
+        }
+        const current = readSocketEventCache(chatId)
+        const seen = new Set(current.map((item) => getEventCacheKey(item, chatId)))
+        const key = getEventCacheKey(cacheItem, chatId)
+        if (seen.has(key)) return
+        writeSocketEventCache(chatId, [...current, cacheItem])
+        debugSocketLog('socket-event.cached', {
+            eventType: cacheItem.type ?? null,
+            cacheSize: current.length + 1,
+            cacheKey: key,
+        })
+    }
+
+    const shouldMergeSocketCache = (items: TimelineItem[]): boolean => {
+        if (timelineEventsSource === 'legacy') return false
+        if (timelineEventsSource === 'socket_cache') return true
+        const hasAnyEvent = items.some((it: any) => it?.kind === 'event')
+        return !hasAnyEvent
+    }
+
+    const mergeWithSocketEventCache = (chatId: string, baseItems: TimelineItem[]): TimelineItem[] => {
+        if (!chatId) return baseItems
+        if (!shouldMergeSocketCache(baseItems)) return baseItems
+        const cached = readSocketEventCache(chatId)
+        if (cached.length === 0) return baseItems
+        const cachedTimelineItems = cached.map((item) => normalizeTimelineItem(item)).filter(Boolean)
+        const merged = mergeTimeline(baseItems, cachedTimelineItems as TimelineItem[], 'append')
+        debugSocketLog('timeline.cache-merge.applied', {
+            source: timelineEventsSource,
+            baseItems: baseItems.length,
+            cacheItems: cachedTimelineItems.length,
+            mergedItems: merged.length,
+        })
+        return sortTimelineItems(merged)
+    }
 
     const sortTimelineItems = (items: TimelineItem[]) => {
         return items.sort((a, b) => {
@@ -532,28 +671,50 @@ const Chats = () => {
             dispatch(connectSocket())
             return
         }
-        socket.emit('register', telefono)
-        if (id) socket.emit('join-chat', id)
-
-        // Re-unirse al chat cuando el socket se reconecta
-        const handleReconnect = () => {
-            socket.emit('register', telefono)
-            if (id) socket.emit('join-chat', id)
-        }
-        socket.on('connect', handleReconnect)
-        return () => {
-            socket.off('connect', handleReconnect)
-        }
-    }, [dispatch, telefono, id])  // ← sacamos socketConnected
+        debugSocketLog('socket.register.emit', { telefono: telefono ?? null, connected: socket.connected })
+        socket?.emit('register', telefono)
+        return () => { }
+    }, [dispatch, telefono, socketConnected])
 
     useEffect(() => {
         const socket = getSocket()
-        if (!socket || !id) return
-        const messageEventName = `new-message-${id}`
-        const chatEventName = `chat-event-${id}`
-        const handleConnect = () => { socket.emit('join-chat', id) }
-        const handleDisconnect = (_reason: any) => { }
-        const handleConnectError = (_err: any) => { }
+        if (!socket) {
+            debugSocketLog('socket.subscription.skip.no-socket')
+            return
+        }
+        if (!id) {
+            debugSocketLog('socket.subscription.skip.no-chat-id')
+            return
+        }
+        renderedEventKeysRef.current.clear()
+        const activeChatId = id
+        const messageEventName = `new-message-${activeChatId}`
+        const chatEventName = `chat-event-${activeChatId}`
+        const emitJoinChat = (origin: string) => {
+            debugSocketLog('socket.join-chat.emit', { origin, eventName: chatEventName, connected: socket.connected })
+            socket.emit('join-chat', activeChatId, (ack: any) => {
+                debugSocketLog('socket.join-chat.ack', {
+                    origin,
+                    eventName: chatEventName,
+                    ack: ack ?? null,
+                })
+            })
+        }
+        const handleConnect = () => {
+            const connectMode = hasSocketConnectedOnceRef.current ? 'reconnect' : 'connect'
+            hasSocketConnectedOnceRef.current = true
+            debugSocketLog('socket.connected', { mode: connectMode, socketId: socket.id ?? null })
+            emitJoinChat(connectMode)
+        }
+        const handleDisconnect = (reason: any) => {
+            debugSocketLog('socket.disconnected', { reason: reason ?? null, socketId: socket.id ?? null })
+        }
+        const handleConnectError = (err: any) => {
+            debugSocketLog('socket.connect_error', {
+                message: err?.message ?? null,
+                description: err?.description ?? null,
+            })
+        }
         const handleArchivarAck = (_data: any) => { }
         const handleNotaPrivadaAck = (_data: any) => { }
         const handleNewMessage = (mensaje: any) => {
@@ -573,8 +734,26 @@ const Chats = () => {
             })
         }
         const handleChatEvent = (evt: any) => {
-            if (debugTimeline) console.log("[socket] chat-event", chatEventName, evt)
+            debugSocketLog('socket.chat-event.received', {
+                eventName: chatEventName,
+                payload: evt ?? null,
+                eventType: evt?.type ?? null,
+            })
             const normalized = normalizeTimelineItem(evt)
+            if (!normalized || !(normalized as any)?.createdAt) {
+                debugSocketLog('socket.chat-event.drop.invalid-shape', {
+                    eventName: chatEventName,
+                    payload: evt ?? null,
+                })
+                return
+            }
+            debugSocketLog('socket.chat-event.normalized', {
+                eventName: chatEventName,
+                eventType: (normalized as any)?.type ?? null,
+                kind: (normalized as any)?.kind ?? null,
+                createdAt: (normalized as any)?.createdAt ?? null,
+            })
+            cacheSocketEvent(activeChatId, normalized)
             setMensajes(prev => { const merged = mergeTimeline(prev, [normalized], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
             if ((normalized as any)?.type === 'NEW_CONVERSATION_STARTED' && (normalized as any)?.payload?.numeroConversacion) {
                 setConversacionNumero((normalized as any).payload.numeroConversacion)
@@ -611,6 +790,11 @@ const Chats = () => {
         const handleError = (error: any) => {
             if (error?.name === 'TokenExpiredError') { dispatch(openSessionExpired()); return }
         }
+        debugSocketLog('socket.subscription.attach', {
+            chatEventName,
+            messageEventName,
+            connected: socket.connected,
+        })
         socket.on("connect", handleConnect)
         socket.on("disconnect", handleDisconnect)
         socket.on("connect_error", handleConnectError)
@@ -620,9 +804,13 @@ const Chats = () => {
         socket.on(chatEventName, handleChatEvent)
         socket.on("chat.updated", handleChatUpdated)
         socket.on('error', handleError)
-        socket.emit('join-chat', id)
+        emitJoinChat('effect_mount')
         return () => {
-            socket.emit('leave-chat', id)
+            debugSocketLog('socket.subscription.detach', {
+                chatEventName,
+                messageEventName,
+            })
+            socket.emit('leave-chat', activeChatId)
             socket.off("connect", handleConnect)
             socket.off("disconnect", handleDisconnect)
             socket.off("connect_error", handleConnectError)
@@ -633,7 +821,7 @@ const Chats = () => {
             socket.off("chat.updated", handleChatUpdated)
             socket.off('error', handleError)
         }
-    }, [id, dispatch, debugTimeline])
+    }, [id, dispatch, debugTimeline, socketConnected])
 
     useEffect(() => {
         const inicio = async () => {
@@ -677,10 +865,11 @@ const Chats = () => {
                             return
                         }
                         setTimelineSource('messages-lite')
-                        setMensajes(liteWindow.items)
+                        const mergedWithCache = mergeWithSocketEventCache(id, liteWindow.items)
+                        setMensajes(mergedWithCache)
                         setTimelineCursor(liteWindow.nextCursor)
                         setTimelineHasMore(liteWindow.hasMore)
-                        const lastLiteMessage = [...liteWindow.items].reverse().find((x: any) => x && x.kind === "message")
+                        const lastLiteMessage = [...mergedWithCache].reverse().find((x: any) => x && x.kind === "message")
                         if (lastLiteMessage?.createdAt) { setCondChat(menos24hs(new Date(lastLiteMessage.createdAt))) }
                         else { setCondChat(true) }
                         setLoading(false)
@@ -694,10 +883,11 @@ const Chats = () => {
                     }
                 }
                 const items = sortTimelineItems(rawItems.map(normalizeTimelineItem))
-                setMensajes(items)
+                const mergedWithCache = mergeWithSocketEventCache(id, items)
+                setMensajes(mergedWithCache)
                 setTimelineCursor((data as any)?.nextCursor ?? null)
                 setTimelineHasMore(Boolean((data as any)?.hasMore))
-                const lastMessage = [...items].reverse().find((x: any) => x && x.kind === "message")
+                const lastMessage = [...mergedWithCache].reverse().find((x: any) => x && x.kind === "message")
                 if (lastMessage?.createdAt) { setCondChat(menos24hs(new Date(lastMessage.createdAt))) }
                 else { setCondChat(true) }
                 setLoading(false)
@@ -710,10 +900,11 @@ const Chats = () => {
                         return
                     }
                     setTimelineSource('messages-lite')
-                    setMensajes(liteWindow.items)
+                    const mergedWithCache = mergeWithSocketEventCache(id, liteWindow.items)
+                    setMensajes(mergedWithCache)
                     setTimelineCursor(liteWindow.nextCursor)
                     setTimelineHasMore(liteWindow.hasMore)
-                    const lastMessage = [...liteWindow.items].reverse().find((x: any) => x && x.kind === "message")
+                    const lastMessage = [...mergedWithCache].reverse().find((x: any) => x && x.kind === "message")
                     if (lastMessage?.createdAt) { setCondChat(menos24hs(new Date(lastMessage.createdAt))) }
                     else { setCondChat(true) }
                     setLoading(false)
@@ -801,6 +992,18 @@ const Chats = () => {
     useEffect(() => {
         mensajesLenRef.current = Array.isArray(mensajes) ? mensajes.length : 0
     }, [mensajes])
+
+    useEffect(() => {
+        if (!debugTimeline) return
+        const events = (Array.isArray(mensajes) ? mensajes : []).filter((it: any) => it?.kind === 'event')
+        const last = events.length ? events[events.length - 1] : null
+        debugSocketLog('timeline.state.updated', {
+            totalItems: mensajes.length,
+            totalEvents: events.length,
+            lastEventType: (last as any)?.type ?? null,
+            lastEventCreatedAt: (last as any)?.createdAt ?? null,
+        })
+    }, [mensajes, debugTimeline])
 
     useEffect(() => {
         if (!id) return
@@ -963,6 +1166,7 @@ const Chats = () => {
                             type: "CHAT_ARCHIVED",
                             text: "Archivado",
                         } as any
+                        if (id) cacheSocketEvent(id, evt)
                         const merged = mergeTimeline(prev, [evt], "append")
                         return merged.length > 1000 ? merged.slice(-1000) : merged
                     })
@@ -1211,8 +1415,17 @@ const Chats = () => {
                                             </div>
                                         )
                                     }
-                                    const isEvent = msj?.kind === "event" || (msj?.type && msj?.text !== undefined && msj?.msg_entrada === undefined && msj?.msg_salida === undefined)
+                                    const isEvent = msj?.kind === "event" || (msj?.type && (msj?.text !== undefined || msj?.payload !== undefined) && msj?.msg_entrada === undefined && msj?.msg_salida === undefined)
                                     if (isEvent) {
+                                        const eventRenderKey = getTimelineKey(msj)
+                                        if (debugTimeline && !renderedEventKeysRef.current.has(eventRenderKey)) {
+                                            renderedEventKeysRef.current.add(eventRenderKey)
+                                            debugSocketLog('timeline.event.rendered', {
+                                                eventType: msj?.type ?? null,
+                                                createdAt: msj?.createdAt ?? null,
+                                                eventKey: eventRenderKey,
+                                            })
+                                        }
                                         if (msj?.type === "PRIVATE_NOTE_CREATED") {
                                             return (
                                                 <div className='contenedor-nota-privada' key={key}>

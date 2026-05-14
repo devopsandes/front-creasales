@@ -6,6 +6,8 @@ export type LightFeature =
   | 'quickResponses'
   | 'tickets'
 
+export type TimelineEventsSource = 'legacy' | 'socket_cache' | 'backend_events'
+
 const DEFAULT_DISABLED_IN_LIGHT_MODE: LightFeature[] = [
   'countsByOperator',
   'mentions',
@@ -31,6 +33,14 @@ const parseBooleanFlag = (raw: string | boolean | undefined): boolean => {
   return value === '1' || value === 'true' || value === 'yes' || value === 'on'
 }
 
+const parseTimelineEventsSource = (raw: string | undefined): TimelineEventsSource => {
+  const value = `${raw ?? ''}`.trim().toLowerCase()
+  if (value === 'legacy') return 'legacy'
+  if (value === 'backend_events' || value === 'backend-events') return 'backend_events'
+  if (value === 'socket_cache' || value === 'socket-cache') return 'socket_cache'
+  return 'socket_cache'
+}
+
 const parseDisabledFeatures = (raw: string | undefined): Set<LightFeature> => {
   const source = `${raw ?? ''}`.trim()
   const fromEnv = source.length
@@ -49,10 +59,12 @@ export const runtimeConfig = (() => {
   const disabledFeatures = coreLightMode
     ? parseDisabledFeatures(import.meta.env.VITE_CORE_LIGHT_DISABLED_FEATURES)
     : new Set<LightFeature>()
+  const timelineEventsSource = parseTimelineEventsSource(import.meta.env.VITE_TIMELINE_EVENTS_SOURCE)
 
   return {
     coreLightMode,
     disabledFeatures,
+    timelineEventsSource,
   }
 })()
 
@@ -60,3 +72,5 @@ export const isLightFeatureDisabled = (feature: LightFeature): boolean => {
   if (!runtimeConfig.coreLightMode) return false
   return runtimeConfig.disabledFeatures.has(feature)
 }
+
+export const getTimelineEventsSource = (): TimelineEventsSource => runtimeConfig.timelineEventsSource
