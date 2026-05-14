@@ -206,10 +206,11 @@ const Chats = () => {
         if (text) return text
         switch (evt?.type) {
             case "CHAT_ASSIGNED": {
-                const nombre = evt?.payload?.operador?.nombre ?? evt?.payload?.operator?.nombre ?? evt?.payload?.user?.nombre
-                const apellido = evt?.payload?.operador?.apellido ?? evt?.payload?.operator?.apellido ?? evt?.payload?.user?.apellido
-                const fullName = [nombre, apellido].filter(Boolean).join(" ").trim()
-                return fullName ? `Esta conversación fue asignada a ${fullName}` : "Esta conversación fue asignada"
+                const toName = evt?.payload?.toName ?? null
+                const byName = evt?.payload?.byName ?? null
+                if (toName && byName) return `Esta conversación fue asignada a ${toName} por ${byName}`
+                if (toName) return `Esta conversación fue asignada a ${toName}`
+                return "Esta conversación fue asignada"
             }
             case "TAG_ASSIGNED": {
                 const tagName = evt?.payload?.tag?.nombre ?? evt?.payload?.tagName ?? evt?.payload?.nombreTag
@@ -1256,6 +1257,18 @@ const Chats = () => {
                                             </div>
                                         )
                                     }
+
+                                    if (msj?.esNota && msj?.msg_salida) {
+                                        return (
+                                            <div className='contenedor-nota-privada' key={key}>
+                                                <div className='mensaje-nota-privada'>
+                                                    <span className='mensaje-nota-privada-text'>{msj.msg_salida}</span>
+                                                </div>
+                                                <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
+                                            </div>
+                                        )
+                                    }
+
                                     return (
                                         <div key={key} className={`${msj.msg_entrada ? 'contenedor-entrada' : 'contenedor-salida'}`}>
                                             <div className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
