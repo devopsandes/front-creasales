@@ -109,7 +109,7 @@ const Chats = () => {
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
     const selectedBulkReadChatIds = useSelector((state: RootState) => state.action.selectedBulkReadChatIds)
     const chats = useSelector((state: RootState) => state.action.chats)
-    // const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
+    const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
     const chatsRef = useRef<any[]>(Array.isArray(chats) ? chats : [])
     const currentChat = chats.find(chat => chat.id === id)
     const chatTags: ChatTag[] = currentChat?.tags || []
