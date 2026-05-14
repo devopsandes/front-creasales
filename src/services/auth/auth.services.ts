@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { DataLogin, DataRegister, ErrorResponse, LoginResponse, SuccessResponse, UsersResponse, ValidationResponse } from '../../interfaces/auth.interface'
+import { convClient } from '../apiClient'
 
 type Objeto = {
     nombre: string;
@@ -190,9 +191,6 @@ const switchActivo = async (userId: string | undefined, token: string, activo: b
 
 const asignarOperador = async (chat_id: string, user_id: string, token: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        // Nuevo backend: genera hito CHAT_ASSIGNED + emite socket chat-event-${chatId}
-        const url = `${import.meta.env.VITE_URL_BACKEND}/chats/operators`
-
         const headers = {
             authorization: `Bearer ${token}`,
         }
@@ -202,7 +200,7 @@ const asignarOperador = async (chat_id: string, user_id: string, token: string):
             userId: user_id,
         }
 
-        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url, body, { headers })
+        const { data } = await convClient.post<SuccessResponse & ErrorResponse>('/chats/operators', body, { headers })
 
         return data
     } catch (error) {

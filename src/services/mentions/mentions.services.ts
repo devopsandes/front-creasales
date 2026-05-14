@@ -1,6 +1,7 @@
 import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
 import { perfTrackRequest } from "../../utils/perfTracker"
+import { resolveClient } from "../apiClient"
 
 export type MentionChatItem = {
   chatId: string
@@ -24,6 +25,7 @@ const chatsCache = new Map<string, { value: MentionChatsResponse; expiresAt: num
 const pendingUnread = new Map<string, Promise<MentionsUnreadCountResponse>>()
 const pendingChats = new Map<string, Promise<MentionChatsResponse>>()
 const endpointLastAt = new Map<string, number>()
+const mentionsClient = resolveClient("mentions")
 
 const getCached = <T>(store: Map<string, { value: T; expiresAt: number }>, key: string): T | null => {
   const entry = store.get(key)
@@ -79,11 +81,10 @@ export const getMentionsUnreadCount = async (
 
   const task = (async (): Promise<MentionsUnreadCountResponse> => {
     try {
-      const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/unread-count`
       const headers = { authorization: `Bearer ${token}` }
       await waitForEndpointSlot("/mentions/unread-count", options?.rateLimitMs ?? 1200, options?.signal)
       perfTrackRequest("/mentions/unread-count")
-      const { data } = await axios.get<any>(url, { headers, signal: options?.signal })
+      const { data } = await mentionsClient.get<any>("/mentions/unread-count", { headers, signal: options?.signal })
 
       const payload: MentionsUnreadCountResponse = {
         statusCode: data?.statusCode ?? 200,
@@ -136,11 +137,10 @@ export const getMentionChats = async (
 
   const task = (async (): Promise<MentionChatsResponse> => {
     try {
-      const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/chats`
       const headers = { authorization: `Bearer ${token}` }
       await waitForEndpointSlot("/mentions/chats", options?.rateLimitMs ?? 1200, options?.signal)
       perfTrackRequest("/mentions/chats")
-      const { data } = await axios.get<any>(url, { headers, params: query, signal: options?.signal })
+      const { data } = await mentionsClient.get<any>("/mentions/chats", { headers, params: query, signal: options?.signal })
 
       const items = Array.isArray(data?.items) ? data.items : []
       const payload: MentionChatsResponse = { statusCode: data?.statusCode ?? 200, items }
@@ -177,11 +177,10 @@ export const markMentionsRead = async (
   chatIdOrIds: string | string[]
 ): Promise<{ statusCode: number } & Partial<ErrorResponse>> => {
   try {
-    const url = `${import.meta.env.VITE_URL_BACKEND}/mentions/mark-read`
     const headers = { authorization: `Bearer ${token}` }
     const body = Array.isArray(chatIdOrIds) ? { chatIds: chatIdOrIds } : { chatId: chatIdOrIds }
     perfTrackRequest("/mentions/mark-read")
-    const { data } = await axios.post<any>(url, body, { headers })
+    const { data } = await mentionsClient.post<any>("/mentions/mark-read", body, { headers })
 
     unreadCache.clear()
     chatsCache.clear()

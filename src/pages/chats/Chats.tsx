@@ -34,6 +34,7 @@ import AddTagModal from '../../components/modal/AddTagModal'
 import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModal'
 import { perfMark, perfTrackMemory, perfTrackNavigation } from '../../utils/perfTracker'
 import { isLightFeatureDisabled } from '../../config/runtimeConfig'
+import { convClient } from '../../services/apiClient'
 
 const Chats = () => {
     const mentionsDisabled = isLightFeatureDisabled('mentions')
@@ -895,7 +896,7 @@ const Chats = () => {
                 }
                 if (trimmedMessage.length > 0) {
                     if (socket && socket.connected) { socket.emit("enviar-mensaje", { mensaje: trimmedMessage, chatId: id, telefono, token, mentions }) }
-                    else { await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, { chatId: id, text: trimmedMessage, mentions }, { headers: { Authorization: `Bearer ${token}` } }) }
+                    else { await convClient.post('/chats/send-message', { chatId: id, text: trimmedMessage, mentions }, { headers: { Authorization: `Bearer ${token}` } }) }
                     lastSentMessageRef.current = trimmedMessage
                     setMensaje("")
                     setSelectedMentionUsers([])
@@ -904,7 +905,7 @@ const Chats = () => {
                     const formData = new FormData()
                     formData.append("chatId", id)
                     formData.append("file", file)
-                    try { await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, formData, { headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` } }) }
+                    try { await convClient.post('/chats/send-message', formData, { headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` } }) }
                     catch (err) { toast.error(`No se pudo subir ${file.name}`) }
                     finally { removeOptimistic(item.id) }
                 }
@@ -920,7 +921,7 @@ const Chats = () => {
                 setSelectedMentionUsers([])
                 isSendingRef.current = false
             } else {
-                await axios.post(`${import.meta.env.VITE_URL_BACK}/api/v1/chats/send-message`, { chatId: id, text: mensaje, mentions }, { headers: { Authorization: `Bearer ${token}` } })
+                await convClient.post('/chats/send-message', { chatId: id, text: mensaje, mentions }, { headers: { Authorization: `Bearer ${token}` } })
                 setMensaje('')
                 setSelectedMentionUsers([])
                 isSendingRef.current = false
@@ -990,8 +991,7 @@ const Chats = () => {
     const handleDeleteConfirm = async () => {
         try {
             if (!id) return
-            const url = `${import.meta.env.VITE_URL_BACKEND}/chats/${id}/messages`
-            const response = await axios.delete(url, { headers: { authorization: `Bearer ${token}` } })
+            const response = await convClient.delete(`/chats/${id}/messages`, { headers: { authorization: `Bearer ${token}` } })
             if (response.status === 200 || response.status === 204) {
                 toast.success('Chat eliminado correctamente');
                 setIsDeleteModalOpen(false);

@@ -1,8 +1,9 @@
 ﻿import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { io, Socket } from "socket.io-client";
 import { perfTrackReconnectAttempt } from "../../utils/perfTracker";
+import { getConversationSocketUrl } from "../../services/apiClient";
 
-const SOCKET_URL = `${import.meta.env.VITE_URL_BACK}`;
+const SOCKET_URL = getConversationSocketUrl();
 
 const perfEnabled = () =>
   typeof window !== "undefined" && window.localStorage?.getItem("perfLogs") === "1";

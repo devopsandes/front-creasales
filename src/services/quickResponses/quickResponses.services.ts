@@ -1,5 +1,6 @@
 import axios from "axios"
 import { QuickResponse } from "../../interfaces/quickResponses.interface"
+import { resolveClient } from "../apiClient"
 
 export type QuickResponsesListResponse={items:QuickResponse[];total?:number;page?:number;limit?:number;paginas?:number;statusCode?:number;message?:any;error?:string}
 
@@ -9,19 +10,8 @@ type BackendOneResponse={statusCode:number;quickResponse:QuickResponse;message?:
 const QUICK_RESPONSES_TTL_MS = 30_000
 const quickResponsesCache = new Map<string, { value: QuickResponsesListResponse; expiresAt: number }>()
 const pendingQuickResponses = new Map<string, Promise<QuickResponsesListResponse>>()
-
-const apiBase=()=>{
-  const raw=`${import.meta.env.VITE_URL_BACKEND??""}`.trim()
-  if(!raw)return"/api/v1"
-  if(/^https?:\/\//i.test(raw))return raw.replace(/\/+$/,"")
-  let base=raw
-  if(!base.startsWith("/"))base=`/${base}`
-  base=base.replace(/\/+$/,"")
-  if(base.includes("/api/v1"))return base
-  return`${base}/api/v1`
-}
-
-const baseUrl=()=>`${apiBase()}/quick-responses`
+const quickResponsesClient = resolveClient("quickResponses")
+const baseUrl = () => '/quick-responses'
 
 const getCachedQuickResponses = (key: string): QuickResponsesListResponse | null => {
   const entry = quickResponsesCache.get(key)
@@ -50,7 +40,7 @@ export const getQuickResponses=async(token:string,params?:{search?:string;page?:
   const task=(async():Promise<QuickResponsesListResponse>=>{
     try{
       const headers={authorization:`Bearer ${token}`}
-      const {data,status}=await axios.get<BackendListResponse>(baseUrl(),{headers,params})
+      const {data,status}=await quickResponsesClient.get<BackendListResponse>(baseUrl(),{headers,params})
       const code=(data as any)?.statusCode??status
       const list=Array.isArray((data as any)?.quickResponses)?(data as any).quickResponses:[]
       const payload={statusCode:code,page:(data as any)?.page,limit:(data as any)?.limit,total:(data as any)?.total,paginas:(data as any)?.paginas,items:list,message:(data as any)?.message,error:(data as any)?.error}
@@ -75,7 +65,7 @@ export const getQuickResponses=async(token:string,params?:{search?:string;page?:
 export const createQuickResponse=async(token:string,payload:{shortcut:string;text:string}):Promise<{statusCode?:number;quickResponse?:QuickResponse;message?:any;error?:string}>=>{
   try{
     const headers={authorization:`Bearer ${token}`}
-    const {data,status}=await axios.post<BackendOneResponse>(baseUrl(),payload,{headers})
+    const {data,status}=await quickResponsesClient.post<BackendOneResponse>(baseUrl(),payload,{headers})
     quickResponsesCache.clear()
     pendingQuickResponses.clear()
     return{statusCode:(data as any)?.statusCode??status,quickResponse:(data as any)?.quickResponse,message:(data as any)?.message,error:(data as any)?.error}
@@ -90,7 +80,7 @@ export const createQuickResponse=async(token:string,payload:{shortcut:string;tex
 export const updateQuickResponse=async(token:string,id:string,payload:{shortcut?:string;text?:string}):Promise<{statusCode?:number;quickResponse?:QuickResponse;message?:any;error?:string}>=>{
   try{
     const headers={authorization:`Bearer ${token}`}
-    const {data,status}=await axios.patch<BackendOneResponse>(`${baseUrl()}/${id}`,payload,{headers})
+    const {data,status}=await quickResponsesClient.patch<BackendOneResponse>(`${baseUrl()}/${id}`,payload,{headers})
     quickResponsesCache.clear()
     pendingQuickResponses.clear()
     return{statusCode:(data as any)?.statusCode??status,quickResponse:(data as any)?.quickResponse,message:(data as any)?.message,error:(data as any)?.error}
@@ -105,7 +95,7 @@ export const updateQuickResponse=async(token:string,id:string,payload:{shortcut?
 export const deleteQuickResponse=async(token:string,id:string):Promise<{statusCode?:number;message?:any}>=>{
   try{
     const headers={authorization:`Bearer ${token}`}
-    const {data,status}=await axios.delete(`${baseUrl()}/${id}`,{headers})
+    const {data,status}=await quickResponsesClient.delete(`${baseUrl()}/${id}`,{headers})
     quickResponsesCache.clear()
     pendingQuickResponses.clear()
     return{...(data as any),statusCode:(data as any)?.statusCode??status}
