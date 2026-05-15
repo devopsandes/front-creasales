@@ -94,7 +94,7 @@ export interface ChatState {
     updatedAt: Date;
     mensajes:  Mensaje[];
     tags?:     ChatTag[];
-    assignment?: 'bot' | 'unassigned' | 'assigned';
+    assignment?: 'bot' | 'unassigned' | 'assigned' | 'archived';
     /**
      * Toggle Bot por conversación (backend nuevo).
      * Campos opcionales para mantener compatibilidad con backends viejos o entornos desactualizados.

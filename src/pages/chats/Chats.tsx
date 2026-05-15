@@ -956,16 +956,6 @@ const Chats = () => {
                 const objMsj = { mensaje, chatId: id, telefono, token }
                 socket.emit("archivar", objMsj, (ack: any) => {
                     if (!ack?.ok) return
-                    setMensajes((prev) => {
-                        const evt: TimelineItem = {
-                            kind: "event" as const,
-                            createdAt: new Date().toISOString(),
-                            type: "CHAT_ARCHIVED",
-                            text: "Archivado",
-                        } as any
-                        const merged = mergeTimeline(prev, [evt], "append")
-                        return merged.length > 1000 ? merged.slice(-1000) : merged
-                    })
                 })
             }
             setIsArchiveModalOpen(false);

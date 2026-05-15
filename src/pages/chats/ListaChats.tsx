@@ -32,11 +32,11 @@ const capitalizeText = (text: string | undefined | null): string => {
         .join(' ');
 };
 
-type ChatAssignment = 'bot' | 'unassigned' | 'assigned'
+type ChatAssignment = 'bot' | 'unassigned' | 'assigned' | 'archived'
 
 const getAssignment = (chat: ChatState): ChatAssignment => {
     const assignment = chat.assignment
-    if (assignment === 'bot' || assignment === 'unassigned' || assignment === 'assigned') {
+    if (assignment === 'bot' || assignment === 'unassigned' || assignment === 'assigned' || assignment === 'archived') {
         return assignment
     }
     return chat.operador ? 'assigned' : 'unassigned'
@@ -146,7 +146,7 @@ const ListaChats = () => {
         return null
     }
 
-    
+
     const dedupeTags = (tags: any): any[] => {
         if (!Array.isArray(tags)) return []
         const map = new Map<string, any>()
@@ -813,26 +813,26 @@ const ListaChats = () => {
             const mentionIds = new Set<string>(mentionChatIds)
 
             chatsFromRedux.forEach(chat => {
-                if (chat.archivar) {
+                if (getAssignment(chat) === 'archived') {
                     archivadasTemp.push(chat)
                 }
 
-                if (getAssignment(chat) === 'bot' && !chat.archivar) {
+                if (getAssignment(chat) === 'bot') {
                     if (!botsIds.has(chat.id)) {
                         botsTemp.push(chat)
                         botsIds.add(chat.id)
                     }
                 }
 
-                if (getAssignment(chat) === 'unassigned' && !chat.archivar) {
+                if (getAssignment(chat) === 'unassigned') {
                     sinAsignarTemp.push(chat)
                 }
 
-                if (getAssignment(chat) === 'assigned' && id === chat.operador?.id && !chat.archivar) {
+                if (getAssignment(chat) === 'assigned' && id === chat.operador?.id) {
                     asignadasTemp.push(chat)
                 }
 
-                if (getAssignment(chat) === 'assigned' && !chat.archivar && chat.operador?.id && chat.operador.id !== id) {
+                if (getAssignment(chat) === 'assigned' && chat.operador?.id && chat.operador.id !== id) {
                     asignadasOtrosTemp.push(chat)
                 }
 
