@@ -1,139 +1,117 @@
 import { useCallback, useEffect, useRef } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { jwtDecode } from "jwt-decode"
-import { toast } from "react-toastify"
 import { RootState } from "../app/store"
-import { getSocket } from "../app/slices/socketSlice"
-import { bumpMentionsRefreshNonce, openSessionExpired, setMentionChatIds, setMentionUnreadCount } from "../app/slices/actionSlice"
-import { getMentionChats, getMentionsUnreadCount } from "../services/mentions/mentions.services"
 import { isLightFeatureDisabled } from "../config/runtimeConfig"
+import { bumpMentionsRefreshNonce, openSessionExpired, setMentionChatIds, setMentionUnreadCount } from "../app/slices/actionSlice"
+import { getMentionsUnreadCount, getMisMenciones } from "../services/mentions/mentions.services"
+import { getSocket } from "../app/slices/socketSlice"
+import { jwtDecode } from "jwt-decode"
 
 export const useMentionsSync = () => {
   const mentionsDisabled = isLightFeatureDisabled('mentions')
   const dispatch = useDispatch()
-  const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
-  const authUserId = useSelector((state: RootState) => state.auth.user?.id)
-  const authEmpresaId = useSelector((state: RootState) => state.auth.empresa?.id)
+  const token = localStorage.getItem('token') || ''
   const mentionsRefreshNonce = useSelector((state: RootState) => state.action.mentionsRefreshNonce)
-
-  const inFlightRef = useRef(false)
-  const lastFetchAtRef = useRef(0)
-  const scheduleRef = useRef<number | null>(null)
+  const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
   const mentionAudioRef = useRef(new Audio('/audio/mencion.mp3'))
   const unreadControllerRef = useRef<AbortController | null>(null)
   const chatsControllerRef = useRef<AbortController | null>(null)
 
-  const refreshMentionCount = useCallback(async (source: "bootstrap" | "socket" | "nonce" = "bootstrap") => {
+  const myUserId = (() => {
+    try { return token ? jwtDecode<{ id?: string }>(token)?.id ?? null : null }
+    catch { return null }
+  })()
+
+  const refreshMentions = useCallback(async (source: "bootstrap" | "socket" | "nonce" = "bootstrap") => {
     if (mentionsDisabled) return
-    const token = localStorage.getItem("token") || ""
     if (!token) return
-    if (inFlightRef.current) return
-    const now = Date.now()
-    if (now - lastFetchAtRef.current < 2500) return
-    inFlightRef.current = true
-    lastFetchAtRef.current = now
+
+    unreadControllerRef.current?.abort()
+    chatsControllerRef.current?.abort()
+    unreadControllerRef.current = new AbortController()
+    chatsControllerRef.current = new AbortController()
+
     try {
-      unreadControllerRef.current?.abort()
-      chatsControllerRef.current?.abort()
-      unreadControllerRef.current = new AbortController()
-      chatsControllerRef.current = new AbortController()
-      const [countResp, chatsResp] = await Promise.all([
+      const [countResp, mentionsResp] = await Promise.all([
         getMentionsUnreadCount(token, { signal: unreadControllerRef.current.signal }),
-        getMentionChats(token, { unreadOnly: true, page: 1, limit: 200 }, { signal: chatsControllerRef.current.signal }),
+        getMisMenciones(token, { page: 1, limit: 30 }, { signal: chatsControllerRef.current.signal }),
       ])
-      if ((countResp as any)?.statusCode === 401 || (chatsResp as any)?.statusCode === 401) {
+
+      if ((countResp as any)?.statusCode === 401 || (mentionsResp as any)?.statusCode === 401) {
         dispatch(openSessionExpired())
         return
       }
-      const items = Array.isArray((chatsResp as any)?.items) ? (chatsResp as any).items : []
-      const ids: string[] = []
-      items.forEach((it: any) => {
-        const chatId = it?.chatId || it?.chat_id || it?.chat?.id || it?.id || null
-        if (chatId) ids.push(`${chatId}`)
-      })
-      dispatch(setMentionChatIds(Array.from(new Set(ids))))
-      if (items.length === 0) {
-        dispatch(setMentionUnreadCount(0))
-      } else {
-        dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
-      }
-      if (source === "socket") {
+
+      const items = Array.isArray((mentionsResp as any)?.items) ? (mentionsResp as any).items : []
+      
+      // Guardamos las menciones completas en Redux
+      dispatch(setMentionChatIds(items))
+      dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
+
+      if (source === 'socket') {
+        try {
+          const audio = mentionAudioRef.current
+          audio.currentTime = 0
+          await audio.play()
+        } catch { }
         dispatch(bumpMentionsRefreshNonce())
       }
-    } finally {
-      unreadControllerRef.current = null
-      chatsControllerRef.current = null
-      inFlightRef.current = false
+    } catch (e: any) {
+      if (e?.name === 'AbortError' || e?.code === 'ERR_CANCELED') return
     }
-  }, [dispatch, mentionsDisabled])
+  }, [dispatch, mentionsDisabled, token])
 
-  const scheduleRefresh = useCallback((source: "bootstrap" | "socket" | "nonce" = "bootstrap") => {
+  const scheduleRefresh = useCallback((source: "bootstrap" | "socket" | "nonce") => {
+    refreshMentions(source).catch(() => {})
+  }, [refreshMentions])
+
+  // Bootstrap
+  useEffect(() => {
     if (mentionsDisabled) return
-    if (scheduleRef.current) {
-      window.clearTimeout(scheduleRef.current)
-      scheduleRef.current = null
-    }
-    scheduleRef.current = window.setTimeout(() => {
-      scheduleRef.current = null
-      refreshMentionCount(source).catch(() => {
-        inFlightRef.current = false
-      })
-    }, 300)
-  }, [refreshMentionCount, mentionsDisabled])
+    scheduleRefresh("bootstrap")
+  }, [scheduleRefresh, mentionsDisabled])
 
+  // Limpiar si se deshabilita
   useEffect(() => {
     if (!mentionsDisabled) return
     dispatch(setMentionUnreadCount(0))
     dispatch(setMentionChatIds([]))
   }, [mentionsDisabled, dispatch])
 
+  // Re-sync cuando el socket reconecta
   useEffect(() => {
     if (mentionsDisabled) return
+    if (!socketConnected) return
     scheduleRefresh("bootstrap")
-    return () => {
-      if (scheduleRef.current) {
-        window.clearTimeout(scheduleRef.current)
-        scheduleRef.current = null
-      }
-      unreadControllerRef.current?.abort()
-      chatsControllerRef.current?.abort()
-    }
-  }, [scheduleRefresh, authUserId, authEmpresaId, socketConnected, mentionsDisabled])
+  }, [scheduleRefresh, socketConnected, mentionsDisabled])
 
+  // Re-sync cuando se dispara el nonce
   useEffect(() => {
     if (mentionsDisabled) return
     if (!mentionsRefreshNonce) return
     scheduleRefresh("nonce")
   }, [mentionsRefreshNonce, scheduleRefresh, mentionsDisabled])
 
+  // Escuchar evento socket de nueva mención
   useEffect(() => {
     if (mentionsDisabled) return
-    const token = localStorage.getItem("token") || ""
+    if (!myUserId) return
     const socket = getSocket()
-    let myUserId = localStorage.getItem("userId") || ""
-    if (!myUserId && token) {
-      try {
-        myUserId = jwtDecode<{ id?: string }>(token)?.id ?? ""
-      } catch {
-        myUserId = ""
-      }
-    }
-    if (!token || !myUserId || !socket || !socketConnected) return
+    if (!socket) return
+
     const eventName = `mention-${myUserId}`
-    const handler = () => {
-      toast.info('Te mencionaron en un chat')
-      try {
-        const audio = mentionAudioRef.current
-        audio.currentTime = 0
-        audio.playbackRate = 1.2
-        audio.play().catch(() => { })
-      } catch { }
+    const handleMention = (_payload: any) => {
       scheduleRefresh("socket")
     }
-    socket.on(eventName, handler)
-    return () => {
-      socket.off(eventName, handler)
-    }
-  }, [socketConnected, scheduleRefresh, mentionsDisabled])
-}
 
+    socket.on(eventName, handleMention)
+    return () => { socket.off(eventName, handleMention) }
+  }, [socketConnected, scheduleRefresh, mentionsDisabled, myUserId])
+
+  useEffect(() => {
+    return () => {
+      unreadControllerRef.current?.abort()
+      chatsControllerRef.current?.abort()
+    }
+  }, [])
+}

@@ -35,6 +35,7 @@ import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModa
 import { perfMark, perfTrackMemory, perfTrackNavigation } from '../../utils/perfTracker'
 import { getTimelineEventsSource, isLightFeatureDisabled } from '../../config/runtimeConfig'
 import { convClient } from '../../services/apiClient'
+import MentionModal from '../../components/modal/MentionModal'
 
 const Chats = () => {
     const mentionsDisabled = isLightFeatureDisabled('mentions')
@@ -75,6 +76,7 @@ const Chats = () => {
     const [qrActiveIndex, setQrActiveIndex] = useState(0)
     const [qrTriggerRange, setQrTriggerRange] = useState<{ start: number; end: number } | null>(null)
     const [conversacionNumero, setConversacionNumero] = useState<number | null>(null)
+    const [isMentionModalOpen, setIsMentionModalOpen] = useState(false)
 
     const isSendingRef = useRef(false)
     const lastSentMessageRef = useRef<string | null>(null)
@@ -100,6 +102,7 @@ const Chats = () => {
     const queryParams = new URLSearchParams(location.search);
     const telefono = queryParams.get('telefono');
     const nombre = queryParams.get('nombre');
+    const eventoId = queryParams.get('eventoId');
 
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
     const scrollRestoreRef = useRef<{ height: number; top: number } | null>(null)
@@ -627,6 +630,11 @@ const Chats = () => {
         }
     }
 
+    const handleMentionConfirm = (users: Usuario[]) => {
+        setSelectedMentionUsers(users)
+        setIsMentionModalOpen(false)
+    }
+
     const handleMarkMentionRead = async () => {
         if (mentionsDisabled) return
         if (!token) return
@@ -1007,6 +1015,20 @@ const Chats = () => {
     }, [mensajes])
 
     useEffect(() => {
+        if (!eventoId || loading) return
+        // Esperar a que el DOM esté listo
+        const timer = window.setTimeout(() => {
+            const el = document.getElementById(`event-${eventoId}`)
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                el.classList.add('mention-highlight')
+                window.setTimeout(() => el.classList.remove('mention-highlight'), 2000)
+            }
+        }, 300)
+        return () => window.clearTimeout(timer)
+    }, [eventoId, loading, mensajes])
+
+    useEffect(() => {
         mensajesLenRef.current = Array.isArray(mensajes) ? mensajes.length : 0
     }, [mensajes])
 
@@ -1280,11 +1302,6 @@ const Chats = () => {
     const handleChangeText = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setMensaje(value);
-        if (!mentionsDisabled) {
-            setSelectedMentionUsers((prev) => prev.filter((user) => value.includes(`@${getMentionHandle(user)}`)))
-        } else if (selectedMentionUsers.length > 0) {
-            setSelectedMentionUsers([])
-        }
         const caretPos = e.target.selectionStart ?? value.length
         const leftText = value.slice(0, caretPos)
         const slashMatch = leftText.match(/\/(\w*)$/)
@@ -1306,15 +1323,6 @@ const Chats = () => {
             return
         }
 
-        const match = value.match(/@([^\s@]*)$/);
-        if (match) {
-            const query = (match[1] || '').toLowerCase();
-            const normalize = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            const q = normalize(query)
-            const results = usuarios.filter((u) => { const full = normalize(`${u.nombre ?? ''} ${u.apellido ?? ''}`.trim()); if (!q) return true; return full.includes(q) })
-            setFilteredUsers(results);
-            setShowList(true);
-        } else { setShowList(false); }
     }
 
     const handleSelectUser = (user: any) => {
@@ -1379,6 +1387,11 @@ const Chats = () => {
                                         <IoPersonAdd />
                                         <span>Asignar</span>
                                     </button>
+                                    {!mentionsDisabled && (
+                                        <button onClick={() => setIsMentionModalOpen(true)} className="chat-action-button chat-button-assign">
+                                            <span>@ Mencionar</span>
+                                        </button>
+                                    )}
                                     <button onClick={handleArchivarClick} className="chat-action-button chat-button-archive">
                                         <FaFileArrowDown />
                                         <span>Archivar</span>
@@ -1453,7 +1466,7 @@ const Chats = () => {
                                         }
                                         if (msj?.type === "PRIVATE_NOTE_CREATED") {
                                             return (
-                                                <div className='contenedor-nota-privada' key={key}>
+                                                <div className='contenedor-nota-privada' key={key} id={msj?.id ? `event-${msj.id}` : undefined}>
                                                     <div className='mensaje-nota-privada'>
                                                         <span className='mensaje-nota-privada-text'>{resolveEventText(msj)}</span>
                                                         {msj?.payload?.imageUrl && (
@@ -1481,7 +1494,11 @@ const Chats = () => {
                                             )
                                         }
                                         return (
-                                            <div className='contenedor-archivado' key={key}>
+                                            <div
+                                                className='contenedor-archivado'
+                                                key={key}
+                                                id={msj?.id ? `event-${msj.id}` : undefined}
+                                            >
                                                 <p className='mensaje-archivado'>{resolveEventText(msj)}</p>
                                                 <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
                                             </div>
@@ -1577,20 +1594,6 @@ const Chats = () => {
                                                         <li key={qr.id} onMouseDown={(e) => { e.preventDefault(); insertQuickResponse(qr) }} className={`px-3 py-2 cursor-pointer text-slate-700 text-left hover:bg-indigo-50 hover:text-slate-900 transition-colors ${idx === qrActiveIndex ? 'bg-indigo-50 text-slate-900' : ''}`}>
                                                             <div className="font-semibold">/{qr.shortcut}</div>
                                                             <div className="text-xs text-slate-500 truncate">{qr.text}</div>
-                                                        </li>
-                                                    ))
-                                                ) : (
-                                                    <li className="px-3 py-2 text-gray-400">No hay coincidencias</li>
-                                                )}
-                                            </ul>
-                                        )}
-                                        {!mentionsDisabled && showList && (
-                                            <ul className="absolute bottom-12 left-2 w-80 max-h-48 overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden rounded-xl bg-slate-50/95 backdrop-blur-sm shadow-lg ring-1 ring-slate-200">
-                                                {filteredUsers.length ? (
-                                                    filteredUsers.map((user) => (
-                                                        <li key={user.id} onClick={() => handleSelectUser(user)} className="px-3 py-2 cursor-pointer text-slate-700 text-left whitespace-nowrap overflow-hidden text-ellipsis hover:bg-indigo-50 hover:text-slate-900 transition-colors">
-                                                            @{(user.nombre || '').toLowerCase().replace(/\s+/g, '')}{" "}
-                                                            <span className="text-gray-500">— {toTitleCase(user.apellido)} {toTitleCase(user.nombre)}</span>
                                                         </li>
                                                     ))
                                                 ) : (
@@ -1795,6 +1798,14 @@ const Chats = () => {
                     <DeleteModal isOpen={isDeleteModalOpen} onClose={handleDeleteCancel} onConfirm={handleDeleteConfirm} />
                     <ErrorModal isOpen={isErrorModalOpen} onClose={() => { setIsErrorModalOpen(false); setErrorModalMessage('') }} title="Atención" message={errorModalMessage || 'Debe escribir un mensaje'} />
                     <SuccessModal isOpen={showMentionReadSuccess} onClose={() => setShowMentionReadSuccess(false)} title="Listo" message={mentionReadSuccessMsg} />
+                    {!mentionsDisabled && (
+                        <MentionModal
+                            isOpen={isMentionModalOpen}
+                            usuarios={usuarios}
+                            onClose={() => setIsMentionModalOpen(false)}
+                            onConfirm={handleMentionConfirm}
+                        />
+                    )}
                     {!tagsDisabled && <AddTagModal isOpen={isAddTagModalOpen} onClose={() => setIsAddTagModalOpen(false)} onConfirm={handleTagConfirm} chatId={id} />}
                     {!tagsDisabled && <RemoveTagFromChatModal isOpen={isRemoveTagModalOpen} onClose={() => { setIsRemoveTagModalOpen(false); setTagToRemove(null) }} tag={tagToRemove} chatId={id} onSuccess={handleRemoveTagSuccess} />}
                 </div>

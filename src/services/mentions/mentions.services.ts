@@ -9,6 +9,16 @@ export type MentionChatItem = {
   lastMentionAt?: string
 }
 
+export type Mention = {
+  id: string
+  chatId: string
+  eventoId: string | null
+  usuarioMencionadoId: string
+  usuarioAutorId: string
+  readAt: string | null
+  createdAt: string
+}
+
 export type MentionsUnreadCountResponse = {
   statusCode: number
   count: number
@@ -17,6 +27,13 @@ export type MentionsUnreadCountResponse = {
 export type MentionChatsResponse = {
   statusCode: number
   items: MentionChatItem[]
+} & Partial<ErrorResponse>
+
+export type MisMencionesResponse = {
+  statusCode: number
+  page: number
+  limit: number
+  items: Mention[]
 } & Partial<ErrorResponse>
 
 const TTL_MS = 5000
@@ -64,10 +81,6 @@ const waitForEndpointSlot = async (endpoint: string, minIntervalMs: number, sign
   }
 }
 
-/**
- * Backend requerido:
- * - GET /mentions/unread-count (auth requerida; roles USER|ADMIN|ROOT; scope empresa)
- */
 export const getMentionsUnreadCount = async (
   token: string,
   options?: { signal?: AbortSignal; rateLimitMs?: number }
@@ -85,7 +98,6 @@ export const getMentionsUnreadCount = async (
       await waitForEndpointSlot("/mentions/unread-count", options?.rateLimitMs ?? 1200, options?.signal)
       perfTrackRequest("/mentions/unread-count")
       const { data } = await mentionsClient.get<any>("/mentions/unread-count", { headers, signal: options?.signal })
-
       const payload: MentionsUnreadCountResponse = {
         statusCode: data?.statusCode ?? 200,
         count: typeof data?.count === "number" ? data.count : 0,
@@ -93,9 +105,7 @@ export const getMentionsUnreadCount = async (
       unreadCache.set(cacheKey, { value: payload, expiresAt: Date.now() + TTL_MS })
       return payload
     } catch (error) {
-      if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
-        throw error
-      }
+      if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") throw error
       if (axios.isAxiosError(error) && error.response) {
         return {
           statusCode: error.response.status,
@@ -114,10 +124,28 @@ export const getMentionsUnreadCount = async (
   return task
 }
 
-/**
- * Backend requerido:
- * - GET /mentions/chats?unreadOnly=1&page=1&limit=100 (auth requerida; roles USER|ADMIN|ROOT; scope empresa)
- */
+export const getMisMenciones = async (
+  token: string,
+  params?: { page?: number; limit?: number },
+  options?: { signal?: AbortSignal; rateLimitMs?: number }
+): Promise<MisMencionesResponse> => {
+  try {
+    const headers = { authorization: `Bearer ${token}` }
+    const query = { page: params?.page ?? 1, limit: params?.limit ?? 30 }
+    await waitForEndpointSlot("/mentions/mis-menciones", options?.rateLimitMs ?? 1200, options?.signal)
+    perfTrackRequest("/mentions/mis-menciones")
+    const { data } = await mentionsClient.get<any>('/mentions/mis-menciones', { headers, params: query, signal: options?.signal })
+    const items = Array.isArray(data?.items) ? data.items : []
+    return { statusCode: data?.statusCode ?? 200, page: data?.page ?? 1, limit: data?.limit ?? 30, items }
+  } catch (error) {
+    if (axios.isCancel(error) || (error as any)?.name === 'AbortError' || (error as any)?.code === 'ERR_CANCELED') throw error
+    if (axios.isAxiosError(error) && error.response) {
+      return { statusCode: error.response.status, page: 1, limit: 30, items: [], message: error.response.data?.message }
+    }
+    throw error
+  }
+}
+
 export const getMentionChats = async (
   token: string,
   params?: { unreadOnly?: boolean; page?: number; limit?: number },
@@ -141,15 +169,12 @@ export const getMentionChats = async (
       await waitForEndpointSlot("/mentions/chats", options?.rateLimitMs ?? 1200, options?.signal)
       perfTrackRequest("/mentions/chats")
       const { data } = await mentionsClient.get<any>("/mentions/chats", { headers, params: query, signal: options?.signal })
-
       const items = Array.isArray(data?.items) ? data.items : []
       const payload: MentionChatsResponse = { statusCode: data?.statusCode ?? 200, items }
       chatsCache.set(cacheKey, { value: payload, expiresAt: Date.now() + TTL_MS })
       return payload
     } catch (error) {
-      if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
-        throw error
-      }
+      if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") throw error
       if (axios.isAxiosError(error) && error.response) {
         return {
           statusCode: error.response.status,
@@ -168,25 +193,45 @@ export const getMentionChats = async (
   return task
 }
 
-/**
- * Backend requerido:
- * - POST /mentions/mark-read  body: { chatId } o { chatIds } (auth requerida; roles USER|ADMIN|ROOT; scope empresa)
- */
 export const markMentionsRead = async (
   token: string,
-  chatIdOrIds: string | string[]
+  mentionIds: string[]
 ): Promise<{ statusCode: number } & Partial<ErrorResponse>> => {
   try {
     const headers = { authorization: `Bearer ${token}` }
-    const body = Array.isArray(chatIdOrIds) ? { chatIds: chatIdOrIds } : { chatId: chatIdOrIds }
+    const body = { mentionIds }
     perfTrackRequest("/mentions/mark-read")
     const { data } = await mentionsClient.post<any>("/mentions/mark-read", body, { headers })
-
     unreadCache.clear()
     chatsCache.clear()
     pendingUnread.clear()
     pendingChats.clear()
+    return { statusCode: data?.statusCode ?? 200 }
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      return {
+        statusCode: error.response.status,
+        message: error.response.data?.message,
+        error: error.response.data?.error,
+      }
+    }
+    throw error
+  }
+}
 
+export const markMentionsUnread = async (
+  token: string,
+  mentionIds: string[]
+): Promise<{ statusCode: number } & Partial<ErrorResponse>> => {
+  try {
+    const headers = { authorization: `Bearer ${token}` }
+    const body = { mentionIds }
+    perfTrackRequest("/mentions/mark-unread")
+    const { data } = await mentionsClient.post<any>("/mentions/mark-unread", body, { headers })
+    unreadCache.clear()
+    chatsCache.clear()
+    pendingUnread.clear()
+    pendingChats.clear()
     return { statusCode: data?.statusCode ?? 200 }
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {

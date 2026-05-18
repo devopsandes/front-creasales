@@ -1462,3 +1462,17 @@
     padding: 4px 14px;
     border-radius: 999px;
 }
+
+.mention-highlight {
+    animation: mention-flash 2s ease-out;
+}
+
+@keyframes mention-flash {
+    0% {
+        background-color: rgba(99, 102, 241, 0.25);
+    }
+
+    100% {
+        background-color: transparent;
+    }
+}
