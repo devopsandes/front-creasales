@@ -282,7 +282,8 @@ const Chats = () => {
     }
 
     type DateSeparator = { kind: "date_separator"; id: string; createdAt: string | Date; label: string; }
-    type RenderItem = TimelineItem | DateSeparator
+    type ConversationSeparator = { kind: "conversation_separator"; id: string; createdAt: string | Date; numero: number; }
+    type RenderItem = TimelineItem | DateSeparator | ConversationSeparator
 
     const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
     const toDayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
@@ -304,15 +305,31 @@ const Chats = () => {
 
     const withDateSeparators = (items: TimelineItem[]): RenderItem[] => {
         const out: RenderItem[] = []
-        let prevKey: string | null = null
+        let prevDayKey: string | null = null
+        let prevNumeroConversacion: number | null = null
         for (const it of items) {
             const d = new Date((it as any)?.createdAt)
             if (Number.isNaN(d.getTime())) { out.push(it); continue }
-            const key = normalizeDayKey((it as any)?.dayKey) ?? toDayKey(d)
-            if (key !== prevKey) {
-                out.push({ kind: "date_separator", id: `sep-${key}`, createdAt: it.createdAt, label: formatDayLabel(d) })
-                prevKey = key
+
+            // Separador de conversación — solo para mensajes con numeroConversacion
+            const numeroConversacion = (it as any)?.kind === 'message' ? ((it as any)?.numeroConversacion ?? null) : null
+            if (numeroConversacion !== null && numeroConversacion !== prevNumeroConversacion) {
+                out.push({
+                    kind: "conversation_separator",
+                    id: `conv-sep-${numeroConversacion}`,
+                    createdAt: it.createdAt,
+                    numero: numeroConversacion,
+                })
+                prevNumeroConversacion = numeroConversacion
             }
+
+            // Separador de fecha
+            const key = normalizeDayKey((it as any)?.dayKey) ?? toDayKey(d)
+            if (key !== prevDayKey) {
+                out.push({ kind: "date_separator", id: `sep-${key}`, createdAt: it.createdAt, label: formatDayLabel(d) })
+                prevDayKey = key
+            }
+
             out.push(it)
         }
         return out
@@ -1412,6 +1429,14 @@ const Chats = () => {
                                         return (
                                             <div className='date-separator' key={key}>
                                                 <span className='date-separator-label'>{msj.label}</span>
+                                            </div>
+                                        )
+                                    }
+
+                                    if (msj?.kind === "conversation_separator") {
+                                        return (
+                                            <div className='conversation-separator' key={key}>
+                                                <span className='conversation-separator-label'>Conversación Número {msj.numero}</span>
                                             </div>
                                         )
                                     }
