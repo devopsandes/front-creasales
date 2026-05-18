@@ -55,8 +55,6 @@ const Chats = () => {
     const [condChat, setCondChat] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
     const [archivos, setArchivos] = useState<File[]>([])
-    const [showList, setShowList] = useState(false);
-    const [filteredUsers, setFilteredUsers] = useState<Usuario[]>([]);
     const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
@@ -237,13 +235,6 @@ const Chats = () => {
     const formatAuthorName = (value: any) => {
         if (!value || typeof value !== 'string') return ''
         return value.toLowerCase().split(' ').filter(Boolean).map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
-    }
-
-    const getMentionHandle = (user: Pick<Usuario, 'nombre'>) => (user?.nombre || 'usuario').trim().toLowerCase().replace(/\s+/g, '')
-
-    const toTitleCase = (value: any) => {
-        if (!value || typeof value !== 'string') return ''
-        return value.trim().toLowerCase().split(/\s+/).filter(Boolean).map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
     }
 
     const getMediaUrl = (value: any): string | null => {
@@ -1315,26 +1306,15 @@ const Chats = () => {
             setQrFiltered(filtered)
             setQrActiveIndex(0)
             setQrOpen(true)
-            setShowList(false)
+            
             return
         } else { closeQuickMenu() }
         if (mentionsDisabled) {
-            setShowList(false);
+            
             return
         }
 
     }
-
-    const handleSelectUser = (user: any) => {
-        const handle = getMentionHandle(user as Usuario)
-        setMensaje((prev) => prev.replace(/@([^\s@]*)$/, `@${handle} `));
-        setSelectedMentionUsers((prev) => {
-            const next = [...prev]
-            if (!next.some((it) => it.id === user.id)) next.push(user as Usuario)
-            return next
-        })
-        setShowList(false);
-    };
 
     const handlePasteInput = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
         const items = e.clipboardData?.items
