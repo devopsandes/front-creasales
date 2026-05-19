@@ -1,6 +1,6 @@
 import axios from "axios"
 import { ErrorResponse, SuccessResponse } from "../../interfaces/auth.interface"
-import { TagsResponse } from "../../interfaces/tags.interface"
+import { ChatTagsResponse, TagsResponse } from "../../interfaces/tags.interface"
 import { resolveClient } from "../apiClient"
 
 
@@ -43,6 +43,35 @@ const getTags = async (token: string): Promise<TagsResponse & ErrorResponse> => 
             return objeto
         }
         throw error; // Lanza el error si no es del tipo esperado
+    }
+}
+
+/**
+ * Etiquetas asignadas a un chat (admin como fuente de verdad).
+ * GET /api/v1/tags/chat/:chatId
+ */
+const getTagsByChatId = async (
+    token: string,
+    chatId: string,
+    options?: { signal?: AbortSignal }
+): Promise<ChatTagsResponse & ErrorResponse> => {
+    try {
+        const headers = {
+            authorization: `Bearer ${token}`
+        }
+
+        const { data } = await tagsClient.get<ChatTagsResponse & ErrorResponse>(`/tags/chat/${chatId}`, {
+            headers,
+            signal: options?.signal,
+        })
+
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            const objeto: ChatTagsResponse & ErrorResponse = error.response.data
+            return objeto
+        }
+        throw error
     }
 }
 
@@ -122,4 +151,4 @@ const removeTagFromChat = async (token: string, chatId: string, tagId: string): 
     }
 }
 
-export { createTag, getTags, asignarTag, updateTag, deleteTag, removeTagFromChat }
+export { createTag, getTags, getTagsByChatId, asignarTag, updateTag, deleteTag, removeTagFromChat }

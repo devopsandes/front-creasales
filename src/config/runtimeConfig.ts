@@ -11,7 +11,6 @@ export type TimelineEventsSource = 'legacy' | 'socket_cache' | 'backend_events'
 const DEFAULT_DISABLED_IN_LIGHT_MODE: LightFeature[] = [
   'countsByOperator',
   /*  'mentions', */
-  'tags',
   'quickResponses',
   'tickets',
 ]
