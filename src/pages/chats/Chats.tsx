@@ -1306,11 +1306,11 @@ const Chats = () => {
             setQrFiltered(filtered)
             setQrActiveIndex(0)
             setQrOpen(true)
-            
+
             return
         } else { closeQuickMenu() }
         if (mentionsDisabled) {
-            
+
             return
         }
 
@@ -1460,6 +1460,24 @@ const Chats = () => {
                                                             />
                                                         )}
                                                         {msj?.payload?.authorName && <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>}
+                                                    </div>
+                                                    <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
+                                                </div>
+                                            )
+                                        }
+                                        if (msj?.type === "MENTION_CREATED") {
+                                            return (
+                                                <div className='contenedor-nota-privada' key={key} id={msj?.id ? `event-${msj.id}` : undefined}>
+                                                    <div className='mensaje-nota-privada'>
+                                                        <span className='mensaje-nota-privada-text'>{resolveEventText(msj)}</span>
+                                                        {msj?.payload?.text && (
+                                                            <span className='mensaje-nota-privada-text' style={{ display: 'block', marginTop: '4px', fontStyle: 'italic' }}>
+                                                                "{msj.payload.text}"
+                                                            </span>
+                                                        )}
+                                                        {msj?.payload?.authorName && (
+                                                            <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>
+                                                        )}
                                                     </div>
                                                     <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
                                                 </div>
