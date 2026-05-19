@@ -42,7 +42,10 @@ const chatsCache = new Map<string, { value: MentionChatsResponse; expiresAt: num
 const pendingUnread = new Map<string, Promise<MentionsUnreadCountResponse>>()
 const pendingChats = new Map<string, Promise<MentionChatsResponse>>()
 const endpointLastAt = new Map<string, number>()
-const mentionsClient = resolveClient("mentions")
+const mentionsClient = axios.create({
+  baseURL: 'https://consumer.createch.com.ar/api/v1',
+  withCredentials: true
+})
 
 const getCached = <T>(store: Map<string, { value: T; expiresAt: number }>, key: string): T | null => {
   const entry = store.get(key)
