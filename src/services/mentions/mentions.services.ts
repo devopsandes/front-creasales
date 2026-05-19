@@ -1,7 +1,6 @@
 import axios from "axios"
 import { ErrorResponse } from "../../interfaces/auth.interface"
 import { perfTrackRequest } from "../../utils/perfTracker"
-import { resolveClient } from "../apiClient"
 
 export type MentionChatItem = {
   chatId: string
