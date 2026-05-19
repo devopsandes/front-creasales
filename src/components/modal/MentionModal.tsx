@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Usuario } from '../../interfaces/auth.interface'
-import './MentionModal.css'
+import './mentionModal.css'
 
 interface Props {
   isOpen: boolean
