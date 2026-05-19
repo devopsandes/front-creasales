@@ -10,7 +10,7 @@ export type TimelineEventsSource = 'legacy' | 'socket_cache' | 'backend_events'
 
 const DEFAULT_DISABLED_IN_LIGHT_MODE: LightFeature[] = [
   'countsByOperator',
-  'mentions',
+  /*  'mentions', */
   'tags',
   'quickResponses',
   'tickets',
@@ -45,9 +45,9 @@ const parseDisabledFeatures = (raw: string | undefined): Set<LightFeature> => {
   const source = `${raw ?? ''}`.trim()
   const fromEnv = source.length
     ? source
-        .split(',')
-        .map((item) => normalizeFeature(item))
-        .filter((item): item is LightFeature => Boolean(item))
+      .split(',')
+      .map((item) => normalizeFeature(item))
+      .filter((item): item is LightFeature => Boolean(item))
     : []
 
   const list = fromEnv.length ? fromEnv : DEFAULT_DISABLED_IN_LIGHT_MODE
