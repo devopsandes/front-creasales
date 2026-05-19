@@ -83,7 +83,7 @@ const getOperadoresEmpresa = async (token: string): Promise<{ statusCode: number
 
   const task = (async (): Promise<{ statusCode: number; users?: Usuario[] } & ErrorResponse> => {
     try {
-      const url = `${import.meta.env.VITE_URL_BACKEND}/empresas/usuarios/operators`
+      const url = `${import.meta.env.VITE_URL_BACKEND}/auth/usuarios/activos`
       const headers = {
         authorization: `Bearer ${token}`
       }
