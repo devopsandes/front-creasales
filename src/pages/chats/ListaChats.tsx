@@ -1,5 +1,5 @@
 import { Link, Outlet, useParams, useSearchParams, useNavigate } from "react-router-dom"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ChatState } from "../../interfaces/chats.interface"
 import { useDispatch, useSelector } from "react-redux"
 import { usuariosXRole } from "../../services/auth/auth.services"
@@ -87,6 +87,7 @@ const ListaChats = () => {
     const [debouncedSearch, setDebouncedSearch] = useState<string>('')
     const [selectedOperator, setSelectedOperator] = useState<string>('')
     const [hydrated, setHydrated] = useState<boolean>(false)
+    const [adminTagsByChatId, setAdminTagsByChatId] = useState<Record<string, any[]>>({})
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
     const assignAudioRef = useRef(new Audio("/audio/audio1.mp3"));
@@ -133,6 +134,7 @@ const ListaChats = () => {
     const chatTagsActiveRef = useRef(false)
     const queuedChatTagIdsRef = useRef<Set<string>>(new Set())
     const chatTagsMountedRef = useRef(true)
+    const adminTagsByChatIdRef = useRef<Record<string, any[]>>({})
 
     const pickChatFromPayload = (payload: any): ChatState | null => {
         if (!payload || typeof payload !== 'object') return null
@@ -157,6 +159,11 @@ const ListaChats = () => {
         return Array.from(map.values())
     }
 
+    const getBulkItemChatId = (item: any): string => {
+        const chatId = item?.chatId ?? item?.chat_id ?? item?.idChat ?? item?.chat?.id
+        return chatId ? String(chatId) : ''
+    }
+
     const normalizeChat = (chat: any): any => {
         if (!chat || typeof chat !== 'object') return chat
         if (!Array.isArray(chat.tags)) return chat
@@ -168,8 +175,9 @@ const ListaChats = () => {
         const merged: any = { ...existing, ...normalizeChat(incoming) }
         if (incoming?.cliente == null) merged.cliente = existing.cliente
         if (incoming?.operador == null) merged.operador = existing.operador
-        if (!Array.isArray(incoming?.tags)) merged.tags = existing.tags
-        merged.tags = dedupeTags(merged.tags)
+        const incomingTags = Array.isArray(incoming?.tags) ? dedupeTags(incoming.tags) : null
+        const existingTags = Array.isArray(existing?.tags) ? existing.tags : adminTagsByChatIdRef.current[existing.id]
+        merged.tags = incomingTags && incomingTags.length > 0 ? incomingTags : existingTags
         return merged
     }
 
@@ -182,6 +190,10 @@ const ListaChats = () => {
     useEffect(() => {
         chatsRef.current = Array.isArray(chatsFromRedux) ? chatsFromRedux : []
     }, [chatsFromRedux])
+
+    useEffect(() => {
+        adminTagsByChatIdRef.current = adminTagsByChatId
+    }, [adminTagsByChatId])
 
     useEffect(() => {
         return () => {
@@ -221,14 +233,22 @@ const ListaChats = () => {
         return Array.from(map.values()).sort(compareChatsForStore)
     }
 
-    const mergeChatTagsIntoStore = useCallback((items: { chatId: string; tags: any[] }[]) => {
-        if (!Array.isArray(items) || items.length === 0) return
+    const mergeChatTagsIntoStore = useCallback((items: { chatId: string; tags: any[] }[]): boolean => {
+        if (!Array.isArray(items) || items.length === 0) return false
         const tagsByChatId = new Map<string, any[]>()
         items.forEach((item) => {
             if (!item?.chatId) return
             tagsByChatId.set(String(item.chatId), dedupeTags(item.tags))
         })
-        if (tagsByChatId.size === 0) return
+        if (tagsByChatId.size === 0) return false
+
+        setAdminTagsByChatId((prev) => {
+            const next = { ...prev }
+            tagsByChatId.forEach((tags, chatId) => {
+                next[chatId] = tags
+            })
+            return next
+        })
 
         let changed = false
         const next = (Array.isArray(chatsRef.current) ? chatsRef.current : []).map((chat: any) => {
@@ -237,6 +257,7 @@ const ListaChats = () => {
             return { ...chat, tags: tagsByChatId.get(chat.id) || [] }
         })
         if (changed) dispatch(setChats(next.slice(0, MAX_CHAT_CACHE)))
+        return changed
     }, [dispatch])
 
     const hydrateChatTagsForIds = useCallback(async (ids: string[], options?: { force?: boolean }) => {
@@ -276,7 +297,7 @@ const ListaChats = () => {
 
             const rawItems = Array.isArray((resp as any)?.items) ? (resp as any).items : []
             const normalizedItems = rawItems
-                .map((item: any) => ({ chatId: String(item?.chatId ?? ""), tags: dedupeTags(item?.tags) }))
+                .map((item: any) => ({ chatId: getBulkItemChatId(item), tags: dedupeTags(item?.tags) }))
                 .filter((item: any) => item.chatId)
 
             const returnedIds = new Set(normalizedItems.map((item: any) => item.chatId))
@@ -457,9 +478,6 @@ const ListaChats = () => {
         const isStale = !chatListUpdatedAt || (typeof chatListUpdatedAt === "number" && Date.now() - chatListUpdatedAt > TTL_MS)
         if (cachedOk && !isStale) {
             setLoading(false)
-            if (!tagsDisabled) {
-                hydrateChatTagsForIds((Array.isArray(chatsFromRedux) ? chatsFromRedux : []).slice(0, CHAT_PAGE_LIMIT).map((chat) => chat.id).filter(Boolean))
-            }
             return
         }
         setLoading(true); setIsLoadingMore(false); setHasMore(true); setPage(1)
@@ -474,9 +492,6 @@ const ListaChats = () => {
                 const merged = cachedOk ? mergeChatsById(chatsRef.current, items) : items
                 const nextList = Array.isArray(merged) ? merged.slice(0, MAX_CHAT_CACHE) : merged
                 dispatch(setChats(nextList))
-                if (!tagsDisabled && items.length > 0) {
-                    hydrateChatTagsForIds(items.map((chat) => chat.id).filter(Boolean))
-                }
                 setHasMore(resolveHasMore(resp, CHAT_PAGE_LIMIT))
                 dispatch(setChatListCacheMeta({ chatListQueryKey: nextKey, chatListLoadedQueryKey: nextKey, chatListHasMore: resolveHasMore(resp, CHAT_PAGE_LIMIT), chatListPage: 1, chatListUpdatedAt: Date.now(), chatListFilters: filters }))
             })
@@ -548,9 +563,6 @@ const ListaChats = () => {
             if (incoming.length === 0) { setHasMore(false); return }
             const merged = mergeChatsById(chatsFromRedux, incoming)
             dispatch(setChats(merged.slice(0, MAX_CHAT_CACHE)))
-            if (!tagsDisabled) {
-                hydrateChatTagsForIds(incoming.map((chat) => chat.id).filter(Boolean))
-            }
             setPage(nextPage)
             setHasMore(resolveHasMore(resp, CHAT_PAGE_LIMIT))
             dispatch(setChatListCacheMeta({ chatListPage: nextPage, chatListHasMore: resolveHasMore(resp, CHAT_PAGE_LIMIT), chatListUpdatedAt: Date.now() }))
@@ -611,7 +623,6 @@ const ListaChats = () => {
             perfMark('socket.nuevo-chat.received', { chatId: _chat?.id ?? null })
             if (_chat?.id) {
                 scheduleChatPatch(_chat)
-                if (!tagsDisabled) hydrateChatTagsForIds([_chat.id])
                 requestAnimationFrame(() => { perfMark('ui.chatlist.patched', { source: 'nuevo-chat', chatId: _chat.id, latencyMs: Math.round(performance.now() - t0) }) })
             }
             scheduleCountsRefresh()
@@ -733,6 +744,11 @@ const ListaChats = () => {
                         chat.tags.forEach(tag => { if (!tagsMap.has(tag.id)) tagsMap.set(tag.id, { id: tag.id, nombre: tag.nombre }) })
                     }
                 })
+                Object.values(adminTagsByChatId).forEach((tags) => {
+                    if (Array.isArray(tags)) {
+                        tags.forEach((tag: any) => { if (tag?.id && !tagsMap.has(tag.id)) tagsMap.set(tag.id, { id: tag.id, nombre: tag.nombre }) })
+                    }
+                })
                 setAllTags(Array.from(tagsMap.values()))
             }
 
@@ -747,7 +763,7 @@ const ListaChats = () => {
             const operadorValue = selectRef.current?.value || ''
             aplicarFiltros(operadorValue, selectedTag, chatsBase, searchChat)
         }
-    }, [chatsFromRedux, id, styleBtn, searchChat, selectedTag, tagsDisabled])
+    }, [chatsFromRedux, id, styleBtn, searchChat, selectedTag, tagsDisabled, adminTagsByChatId])
 
     const handleClickLink = () => { dispatch(setViewSide(true)) }
 
@@ -816,6 +832,26 @@ const ListaChats = () => {
             const fechaB = new Date(b.updatedAt || b.createdAt).getTime()
             return orden === 'desc' ? fechaB - fechaA : fechaA - fechaB
         })
+    }
+
+    const visibleChatIdsForTags = useMemo(() => {
+        if (tagsDisabled || styleBtn === 'menciones') return []
+        if (!Array.isArray(filtrados) || filtrados.length === 0) return []
+        return ordenarChatsPorFecha(filtrados, ordenFecha)
+            .slice(0, TAGS_BATCH_LIMIT)
+            .map((chat) => chat?.id)
+            .filter(Boolean)
+    }, [filtrados, ordenFecha, styleBtn, tagsDisabled])
+
+    useEffect(() => {
+        if (visibleChatIdsForTags.length === 0) return
+        hydrateChatTagsForIds(visibleChatIdsForTags)
+    }, [visibleChatIdsForTags, hydrateChatTagsForIds])
+
+    const getRenderTags = (chat: ChatState): any[] => {
+        const adminTags = adminTagsByChatId[chat.id]
+        if (Array.isArray(adminTags)) return adminTags
+        return Array.isArray(chat.tags) ? chat.tags : []
     }
 
     const handleOrdenarPorFecha = () => { setOrdenFecha(ordenFecha === 'desc' ? 'asc' : 'desc') }
@@ -1017,6 +1053,7 @@ const ListaChats = () => {
                                         const manualUnread = isManuallyUnread(chat)
                                         const showMarker = unread > 0 || manualUnread
                                         const bulkChecked = (selectedBulkReadChatIds || []).includes(chat.id)
+                                        const chatTags = getRenderTags(chat)
                                         return (
                                             <Link
                                                 to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente?.telefono || ''}&nombre=${chat.cliente?.nombre || ''}`}
@@ -1047,8 +1084,8 @@ const ListaChats = () => {
                                                         onChange={(e) => { e.stopPropagation(); dispatch(toggleBulkReadChatSelection(chat.id)) }}
                                                         title="Seleccionar para marcar como leído"
                                                     />
-                                                    {!tagsDisabled && chat.tags && chat.tags.length > 0 ? (
-                                                        chat.tags.map(tag => (<p key={tag.id} className="chat-tag">{tag.nombre}</p>))
+                                                    {!tagsDisabled && chatTags.length > 0 ? (
+                                                        chatTags.map(tag => (<p key={tag.id} className="chat-tag">{tag.nombre}</p>))
                                                     ) : null}
                                                 </div>
                                             </Link>
