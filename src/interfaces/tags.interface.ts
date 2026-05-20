@@ -12,6 +12,16 @@ export interface ChatTagsResponse {
     items?: Tag[];
 }
 
+export interface BulkChatTagsItem {
+    chatId: string;
+    tags: Tag[];
+}
+
+export interface BulkChatTagsResponse {
+    statusCode: number;
+    items: BulkChatTagsItem[];
+}
+
 export interface Tag {
     id:      string;
     nombre:  string;
