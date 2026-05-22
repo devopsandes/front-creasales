@@ -1001,9 +1001,20 @@ const Chats = () => {
         return () => { container.removeEventListener('scroll', onScroll) }
     }, [timelineHasMore, timelineCursor, timelineLoadingMore, id, token, timelineSource])
 
+    const isInitialLoadRef = useRef(true)
+
     useEffect(() => {
-        if (mensajesContainerRef.current) { mensajesContainerRef.current.scrollTop = mensajesContainerRef.current.scrollHeight }
+        if (isInitialLoadRef.current && mensajes.length > 0) {
+            if (mensajesContainerRef.current) {
+                mensajesContainerRef.current.scrollTop = mensajesContainerRef.current.scrollHeight
+            }
+            isInitialLoadRef.current = false
+        }
     }, [mensajes])
+
+    useEffect(() => {
+        isInitialLoadRef.current = true
+    }, [id])
 
     useEffect(() => {
         if (!eventoId || loading) return
