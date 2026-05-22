@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import React, { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
 import { findChatById, findChatMessagesLite, findChatTimeline, getUserData, setChatBotState } from '../../services/chats/chats.services'
@@ -32,10 +32,45 @@ import { setChatReadState } from '../../services/chats/chats.services'
 import { jwtDecode } from "jwt-decode"
 import AddTagModal from '../../components/modal/AddTagModal'
 import RemoveTagFromChatModal from '../../components/modal/RemoveTagFromChatModal'
+import { getTagsByChatId } from '../../services/tags/tags.services'
 import { perfMark, perfTrackMemory, perfTrackNavigation } from '../../utils/perfTracker'
 import { getTimelineEventsSource, isLightFeatureDisabled } from '../../config/runtimeConfig'
 import { convClient } from '../../services/apiClient'
 import MentionModal from '../../components/modal/MentionModal'
+
+/** Normaliza GET /tags/chat/:chatId (admin); admite `tags` o `items` y aliases de campo. */
+const normalizeChatTagsFromApi = (resp: any): ChatTag[] => {
+    const raw = Array.isArray(resp?.tags) ? resp.tags : Array.isArray(resp?.items) ? resp.items : []
+    const mapped: ChatTag[] = []
+    const seen = new Set<string>()
+    for (const t of raw) {
+        const tid = t?.id ?? t?.tagId
+        const nombre = t?.nombre ?? t?.name
+        if (!tid || nombre === undefined || nombre === null) continue
+        const sid = String(tid)
+        if (seen.has(sid)) continue
+        seen.add(sid)
+        mapped.push({
+            id: sid,
+            nombre: String(nombre),
+            createdAt: t?.createdAt ?? '',
+            updatedAt: t?.updatedAt ?? t?.createdAt ?? '',
+        })
+    }
+    return mapped
+}
+
+const dedupeTagsById = (tags: any): any[] => {
+    if (!Array.isArray(tags)) return []
+    const map = new Map<string, any>()
+    tags.forEach((tag: any) => {
+        if (tag?.id) {
+            const key = String(tag.id)
+            if (!map.has(key)) map.set(key, tag)
+        }
+    })
+    return Array.from(map.values())
+}
 
 const Chats = () => {
     const mentionsDisabled = isLightFeatureDisabled('mentions')
@@ -75,6 +110,8 @@ const Chats = () => {
     const [qrTriggerRange, setQrTriggerRange] = useState<{ start: number; end: number } | null>(null)
     const [conversacionNumero, setConversacionNumero] = useState<number | null>(null)
     const [isMentionModalOpen, setIsMentionModalOpen] = useState(false)
+    const [detailChatTags, setDetailChatTags] = useState<ChatTag[]>([])
+    const [detailTagsFetched, setDetailTagsFetched] = useState(false)
 
     const isSendingRef = useRef(false)
     const lastSentMessageRef = useRef<string | null>(null)
@@ -85,6 +122,8 @@ const Chats = () => {
     const timelineLoadControllerRef = useRef<AbortController | null>(null)
     const timelineOlderControllerRef = useRef<AbortController | null>(null)
     const refreshCurrentChatControllerRef = useRef<AbortController | null>(null)
+    const chatTagsFetchControllerRef = useRef<AbortController | null>(null)
+    const pendingChatTagsRefreshRef = useRef<number | null>(null)
     const hasSocketConnectedOnceRef = useRef(false)
     const renderedEventKeysRef = useRef<Set<string>>(new Set())
 
@@ -113,7 +152,11 @@ const Chats = () => {
     const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
     const chatsRef = useRef<any[]>(Array.isArray(chats) ? chats : [])
     const currentChat = chats.find(chat => chat.id === id)
-    const chatTags: ChatTag[] = currentChat?.tags || []
+    const chatTags: ChatTag[] = useMemo(() => {
+        if (tagsDisabled) return []
+        if (detailTagsFetched) return dedupeTagsById(detailChatTags)
+        return dedupeTagsById(currentChat?.tags || [])
+    }, [tagsDisabled, detailTagsFetched, detailChatTags, currentChat?.tags])
     const botEnabled = (currentChat as any)?.botEnabled
     const effectiveBotEnabled = typeof botEnabled === "boolean" ? botEnabled : true
     const operador = currentChat?.operador
@@ -520,19 +563,9 @@ const Chats = () => {
         chatsRef.current = Array.isArray(chats) ? chats : []
     }, [chats])
 
-
-    const dedupeTags = (tags: any): any[] => {
-        if (!Array.isArray(tags)) return []
-        const map = new Map<string, any>()
-        tags.forEach((tag: any) => {
-            if (tag?.id) { const key = String(tag.id); if (!map.has(key)) map.set(key, tag) }
-        })
-        return Array.from(map.values())
-    }
-
     const normalizeChat = (chat: any): any => {
         if (!chat || typeof chat !== 'object') return chat
-        return { ...chat, tags: dedupeTags(chat.tags) }
+        return { ...chat, tags: dedupeTagsById(chat.tags) }
     }
     const patchCurrentChatInStore = (incomingChat: any) => {
         if (!incomingChat?.id) return
@@ -547,12 +580,67 @@ const Chats = () => {
                 ...normalizedIncoming,
                 cliente: normalizedIncoming?.cliente ?? chat?.cliente,
                 operador: normalizedIncoming?.operador ?? chat?.operador,
-                tags: dedupeTags(Array.isArray(normalizedIncoming?.tags) ? normalizedIncoming.tags : chat?.tags),
+                tags: dedupeTagsById(Array.isArray(normalizedIncoming?.tags) ? normalizedIncoming.tags : chat?.tags),
             }
         })
         const next = found ? patched : [normalizedIncoming, ...patched]
         dispatch(setChats(next))
     }
+
+    const fetchChatTagsFromAdmin = useCallback(async () => {
+        if (tagsDisabled || !id || !token) return
+        const chatId = id
+        chatTagsFetchControllerRef.current?.abort()
+        const controller = new AbortController()
+        chatTagsFetchControllerRef.current = controller
+        try {
+            const resp = await getTagsByChatId(token, chatId, { signal: controller.signal })
+            if ((resp as any)?.statusCode === 401) {
+                dispatch(openSessionExpired())
+                return
+            }
+            if (chatTagsFetchControllerRef.current !== controller) return
+            const code = (resp as any)?.statusCode ?? 200
+            if (code >= 400) {
+                setDetailChatTags([])
+                setDetailTagsFetched(true)
+                return
+            }
+            const normalized = normalizeChatTagsFromApi(resp)
+            setDetailChatTags(normalized)
+            setDetailTagsFetched(true)
+            patchCurrentChatInStore({ id: chatId, tags: normalized })
+        } catch (e: any) {
+            if (e?.name === 'AbortError' || e?.code === 'ERR_CANCELED') return
+            setDetailTagsFetched(true)
+        }
+    }, [tagsDisabled, id, token, dispatch])
+
+    const scheduleRefreshChatTagsFromAdmin = useCallback(() => {
+        if (tagsDisabled || !id || !token) return
+        if (pendingChatTagsRefreshRef.current) {
+            window.clearTimeout(pendingChatTagsRefreshRef.current)
+            pendingChatTagsRefreshRef.current = null
+        }
+        pendingChatTagsRefreshRef.current = window.setTimeout(() => {
+            pendingChatTagsRefreshRef.current = null
+            fetchChatTagsFromAdmin()
+        }, 450)
+    }, [tagsDisabled, id, token, fetchChatTagsFromAdmin])
+
+    useEffect(() => {
+        setDetailChatTags([])
+        setDetailTagsFetched(false)
+        if (tagsDisabled || !id || !token) return
+        fetchChatTagsFromAdmin()
+        return () => {
+            chatTagsFetchControllerRef.current?.abort()
+            if (pendingChatTagsRefreshRef.current) {
+                window.clearTimeout(pendingChatTagsRefreshRef.current)
+                pendingChatTagsRefreshRef.current = null
+            }
+        }
+    }, [id, tagsDisabled, token, fetchChatTagsFromAdmin])
 
     const scheduleRefreshCurrentChat = () => {
         if (!id || !token) return
@@ -774,6 +862,10 @@ const Chats = () => {
             if ((normalized as any)?.type === 'NEW_CONVERSATION_STARTED' && (normalized as any)?.payload?.numeroConversacion) {
                 setConversacionNumero((normalized as any).payload.numeroConversacion)
             }
+            const evtType = (normalized as any)?.type
+            if (!tagsDisabled && (evtType === 'TAG_ASSIGNED' || evtType === 'TAG_REMOVED' || evtType === 'TAG_UNASSIGNED')) {
+                scheduleRefreshChatTagsFromAdmin()
+            }
         }
         const handleChatUpdated = (payload: any) => {
             const t0 = performance.now()
@@ -791,10 +883,13 @@ const Chats = () => {
                 ...normalizedIncoming,
                 cliente: normalizedIncoming?.cliente ?? current?.cliente,
                 operador: normalizedIncoming?.operador ?? current?.operador,
-                tags: dedupeTags(Array.isArray(normalizedIncoming?.tags) ? normalizedIncoming.tags : current?.tags),
+                tags: dedupeTagsById(Array.isArray(normalizedIncoming?.tags) ? normalizedIncoming.tags : current?.tags),
             }
             const next = chatsRef.current.map((c: any) => (c?.id === id ? patched : c))
             dispatch(setChats(next))
+            if (!tagsDisabled) {
+                scheduleRefreshChatTagsFromAdmin()
+            }
             requestAnimationFrame(() => {
                 perfMark('ui.chat.patched', {
                     source: 'chat.updated',
@@ -837,7 +932,7 @@ const Chats = () => {
             socket.off("chat.updated", handleChatUpdated)
             socket.off('error', handleError)
         }
-    }, [id, dispatch, debugTimeline, socketConnected])
+    }, [id, dispatch, debugTimeline, socketConnected, tagsDisabled, scheduleRefreshChatTagsFromAdmin])
 
     useEffect(() => {
         const inicio = async () => {
@@ -1097,6 +1192,7 @@ const Chats = () => {
     const handleTagConfirm = async (_tagId: string) => {
         if (tagsDisabled) return
         scheduleRefreshCurrentChat()
+        scheduleRefreshChatTagsFromAdmin()
     }
 
     const handleTagRemoveClick = (tag: ChatTag) => {
@@ -1108,6 +1204,7 @@ const Chats = () => {
     const handleRemoveTagSuccess = async () => {
         if (tagsDisabled) return
         scheduleRefreshCurrentChat()
+        scheduleRefreshChatTagsFromAdmin()
     }
 
     const handleClickBtn = async (e: FormEvent<HTMLFormElement>) => {
