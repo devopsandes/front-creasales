@@ -127,6 +127,10 @@ const Chats = () => {
     const hasSocketConnectedOnceRef = useRef(false)
     const renderedEventKeysRef = useRef<Set<string>>(new Set())
 
+    // ─── CAMBIO 1: refs para que el loop de búsqueda vea los valores actualizados ───
+    const timelineHasMoreRef = useRef(timelineHasMore)
+    const timelineCursorRef = useRef(timelineCursor)
+
     const MAX_FILES_PER_MESSAGE = 5
 
     const token = localStorage.getItem('token') || ''
@@ -565,6 +569,10 @@ const Chats = () => {
     useEffect(() => {
         chatsRef.current = Array.isArray(chats) ? chats : []
     }, [chats])
+
+    // ─── CAMBIO 1 (continuación): sincronizar refs con el estado ───
+    useEffect(() => { timelineHasMoreRef.current = timelineHasMore }, [timelineHasMore])
+    useEffect(() => { timelineCursorRef.current = timelineCursor }, [timelineCursor])
 
     const normalizeChat = (chat: any): any => {
         if (!chat || typeof chat !== 'object') return chat
@@ -1154,10 +1162,11 @@ const Chats = () => {
             const loadUntilFound = async () => {
                 let attempts = 0
                 const MAX_ATTEMPTS = 10
+                // ─── CAMBIO 2: usar refs en lugar del estado del closure ───
                 while (attempts < MAX_ATTEMPTS && !conversacionFoundRef.current) {
-                    if (!timelineHasMore || !timelineCursor) break
+                    if (!timelineHasMoreRef.current || !timelineCursorRef.current) break
                     await loadOlderTimeline()
-                    await new Promise(resolve => window.setTimeout(resolve, 400))
+                    await new Promise(resolve => window.setTimeout(resolve, 600))
                     if (tryScrollToConversacion()) return
                     attempts++
                 }
@@ -1461,14 +1470,11 @@ const Chats = () => {
             setQrFiltered(filtered)
             setQrActiveIndex(0)
             setQrOpen(true)
-
             return
         } else { closeQuickMenu() }
         if (mentionsDisabled) {
-
             return
         }
-
     }
 
     const handlePasteInput = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -1571,7 +1577,8 @@ const Chats = () => {
                                         <div className='loader2'></div>
                                     </div>
                                 )}
-                                {searchingConversacion && (
+                                {/* ─── CAMBIO 3: loader de búsqueda solo cuando no está el loader normal ─── */}
+                                {searchingConversacion && !timelineLoadingMore && (
                                     <div className='timeline-loader'>
                                         <div className='loader2'></div>
                                         <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '8px' }}>
@@ -1976,5 +1983,4 @@ const Chats = () => {
 }
 
 export default Chats
-
 
