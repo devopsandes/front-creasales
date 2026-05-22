@@ -932,7 +932,7 @@ const ListaChats = () => {
                                         const telefono = chat.cliente?.telefono || ''
                                         dispatch(setChatListUiState({ chatListTab: tab }))
                                         dispatch(setChatListCacheMeta({ chatListQueryKey: '', chatListLoadedQueryKey: '', chatListUpdatedAt: 0 }))
-                                        navigate(`/dashboard/chats/${chat.id}?telefono=${telefono}&nombre=${nombre}`)
+                                        navigate(`/dashboard/chats/${chat.id}?telefono=${telefono}&nombre=${nombre}&scrollToConversacion=${numero}`)
                                     }
                                 } catch {}
                             }}

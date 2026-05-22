@@ -140,6 +140,9 @@ const Chats = () => {
     const telefono = queryParams.get('telefono');
     const nombre = queryParams.get('nombre');
     const eventoId = queryParams.get('eventoId');
+    const scrollToConversacion = queryParams.get('scrollToConversacion') ? Number(queryParams.get('scrollToConversacion')) : null
+    const [searchingConversacion, setSearchingConversacion] = useState(false)
+    const conversacionFoundRef = useRef(false)
 
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
     const scrollRestoreRef = useRef<{ height: number; top: number } | null>(null)
@@ -1126,6 +1129,50 @@ const Chats = () => {
     }, [eventoId, loading, mensajes])
 
     useEffect(() => {
+        if (!scrollToConversacion || loading) return
+        conversacionFoundRef.current = false
+
+        const tryScrollToConversacion = () => {
+            const el = document.getElementById(`conv-sep-${scrollToConversacion}`)
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                el.classList.add('mention-highlight')
+                window.setTimeout(() => el.classList.remove('mention-highlight'), 2000)
+                conversacionFoundRef.current = true
+                setSearchingConversacion(false)
+                return true
+            }
+            return false
+        }
+
+        // Intentar scroll inmediato
+        const timer = window.setTimeout(() => {
+            if (tryScrollToConversacion()) return
+
+            // Si no está en el DOM, cargar páginas anteriores hasta encontrarla
+            setSearchingConversacion(true)
+            const loadUntilFound = async () => {
+                let attempts = 0
+                const MAX_ATTEMPTS = 10
+                while (attempts < MAX_ATTEMPTS && !conversacionFoundRef.current) {
+                    if (!timelineHasMore || !timelineCursor) break
+                    await loadOlderTimeline()
+                    await new Promise(resolve => window.setTimeout(resolve, 400))
+                    if (tryScrollToConversacion()) return
+                    attempts++
+                }
+                setSearchingConversacion(false)
+                if (!conversacionFoundRef.current) {
+                    toast.info(`No se encontró la conversación ${scrollToConversacion} en el historial cargado`)
+                }
+            }
+            loadUntilFound()
+        }, 400)
+
+        return () => window.clearTimeout(timer)
+    }, [scrollToConversacion, loading])
+
+    useEffect(() => {
         mensajesLenRef.current = Array.isArray(mensajes) ? mensajes.length : 0
     }, [mensajes])
 
@@ -1524,6 +1571,14 @@ const Chats = () => {
                                         <div className='loader2'></div>
                                     </div>
                                 )}
+                                {searchingConversacion && (
+                                    <div className='timeline-loader'>
+                                        <div className='loader2'></div>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '8px' }}>
+                                            Buscando conversación {scrollToConversacion}...
+                                        </span>
+                                    </div>
+                                )}
                                 {renderItems.map((msj: any, index) => {
                                     const key = msj?.id ?? `${msj?.createdAt ?? "no-date"}-${index}`
                                     if (msj?.kind === "date_separator") {
@@ -1536,7 +1591,7 @@ const Chats = () => {
 
                                     if (msj?.kind === "conversation_separator") {
                                         return (
-                                            <div className='conversation-separator' key={key}>
+                                            <div className='conversation-separator' key={key} id={`conv-sep-${msj.numero}`}>
                                                 <span className='conversation-separator-label'>Conversación Número {msj.numero}</span>
                                             </div>
                                         )
