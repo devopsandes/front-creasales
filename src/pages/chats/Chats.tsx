@@ -879,6 +879,7 @@ const Chats = () => {
             }
         }
         const handleChatUpdated = (payload: any) => {
+            console.log('[chat.updated payload]', JSON.stringify(payload))
             const t0 = performance.now()
             const incoming = payload?.chat && typeof payload.chat === 'object'
                 ? payload.chat
