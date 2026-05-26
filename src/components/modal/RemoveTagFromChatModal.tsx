@@ -4,6 +4,7 @@ import { removeTagFromChat } from '../../services/tags/tags.services'
 import TagResultModal from './TagResultModal'
 import { ChatTag } from '../../interfaces/chats.interface'
 import './remove-tag-from-chat-modal.css'
+import { getAuthSessionReason } from '../../utils/authSession'
 
 interface RemoveTagFromChatModalProps {
   isOpen: boolean
@@ -44,10 +45,10 @@ const RemoveTagFromChatModal = ({ isOpen, onClose, tag, chatId, onSuccess }: Rem
     try {
       const response = await removeTagFromChat(token, chatId, tag.id)
       
-      if (response.statusCode === 401) {
+      if (getAuthSessionReason(response)) {
         setResultModalData({
           isSuccess: false,
-          message: 'Sesión expirada. Por favor, inicia sesión nuevamente.'
+          message: 'Sesión inválida. Por favor, inicia sesión nuevamente.'
         })
         setShowResultModal(true)
         setLoading(false)
@@ -161,7 +162,6 @@ const RemoveTagFromChatModal = ({ isOpen, onClose, tag, chatId, onSuccess }: Rem
 }
 
 export default RemoveTagFromChatModal
-
 
 
 

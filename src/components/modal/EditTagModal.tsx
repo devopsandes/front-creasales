@@ -3,6 +3,7 @@ import { X, Edit2 } from 'lucide-react'
 import { updateTag } from '../../services/tags/tags.services'
 import TagResultModal from './TagResultModal'
 import './edit-tag-modal.css'
+import { getAuthSessionReason } from '../../utils/authSession'
 
 interface EditTagModalProps {
   isOpen: boolean
@@ -58,10 +59,10 @@ const EditTagModal = ({ isOpen, onClose, tagId, tagName, onSuccess }: EditTagMod
     try {
       const response = await updateTag(token, tagId, nombre.trim())
       
-      if (response.statusCode === 401) {
+      if (getAuthSessionReason(response)) {
         setResultModalData({
           isSuccess: false,
-          message: 'Sesión expirada. Por favor, inicia sesión nuevamente.'
+          message: 'Sesión inválida. Por favor, inicia sesión nuevamente.'
         })
         setShowResultModal(true)
         setLoading(false)
@@ -188,4 +189,3 @@ const EditTagModal = ({ isOpen, onClose, tagId, tagName, onSuccess }: EditTagMod
 }
 
 export default EditTagModal
-

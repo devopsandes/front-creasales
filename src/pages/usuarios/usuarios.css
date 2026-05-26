@@ -237,6 +237,95 @@
   background-color: #ef4444;
 }
 
+.usuarios-button-resync {
+  padding: 0.5rem 1rem;
+  background-color: #a78bfa;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.usuarios-button-resync:hover:not(:disabled) {
+  background-color: #8b5cf6;
+}
+
+.usuarios-button-resync:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.usuarios-resync-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(17, 24, 39, 0.45);
+}
+
+.usuarios-resync-modal {
+  width: min(100%, 460px);
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.22);
+  padding: 1.25rem;
+}
+
+.usuarios-resync-modal h3 {
+  margin: 0 0 0.75rem 0;
+  color: #111827;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.usuarios-resync-modal p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.usuarios-resync-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.usuarios-resync-cancel,
+.usuarios-resync-confirm {
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.usuarios-resync-cancel {
+  color: #374151;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+}
+
+.usuarios-resync-confirm {
+  color: #ffffff;
+  background-color: #2563eb;
+  border: 1px solid #2563eb;
+}
+
+.usuarios-resync-cancel:disabled,
+.usuarios-resync-confirm:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 /* Paginación */
 .usuarios-pagination-container {
   display: flex;
@@ -303,4 +392,3 @@
   justify-content: center;
   align-items: center;
 }
-

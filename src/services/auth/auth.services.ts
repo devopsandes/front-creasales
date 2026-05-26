@@ -264,9 +264,33 @@ const updateUser = async (
     }
 }
 
+const resyncAdminUser = async (email: string, token: string): Promise<SuccessResponse & ErrorResponse> => {
+    try {
+        const headers = {
+            authorization: `Bearer ${token}`
+        }
+
+        const { data } = await convClient.post<SuccessResponse & ErrorResponse>(
+            '/auth/usuarios/resync-admin',
+            null,
+            {
+                headers,
+                params: { email }
+            }
+        )
+
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            const objeto: ErrorResponse & SuccessResponse = error.response.data
+            return objeto
+        }
+        throw error;
+    }
+}
 
 
-export { authLogin, authRegister, tokenValidacion, sendEmailRecuperarPass, cambiarPassword, usuariosXRole, asignarOperador, switchActivo, deleteUser, updateUser }
 
+export { authLogin, authRegister, tokenValidacion, sendEmailRecuperarPass, cambiarPassword, usuariosXRole, asignarOperador, switchActivo, deleteUser, updateUser, resyncAdminUser }
 
 

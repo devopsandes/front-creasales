@@ -4,6 +4,7 @@ import { RootState } from "../app/store"
 import { isLightFeatureDisabled } from "../config/runtimeConfig"
 import { bumpMentionsRefreshNonce, openSessionExpired, setMentionChatIds, setMentionUnreadCount } from "../app/slices/actionSlice"
 import { getMentionsUnreadCount, getMisMenciones } from "../services/mentions/mentions.services"
+import { getAuthSessionReason } from "../utils/authSession"
 import { getSocket } from "../app/slices/socketSlice"
 import { jwtDecode } from "jwt-decode"
 
@@ -37,8 +38,9 @@ export const useMentionsSync = () => {
         getMisMenciones(token, { page: 1, limit: 30 }, { signal: chatsControllerRef.current.signal }),
       ])
 
-      if ((countResp as any)?.statusCode === 401 || (mentionsResp as any)?.statusCode === 401) {
-        dispatch(openSessionExpired())
+      const authReason = getAuthSessionReason(countResp) || getAuthSessionReason(mentionsResp)
+      if (authReason) {
+        dispatch(openSessionExpired(authReason))
         return
       }
 

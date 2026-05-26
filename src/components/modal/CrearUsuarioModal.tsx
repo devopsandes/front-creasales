@@ -8,6 +8,7 @@ import { ROLES, TIPOS_DOC } from '../../utils/constans';
 import Spinner23 from '../spinners/Spinner23';
 import { empresaXUser } from '../../services/empresas/empresa.services';
 import { authRegister } from '../../services/auth/auth.services';
+import { getAuthSessionReason } from '../../utils/authSession';
 import './crear-usuario-modal.css';
 
 // Mapeo de palabras clave del backend a campos del formulario
@@ -105,7 +106,6 @@ const CrearUsuarioModal = () => {
         try {
             if (!token) {
                 setShowSpinner(false);
-                dispatch(openSessionExpired());
                 return;
             }
 
@@ -136,9 +136,12 @@ const CrearUsuarioModal = () => {
                 limpiarForm();
                 toast.success(resp.msg);
                 dispatch(closeModalUser());
-            } else if (resp.statusCode === 401) {
-                dispatch(openSessionExpired());
             } else {
+                const authReason = getAuthSessionReason(resp);
+                if (authReason) {
+                    dispatch(openSessionExpired(authReason));
+                    return;
+                }
                 const backendErrores = resp.message || resp.msg;
                 if (backendErrores) {
                     procesarErroresBackend(backendErrores);

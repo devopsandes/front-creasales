@@ -15,6 +15,7 @@ import { RootState } from "../../app/store";
 import { setupAxiosInterceptors } from "../../utils/axiosInterceptor";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { useMentionsSync } from "../../hooks/useMentionsSync";
+import { getAuthSessionReason, getSocketAuthSessionReason } from "../../utils/authSession";
 
 
 
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const dispatch = useDispatch()
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
   const sessionExpired = useSelector((state: RootState) => state.action.sessionExpired)
+  const sessionExpiredReason = useSelector((state: RootState) => state.action.sessionExpiredReason)
   const warnedMissingEmpresaRef = useRef(false)
   const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
   useMentionsSync()
@@ -67,7 +69,8 @@ const Dashboard = () => {
       // Obtener empresa
       empresaXUser(token)
         .then(data => {
-          if(data.statusCode === 401){
+          const authReason = getAuthSessionReason(data)
+          if(authReason){
             localStorage.removeItem('token')
             localStorage.removeItem('role')
             localStorage.removeItem('userId')
@@ -121,12 +124,12 @@ const Dashboard = () => {
          
   
           const handleError = (error: any) => {
-              if (error.name === 'TokenExpiredError') {
-                  dispatch(openSessionExpired())
+              const authReason = getSocketAuthSessionReason(error)
+              if (authReason === 'expired') {
+                  dispatch(openSessionExpired('expired'))
                   return
               }
-              dispatch(openSessionExpired())
-              return
+              console.warn('Socket error sin expiración explícita de token:', error)
           }
   
       
@@ -170,6 +173,7 @@ const Dashboard = () => {
         <SessionExpiredModal 
           isOpen={sessionExpired}
           onClose={() => dispatch(closeSessionExpired())}
+          reason={sessionExpiredReason}
         />
         
         {/* <button 
@@ -208,7 +212,6 @@ const Dashboard = () => {
 }
 
 export default Dashboard
-
 
 
 

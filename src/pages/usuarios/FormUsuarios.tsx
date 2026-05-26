@@ -7,6 +7,7 @@ import Eye from "../../components/icons/Eye"
 import EyeSlash from "../../components/icons/EyeSlash"
 import { authRegister } from "../../services/auth/auth.services";
 import { empresaXUser } from "../../services/empresas/empresa.services";
+import { getAuthSessionReason } from "../../utils/authSession";
 
 const FormUsuarios = () => {
   const [nombre, setNombre] = useState<string>('')
@@ -101,9 +102,9 @@ const FormUsuarios = () => {
       setErrores([])
       toast.success(resp.msg)
       // limpiar el formulario
-    }else if(resp.statusCode === 401){
+    }else if(getAuthSessionReason(resp)){
       console.log(resp.message);
-      alert('El token ha expirado debe iniciar sesión nuevamente')
+      alert('La sesión no es válida. Debe iniciar sesión nuevamente')
       navigate('/auth/signin')
 
     }else if(resp.statusCode === 500){

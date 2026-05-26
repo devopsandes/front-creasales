@@ -15,6 +15,7 @@ const initialState: ActionState = {
     modalTeca: false,
     ticketId: '',
     sessionExpired: false,
+    sessionExpiredReason: undefined,
     chats: [],
     mentionUnreadCount: 0,
     mentionChatIds: [],
@@ -97,11 +98,14 @@ const actionSlice = createSlice({
         eraseDataUser: (state) => {
             state.dataUser = null
         },
-        openSessionExpired: (state) => {
+        openSessionExpired: (state, action) => {
+            if (action.payload !== 'expired' && action.payload !== 'invalid') return
             state.sessionExpired = true
+            state.sessionExpiredReason = action.payload
         },
         closeSessionExpired: (state) => {
             state.sessionExpired = false
+            state.sessionExpiredReason = undefined
         },
         setChats: (state, action) => {
             state.chats = action.payload
@@ -251,4 +255,3 @@ export const {
 } = actionSlice.actions
 
 export default actionSlice.reducer
-

@@ -6,6 +6,7 @@ import { toast } from 'react-toastify'
 import TagResultModal from './TagResultModal'
 import '../spinners/spinner.css'
 import './add-tag-modal.css'
+import { getAuthSessionReason } from '../../utils/authSession'
 
 interface AddTagModalProps {
   isOpen: boolean
@@ -36,8 +37,8 @@ const AddTagModal = ({ isOpen, onClose, onConfirm, chatId }: AddTagModalProps) =
         try {
           const response = await getTags(token)
           
-          if (response.statusCode === 401) {
-            setError('Sesión expirada. Por favor, inicia sesión nuevamente.')
+          if (getAuthSessionReason(response)) {
+            setError('Sesión inválida. Por favor, inicia sesión nuevamente.')
             return
           }
           
@@ -91,10 +92,10 @@ const AddTagModal = ({ isOpen, onClose, onConfirm, chatId }: AddTagModalProps) =
     try {
       const response = await asignarTag(token, chatId, selectedTagId)
       
-      if (response.statusCode === 401) {
+      if (getAuthSessionReason(response)) {
         setResultModalData({
           isSuccess: false,
-          message: 'Sesión expirada. Por favor, inicia sesión nuevamente.'
+          message: 'Sesión inválida. Por favor, inicia sesión nuevamente.'
         })
         setShowResultModal(true)
         return
@@ -235,4 +236,3 @@ const AddTagModal = ({ isOpen, onClose, onConfirm, chatId }: AddTagModalProps) =
 }
 
 export default AddTagModal
-

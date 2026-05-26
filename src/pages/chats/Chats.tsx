@@ -37,6 +37,7 @@ import { perfMark, perfTrackMemory, perfTrackNavigation } from '../../utils/perf
 import { getTimelineEventsSource, isLightFeatureDisabled } from '../../config/runtimeConfig'
 import { convClient } from '../../services/apiClient'
 import MentionModal from '../../components/modal/MentionModal'
+import { getAuthSessionReason, getSocketAuthSessionReason } from '../../utils/authSession'
 
 /** Normaliza GET /tags/chat/:chatId (admin); admite `tags` o `items` y aliases de campo. */
 const normalizeChatTagsFromApi = (resp: any): ChatTag[] => {
@@ -151,6 +152,12 @@ const Chats = () => {
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
     const scrollRestoreRef = useRef<{ height: number; top: number } | null>(null)
     const dispatch = useDispatch()
+    const openAuthSessionIfNeeded = useCallback((payload: any): boolean => {
+        const authReason = getAuthSessionReason(payload)
+        if (!authReason) return false
+        dispatch(openSessionExpired(authReason))
+        return true
+    }, [dispatch])
     const dataUser = useSelector((state: RootState) => state.action.dataUser)
     const mentionsMode = useSelector((state: RootState) => state.action.mentionsMode)
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
@@ -530,7 +537,7 @@ const Chats = () => {
         before?: string | null
     ) => {
         const liteData = await findChatMessagesLite(token!, chatId, { limit: TIMELINE_WINDOW_LIMIT, before: before ?? null }, { signal, rateLimitMs: 1000 })
-        if (liteData.statusCode === 401) { dispatch(openSessionExpired()); return null }
+        if (openAuthSessionIfNeeded(liteData)) return null
         if (((liteData as any)?.statusCode ?? 200) >= 400) {
             throw new Error('messages_lite_unavailable')
         }
@@ -606,8 +613,7 @@ const Chats = () => {
         chatTagsFetchControllerRef.current = controller
         try {
             const resp = await getTagsByChatId(token, chatId, { signal: controller.signal })
-            if ((resp as any)?.statusCode === 401) {
-                dispatch(openSessionExpired())
+            if (openAuthSessionIfNeeded(resp)) {
                 return
             }
             if (chatTagsFetchControllerRef.current !== controller) return
@@ -625,7 +631,7 @@ const Chats = () => {
             if (e?.name === 'AbortError' || e?.code === 'ERR_CANCELED') return
             setDetailTagsFetched(true)
         }
-    }, [tagsDisabled, id, token, dispatch])
+    }, [tagsDisabled, id, token, openAuthSessionIfNeeded])
 
     const scheduleRefreshChatTagsFromAdmin = useCallback(() => {
         if (tagsDisabled || !id || !token) return
@@ -666,8 +672,7 @@ const Chats = () => {
                 const controller = new AbortController()
                 refreshCurrentChatControllerRef.current = controller
                 const chatResp = await findChatById(token, id, { signal: controller.signal, rateLimitMs: 900 })
-                if ((chatResp as any)?.statusCode === 401) {
-                    dispatch(openSessionExpired())
+                if (openAuthSessionIfNeeded(chatResp)) {
                     return
                 }
                 if ((chatResp as any)?.chat) {
@@ -731,9 +736,9 @@ const Chats = () => {
         const ids = Array.isArray(selectedMentionChatIds) ? selectedMentionChatIds : []
         if (!mentionsMode || ids.length === 0) return
         const resp = await markMentionsRead(token, ids)
-        if ((resp as any)?.statusCode === 401) { dispatch(openSessionExpired()); return }
+        if (openAuthSessionIfNeeded(resp)) return
         const countResp = await getMentionsUnreadCount(token)
-        if ((countResp as any)?.statusCode === 401) { dispatch(openSessionExpired()); return }
+        if (openAuthSessionIfNeeded(countResp)) return
         dispatch(setMentionUnreadCount((countResp as any)?.count ?? 0))
         dispatch(bumpMentionsRefreshNonce())
         dispatch(clearMentionChatSelection())
@@ -750,7 +755,8 @@ const Chats = () => {
         else { ids.forEach((chatId) => dispatch(markChatUnreadLocal(chatId))) }
         try {
             const results = await Promise.all(ids.map((chatId) => setChatReadState(token, chatId, state)))
-            if (results.some((r: any) => r?.statusCode === 401)) { dispatch(openSessionExpired()); return }
+            const authResponse = results.find((r: any) => getAuthSessionReason(r))
+            if (openAuthSessionIfNeeded(authResponse)) return
         } catch { } finally { dispatch(clearBulkReadChatSelection()) }
     }
 
@@ -775,7 +781,7 @@ const Chats = () => {
             const resp = await getUserData(telefono!);
             dispatch(setUserData(resp));
             dispatch(setViewSide(true))
-            if (resp.statusCode === 401) { dispatch(openSessionExpired()); return }
+            if (openAuthSessionIfNeeded(resp)) return
         }
         ejecucion();
     }, [, location])
@@ -911,7 +917,8 @@ const Chats = () => {
             })
         }
         const handleError = (error: any) => {
-            if (error?.name === 'TokenExpiredError') { dispatch(openSessionExpired()); return }
+            const authReason = getSocketAuthSessionReason(error)
+            if (authReason === 'expired') { dispatch(openSessionExpired('expired')); return }
         }
         debugSocketLog('socket.subscription.attach', {
             chatEventName,
@@ -959,7 +966,7 @@ const Chats = () => {
                 chatLoadControllerRef.current = chatController
                 timelineLoadControllerRef.current = timelineController
                 const chatData = await findChatById(token, id, { signal: chatController.signal, rateLimitMs: 900 })
-                if ((chatData as any)?.statusCode === 401) { dispatch(openSessionExpired()); return }
+                if (openAuthSessionIfNeeded(chatData)) return
                 if (((chatData as any)?.statusCode ?? 200) >= 400 || !(chatData as any)?.chat) {
                     clearInvalidChatAndReturnToList()
                     return
@@ -974,7 +981,7 @@ const Chats = () => {
             setTimelineSource('timeline')
             try {
                 const data = await findChatTimeline(token!, id!, { limit: TIMELINE_WINDOW_LIMIT }, { signal: timelineLoadControllerRef.current?.signal, rateLimitMs: 1000 })
-                if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
+                if (openAuthSessionIfNeeded(data)) return
                 const timelineOk = ((data as any)?.statusCode ?? 200) < 400 && Array.isArray((data as any)?.items)
                 if (!timelineOk) {
                     throw new Error('timeline_unavailable')
@@ -1045,7 +1052,7 @@ const Chats = () => {
             chatLoadControllerRef.current?.abort()
             timelineLoadControllerRef.current?.abort()
         }
-    }, [id, token, dispatch])
+    }, [id, token, dispatch, openAuthSessionIfNeeded])
 
     const loadOlderTimeline = async () => {
         if (!id || !token) return
@@ -1065,7 +1072,7 @@ const Chats = () => {
                 setTimelineHasMore(liteWindow.hasMore)
             } else {
                 const data = await findChatTimeline(token!, id!, { limit: TIMELINE_WINDOW_LIMIT, cursor: timelineCursor }, { signal: controller.signal, rateLimitMs: 1000 })
-                if (data.statusCode === 401) { dispatch(openSessionExpired()); return }
+                if (openAuthSessionIfNeeded(data)) return
                 if (((data as any)?.statusCode ?? 200) >= 400) {
                     throw new Error('timeline_page_unavailable')
                 }
@@ -1231,7 +1238,7 @@ const Chats = () => {
         const run = async () => {
             if (!token) return
             const resp = await getQuickResponses(token, { page: 1, limit: 200 })
-            if ((resp as any)?.statusCode === 401) { dispatch(openSessionExpired()); return }
+            if (openAuthSessionIfNeeded(resp)) return
             const list = Array.isArray((resp as any)?.items) ? (resp as any).items : []
             setQuickResponses(list)
         }
@@ -1337,7 +1344,7 @@ const Chats = () => {
         setIsTogglingBot(true)
         try {
             const resp: any = await setChatBotState(token, id, nextEnabled)
-            if (resp?.statusCode === 401) { dispatch(openSessionExpired()); return }
+            if (openAuthSessionIfNeeded(resp)) return
             if (resp?.statusCode && resp.statusCode >= 400) { toast.error(resp?.message || 'No se pudo actualizar el estado del bot'); return }
             const patch = { botEnabled: resp?.botEnabled ?? nextEnabled, botDisabledAt: resp?.botDisabledAt ?? null, botDisabledByUserId: resp?.botDisabledByUserId ?? null, botDisableReason: resp?.botDisableReason ?? null }
             const updated = (Array.isArray(chats) ? chats : []).map((c: any) => c?.id === id ? { ...c, ...patch } : c)
@@ -1402,7 +1409,7 @@ const Chats = () => {
             }
         } catch (error) {
             if (axios.isAxiosError(error) && error.response) {
-                if (error.response.status === 401) { dispatch(openSessionExpired()); }
+                if (openAuthSessionIfNeeded(error.response.data)) return
                 else { toast.error('Error al eliminar el chat'); }
             } else { toast.error('Error al eliminar el chat'); }
             setIsDeleteModalOpen(false);
@@ -1984,4 +1991,3 @@ const Chats = () => {
 }
 
 export default Chats
-

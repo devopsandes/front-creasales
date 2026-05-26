@@ -8,6 +8,7 @@ import { openModalTag, openSessionExpired } from "../../app/slices/actionSlice";
 import { getTags } from "../../services/tags/tags.services";
 import { Tag } from "../../interfaces/tags.interface";
 import { RootState } from "../../app/store";
+import { getAuthSessionReason } from "../../utils/authSession";
 import "./tags.css";
 
 
@@ -34,12 +35,17 @@ const TableTags = () => {
   const [addTooltipStyle, setAddTooltipStyle] = useState<React.CSSProperties>({});
   const addIconRef = useRef<HTMLDivElement>(null);
 
+  const openAuthSessionIfNeeded = (payload: any) => {
+    const authReason = getAuthSessionReason(payload);
+    if (!authReason) return false;
+    dispatch(openSessionExpired(authReason));
+    return true;
+  }
 
   useEffect(()=>{
     const ejecucion = async () => {
       const resp = await getTags(token);
-      if (resp.statusCode === 401) {
-        dispatch(openSessionExpired());
+      if (openAuthSessionIfNeeded(resp)) {
         return;
       }
       setTags(resp.tags);
@@ -63,8 +69,7 @@ const TableTags = () => {
   const handleEditSuccess = async () => {
     // Recargar los tags después de editar
     const resp = await getTags(token);
-    if (resp.statusCode === 401) {
-      dispatch(openSessionExpired());
+    if (openAuthSessionIfNeeded(resp)) {
       return;
     }
     setTags(resp.tags);
@@ -83,8 +88,7 @@ const TableTags = () => {
   const handleDeleteSuccess = async () => {
     // Recargar los tags después de eliminar
     const resp = await getTags(token);
-    if (resp.statusCode === 401) {
-      dispatch(openSessionExpired());
+    if (openAuthSessionIfNeeded(resp)) {
       return;
     }
     setTags(resp.tags);

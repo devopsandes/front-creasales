@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { closeModalTag, setNewTag, throwAlert } from '../../app/slices/actionSlice';
+import { closeModalTag, openSessionExpired, setNewTag, throwAlert } from '../../app/slices/actionSlice';
 import { RootState } from '../../app/store';
 import { createTag } from '../../services/tags/tags.services';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
 import XMark from '../icons/XMark';
 import './tag-modal.css';
+import { getAuthSessionReason } from '../../utils/authSession';
 
 
 
@@ -20,7 +20,6 @@ const CrearTagModal = () => {
   const dispatch = useDispatch();
   const modalView = useSelector((state: RootState) => state.action.modalTag);
   const token  = localStorage.getItem('token') || '';
-  const navigate = useNavigate();
 
   useEffect(() => {
     const ejecucion = async () => {
@@ -49,11 +48,10 @@ const CrearTagModal = () => {
         toast.success(`Etiqueta creada correctamente`);
     }
 
-    if(resp.statusCode === 401){
+    const authReason = getAuthSessionReason(resp);
+    if(authReason){
         dispatch(throwAlert({msg: resp.message, alerta: true}));
-        alert('Su sesión ha caducado, por favor inicie sesión nuevamente');
-        localStorage.removeItem('token');
-        navigate('/auth/signin');
+        dispatch(openSessionExpired(authReason));
     }
     
     

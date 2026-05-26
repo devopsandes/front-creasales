@@ -5,9 +5,10 @@ import './session-expired-modal.css'
 interface SessionExpiredModalProps {
   isOpen: boolean
   onClose?: () => void
+  reason?: 'expired' | 'invalid'
 }
 
-const SessionExpiredModal = ({ isOpen, onClose }: SessionExpiredModalProps) => {
+const SessionExpiredModal = ({ isOpen, onClose, reason = 'expired' }: SessionExpiredModalProps) => {
   const navigate = useNavigate()
 
   if (!isOpen) return null
@@ -35,9 +36,13 @@ const SessionExpiredModal = ({ isOpen, onClose }: SessionExpiredModalProps) => {
           <AlertCircle size={32} />
         </div>
 
-        <h2 className="session-modal-title">Sesión Expirada</h2>
+        <h2 className="session-modal-title">
+          {reason === 'invalid' ? 'Sesión Inválida' : 'Sesión Expirada'}
+        </h2>
         <p className="session-modal-message">
-          Su sesión ha caducado. Por favor, inicie sesión nuevamente para continuar.
+          {reason === 'invalid'
+            ? 'No pudimos validar su sesión. Por favor, inicie sesión nuevamente para continuar.'
+            : 'Su sesión ha caducado. Por favor, inicie sesión nuevamente para continuar.'}
         </p>
 
         <div className="session-modal-actions">
@@ -54,4 +59,3 @@ const SessionExpiredModal = ({ isOpen, onClose }: SessionExpiredModalProps) => {
 }
 
 export default SessionExpiredModal
-

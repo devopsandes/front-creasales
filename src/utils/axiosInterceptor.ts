@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { isTokenExpiredOrExpiring } from './tokenUtils'
+import { getAuthSessionReason } from './authSession'
 
 let requestInterceptorId: number | null = null
 let responseInterceptorId: number | null = null
@@ -55,8 +56,10 @@ export const setupAxiosInterceptors = () => {
     async (error: AxiosError) => {
       const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
-      // Si la petición falló con 401 y no hemos intentado renovar
-      if (error.response?.status === 401 && !originalRequest._retry) {
+      const authSessionReason = getAuthSessionReason(error.response?.data)
+
+      // Solo invalidar sesión ante códigos explícitos del backend.
+      if (error.response?.status === 401 && authSessionReason && !originalRequest._retry) {
         originalRequest._retry = true
 
         // TODO: Implementar renovación de token si el backend lo permite

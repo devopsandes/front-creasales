@@ -6,6 +6,7 @@ import { sectores, tamanos } from "../../utils/constans"
 import { createEmpresa } from "../../services/empresas/empresa.services"
 import { ToastContainer, toast } from 'react-toastify';
 import Spinner23 from "../../components/spinners/Spinner23"
+import { getAuthSessionReason } from "../../utils/authSession"
 import './empresa.css'
 
 const FormEmpresa = () => {
@@ -102,9 +103,9 @@ const FormEmpresa = () => {
       setShowSpinner(false)
       toast.success(resp.msg)
       // limpiar el formulario
-    }else if(resp.statusCode === 401){
+    }else if(getAuthSessionReason(resp)){
       console.log(resp.message);
-      alert('El token ha expirado debe iniciar sesión nuevamente')
+      alert('La sesión no es válida. Debe iniciar sesión nuevamente')
       navigate('/auth/signin')
 
     }else if(resp.statusCode === 500){

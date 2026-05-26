@@ -10,6 +10,7 @@ import { Mensaje } from "../../interfaces/chats.interface";
 import { findChatById } from "../../services/chats/chats.services";
 import { X, MessageSquare } from 'lucide-react';
 import './ticket-detail-modal.css';
+import { getAuthSessionReason } from "../../utils/authSession";
 
 const TicketModal = () => {
     const [ticket, setTicket] = useState<Ticket>()
@@ -33,8 +34,9 @@ const TicketModal = () => {
                 //Solo buscar chat si existe chat_id
                 if (resp.ticket.chat?.id) {
                     const data = await findChatById(token, resp.ticket.chat.id)
-                    if (data.statusCode === 401) {
-                        dispatch(openSessionExpired())
+                    const authReason = getAuthSessionReason(data)
+                    if (authReason) {
+                        dispatch(openSessionExpired(authReason))
                         dispatch(closeModalTeca())
                         return
                     }
