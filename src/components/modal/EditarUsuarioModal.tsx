@@ -7,6 +7,7 @@ import { UserCog, X, Eye, EyeOff } from 'lucide-react';
 import { ROLES, TIPOS_DOC } from '../../utils/constans';
 import Spinner23 from '../spinners/Spinner23';
 import { updateUser } from '../../services/auth/auth.services';
+import { getAuthSessionReason } from '../../utils/authSession';
 import './crear-usuario-modal.css';
 
 const mapearErrorACampo = (error: string): string => {
@@ -122,7 +123,6 @@ const EditarUsuarioModal = ({ onUserUpdated }: { onUserUpdated?: () => void }) =
 
         if (!token) {
             setShowSpinner(false);
-            dispatch(openSessionExpired());
             return;
         }
 
@@ -150,9 +150,12 @@ const EditarUsuarioModal = ({ onUserUpdated }: { onUserUpdated?: () => void }) =
             limpiarForm();
             dispatch(closeModalEditUser());
             if (onUserUpdated) onUserUpdated();
-        } else if (resp.statusCode === 401) {
-            dispatch(openSessionExpired());
         } else {
+            const authReason = getAuthSessionReason(resp);
+            if (authReason) {
+                dispatch(openSessionExpired(authReason));
+                return;
+            }
             const backendErrores = resp.message || resp.msg;
             if (backendErrores) {
                 procesarErroresBackend(backendErrores);

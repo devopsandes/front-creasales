@@ -5,6 +5,7 @@ import ConfirmModal from "../../components/modal/ConfirmModal"
 import { openSessionExpired } from "../../app/slices/actionSlice"
 import { QuickResponse } from "../../interfaces/quickResponses.interface"
 import { createQuickResponse, deleteQuickResponse, getQuickResponses, updateQuickResponse } from "../../services/quickResponses/quickResponses.services"
+import { getAuthSessionReason } from "../../utils/authSession"
 import "./respuestas-rapidas.css"
 
 const normalizeShortcut=(raw:string)=>{
@@ -29,14 +30,19 @@ const RespuestasRapidasPage=()=>{
   const [formError,setFormError]=useState("")
   const [confirmOpen,setConfirmOpen]=useState(false)
   const [toDelete,setToDelete]=useState<QuickResponse|null>(null)
+  const openAuthSessionIfNeeded=(payload:any)=>{
+    const authReason=getAuthSessionReason(payload)
+    if(!authReason)return false
+    dispatch(openSessionExpired(authReason))
+    return true
+  }
 
   const fetchList=async(nextSearch?:string)=>{
     if(!token)return
     setLoading(true)
     const q=(nextSearch!==undefined?nextSearch:search).trim()
     const resp=await getQuickResponses(token,{search:q||undefined,page:1,limit:50})
-    if((resp as any)?.statusCode===401){
-      dispatch(openSessionExpired())
+    if(openAuthSessionIfNeeded(resp)){
       setLoading(false)
       return
     }
@@ -114,8 +120,7 @@ const RespuestasRapidasPage=()=>{
       ?await updateQuickResponse(token,editing.id,{...(shortcutChanged?{shortcut:s}:{}) ,text:t})
       :await createQuickResponse(token,{shortcut:s,text:t})
     const code=(resp as any)?.statusCode
-    if(code===401){
-      dispatch(openSessionExpired())
+    if(openAuthSessionIfNeeded(resp)){
       setSaving(false)
       return
     }
@@ -146,8 +151,7 @@ const RespuestasRapidasPage=()=>{
     if(!toDelete)return
     const resp=await deleteQuickResponse(token,toDelete.id)
     const code=(resp as any)?.statusCode
-    if(code===401){
-      dispatch(openSessionExpired())
+    if(openAuthSessionIfNeeded(resp)){
       setConfirmOpen(false)
       setToDelete(null)
       return
@@ -258,5 +262,4 @@ const RespuestasRapidasPage=()=>{
 }
 
 export default RespuestasRapidasPage
-
 

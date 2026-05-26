@@ -5,6 +5,7 @@ import { Tag } from '../../interfaces/tags.interface'
 import TagResultModal from './TagResultModal'
 import { capitalizeWords } from '../../utils/functions'
 import './delete-tag-modal.css'
+import { getAuthSessionReason } from '../../utils/authSession'
 
 interface DeleteTagModalProps {
   isOpen: boolean
@@ -44,10 +45,10 @@ const DeleteTagModal = ({ isOpen, onClose, tag, onSuccess }: DeleteTagModalProps
     try {
       const response = await deleteTag(token, tag.id)
       
-      if (response.statusCode === 401) {
+      if (getAuthSessionReason(response)) {
         setResultModalData({
           isSuccess: false,
-          message: 'Sesión expirada. Por favor, inicia sesión nuevamente.'
+          message: 'Sesión inválida. Por favor, inicia sesión nuevamente.'
         })
         setShowResultModal(true)
         setLoading(false)
@@ -168,4 +169,3 @@ const DeleteTagModal = ({ isOpen, onClose, tag, onSuccess }: DeleteTagModalProps
 }
 
 export default DeleteTagModal
-

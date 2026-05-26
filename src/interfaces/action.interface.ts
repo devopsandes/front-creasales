@@ -18,6 +18,7 @@ export interface ActionState  {
    viewSide: boolean;
    ticketId: string;
    sessionExpired: boolean;
+   sessionExpiredReason?: 'expired' | 'invalid';
    chats: ChatState[];
    mentionUnreadCount: number;
    mentionChatIds: any[]; 

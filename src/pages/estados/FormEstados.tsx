@@ -4,6 +4,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import Spinner23 from "../../components/spinners/Spinner23"
 import { createEstado } from "../../services/estados/estados.services"
 import { REF_STATES, STATES_CLIENT, STATES_TICKETS, STATES_USER } from "../../utils/constans";
+import { getAuthSessionReason } from "../../utils/authSession";
 import './estados.css'
 
 
@@ -63,9 +64,9 @@ const FormEstados = () => {
       setDescripcion('')
       toast.success(resp.msg)
       // limpiar el formulario
-    }else if(resp.statusCode === 401){
+    }else if(getAuthSessionReason(resp)){
       console.log(resp.message);
-      alert('El token ha expirado debe iniciar sesión nuevamente')
+      alert('La sesión no es válida. Debe iniciar sesión nuevamente')
       navigate('/auth/signin')
 
     }else if(resp.statusCode === 500){

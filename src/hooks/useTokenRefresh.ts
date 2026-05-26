@@ -1,6 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { useDispatch } from 'react-redux'
-import { openSessionExpired } from '../app/slices/actionSlice'
 import { isTokenExpiredOrExpiring, getTokenTimeRemaining } from '../utils/tokenUtils'
 
 /**
@@ -12,7 +10,6 @@ export const useTokenRefresh = (
   checkIntervalMinutes: number = 2,
   warningMinutes: number = 5
 ) => {
-  const dispatch = useDispatch()
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -27,8 +24,7 @@ export const useTokenRefresh = (
         const timeRemaining = getTokenTimeRemaining(token)
         
         if (timeRemaining === null || timeRemaining <= 0) {
-          // Token ya expirado
-          dispatch(openSessionExpired())
+          console.warn('Token expirado localmente. Esperando confirmación explícita del backend.')
           if (intervalRef.current) {
             clearInterval(intervalRef.current)
           }
@@ -53,6 +49,5 @@ export const useTokenRefresh = (
         clearInterval(intervalRef.current)
       }
     }
-  }, [dispatch, checkIntervalMinutes, warningMinutes])
+  }, [checkIntervalMinutes, warningMinutes])
 }
-

@@ -1,17 +1,18 @@
 import { FaRegCommentDots, FaUser } from "react-icons/fa";
 import { useEffect, useState, useRef } from "react";
 import Switch from "../../components/switch/Switch";
-import { usuariosXRole, deleteUser } from "../../services/auth/auth.services";
+import { usuariosXRole, deleteUser, resyncAdminUser } from "../../services/auth/auth.services";
 import { Usuario } from "../../interfaces/auth.interface";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import CrearUsuarioModal from "../../components/modal/CrearUsuarioModal";
 import { getChatCountsByOperator } from "../../services/chats/chats.services";
-import { openModalUser, openModalEditUser } from "../../app/slices/actionSlice";
+import { openModalUser, openModalEditUser, openSessionExpired } from "../../app/slices/actionSlice";
 import EditarUsuarioModal from "../../components/modal/EditarUsuarioModal";
 import { toast } from 'react-toastify';
 import './usuarios.css';
 import { isLightFeatureDisabled } from "../../config/runtimeConfig";
+import { getAuthSessionReason } from "../../utils/authSession";
 
 
 const ITEMS_PER_PAGE = 15;
@@ -24,6 +25,8 @@ const TableUsers = () => {
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const [chatsCounts, setChatsCounts] = useState<{ [userId: string]: number }>({});
+  const [resyncingEmail, setResyncingEmail] = useState<string | null>(null);
+  const [userToResync, setUserToResync] = useState<Usuario | null>(null);
   const tooltipRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const initializedRef = useRef(false);
 
@@ -31,6 +34,14 @@ const TableUsers = () => {
   const role = localStorage.getItem('role') || '';
   const navigate = useNavigate();
   const dispatch = useDispatch()
+  const canResyncUsers = role === 'ROOT' || role === 'ADMIN';
+
+  const handleAuthSession = (payload: any): boolean => {
+    const authReason = getAuthSessionReason(payload);
+    if (!authReason) return false;
+    dispatch(openSessionExpired(authReason));
+    return true;
+  }
 
 
 
@@ -49,9 +60,7 @@ const TableUsers = () => {
 
       const respUsers = await usuariosXRole(role, token);
 
-      if (respUsers.statusCode === 401) {
-        alert('Su sesión ha expirado, por favor inicie sesión nuevamente');
-        navigate('/auth/signin');
+      if (handleAuthSession(respUsers)) {
         return;
       }
 
@@ -131,9 +140,7 @@ const TableUsers = () => {
     try {
       const resp = await deleteUser(user.id, token);
 
-      if (resp.statusCode === 401) {
-        alert('Su sesión ha expirado, por favor inicie sesión nuevamente');
-        navigate('/auth/signin');
+      if (handleAuthSession(resp)) {
         return;
       }
 
@@ -157,9 +164,7 @@ const TableUsers = () => {
   const handleUserUpdated = async () => {
     setLoading(true);
     const respUsers = await usuariosXRole(role, token);
-    if (respUsers.statusCode === 401) {
-      alert('Su sesión ha expirado, por favor inicie sesión nuevamente');
-      navigate('/auth/signin');
+    if (handleAuthSession(respUsers)) {
       return;
     }
     setUsers(respUsers.users);
@@ -186,6 +191,29 @@ const TableUsers = () => {
       setChatsCounts(counts);
     }
     setLoading(false);
+  }
+
+  const handleResyncUser = async () => {
+    if (!userToResync) return;
+    setResyncingEmail(userToResync.email);
+
+    try {
+      const resp = await resyncAdminUser(userToResync.email, token);
+      if (handleAuthSession(resp)) return;
+
+      if (resp.statusCode === 200 || resp.statusCode === 201) {
+        toast.success('Usuario resincronizado correctamente');
+        setUserToResync(null);
+        await handleUserUpdated();
+      } else {
+        toast.error(resp.message?.toString() || resp.msg || 'No se pudo resincronizar el usuario');
+      }
+    } catch (error) {
+      console.error('Error al resincronizar usuario:', error);
+      toast.error('No se pudo resincronizar el usuario');
+    } finally {
+      setResyncingEmail(null);
+    }
   }
 
   return (
@@ -287,6 +315,16 @@ const TableUsers = () => {
                       >
                         Eliminar
                       </button>
+                      {canResyncUsers && (
+                        <button
+                          className="usuarios-button-resync"
+                          onClick={() => setUserToResync(user)}
+                          disabled={resyncingEmail === user.email}
+                          title="Actualiza la copia administrativa de este usuario desde el sistema conversacional."
+                        >
+                          {resyncingEmail === user.email ? 'Sincronizando' : 'Sincronizar'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -321,6 +359,33 @@ const TableUsers = () => {
         </div>
         <CrearUsuarioModal />
         <EditarUsuarioModal onUserUpdated={handleUserUpdated} />
+        {userToResync && (
+          <div className="usuarios-resync-overlay" role="presentation" onClick={() => !resyncingEmail && setUserToResync(null)}>
+            <div className="usuarios-resync-modal" role="dialog" aria-modal="true" aria-labelledby="resync-title" onClick={(event) => event.stopPropagation()}>
+              <h3 id="resync-title">Resincronizar usuario</h3>
+              <p>
+                Se actualizarán los datos administrativos de {userToResync.email} usando la información actual del sistema conversacional.
+                Esto no cambia su contraseña ni cierra su sesión.
+              </p>
+              <div className="usuarios-resync-actions">
+                <button
+                  className="usuarios-resync-cancel"
+                  onClick={() => setUserToResync(null)}
+                  disabled={Boolean(resyncingEmail)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="usuarios-resync-confirm"
+                  onClick={handleResyncUser}
+                  disabled={Boolean(resyncingEmail)}
+                >
+                  {resyncingEmail ? 'Sincronizando' : 'Sincronizar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

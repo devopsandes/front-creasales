@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { ToastContainer, toast } from 'react-toastify';
 import Spinner23 from "../../components/spinners/Spinner23"
 import { createMeta } from "../../services/meta/meta.services";
+import { getAuthSessionReason } from "../../utils/authSession";
 
 
 const SERVICIOS = [
@@ -75,8 +76,8 @@ const FormMeta = () => {
       setIdPhoneNumber('')
       toast.success(resp.msg)
       // limpiar el formulario
-    }else if(resp.statusCode === 401){
-      alert('El token ha expirado debe iniciar sesión nuevamente')
+    }else if(getAuthSessionReason(resp)){
+      alert('La sesión no es válida. Debe iniciar sesión nuevamente')
       navigate('/auth/signin')
 
     }else if(resp.statusCode === 500){

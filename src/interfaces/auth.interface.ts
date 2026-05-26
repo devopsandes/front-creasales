@@ -16,6 +16,7 @@ export interface ErrorResponse {
     message:    string[];
     error:      string;
     statusCode: number;
+    code?: string;
 }
 
 export interface SuccessResponse {
@@ -81,5 +82,4 @@ export interface AuthState  {
     message: string;
     empresa: Empresa | null; 
 };
-
 

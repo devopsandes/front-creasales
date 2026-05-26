@@ -15,6 +15,7 @@ import { findChatById, getChatCounts, getChats, searchByConversacion } from "../
 import { perfMark, perfTrackNavigation } from "../../utils/perfTracker"
 import { isLightFeatureDisabled } from "../../config/runtimeConfig"
 import { getTagsByChatIds } from "../../services/tags/tags.services"
+import { getAuthSessionReason, getSocketAuthSessionReason } from "../../utils/authSession"
 
 const capitalizeText = (text: string | undefined | null): string => {
     if (!text || typeof text !== 'string') return '';
@@ -182,6 +183,12 @@ const ListaChats = () => {
     }
 
     const dispatch = useDispatch()
+    const openAuthSessionIfNeeded = useCallback((payload: any): boolean => {
+        const authReason = getAuthSessionReason(payload)
+        if (!authReason) return false
+        dispatch(openSessionExpired(authReason))
+        return true
+    }, [dispatch])
 
     const [tabCounts, setTabCounts] = useState<{
         total: number; archived: number; bots: number; unassigned: number; mine: number; others: number;
@@ -284,8 +291,7 @@ const ListaChats = () => {
         chatTagsControllersRef.current.push(controller)
         try {
             const resp = await getTagsByChatIds(token, missingIds, { signal: controller.signal, rateLimitMs: TAGS_BATCH_RATE_LIMIT_MS })
-            if ((resp as any)?.statusCode === 401) {
-                dispatch(openSessionExpired())
+            if (openAuthSessionIfNeeded(resp)) {
                 return
             }
             const code = (resp as any)?.statusCode ?? 200
@@ -323,7 +329,7 @@ const ListaChats = () => {
                 }, TAGS_BATCH_RATE_LIMIT_MS)
             }
         }
-    }, [tagsDisabled, token, dispatch, mergeChatTagsIntoStore])
+    }, [tagsDisabled, token, openAuthSessionIfNeeded, mergeChatTagsIntoStore])
 
     const scheduleChatTagsRefresh = useCallback((chatId: string) => {
         if (tagsDisabled || !chatId) return
@@ -529,7 +535,8 @@ const ListaChats = () => {
                 missingIds.map((chatId) => findChatById(token, chatId, { signal: controller.signal, rateLimitMs: 900 }).catch(() => null))
             )
             if (cancelled) return
-            if (responses.some((resp: any) => resp?.statusCode === 401)) { dispatch(openSessionExpired()); return }
+            const authResponse = responses.find((resp: any) => getAuthSessionReason(resp))
+            if (openAuthSessionIfNeeded(authResponse)) return
             const incoming = responses.map((resp: any) => resp?.chat).filter((chat: any) => chat && typeof chat.id === 'string') as ChatState[]
             if (incoming.length > 0) {
                 const merged = mergeChatsById(chatsRef.current, incoming)
@@ -665,8 +672,9 @@ const ListaChats = () => {
             if (!tagsDisabled && tagEventChatId) scheduleChatTagsRefresh(tagEventChatId)
         }
         const handleError = (error: any) => {
-            if (error.name === 'TokenExpiredError') { dispatch(openSessionExpired()); return }
-            dispatch(openSessionExpired()); return
+            const authReason = getSocketAuthSessionReason(error)
+            if (authReason === 'expired') { dispatch(openSessionExpired('expired')); return }
+            console.warn('Socket error sin expiración explícita de token:', error)
         }
         socket.on('nuevo-chat', handleNuevoChat)
         socket.on('chat.updated', handleChatUpdated)
