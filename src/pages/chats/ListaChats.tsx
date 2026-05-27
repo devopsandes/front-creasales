@@ -232,11 +232,11 @@ const ListaChats = () => {
 
     const mergeChatsById = (current: ChatState[], incoming: ChatState[]): ChatState[] => {
         const map = new Map<string, ChatState>()
-        ;(Array.isArray(current) ? current : []).forEach((c) => { if (c?.id) map.set(c.id, normalizeChat(c)) })
-        ;(Array.isArray(incoming) ? incoming : []).forEach((c) => {
-            if (!c?.id) return
-            map.set(c.id, mergeChatPayload(map.get(c.id), c))
-        })
+            ; (Array.isArray(current) ? current : []).forEach((c) => { if (c?.id) map.set(c.id, normalizeChat(c)) })
+            ; (Array.isArray(incoming) ? incoming : []).forEach((c) => {
+                if (!c?.id) return
+                map.set(c.id, mergeChatPayload(map.get(c.id), c))
+            })
         return Array.from(map.values()).sort(compareChatsForStore)
     }
 
@@ -424,7 +424,7 @@ const ListaChats = () => {
                     mine: Number(c.mine) || 0, others: Number(c.others) || 0,
                 })
             })
-            .catch(() => {})
+            .catch(() => { })
         return () => { if (countsControllerRef.current === controller) { countsControllerRef.current.abort(); countsControllerRef.current = null } }
     }, [token, debouncedSearch, selectedTag, tagsDisabled])
 
@@ -501,7 +501,7 @@ const ListaChats = () => {
                 setHasMore(resolveHasMore(resp, CHAT_PAGE_LIMIT))
                 dispatch(setChatListCacheMeta({ chatListQueryKey: nextKey, chatListLoadedQueryKey: nextKey, chatListHasMore: resolveHasMore(resp, CHAT_PAGE_LIMIT), chatListPage: 1, chatListUpdatedAt: Date.now(), chatListFilters: filters }))
             })
-            .catch(() => {})
+            .catch(() => { })
             .finally(() => {
                 if (requestSeq !== listRequestSeqRef.current) return
                 if (chatsLoadControllerRef.current === controller) chatsLoadControllerRef.current = null
@@ -543,7 +543,7 @@ const ListaChats = () => {
                 dispatch(setChats(merged.slice(0, 1000)))
             }
         }
-        hydrateMentionChats().catch(() => {})
+        hydrateMentionChats().catch(() => { })
         return () => { cancelled = true; controller.abort() }
     }, [styleBtn, mentionChatIds, token, dispatch, mentionsEnabled])
 
@@ -626,7 +626,7 @@ const ListaChats = () => {
         }
         const handleNuevoChat = async (_chat: ChatState) => {
             const t0 = performance.now()
-            try { audioRef.current.currentTime = 0; await audioRef.current.play() } catch {}
+            try { audioRef.current.currentTime = 0; await audioRef.current.play() } catch { }
             perfMark('socket.nuevo-chat.received', { chatId: _chat?.id ?? null })
             if (_chat?.id) {
                 scheduleChatPatch(_chat)
@@ -657,7 +657,7 @@ const ListaChats = () => {
                     const nextOperadorId = normalized?.operador?.id ?? null
                     const isNewAssignment = nextAssignment === 'assigned' && nextOperadorId && prevOperadorId !== nextOperadorId
                     if (isNewAssignment) {
-                        try { const audio = assignAudioRef.current; audio.currentTime = 0; audio.playbackRate = 0.9; audio.play().catch(() => {}) } catch {}
+                        try { const audio = assignAudioRef.current; audio.currentTime = 0; audio.playbackRate = 0.9; audio.play().catch(() => { }) } catch { }
                     }
                 }
                 scheduleChatPatch(normalized)
@@ -934,7 +934,7 @@ const ListaChats = () => {
                                         dispatch(setChatListCacheMeta({ chatListQueryKey: '', chatListLoadedQueryKey: '', chatListUpdatedAt: 0 }))
                                         navigate(`/dashboard/chats/${chat.id}?telefono=${telefono}&nombre=${nombre}&scrollToConversacion=${numero}`)
                                     }
-                                } catch {}
+                                } catch { }
                             }}
                             placeholder="Nro.Conversación..."
                             className="input-search-conversacion"
@@ -1104,10 +1104,7 @@ const ListaChats = () => {
                                 <div className="loader2"></div>
                                 <p className="chat-empty-text">Aguarda un momento mientras cargamos la información.</p>
                             </div>
-                        ) : activeChatId && (
-                            (styleBtn === 'menciones' && Array.isArray(menciones) && menciones.some((m: any) => (m?.chatId ?? m) === activeChatId)) ||
-                            (styleBtn !== 'menciones' && Array.isArray(filtrados) && filtrados.some((chat) => chat?.id === activeChatId))
-                        ) ? (
+                        ) : activeChatId ? (
                             <Outlet />
                         ) : (
                             <div className="chat-empty-prompt">
