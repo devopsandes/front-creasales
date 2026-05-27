@@ -1132,13 +1132,10 @@ const Chats = () => {
 
     useEffect(() => {
         if (!eventoId || loading) return
-        // Esperar a que el DOM esté listo
         const timer = window.setTimeout(() => {
             const el = document.getElementById(`event-${eventoId}`)
             if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                el.classList.add('mention-highlight')
-                window.setTimeout(() => el.classList.remove('mention-highlight'), 2000)
+                el.classList.add('mention-highlight-permanent')
             }
         }, 300)
         return () => window.clearTimeout(timer)
