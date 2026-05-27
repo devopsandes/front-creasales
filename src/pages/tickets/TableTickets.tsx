@@ -136,8 +136,8 @@ const TableTickets = () => {
                       {formatCreatedAt(ticket.createdAt.toString())}
                     </td>
                     <td className="tickets-table-cell col-span-1">
-                      <span className={`tickets-estado-badge ${estadoClase[ticket.estado.nombre.toLowerCase() as keyof typeof estadoClase] || 'tickets-estado-cerrado'}`}>
-                        {ticket.estado.nombre}
+                      <span className={`tickets-estado-badge ${estadoClase[(typeof ticket.estado === 'string' ? ticket.estado : ticket.estado.nombre).toLowerCase() as keyof typeof estadoClase] || 'tickets-estado-cerrado'}`}>
+                        {typeof ticket.estado === 'string' ? ticket.estado : ticket.estado.nombre}
                       </span>
                     </td>
                     <td className="tickets-table-cell tickets-table-cell-center col-span-1">
