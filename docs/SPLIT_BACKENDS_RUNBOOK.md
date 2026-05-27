@@ -34,7 +34,7 @@ El frontend consume respuestas rápidas como catálogo cacheado: una carga por s
 
 Contrato recomendado para escalar:
 - El backend administrativo debería servir `GET /quick-responses` o un futuro `GET /quick-responses/catalog` desde caché por empresa, con `updatedAt`, `version` o `etag`.
-- Al crear, editar o eliminar una respuesta rápida, el sistema debería emitir un evento liviano por socket: `quick-responses.updated` con `{ empresaId, version, updatedAt }`.
+- Al crear, editar o eliminar una respuesta rápida, el sistema debería emitir un evento liviano por socket: `quick-responses.updated` con `{ empresaId, version, updatedAt }`....
 - El backend conversacional no necesita consultar la tabla de respuestas rápidas; solo puede transportar ese evento de invalidación para que los operadores refresquen el catálogo con jitter.
 
 ## Como activar split
