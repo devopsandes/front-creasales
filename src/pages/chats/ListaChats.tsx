@@ -1104,19 +1104,24 @@ const ListaChats = () => {
                                 <div className="loader2"></div>
                                 <p className="chat-empty-text">Aguarda un momento mientras cargamos la información.</p>
                             </div>
-                        ) : activeChatId ? (
-                            <Outlet />
                         ) : (
-                            <div className="chat-empty-prompt">
-                                <p className="chat-empty-text">
-                                    {styleBtn === 'menciones'
-                                        ? menciones.length === 0 ? "No tenés menciones" : "Presiona en una mención para comenzar"
-                                        : Array.isArray(filtrados) && filtrados.length === 0
-                                            ? getEmptyStateMessageByTab(styleBtn)
-                                            : "Presiona en un chat para comenzar"
-                                    }
-                                </p>
-                            </div>
+                            <>
+                                <div style={{ display: activeChatId ? 'flex' : 'none', width: '100%', height: '100%' }}>
+                                    <Outlet />
+                                </div>
+                                {!activeChatId && (
+                                    <div className="chat-empty-prompt">
+                                        <p className="chat-empty-text">
+                                            {styleBtn === 'menciones'
+                                                ? menciones.length === 0 ? "No tenés menciones" : "Presiona en una mención para comenzar"
+                                                : Array.isArray(filtrados) && filtrados.length === 0
+                                                    ? getEmptyStateMessageByTab(styleBtn)
+                                                    : "Presiona en un chat para comenzar"
+                                            }
+                                        </p>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                     <div className="col-lista">
