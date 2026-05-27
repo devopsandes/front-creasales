@@ -822,14 +822,6 @@ const ListaChats = () => {
     const handleOpenChat = () => { handleClickLink() }
 
     useEffect(() => {
-        if (loading) return
-        if (!activeChatId) return
-        if (styleBtn === 'menciones') return // en menciones no redirigimos
-        const visible = Array.isArray(filtrados) && filtrados.some((chat) => chat?.id === activeChatId)
-        if (!visible) navigate('/dashboard/chats', { replace: true })
-    }, [loading, activeChatId, filtrados, styleBtn, navigate])
-
-    useEffect(() => {
         if (!styleBtn) return
         perfTrackNavigation('chat_tab', { tab: styleBtn })
     }, [styleBtn])
