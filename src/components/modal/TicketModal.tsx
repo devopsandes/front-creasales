@@ -200,8 +200,8 @@ const TicketModal = () => {
                                 )}
                                 <div className="ticket-detail-info-item">
                                     <span className="ticket-detail-info-label">Estado:</span>
-                                    <span className={`ticket-detail-info-value ticket-detail-status-${ticket?.estado.nombre.toLowerCase()}`}>
-                                        {ticket?.estado.nombre}
+                                    <span className={`ticket-detail-info-value ticket-detail-status-${(typeof ticket?.estado === 'string' ? ticket?.estado : ticket?.estado?.nombre)?.toLowerCase()}`}>
+                                        {typeof ticket?.estado === 'string' ? ticket?.estado : ticket?.estado?.nombre}
                                     </span>
                                 </div>
                                 <div className="ticket-detail-info-item">
