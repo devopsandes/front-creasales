@@ -1518,7 +1518,7 @@ const Chats = () => {
                                     <span>+{telefono}</span>
                                 </p>
                                 {conversacionNumero && (
-                                    <span className='chat-conversacion-id'>IdConversación: {conversacionNumero}</span>
+                                    <span className='chat-conversacion-id'>Nro.Conversación: {conversacionNumero}</span>
                                 )}
                                 <div className='header-chat-actions'>
                                     {canToggleBot && (

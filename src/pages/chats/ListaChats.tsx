@@ -944,7 +944,7 @@ const ListaChats = () => {
                                     }
                                 } catch {}
                             }}
-                            placeholder="IdConversación..."
+                            placeholder="Nro.Conversación..."
                             className="input-search-conversacion"
                         />
                     </div>
