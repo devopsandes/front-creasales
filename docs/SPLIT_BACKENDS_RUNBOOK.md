@@ -28,6 +28,15 @@ Conversacional (`convClient`):
 - `/chats/operators`
 - socket de chat/realtime
 
+## Respuestas rápidas
+
+El frontend consume respuestas rápidas como catálogo cacheado: una carga por sesión con caché en memoria/localStorage y filtrado local al escribir `/` en el chat. El CRUD sigue viviendo en el backend administrativo bajo `/quick-responses/*`.
+
+Contrato recomendado para escalar:
+- El backend administrativo debería servir `GET /quick-responses` o un futuro `GET /quick-responses/catalog` desde caché por empresa, con `updatedAt`, `version` o `etag`.
+- Al crear, editar o eliminar una respuesta rápida, el sistema debería emitir un evento liviano por socket: `quick-responses.updated` con `{ empresaId, version, updatedAt }`.
+- El backend conversacional no necesita consultar la tabla de respuestas rápidas; solo puede transportar ese evento de invalidación para que los operadores refresquen el catálogo con jitter.
+
 ## Como activar split
 
 1. Configurar:

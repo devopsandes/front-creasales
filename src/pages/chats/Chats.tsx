@@ -27,7 +27,6 @@ import { getMentionsUnreadCount, markMentionsRead } from '../../services/mention
 import { bumpMentionsRefreshNonce, clearBulkReadChatSelection, markChatReadLocal, markChatUnreadLocal, setMentionUnreadCount } from '../../app/slices/actionSlice'
 import SuccessModal from '../../components/modal/SuccessModal'
 import { QuickResponse } from '../../interfaces/quickResponses.interface'
-import { getQuickResponses } from '../../services/quickResponses/quickResponses.services'
 import { setChatReadState } from '../../services/chats/chats.services'
 import { jwtDecode } from "jwt-decode"
 import AddTagModal from '../../components/modal/AddTagModal'
@@ -38,6 +37,7 @@ import { getTimelineEventsSource, isLightFeatureDisabled } from '../../config/ru
 import { convClient } from '../../services/apiClient'
 import MentionModal from '../../components/modal/MentionModal'
 import { getAuthSessionReason, getSocketAuthSessionReason } from '../../utils/authSession'
+import { useQuickResponsesCatalog } from '../../hooks/useQuickResponsesCatalog'
 
 /** Normaliza GET /tags/chat/:chatId (admin); admite `tags` o `items` y aliases de campo. */
 const normalizeChatTagsFromApi = (resp: any): ChatTag[] => {
@@ -104,7 +104,6 @@ const Chats = () => {
     const [tagToRemove, setTagToRemove] = useState<ChatTag | null>(null)
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const mensajeInputRef = useRef<HTMLTextAreaElement | null>(null);
-    const [quickResponses, setQuickResponses] = useState<QuickResponse[]>([])
     const [qrOpen, setQrOpen] = useState(false)
     const [qrFiltered, setQrFiltered] = useState<QuickResponse[]>([])
     const [qrActiveIndex, setQrActiveIndex] = useState(0)
@@ -158,6 +157,11 @@ const Chats = () => {
         dispatch(openSessionExpired(authReason))
         return true
     }, [dispatch])
+    const { items: quickResponses } = useQuickResponsesCatalog({
+        enabled: !quickResponsesDisabled,
+        token,
+        onAuthExpired: openAuthSessionIfNeeded,
+    })
     const dataUser = useSelector((state: RootState) => state.action.dataUser)
     const mentionsMode = useSelector((state: RootState) => state.action.mentionsMode)
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
@@ -1227,20 +1231,10 @@ const Chats = () => {
 
     useEffect(() => {
         if (quickResponsesDisabled) {
-            setQuickResponses([])
             setQrOpen(false)
             setQrFiltered([])
-            return
         }
-        const run = async () => {
-            if (!token) return
-            const resp = await getQuickResponses(token, { page: 1, limit: 200 })
-            if (openAuthSessionIfNeeded(resp)) return
-            const list = Array.isArray((resp as any)?.items) ? (resp as any).items : []
-            setQuickResponses(list)
-        }
-        run().catch(() => { })
-    }, [token, quickResponsesDisabled])
+    }, [quickResponsesDisabled])
 
     useEffect(() => {
         const el = mensajeInputRef.current
