@@ -690,7 +690,9 @@ const Chats = () => {
     }
 
     const handleNotaPrivada = async () => {
-        if ((!mensaje || mensaje.trim().length === 0) && archivos.length === 0) {
+        const hasTexto = mensaje && mensaje.trim().length > 0
+        const hasImagen = archivos.length > 0 && archivos[0].type.startsWith('image/')
+        if (!hasTexto && !hasImagen) {
             setErrorModalMessage('Debe escribir una nota o pegar una imagen')
             setIsErrorModalOpen(true)
             return
@@ -1643,6 +1645,16 @@ const Chats = () => {
                                                             <span className='mensaje-nota-privada-text' style={{ display: 'block', marginTop: '4px', fontStyle: 'italic' }}>
                                                                 "{msj.payload.text}"
                                                             </span>
+                                                        )}
+                                                        {msj?.payload?.imageUrl && (
+                                                            <img
+                                                                src={msj.payload.imageUrl}
+                                                                alt="imagen mención"
+                                                                className="chat-media-img"
+                                                                style={{ maxWidth: '300px', borderRadius: '0.5rem', marginTop: '0.5rem', cursor: 'pointer' }}
+                                                                loading="lazy"
+                                                                onClick={() => setDocPreview({ url: msj.payload.imageUrl, name: 'Imagen mención' })}
+                                                            />
                                                         )}
                                                         {msj?.payload?.authorName && (
                                                             <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>
