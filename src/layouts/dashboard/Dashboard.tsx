@@ -1,21 +1,20 @@
-﻿import { useEffect, useRef, useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+﻿import { useEffect, useState } from "react";
+import { Outlet } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import DashSidebar from "../../components/sidebars/DashSidebar";
 import Topbar from "../../components/topbar/Topbar";
 import SessionExpiredModal from "../../components/modal/SessionExpiredModal";
-import { empresaXUser } from "../../services/empresas/empresa.services";
 import { usuariosXRole } from "../../services/auth/auth.services";
 import './dashboard.css'
 import { useDispatch, useSelector  } from "react-redux";
 import { connectSocket,  getSocket } from "../../app/slices/socketSlice";
-import { setEmpresa, setUser } from "../../app/slices/authSlice";
+import { setUser } from "../../app/slices/authSlice";
 import { openSessionExpired, closeSessionExpired } from "../../app/slices/actionSlice";
 import { RootState } from "../../app/store";
 import { setupAxiosInterceptors } from "../../utils/axiosInterceptor";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { useMentionsSync } from "../../hooks/useMentionsSync";
-import { getAuthSessionReason, getSocketAuthSessionReason } from "../../utils/authSession";
+import { getSocketAuthSessionReason } from "../../utils/authSession";
 
 
 
@@ -26,72 +25,32 @@ const Dashboard = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
   const sessionExpired = useSelector((state: RootState) => state.action.sessionExpired)
   const sessionExpiredReason = useSelector((state: RootState) => state.action.sessionExpiredReason)
-  const warnedMissingEmpresaRef = useRef(false)
   const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
   useMentionsSync()
   
-  // Configurar interceptores de axios para manejo de tokens
   useEffect(() => {
     setupAxiosInterceptors()
   }, [])
 
-  // Verificar periÃ³dicamente el estado del token
-  useTokenRefresh(2, 5) // Verifica cada 2 minutos, alerta 5 minutos antes de expirar
+  useTokenRefresh(2, 5)
 
   useEffect(() => {
     role = role ? localStorage.getItem('role') : null
-    //TODO: tengo que poner un toast cada vez que se haya asignado un chat a un operador
   },[])
 
-
-// revisar el siguiente useEffect, no se si es necesario
- /*  useEffect(()=>{
-
-    toast.success(`${mensaje} - PRUEBA` );
-  },[mensaje]) */
-
   useEffect(() => {
-          try {
-              dispatch(connectSocket())
-          } catch (error) {
-              console.error('Error conectando socket:', error);
-          }
-    },[dispatch])
-
-  const navigate = useNavigate()
+    try {
+      dispatch(connectSocket())
+    } catch (error) {
+      console.error('Error conectando socket:', error);
+    }
+  },[dispatch])
 
   useEffect(() => {
     const token = localStorage.getItem('token')
     const userId = localStorage.getItem('userId')
-    const currentRole = localStorage.getItem('role')
     
     if(token){
-      // Obtener empresa
-      empresaXUser(token)
-        .then(data => {
-          const authReason = getAuthSessionReason(data)
-          if(authReason){
-            localStorage.removeItem('token')
-            localStorage.removeItem('role')
-            localStorage.removeItem('userId')
-            return navigate('/auth/signin')
-          }
-          if(!data?.empresa){
-            // Para rol USER no mostramos este aviso (no puede completar empresa).
-            // En DEV/StrictMode el efecto puede correr 2 veces, lo hacemos idempotente.
-            if (currentRole !== 'USER' && !warnedMissingEmpresaRef.current) {
-              warnedMissingEmpresaRef.current = true
-              return toast.warn('llenar los datos de su empresa', { toastId: 'missing-empresa' })
-            }
-            return
-          }
-          dispatch(setEmpresa(data.empresa))
-        })
-        .catch(error => {
-          console.error('Error obteniendo empresa:', error);
-        })
-      
-      // Obtener usuario actual
       if(userId){
         usuariosXRole('', token)
           .then(data => {
@@ -114,36 +73,31 @@ const Dashboard = () => {
     }
   },[])
 
-   useEffect(()=>{
-          const socket = getSocket()
-          if(!socket) return
+  useEffect(()=>{
+    const socket = getSocket()
+    if(!socket) return
 
-          const handleOperadorAsignado = (payload: string) => {
-            toast.success(payload)
-          }
-         
-  
-          const handleError = (error: any) => {
-              const authReason = getSocketAuthSessionReason(error)
-              if (authReason === 'expired') {
-                  dispatch(openSessionExpired('expired'))
-                  return
-              }
-              console.warn('Socket error sin expiración explícita de token:', error)
-          }
-  
-      
-  
-          socket.on('error',handleError)
-          socket.on('operador-asignado',handleOperadorAsignado)
+    const handleOperadorAsignado = (payload: string) => {
+      toast.success(payload)
+    }
 
-  
-  
-          return () => {
-              socket!.off('error', handleError)
-              socket!.off('operador-asignado', handleOperadorAsignado)
-          }
-      },[socketConnected, dispatch]) 
+    const handleError = (error: any) => {
+      const authReason = getSocketAuthSessionReason(error)
+      if (authReason === 'expired') {
+        dispatch(openSessionExpired('expired'))
+        return
+      }
+      console.warn('Socket error sin expiración explícita de token:', error)
+    }
+
+    socket.on('error',handleError)
+    socket.on('operador-asignado',handleOperadorAsignado)
+
+    return () => {
+      socket!.off('error', handleError)
+      socket!.off('operador-asignado', handleOperadorAsignado)
+    }
+  },[socketConnected, dispatch]) 
   
   
   const handleSidebarClick = () => {
@@ -175,43 +129,9 @@ const Dashboard = () => {
           onClose={() => dispatch(closeSessionExpired())}
           reason={sessionExpiredReason}
         />
-        
-        {/* <button 
-          onClick={() => dispatch(openSessionExpired())}
-          style={{
-            position: 'fixed',
-            bottom: '20px',
-            right: '20px',
-            padding: '12px 24px',
-            background: '#ef4444',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontFamily: 'Poppins, sans-serif',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-            zIndex: 9998,
-            transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = '#dc2626'
-            e.currentTarget.style.transform = 'scale(1.05)'
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = '#ef4444'
-            e.currentTarget.style.transform = 'scale(1)'
-          }}
-        >
-          ðŸ§ª Probar Modal SesiÃ³n
-        </button> */}
       </section>
     </>
   )
 }
 
 export default Dashboard
-
-
-
