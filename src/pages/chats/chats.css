@@ -1482,3 +1482,37 @@
         background-color: transparent;
     }
 }
+
+.scroll-to-bottom-btn {
+    position: sticky;
+    bottom: 16px;
+    left: 100%;
+    transform: translateX(-150%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    color: #6b7280;
+    transition: background-color 0.2s, color 0.2s;
+    z-index: 10;
+}
+
+.scroll-to-bottom-btn--active {
+    background-color: #f97316;
+    color: white;
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
+}
+
+.scroll-to-bottom-count {
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 1px;
+}

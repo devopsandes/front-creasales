@@ -112,6 +112,8 @@ const Chats = () => {
     const [isMentionModalOpen, setIsMentionModalOpen] = useState(false)
     const [detailChatTags, setDetailChatTags] = useState<ChatTag[]>([])
     const [detailTagsFetched, setDetailTagsFetched] = useState(false)
+    const [showScrollBtn, setShowScrollBtn] = useState(false)
+    const [newMessagesCount, setNewMessagesCount] = useState(0)
 
     const isSendingRef = useRef(false)
     const lastSentMessageRef = useRef<string | null>(null)
@@ -531,6 +533,35 @@ const Chats = () => {
         })
     }
 
+    const isNearBottom = () => {
+        const container = mensajesContainerRef.current
+        if (!container) return true
+        return container.scrollHeight - container.scrollTop - container.clientHeight < 150
+    }
+
+    const scrollToBottom = () => {
+        if (mensajesContainerRef.current) {
+            mensajesContainerRef.current.scrollTop = mensajesContainerRef.current.scrollHeight
+        }
+        setShowScrollBtn(false)
+        setNewMessagesCount(0)
+    }
+
+    useEffect(() => {
+        const container = mensajesContainerRef.current
+        if (!container) return
+        const onScroll = () => {
+            if (isNearBottom()) {
+                setShowScrollBtn(false)
+                setNewMessagesCount(0)
+            } else {
+                setShowScrollBtn(true)
+            }
+        }
+        container.addEventListener('scroll', onScroll)
+        return () => container.removeEventListener('scroll', onScroll)
+    }, [id])
+
     const isBackendLightModeResponse = (resp: any): boolean => {
         return resp?.lightMode === true || resp?.coreLightMode === true || resp?.mode === 'light'
     }
@@ -851,6 +882,10 @@ const Chats = () => {
             perfMark('socket.new-message.received', { chatId: id, messageId: mensaje?.id ?? null })
             setCondChat(menos24hs(new Date(mensaje.createdAt)))
             setMensajes(prev => { const merged = mergeTimeline(prev, [item], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
+            if (!isNearBottom()) {
+                setShowScrollBtn(true)
+                setNewMessagesCount(prev => prev + 1)
+            }
             requestAnimationFrame(() => {
                 perfMark('ui.timeline.patched', {
                     source: 'new-message',
@@ -1721,6 +1756,19 @@ const Chats = () => {
                                             Como pasaron 24 horas del último mensaje recibido debes iniciar esta conversación con una plantilla, cuando te responda podrás conversar libremente.
                                         </p>
                                     </div>
+                                )}
+                                {showScrollBtn && (
+                                    <button
+                                        className={`scroll-to-bottom-btn ${newMessagesCount > 0 ? 'scroll-to-bottom-btn--active' : ''}`}
+                                        onClick={scrollToBottom}
+                                    >
+                                        {newMessagesCount > 0 && (
+                                            <span className='scroll-to-bottom-count'>{newMessagesCount}</span>
+                                        )}
+                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                            <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
                                 )}
                             </div>
 
