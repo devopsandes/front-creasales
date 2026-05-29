@@ -3,7 +3,6 @@ import { X, Trash2 } from 'lucide-react'
 import { deleteTag } from '../../services/tags/tags.services'
 import { Tag } from '../../interfaces/tags.interface'
 import TagResultModal from './TagResultModal'
-import { capitalizeWords } from '../../utils/functions'
 import './delete-tag-modal.css'
 import { getAuthSessionReason } from '../../utils/authSession'
 
@@ -128,10 +127,6 @@ const DeleteTagModal = ({ isOpen, onClose, tag, onSuccess }: DeleteTagModalProps
               <div className="delete-tag-modal-info-item">
                 <span className="delete-tag-modal-info-label">Nombre:</span>
                 <span className="delete-tag-modal-info-value">{tag.nombre.toUpperCase()}</span>
-              </div>
-              <div className="delete-tag-modal-info-item">
-                <span className="delete-tag-modal-info-label">Empresa:</span>
-                <span className="delete-tag-modal-info-value">{capitalizeWords(tag.empresa.nombre)}</span>
               </div>
             </div>
           )}

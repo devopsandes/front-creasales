@@ -25,9 +25,5 @@ export interface BulkChatTagsResponse {
 export interface Tag {
     id:      string;
     nombre:  string;
-    empresa: Empresa;
 }
 
-export interface Empresa {
-    nombre: string;
-}
