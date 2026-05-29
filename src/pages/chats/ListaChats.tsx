@@ -50,6 +50,7 @@ type CachedChatTags = {
 const ListaChats = () => {
     const { id: activeChatId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
+    const currentEventoId = searchParams.get('eventoId')
     const selectRef = useRef<HTMLSelectElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate()
@@ -73,7 +74,6 @@ const ListaChats = () => {
     const [menciones, setMenciones] = useState<any[]>([]) // Mention[]
     const [styleBtn, setStyleBtn] = useState<string>('otros')
     const [searchConversacion, setSearchConversacion] = useState<string>('')
-    const [activeMentionId, setActiveMentionId] = useState<string | null>(null)
 
     const [loading, setLoading] = useState<boolean>(true)
     const [page, setPage] = useState<number>(1)
@@ -1013,9 +1013,9 @@ const ListaChats = () => {
                                     return (
                                         <Link
                                             to={`/dashboard/chats/${chatId}?telefono=${telefono}&nombre=${chat.cliente?.nombre || ''}&eventoId=${mention?.eventoId ?? ''}`}
-                                            className={`item-lista text-left ${mentionId === activeMentionId ? 'active' : ''} ${isRead ? 'opacity-50' : ''}`}
+                                            className={`item-lista text-left ${mention?.eventoId != null && mention?.eventoId === currentEventoId ? 'active' : ''} ${isRead ? 'opacity-50' : ''}`}
                                             key={mentionId}
-                                            onClick={() => { handleOpenChat(); setActiveMentionId(mentionId) }}
+                                            onClick={() => { handleOpenChat() }}
                                         >
                                             <div className="chat-item-header">
                                                 <div className="chat-item-title">
