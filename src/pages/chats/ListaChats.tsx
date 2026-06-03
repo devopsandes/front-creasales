@@ -153,12 +153,47 @@ const ListaChats = () => {
         tags.forEach((tag: any) => {
             const tagId = tag?.id ?? tag?.tagId
             const nombre = tag?.nombre ?? tag?.name
-            if (tagId && nombre !== undefined && nombre !== null) {
-                const key = String(tagId)
-                if (!map.has(key)) map.set(key, { ...tag, id: key, nombre: String(nombre) })
+            if (nombre !== undefined && nombre !== null) {
+                const sid = tagId ? String(tagId) : String(nombre)
+                const key = tagId ? `id:${sid}` : `name:${String(nombre).trim().toLowerCase()}`
+                if (!map.has(key)) map.set(key, { ...tag, id: sid, nombre: String(nombre) })
             }
         })
         return Array.from(map.values())
+    }
+
+    const getTagEventType = (payload: any): string => {
+        return `${payload?.type ?? payload?.eventType ?? payload?.event ?? payload?.payload?.type ?? payload?.payload?.eventType ?? payload?.data?.type ?? payload?.data?.eventType ?? ''}`.trim()
+    }
+
+    const getTagEventChatId = (payload: any): string | null => {
+        const chatId = payload?.chatId ?? payload?.payload?.chatId ?? payload?.data?.chatId ?? payload?.chat?.id ?? payload?.payload?.chat?.id ?? payload?.data?.chat?.id
+        return chatId ? String(chatId) : null
+    }
+
+    const getTagsFromEventPayload = (payload: any): any[] | null => {
+        const candidates = [
+            payload?.tags,
+            payload?.payload?.tags,
+            payload?.data?.tags,
+            payload?.chat?.tags,
+            payload?.payload?.chat?.tags,
+            payload?.data?.chat?.tags,
+            payload?.items,
+            payload?.payload?.items,
+            payload?.data?.items,
+        ]
+        const raw = candidates.find(Array.isArray)
+        return Array.isArray(raw) ? dedupeTags(raw) : null
+    }
+
+    const getSingleTagFromEventPayload = (payload: any): any | null => {
+        const candidates = [payload?.tag, payload?.payload?.tag, payload?.data?.tag]
+        const tagObject = candidates.find((candidate) => candidate && typeof candidate === 'object')
+        if (tagObject) return dedupeTags([tagObject])[0] ?? null
+        const tagId = payload?.tagId ?? payload?.payload?.tagId ?? payload?.data?.tagId
+        const nombre = payload?.nombre ?? payload?.name ?? payload?.tagName ?? payload?.payload?.nombre ?? payload?.payload?.name ?? payload?.payload?.tagName ?? payload?.data?.nombre ?? payload?.data?.name ?? payload?.data?.tagName
+        return dedupeTags([{ id: tagId, nombre }])[0] ?? null
     }
 
     const getBulkItemChatId = (item: any): string => {
@@ -267,6 +302,55 @@ const ListaChats = () => {
         if (changed) dispatch(setChats(next.slice(0, MAX_CHAT_CACHE)))
         return changed
     }, [dispatch])
+
+    const replaceChatTagsFromAdmin = useCallback((chatId: string, tags: any[]): boolean => {
+        if (!chatId) return false
+        const normalizedTags = dedupeTags(tags)
+        chatTagsCacheRef.current.set(chatId, { tags: normalizedTags, fetchedAt: Date.now() })
+        return mergeChatTagsIntoStore([{ chatId, tags: normalizedTags }])
+    }, [mergeChatTagsIntoStore])
+
+    const applyGranularTagEvent = useCallback((chatId: string, payload: any, mode: 'assign' | 'unassign'): boolean => {
+        if (!chatId) return false
+        const eventTag = getSingleTagFromEventPayload(payload)
+        const tagId = eventTag?.id ?? payload?.tagId ?? payload?.payload?.tagId ?? payload?.data?.tagId
+        if (mode === 'assign' && !eventTag) return false
+        if (mode === 'unassign' && !tagId) return false
+
+        const currentTags =
+            adminTagsByChatIdRef.current[chatId]
+            ?? chatsRef.current.find((chat: any) => chat?.id === chatId)?.tags
+            ?? []
+        const nextTags = mode === 'assign'
+            ? dedupeTags([...currentTags, eventTag])
+            : dedupeTags(currentTags).filter((tag: any) => String(tag?.id) !== String(tagId))
+        replaceChatTagsFromAdmin(chatId, nextTags)
+        return true
+    }, [replaceChatTagsFromAdmin])
+
+    const applyTagsEventPayload = useCallback((payload: any): boolean => {
+        if (tagsDisabled) return false
+        const type = getTagEventType(payload)
+        const chatId = getTagEventChatId(payload)
+        if (!chatId) return false
+
+        if (type === 'TAGS_UPDATED' || type === 'TAGS_REPLACED') {
+            const eventTags = getTagsFromEventPayload(payload)
+            if (!eventTags) return false
+            replaceChatTagsFromAdmin(chatId, eventTags)
+            return true
+        }
+
+        if (type === 'TAG_ASSIGNED') {
+            return applyGranularTagEvent(chatId, payload, 'assign')
+        }
+
+        if (type === 'TAG_REMOVED' || type === 'TAG_UNASSIGNED') {
+            return applyGranularTagEvent(chatId, payload, 'unassign')
+        }
+
+        return false
+    }, [tagsDisabled, replaceChatTagsFromAdmin, applyGranularTagEvent])
 
     const hydrateChatTagsForIds = useCallback(async (ids: string[], options?: { force?: boolean }) => {
         if (tagsDisabled || !token) return
@@ -635,16 +719,11 @@ const ListaChats = () => {
             }
             scheduleCountsRefresh()
         }
-        const pickTagEventChatId = (payload: any): string | null => {
-            const type = payload?.type ?? payload?.eventType ?? payload?.payload?.type
-            if (type !== 'TAG_ASSIGNED' && type !== 'TAG_REMOVED' && type !== 'TAG_UNASSIGNED') return null
-            const chatId = payload?.chatId ?? payload?.payload?.chatId ?? payload?.data?.chatId ?? payload?.chat?.id
-            return chatId ? String(chatId) : null
-        }
         const handleChatUpdated = (payload: any) => {
             const t0 = performance.now()
-            const tagEventChatId = pickTagEventChatId(payload)
-            if (!tagsDisabled && tagEventChatId) {
+            const tagEventApplied = applyTagsEventPayload(payload)
+            const tagEventChatId = getTagEventChatId(payload)
+            if (!tagsDisabled && tagEventChatId && !tagEventApplied) {
                 scheduleChatTagsRefresh(tagEventChatId)
             }
             const chatFromPayload = pickChatFromPayload(payload)
@@ -669,9 +748,14 @@ const ListaChats = () => {
             scheduleCountsRefresh()
         }
         const handleTagEvent = (payload: any) => {
-            const tagEventChatId = pickTagEventChatId(payload)
-            if (!tagsDisabled && tagEventChatId) scheduleChatTagsRefresh(tagEventChatId)
+            const tagEventApplied = applyTagsEventPayload(payload)
+            const tagEventChatId = getTagEventChatId(payload)
+            if (!tagsDisabled && tagEventChatId && !tagEventApplied) scheduleChatTagsRefresh(tagEventChatId)
         }
+        const handleTagsUpdatedEvent = (payload: any) => handleTagEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAGS_UPDATED' })
+        const handleTagAssignedEvent = (payload: any) => handleTagEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAG_ASSIGNED' })
+        const handleTagUnassignedEvent = (payload: any) => handleTagEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAG_UNASSIGNED' })
+        const handleTagRemovedEvent = (payload: any) => handleTagEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAG_REMOVED' })
         const handleError = (error: any) => {
             const authReason = getSocketAuthSessionReason(error)
             if (authReason === 'expired') { dispatch(openSessionExpired('expired')); return }
@@ -680,18 +764,26 @@ const ListaChats = () => {
         socket.on('nuevo-chat', handleNuevoChat)
         socket.on('chat.updated', handleChatUpdated)
         socket.on('chat-event', handleTagEvent)
+        socket.on('TAGS_UPDATED', handleTagsUpdatedEvent)
+        socket.on('TAG_ASSIGNED', handleTagAssignedEvent)
+        socket.on('TAG_UNASSIGNED', handleTagUnassignedEvent)
+        socket.on('TAG_REMOVED', handleTagRemovedEvent)
         socket.on('error', handleError)
         if (typeof document !== 'undefined') document.addEventListener('visibilitychange', handleVisibilityChange)
         return () => {
             socket.off('nuevo-chat', handleNuevoChat)
             socket.off('chat.updated', handleChatUpdated)
             socket.off('chat-event', handleTagEvent)
+            socket.off('TAGS_UPDATED', handleTagsUpdatedEvent)
+            socket.off('TAG_ASSIGNED', handleTagAssignedEvent)
+            socket.off('TAG_UNASSIGNED', handleTagUnassignedEvent)
+            socket.off('TAG_REMOVED', handleTagRemovedEvent)
             socket.off('error', handleError)
             if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', handleVisibilityChange)
             if (pendingCountsRefreshRef.current) { window.clearTimeout(pendingCountsRefreshRef.current); pendingCountsRefreshRef.current = null }
             countsControllerRef.current?.abort()
         }
-    }, [socket, token, dispatch, debouncedSearch, selectedTag, tagsDisabled, hydrateChatTagsForIds, scheduleChatTagsRefresh])
+    }, [socket, token, dispatch, debouncedSearch, selectedTag, tagsDisabled, hydrateChatTagsForIds, scheduleChatTagsRefresh, applyTagsEventPayload])
 
     const handleChangeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedValue = e.target.value
@@ -854,6 +946,11 @@ const ListaChats = () => {
         if (Array.isArray(adminTags)) return adminTags
         return Array.isArray(chat.tags) ? chat.tags : []
     }
+
+    const activeChatForSidePanel = activeChatId
+        ? (Array.isArray(chatsFromRedux) ? chatsFromRedux : []).find((chat) => chat?.id === activeChatId)
+        : null
+    const activeChatTags = activeChatForSidePanel ? getRenderTags(activeChatForSidePanel) : []
 
     const handleOrdenarPorFecha = () => { setOrdenFecha(ordenFecha === 'desc' ? 'asc' : 'desc') }
     const handleExportarConversaciones = () => { console.log('Exportar conversaciones') }
@@ -1127,9 +1224,13 @@ const ListaChats = () => {
                                     <div className="w-full">
                                         <p className="chat-info-label">Etiquetas</p>
                                         <div className="chat-tags-panel">
-                                            <p className="chat-tag">ac <span className="chat-tag-close">×</span></p>
-                                            <p className="chat-tag">black <span className="chat-tag-close">×</span></p>
-                                            <p className="chat-tag">deuda <span className="chat-tag-close">×</span></p>
+                                            {activeChatTags.length > 0 ? (
+                                                activeChatTags.map((tag: any) => (
+                                                    <p key={tag.id} className="chat-tag">{tag.nombre}</p>
+                                                ))
+                                            ) : (
+                                                <span className="chat-info-empty">Sin etiquetas</span>
+                                            )}
                                         </div>
                                     </div>
                                 )}

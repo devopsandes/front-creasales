@@ -47,10 +47,11 @@ const normalizeChatTagsFromApi = (resp: any): ChatTag[] => {
     for (const t of raw) {
         const tid = t?.id ?? t?.tagId
         const nombre = t?.nombre ?? t?.name
-        if (!tid || nombre === undefined || nombre === null) continue
-        const sid = String(tid)
-        if (seen.has(sid)) continue
-        seen.add(sid)
+        if (nombre === undefined || nombre === null) continue
+        const sid = tid ? String(tid) : String(nombre)
+        const key = tid ? `id:${sid}` : `name:${String(nombre).trim().toLowerCase()}`
+        if (seen.has(key)) continue
+        seen.add(key)
         mapped.push({
             id: sid,
             nombre: String(nombre),
@@ -65,10 +66,12 @@ const dedupeTagsById = (tags: any): any[] => {
     if (!Array.isArray(tags)) return []
     const map = new Map<string, any>()
     tags.forEach((tag: any) => {
-        if (tag?.id) {
-            const key = String(tag.id)
-            if (!map.has(key)) map.set(key, tag)
-        }
+        const tagId = tag?.id ?? tag?.tagId
+        const nombre = tag?.nombre ?? tag?.name
+        if (nombre === undefined || nombre === null) return
+        const sid = tagId ? String(tagId) : String(nombre)
+        const key = tagId ? `id:${sid}` : `name:${String(nombre).trim().toLowerCase()}`
+        if (!map.has(key)) map.set(key, { ...tag, id: sid, nombre: String(nombre) })
     })
     return Array.from(map.values())
 }
@@ -640,6 +643,80 @@ const Chats = () => {
         dispatch(setChats(next))
     }
 
+    const getTagEventType = (payload: any): string => {
+        return `${payload?.type ?? payload?.eventType ?? payload?.event ?? payload?.payload?.type ?? payload?.payload?.eventType ?? payload?.data?.type ?? payload?.data?.eventType ?? ''}`.trim()
+    }
+
+    const getTagEventChatId = (payload: any): string | null => {
+        const chatId = payload?.chatId ?? payload?.payload?.chatId ?? payload?.data?.chatId ?? payload?.chat?.id ?? payload?.payload?.chat?.id ?? payload?.data?.chat?.id
+        return chatId ? String(chatId) : null
+    }
+
+    const getTagsFromEventPayload = (payload: any): ChatTag[] | null => {
+        const candidates = [
+            payload?.tags,
+            payload?.payload?.tags,
+            payload?.data?.tags,
+            payload?.chat?.tags,
+            payload?.payload?.chat?.tags,
+            payload?.data?.chat?.tags,
+            payload?.items,
+            payload?.payload?.items,
+            payload?.data?.items,
+        ]
+        const raw = candidates.find(Array.isArray)
+        return Array.isArray(raw) ? dedupeTagsById(raw) as ChatTag[] : null
+    }
+
+    const getSingleTagFromEventPayload = (payload: any): ChatTag | null => {
+        const candidates = [payload?.tag, payload?.payload?.tag, payload?.data?.tag]
+        const tagObject = candidates.find((candidate) => candidate && typeof candidate === 'object')
+        if (tagObject) return (dedupeTagsById([tagObject])[0] as ChatTag) ?? null
+        const tagId = payload?.tagId ?? payload?.payload?.tagId ?? payload?.data?.tagId
+        const nombre = payload?.nombre ?? payload?.name ?? payload?.tagName ?? payload?.payload?.nombre ?? payload?.payload?.name ?? payload?.payload?.tagName ?? payload?.data?.nombre ?? payload?.data?.name ?? payload?.data?.tagName
+        return (dedupeTagsById([{ id: tagId, nombre }])[0] as ChatTag) ?? null
+    }
+
+    const replaceCurrentChatTags = useCallback((tags: ChatTag[]) => {
+        if (!id) return
+        const normalized = dedupeTagsById(tags) as ChatTag[]
+        setDetailChatTags(normalized)
+        setDetailTagsFetched(true)
+        patchCurrentChatInStore({ id, tags: normalized })
+    }, [id])
+
+    const applyCurrentChatTagsEvent = useCallback((payload: any, fallbackChatId?: string): boolean => {
+        if (tagsDisabled || !id) return false
+        const chatId = getTagEventChatId(payload) ?? fallbackChatId
+        if (chatId !== id) return false
+        const type = getTagEventType(payload)
+
+        if (type === 'TAGS_UPDATED' || type === 'TAGS_REPLACED') {
+            const eventTags = getTagsFromEventPayload(payload)
+            if (!eventTags) return false
+            replaceCurrentChatTags(eventTags)
+            return true
+        }
+
+        if (type === 'TAG_ASSIGNED') {
+            const eventTag = getSingleTagFromEventPayload(payload)
+            if (!eventTag) return false
+            const currentTags = detailTagsFetched ? detailChatTags : (currentChat?.tags ?? [])
+            replaceCurrentChatTags(dedupeTagsById([...currentTags, eventTag]) as ChatTag[])
+            return true
+        }
+
+        if (type === 'TAG_REMOVED' || type === 'TAG_UNASSIGNED') {
+            const tagId = payload?.tagId ?? payload?.payload?.tagId ?? payload?.data?.tagId ?? payload?.tag?.id ?? payload?.payload?.tag?.id ?? payload?.data?.tag?.id
+            if (!tagId) return false
+            const currentTags = detailTagsFetched ? detailChatTags : (currentChat?.tags ?? [])
+            replaceCurrentChatTags((dedupeTagsById(currentTags) as ChatTag[]).filter((tag) => String(tag.id) !== String(tagId)))
+            return true
+        }
+
+        return false
+    }, [tagsDisabled, id, detailTagsFetched, detailChatTags, currentChat?.tags, replaceCurrentChatTags])
+
     const fetchChatTagsFromAdmin = useCallback(async () => {
         if (tagsDisabled || !id || !token) return
         const chatId = id
@@ -921,17 +998,25 @@ const Chats = () => {
                 setConversacionNumero((normalized as any).payload.numeroConversacion)
             }
             const evtType = (normalized as any)?.type
-            if (!tagsDisabled && (evtType === 'TAG_ASSIGNED' || evtType === 'TAG_REMOVED' || evtType === 'TAG_UNASSIGNED')) {
+            if (!tagsDisabled && (evtType === 'TAGS_UPDATED' || evtType === 'TAGS_REPLACED' || evtType === 'TAG_ASSIGNED' || evtType === 'TAG_REMOVED' || evtType === 'TAG_UNASSIGNED')) {
+                const applied = applyCurrentChatTagsEvent(normalized, activeChatId)
+                if (applied) return
                 scheduleRefreshChatTagsFromAdmin()
             }
         }
         const handleChatUpdated = (payload: any) => {
 
             const t0 = performance.now()
+            const appliedTagsEvent = applyCurrentChatTagsEvent(payload)
             const incoming = payload?.chat && typeof payload.chat === 'object'
                 ? payload.chat
                 : (payload && typeof payload === 'object' ? payload : null)
-            if (!incoming?.id || incoming.id !== id) return
+            if (!incoming?.id || incoming.id !== id) {
+                if (appliedTagsEvent) return
+                const tagEventChatId = getTagEventChatId(payload)
+                if (!tagsDisabled && tagEventChatId === id) scheduleRefreshChatTagsFromAdmin()
+                return
+            }
             if (debugTimeline) console.log("[socket] chat.updated", incoming)
             perfMark('socket.chat.updated.received', { chatId: id })
             const current = chatsRef.current.find((c: any) => c?.id === id)
@@ -946,7 +1031,7 @@ const Chats = () => {
             }
             const next = chatsRef.current.map((c: any) => (c?.id === id ? patched : c))
             dispatch(setChats(next))
-            if (!tagsDisabled) {
+            if (!tagsDisabled && !appliedTagsEvent) {
                 scheduleRefreshChatTagsFromAdmin()
             }
             requestAnimationFrame(() => {
@@ -961,6 +1046,15 @@ const Chats = () => {
             const authReason = getSocketAuthSessionReason(error)
             if (authReason === 'expired') { dispatch(openSessionExpired('expired')); return }
         }
+        const handleTagsEvent = (payload: any) => {
+            const applied = applyCurrentChatTagsEvent(payload)
+            const tagEventChatId = getTagEventChatId(payload)
+            if (!tagsDisabled && tagEventChatId === id && !applied) scheduleRefreshChatTagsFromAdmin()
+        }
+        const handleTagsUpdatedEvent = (payload: any) => handleTagsEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAGS_UPDATED' })
+        const handleTagAssignedEvent = (payload: any) => handleTagsEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAG_ASSIGNED' })
+        const handleTagUnassignedEvent = (payload: any) => handleTagsEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAG_UNASSIGNED' })
+        const handleTagRemovedEvent = (payload: any) => handleTagsEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAG_REMOVED' })
         debugSocketLog('socket.subscription.attach', {
             chatEventName,
             messageEventName,
@@ -974,6 +1068,10 @@ const Chats = () => {
         socket.on(messageEventName, handleNewMessage)
         socket.on(chatEventName, handleChatEvent)
         socket.on("chat.updated", handleChatUpdated)
+        socket.on('TAGS_UPDATED', handleTagsUpdatedEvent)
+        socket.on('TAG_ASSIGNED', handleTagAssignedEvent)
+        socket.on('TAG_UNASSIGNED', handleTagUnassignedEvent)
+        socket.on('TAG_REMOVED', handleTagRemovedEvent)
         socket.on('error', handleError)
         emitJoinChat('effect_mount')
         return () => {
@@ -990,9 +1088,13 @@ const Chats = () => {
             socket.off(messageEventName, handleNewMessage)
             socket.off(chatEventName, handleChatEvent)
             socket.off("chat.updated", handleChatUpdated)
+            socket.off('TAGS_UPDATED', handleTagsUpdatedEvent)
+            socket.off('TAG_ASSIGNED', handleTagAssignedEvent)
+            socket.off('TAG_UNASSIGNED', handleTagUnassignedEvent)
+            socket.off('TAG_REMOVED', handleTagRemovedEvent)
             socket.off('error', handleError)
         }
-    }, [id, dispatch, debugTimeline, socketConnected, tagsDisabled, scheduleRefreshChatTagsFromAdmin])
+    }, [id, dispatch, debugTimeline, socketConnected, tagsDisabled, scheduleRefreshChatTagsFromAdmin, applyCurrentChatTagsEvent])
 
     useEffect(() => {
         const inicio = async () => {
