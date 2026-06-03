@@ -62,7 +62,7 @@ const ListaChats = () => {
     const MAX_CHAT_CACHE = 1000
     const TAGS_BATCH_LIMIT = 50
     const TAGS_CACHE_TTL_MS = 90_000
-    const TAGS_EVENT_DEBOUNCE_MS = 500
+    const TAGS_EVENT_DEBOUNCE_MS = 1_500
     const TAGS_BATCH_RATE_LIMIT_MS = 900
 
     const [chats1, setChats1] = useState<ChatState[]>([])
@@ -715,6 +715,7 @@ const ListaChats = () => {
             perfMark('socket.nuevo-chat.received', { chatId: _chat?.id ?? null })
             if (_chat?.id) {
                 scheduleChatPatch(_chat)
+                scheduleChatTagsRefresh(_chat.id)
                 requestAnimationFrame(() => { perfMark('ui.chatlist.patched', { source: 'nuevo-chat', chatId: _chat.id, latencyMs: Math.round(performance.now() - t0) }) })
             }
             scheduleCountsRefresh()
@@ -729,6 +730,7 @@ const ListaChats = () => {
             const chatFromPayload = pickChatFromPayload(payload)
             if (chatFromPayload?.id) {
                 perfMark('socket.chat.updated.received', { chatId: chatFromPayload.id })
+                if (!tagsDisabled && !tagEventApplied) scheduleChatTagsRefresh(chatFromPayload.id)
                 const existing = chatsRef.current.find((c) => c.id === chatFromPayload.id)
                 const normalized = mergeChatPayload(existing, chatFromPayload)
                 if (existing && normalized) {

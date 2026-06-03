@@ -745,7 +745,7 @@ const Chats = () => {
         }
     }, [tagsDisabled, id, token, openAuthSessionIfNeeded])
 
-    const scheduleRefreshChatTagsFromAdmin = useCallback(() => {
+    const scheduleRefreshChatTagsFromAdmin = useCallback((delayMs = 1_500) => {
         if (tagsDisabled || !id || !token) return
         if (pendingChatTagsRefreshRef.current) {
             window.clearTimeout(pendingChatTagsRefreshRef.current)
@@ -754,7 +754,7 @@ const Chats = () => {
         pendingChatTagsRefreshRef.current = window.setTimeout(() => {
             pendingChatTagsRefreshRef.current = null
             fetchChatTagsFromAdmin()
-        }, 450)
+        }, delayMs)
     }, [tagsDisabled, id, token, fetchChatTagsFromAdmin])
 
     useEffect(() => {
@@ -959,6 +959,7 @@ const Chats = () => {
             perfMark('socket.new-message.received', { chatId: id, messageId: mensaje?.id ?? null })
             setCondChat(menos24hs(new Date(mensaje.createdAt)))
             setMensajes(prev => { const merged = mergeTimeline(prev, [item], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
+            scheduleRefreshChatTagsFromAdmin()
             if (!isNearBottom()) {
                 setShowScrollBtn(true)
                 setNewMessagesCount(prev => prev + 1)
