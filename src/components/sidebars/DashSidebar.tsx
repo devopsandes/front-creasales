@@ -1,6 +1,7 @@
 import { 
   Settings, 
-  Bot, 
+  Bot,
+  BotMessageSquare,
   Building2, 
   MessageCircle, 
   TicketCheck, 
@@ -64,6 +65,7 @@ const DashSidebar = ({ role }: Props) => {
             <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta"/>
             <DashItem icon={UsersRound} path='/dashboard/usuarios' titulo="Usuarios"/>
             <DashItem icon={Bot} path='/dashboard/bot' titulo="BOT/IA"/>
+            <DashItem icon={BotMessageSquare} path='/dashboard/pixi' titulo="Config. Pixi"/>
             <DashItem icon={ListChecks} path='/dashboard/estados' titulo="Estados"/>
             <DashItem icon={Boxes} path='/dashboard/modulos' titulo="Modulos"/>
             <DashItem icon={Grid3x3} path='/dashboard/categorias' titulo="Categorias"/>
