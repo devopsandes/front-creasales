@@ -717,6 +717,11 @@ const Chats = () => {
         return false
     }, [tagsDisabled, id, detailTagsFetched, detailChatTags, currentChat?.tags, replaceCurrentChatTags])
 
+    const isGranularTagEvent = (payload: any): boolean => {
+        const type = getTagEventType(payload)
+        return type === 'TAG_ASSIGNED' || type === 'TAG_REMOVED' || type === 'TAG_UNASSIGNED'
+    }
+
     const fetchChatTagsFromAdmin = useCallback(async () => {
         if (tagsDisabled || !id || !token) return
         const chatId = id
@@ -1001,7 +1006,7 @@ const Chats = () => {
             const evtType = (normalized as any)?.type
             if (!tagsDisabled && (evtType === 'TAGS_UPDATED' || evtType === 'TAGS_REPLACED' || evtType === 'TAG_ASSIGNED' || evtType === 'TAG_REMOVED' || evtType === 'TAG_UNASSIGNED')) {
                 const applied = applyCurrentChatTagsEvent(normalized, activeChatId)
-                if (applied) return
+                if (applied && !isGranularTagEvent(normalized)) return
                 scheduleRefreshChatTagsFromAdmin()
             }
         }
@@ -1009,11 +1014,12 @@ const Chats = () => {
 
             const t0 = performance.now()
             const appliedTagsEvent = applyCurrentChatTagsEvent(payload)
+            const shouldReconcileGranularTags = isGranularTagEvent(payload)
             const incoming = payload?.chat && typeof payload.chat === 'object'
                 ? payload.chat
                 : (payload && typeof payload === 'object' ? payload : null)
             if (!incoming?.id || incoming.id !== id) {
-                if (appliedTagsEvent) return
+                if (appliedTagsEvent && !shouldReconcileGranularTags) return
                 const tagEventChatId = getTagEventChatId(payload)
                 if (!tagsDisabled && tagEventChatId === id) scheduleRefreshChatTagsFromAdmin()
                 return
@@ -1032,7 +1038,7 @@ const Chats = () => {
             }
             const next = chatsRef.current.map((c: any) => (c?.id === id ? patched : c))
             dispatch(setChats(next))
-            if (!tagsDisabled && !appliedTagsEvent) {
+            if (!tagsDisabled && (!appliedTagsEvent || shouldReconcileGranularTags)) {
                 scheduleRefreshChatTagsFromAdmin()
             }
             requestAnimationFrame(() => {
@@ -1050,7 +1056,7 @@ const Chats = () => {
         const handleTagsEvent = (payload: any) => {
             const applied = applyCurrentChatTagsEvent(payload)
             const tagEventChatId = getTagEventChatId(payload)
-            if (!tagsDisabled && tagEventChatId === id && !applied) scheduleRefreshChatTagsFromAdmin()
+            if (!tagsDisabled && tagEventChatId === id && (!applied || isGranularTagEvent(payload))) scheduleRefreshChatTagsFromAdmin()
         }
         const handleTagsUpdatedEvent = (payload: any) => handleTagsEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAGS_UPDATED' })
         const handleTagAssignedEvent = (payload: any) => handleTagsEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAG_ASSIGNED' })

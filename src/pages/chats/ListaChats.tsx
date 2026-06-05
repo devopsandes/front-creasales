@@ -352,6 +352,11 @@ const ListaChats = () => {
         return false
     }, [tagsDisabled, replaceChatTagsFromAdmin, applyGranularTagEvent])
 
+    const isGranularTagEvent = (payload: any): boolean => {
+        const type = getTagEventType(payload)
+        return type === 'TAG_ASSIGNED' || type === 'TAG_REMOVED' || type === 'TAG_UNASSIGNED'
+    }
+
     const hydrateChatTagsForIds = useCallback(async (ids: string[], options?: { force?: boolean }) => {
         if (tagsDisabled || !token) return
         if (typeof document !== 'undefined' && document.hidden && !options?.force) return
@@ -724,7 +729,7 @@ const ListaChats = () => {
             const t0 = performance.now()
             const tagEventApplied = applyTagsEventPayload(payload)
             const tagEventChatId = getTagEventChatId(payload)
-            if (!tagsDisabled && tagEventChatId && !tagEventApplied) {
+            if (!tagsDisabled && tagEventChatId && (!tagEventApplied || isGranularTagEvent(payload))) {
                 scheduleChatTagsRefresh(tagEventChatId)
             }
             const chatFromPayload = pickChatFromPayload(payload)
@@ -752,7 +757,7 @@ const ListaChats = () => {
         const handleTagEvent = (payload: any) => {
             const tagEventApplied = applyTagsEventPayload(payload)
             const tagEventChatId = getTagEventChatId(payload)
-            if (!tagsDisabled && tagEventChatId && !tagEventApplied) scheduleChatTagsRefresh(tagEventChatId)
+            if (!tagsDisabled && tagEventChatId && (!tagEventApplied || isGranularTagEvent(payload))) scheduleChatTagsRefresh(tagEventChatId)
         }
         const handleTagsUpdatedEvent = (payload: any) => handleTagEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAGS_UPDATED' })
         const handleTagAssignedEvent = (payload: any) => handleTagEvent({ ...(payload || {}), type: getTagEventType(payload) || 'TAG_ASSIGNED' })
