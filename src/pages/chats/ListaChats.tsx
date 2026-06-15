@@ -14,7 +14,7 @@ import { getSocket } from "../../app/slices/socketSlice"
 import { findChatById, getChatCounts, getChats, searchByConversacion } from "../../services/chats/chats.services"
 import { perfMark, perfTrackNavigation } from "../../utils/perfTracker"
 import { isLightFeatureDisabled } from "../../config/runtimeConfig"
-import { getTagsByChatIds } from "../../services/tags/tags.services"
+import { getTags, getTagsByChatIds } from "../../services/tags/tags.services"
 import { getAuthSessionReason, getSocketAuthSessionReason } from "../../utils/authSession"
 
 const capitalizeText = (text: string | undefined | null): string => {
@@ -44,6 +44,19 @@ const getEmptyStateMessageByTab = (tab: string): string => {
 
 const canUseOperatorFilter = (tab: string): boolean => {
     return tab === 'otros' || tab === 'archi' || tab === 'menciones'
+}
+
+type TagOption = { id: string; nombre: string }
+
+const mergeTagOptions = (current: TagOption[], incoming: TagOption[]): TagOption[] => {
+    const map = new Map<string, TagOption>()
+    current.forEach((tag) => {
+        if (tag?.id) map.set(String(tag.id), { id: String(tag.id), nombre: String(tag.nombre ?? '') })
+    })
+    incoming.forEach((tag) => {
+        if (tag?.id) map.set(String(tag.id), { id: String(tag.id), nombre: String(tag.nombre ?? '') })
+    })
+    return Array.from(map.values()).filter((tag) => tag.nombre.trim().length > 0)
 }
 
 type CachedChatTags = {
@@ -88,7 +101,7 @@ const ListaChats = () => {
     const [ordenFecha, setOrdenFecha] = useState<'desc' | 'asc'>('desc')
     const [showFilterSelect, setShowFilterSelect] = useState<boolean>(false)
     const [selectedTag, setSelectedTag] = useState<string>('')
-    const [allTags, setAllTags] = useState<{ id: string; nombre: string }[]>([])
+    const [allTags, setAllTags] = useState<TagOption[]>([])
     const [searchChat, setSearchChat] = useState<string>('')
     const [debouncedSearch, setDebouncedSearch] = useState<string>('')
     const [selectedOperator, setSelectedOperator] = useState<string>('')
@@ -230,6 +243,21 @@ const ListaChats = () => {
         dispatch(openSessionExpired(authReason))
         return true
     }, [dispatch])
+
+    useEffect(() => {
+        if (tagsDisabled || !token) return
+        let cancelled = false
+        getTags(token)
+            .then((resp: any) => {
+                if (cancelled) return
+                if (openAuthSessionIfNeeded(resp)) return
+                const tags = dedupeTags(Array.isArray(resp?.tags) ? resp.tags : [])
+                    .map((tag: any) => ({ id: String(tag.id), nombre: String(tag.nombre) }))
+                setAllTags((prev) => mergeTagOptions(prev, tags))
+            })
+            .catch(() => { })
+        return () => { cancelled = true }
+    }, [tagsDisabled, token, openAuthSessionIfNeeded])
 
     const [tabCounts, setTabCounts] = useState<{
         total: number; archived: number; bots: number; unassigned: number; mine: number; others: number;
@@ -463,6 +491,28 @@ const ListaChats = () => {
         return items.length >= limit
     }
 
+    const hydrateItemsWithTags = async (items: ChatState[], filters?: any): Promise<ChatState[]> => {
+        if (tagsDisabled || !filters?.tagId || items.length === 0) return items
+        const chatIds = items.map((chat) => chat?.id).filter(Boolean)
+        if (chatIds.length === 0) return items
+        try {
+            const resp = await getTagsByChatIds(token, chatIds, { rateLimitMs: TAGS_BATCH_RATE_LIMIT_MS })
+            const rawItems = Array.isArray((resp as any)?.items) ? (resp as any).items : []
+            const tagsByChatId = new Map<string, any[]>()
+            rawItems.forEach((item: any) => {
+                const chatId = getBulkItemChatId(item)
+                if (chatId) tagsByChatId.set(chatId, dedupeTags(item?.tags))
+            })
+            if (tagsByChatId.size === 0) return items
+            return items.map((chat) => {
+                const tags = tagsByChatId.get(chat.id)
+                return tags ? { ...chat, tags } : chat
+            })
+        } catch {
+            return items
+        }
+    }
+
     const normalizeFilterValue = (value: string) => `${value ?? ""}`.trim()
 
     const buildChatQueryFilters = () => {
@@ -600,9 +650,11 @@ const ListaChats = () => {
         chatsLoadControllerRef.current = controller
         const requestSeq = ++listRequestSeqRef.current
         getChats(token, "1", `${CHAT_PAGE_LIMIT}`, filters, { signal: controller.signal, rateLimitMs: 1200 })
-            .then((resp: any) => {
+            .then(async (resp: any) => {
                 if (requestSeq !== listRequestSeqRef.current) return
-                const items: ChatState[] = Array.isArray(resp?.chats) ? resp.chats : []
+                const rawItems: ChatState[] = Array.isArray(resp?.chats) ? resp.chats : []
+                const items = await hydrateItemsWithTags(rawItems, filters)
+                if (requestSeq !== listRequestSeqRef.current) return
                 const merged = cachedOk ? mergeChatsById(chatsRef.current, items) : items
                 const nextList = Array.isArray(merged) ? merged.slice(0, MAX_CHAT_CACHE) : merged
                 dispatch(setChats(nextList))
@@ -674,7 +726,8 @@ const ListaChats = () => {
         try {
             const filters = activeFiltersRef.current || {}
             const resp = await getChats(token, `${nextPage}`, `${CHAT_PAGE_LIMIT}`, filters, { signal: controller.signal, rateLimitMs: 1200 })
-            const incoming: ChatState[] = Array.isArray((resp as any)?.chats) ? (resp as any).chats : []
+            const rawIncoming: ChatState[] = Array.isArray((resp as any)?.chats) ? (resp as any).chats : []
+            const incoming = await hydrateItemsWithTags(rawIncoming, filters)
             if (incoming.length === 0) { setHasMore(false); return }
             const merged = mergeChatsById(chatsFromRedux, incoming)
             dispatch(setChats(merged.slice(0, MAX_CHAT_CACHE)))
@@ -826,8 +879,22 @@ const ListaChats = () => {
         aplicarFiltros(selectRef.current?.value || '', tagValue, undefined, searchChat)
     }
 
+    const getChatFilterTags = (chat: ChatState): any[] => {
+        const adminTags = adminTagsByChatId[chat.id]
+        const chatTags = Array.isArray(chat.tags) ? chat.tags : []
+        return dedupeTags([...(Array.isArray(adminTags) ? adminTags : []), ...chatTags])
+    }
+
+    const chatMatchesSelectedTag = (chat: ChatState, tagId: string): boolean => {
+        if (!tagId) return true
+        return getChatFilterTags(chat).some((tag: any) => String(tag?.id) === String(tagId))
+    }
+
     const aplicarFiltros = (_operadorValue: string, _tagValue: string, chatsBase?: ChatState[], _searchValue?: string) => {
-        setFiltrados(chatsBase || chats1)
+        const tagValue = tagsDisabled ? '' : normalizeFilterValue(_tagValue)
+        let next = chatsBase || chats1
+        if (tagValue) next = next.filter((chat) => chatMatchesSelectedTag(chat, tagValue))
+        setFiltrados(next)
     }
 
     useEffect(() => {
@@ -842,7 +909,8 @@ const ListaChats = () => {
     useEffect(() => {
         if (chatsFromRedux.length === 0) {
             setArchivadas([]); setBots([]); setAsignadas([]); setAsignadasOtros([])
-            setSinAsignar([]); setChats1([]); setAllTags([]); setFiltrados([])
+            setSinAsignar([]); setChats1([]); setFiltrados([])
+            if (tagsDisabled) setAllTags([])
             return
         }
         if (chatsFromRedux.length > 0) {
@@ -879,7 +947,7 @@ const ListaChats = () => {
                         tags.forEach((tag: any) => { if (tag?.id && !tagsMap.has(tag.id)) tagsMap.set(tag.id, { id: tag.id, nombre: tag.nombre }) })
                     }
                 })
-                setAllTags(Array.from(tagsMap.values()))
+                setAllTags((prev) => mergeTagOptions(prev, Array.from(tagsMap.values())))
             }
 
             let chatsBase: ChatState[] = chatsFromRedux
