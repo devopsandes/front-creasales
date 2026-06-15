@@ -42,6 +42,10 @@ const getEmptyStateMessageByTab = (tab: string): string => {
     return "No tienes chats disponibles"
 }
 
+const canUseOperatorFilter = (tab: string): boolean => {
+    return tab === 'otros' || tab === 'archi' || tab === 'menciones'
+}
+
 type CachedChatTags = {
     tags: any[];
     fetchedAt: number;
@@ -90,6 +94,7 @@ const ListaChats = () => {
     const [selectedOperator, setSelectedOperator] = useState<string>('')
     const [hydrated, setHydrated] = useState<boolean>(false)
     const [adminTagsByChatId, setAdminTagsByChatId] = useState<Record<string, any[]>>({})
+    const canFilterByOperator = canUseOperatorFilter(styleBtn)
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
     const assignAudioRef = useRef(new Audio("/audio/audio1.mp3"));
@@ -467,9 +472,8 @@ const ListaChats = () => {
         const filters: any = {}
         if (q) filters.q = q
         if (!tagsDisabled && tagId) filters.tagId = tagId
-        if (operatorValue && operatorValue !== "TODOS") {
-            if (operatorValue === "BOT") filters.assignment = "bot"
-            else filters.operatorId = operatorValue
+        if (canFilterByOperator && operatorValue && operatorValue !== "TODOS") {
+            filters.operatorId = operatorValue
         }
         if (styleBtn === "bots") filters.assignment = "bot"
         else if (styleBtn === "sinAsignar") filters.assignment = "unassigned"
@@ -497,6 +501,17 @@ const ListaChats = () => {
         dispatch(clearBulkReadChatSelection())
         if (styleBtn === 'menciones') setStyleBtn('otros')
     }, [mentionsEnabled, styleBtn, dispatch])
+
+    useEffect(() => {
+        if (canFilterByOperator) return
+        if (!selectedOperator) return
+        setSelectedOperator('')
+        const newSearchParams = new URLSearchParams(searchParams)
+        if (newSearchParams.has('userId')) {
+            newSearchParams.delete('userId')
+            setSearchParams(newSearchParams)
+        }
+    }, [canFilterByOperator, selectedOperator, searchParams, setSearchParams])
 
     useEffect(() => {
         if (!token) return
@@ -545,12 +560,15 @@ const ListaChats = () => {
     }, [])
 
     useEffect(() => {
+        const userIdParam = searchParams.get('userId')
         if (chatListFilters && typeof chatListFilters === "object") {
             activeFiltersRef.current = chatListFilters
             const q = `${(chatListFilters as any)?.q ?? ""}`
             if (q) setDebouncedSearch(q)
         }
-        if (typeof chatListTab === "string" && chatListTab) setStyleBtn(chatListTab)
+        if (typeof chatListTab === "string" && chatListTab) {
+            setStyleBtn(userIdParam && !canUseOperatorFilter(chatListTab) ? 'otros' : chatListTab)
+        }
         if (typeof chatListSearchText === "string") setSearchChat(chatListSearchText)
         if (typeof chatListSelectedOperator === "string") setSelectedOperator(chatListSelectedOperator)
         if (typeof chatListSelectedTag === "string") setSelectedTag(chatListSelectedTag)
@@ -814,8 +832,12 @@ const ListaChats = () => {
 
     useEffect(() => {
         const userId = searchParams.get('userId');
-        if (userId && selectRef.current && users.length > 1) { selectRef.current.value = userId; setSelectedOperator(userId) }
-    }, [users, searchParams])
+        if (!userId || users.length <= 1) return
+        const exists = users.some((user) => user.id === userId)
+        if (!exists) return
+        if (!canFilterByOperator) setStyleBtn('otros')
+        setSelectedOperator(userId)
+    }, [users, searchParams, canFilterByOperator])
 
     useEffect(() => {
         if (chatsFromRedux.length === 0) {
@@ -1081,15 +1103,16 @@ const ListaChats = () => {
                                     </div>
                                     {showFilterSelect && (
                                         <div className="w-full px-2 mb-2 space-y-2">
-                                            <div className="filter-input-row">
-                                                <User className="filter-input-icon" size={18} />
-                                                <select ref={selectRef} id="operador-select" className={`filter-select ${selectedOperator === '' ? 'filter-select--placeholder' : ''}`} onChange={handleChangeSelect}>
-                                                    <option value="">Filtrar por operador</option>
-                                                    <option value="TODOS" className="bg-gray-500">TODOS</option>
-                                                    <option value="BOT" className="bg-gray-500">BOT OPERADOR</option>
-                                                    {users.map(user => (<option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>))}
-                                                </select>
-                                            </div>
+                                            {canFilterByOperator && (
+                                                <div className="filter-input-row">
+                                                    <User className="filter-input-icon" size={18} />
+                                                    <select ref={selectRef} id="operador-select" className={`filter-select ${selectedOperator === '' ? 'filter-select--placeholder' : ''}`} onChange={handleChangeSelect} value={selectedOperator}>
+                                                        <option value="">Filtrar por operador</option>
+                                                        <option value="TODOS" className="bg-gray-500">TODOS</option>
+                                                        {users.map(user => (<option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>))}
+                                                    </select>
+                                                </div>
+                                            )}
                                             {!tagsDisabled && (
                                                 <div className="filter-input-row">
                                                     <TagIcon className="filter-input-icon" size={18} />
