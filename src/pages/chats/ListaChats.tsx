@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
-import { Tag as TagIcon, User } from "lucide-react"
+import { Tag as TagIcon, User, X } from "lucide-react"
 import { RootState } from "../../app/store"
 import { setUserData, setViewSide, openSessionExpired, setChats, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState, bumpMentionsRefreshNonce } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
@@ -984,6 +984,26 @@ const ListaChats = () => {
     const handleOrdenarPorFecha = () => { setOrdenFecha(ordenFecha === 'desc' ? 'asc' : 'desc') }
     const handleExportarConversaciones = () => { console.log('Exportar conversaciones') }
     const handleToggleFilter = () => { setShowFilterSelect(!showFilterSelect) }
+    const hasActiveConversationFilters = (
+        `${searchChat ?? ""}`.trim().length > 0 ||
+        (!tagsDisabled && `${selectedTag ?? ""}`.trim().length > 0) ||
+        (canFilterByOperator && `${selectedOperator ?? ""}`.trim().length > 0 && selectedOperator !== "TODOS")
+    )
+    const shouldRenderChatListControls = chats1.length > 0 || styleBtn === 'menciones' || hasActiveConversationFilters
+    const showNoChatsAvailable = chats1.length === 0 && !loading && styleBtn !== 'menciones' && !hasActiveConversationFilters
+    const showNoFilterMatches = styleBtn !== 'menciones' && !loading && shouldRenderChatListControls && Array.isArray(filtrados) && filtrados.length === 0
+
+    const handleClearFilters = () => {
+        setSearchChat('')
+        setDebouncedSearch('')
+        setSelectedTag('')
+        setSelectedOperator('')
+        const newSearchParams = new URLSearchParams(searchParams)
+        if (newSearchParams.has('userId')) {
+            newSearchParams.delete('userId')
+            setSearchParams(newSearchParams)
+        }
+    }
 
     useEffect(() => {
         return () => {
@@ -1070,10 +1090,13 @@ const ListaChats = () => {
                 </div>
                 <div className="lista-main">
                     <div className="col-lista" ref={listRef} onScroll={handleListScroll}>
-                        {chats1.length === 0 && !loading && styleBtn !== 'menciones' && (
-                            <p className="msg-error">No hay chats disponibles</p>
+                        {showNoChatsAvailable && (
+                            <div className="chat-filter-empty-state">
+                                <p className="chat-filter-empty-title">No hay chats disponibles</p>
+                                <p className="chat-filter-empty-text">Cuando haya conversaciones en esta pestaña, van a aparecer acá.</p>
+                            </div>
                         )}
-                        {(chats1.length > 0 || styleBtn === 'menciones') && (
+                        {shouldRenderChatListControls && (
                             <>
                                 <div className="chat-list-controls">
                                     <div className="w-full flex justify-between px-2 items-center mb-2 py-2">
@@ -1166,7 +1189,9 @@ const ListaChats = () => {
                                     )
                                 })}
                                 {styleBtn === 'menciones' && menciones.length === 0 && (
-                                    <p className="msg-error px-2">No tenés menciones</p>
+                                    <div className="chat-filter-empty-state">
+                                        <p className="chat-filter-empty-title">No tenés menciones</p>
+                                    </div>
                                 )}
 
                                 {/* OTRAS PESTAÑAS */}
@@ -1220,8 +1245,15 @@ const ListaChats = () => {
                                         )
                                     })()
                                 ))}
-                                {styleBtn !== 'menciones' && filtrados && filtrados.length === 0 && (
-                                    <p className="msg-error px-2">No hay coincidencias</p>
+                                {showNoFilterMatches && (
+                                    <div className="chat-filter-empty-state">
+                                        <p className="chat-filter-empty-title">No hay coincidencias</p>
+                                        <p className="chat-filter-empty-text">Probá ajustar la búsqueda o limpiar los filtros activos.</p>
+                                        <button type="button" className="chat-clear-filters-button chat-clear-filters-button--empty" onClick={handleClearFilters}>
+                                            <X size={16} />
+                                            <span>Limpiar filtros</span>
+                                        </button>
+                                    </div>
                                 )}
                             </>
                         )}
