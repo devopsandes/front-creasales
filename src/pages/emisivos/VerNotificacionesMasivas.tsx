@@ -56,6 +56,8 @@ const plantillasNombres: Record<number, string> = {
 const ESTADO_CONFIG: Record<string, { label: string; cls: string }> = {
     'EN_PROCESO': { label: 'En Proceso', cls: 'vnm-badge-warning' },
     'COMPLETADA': { label: 'Completada', cls: 'vnm-badge-success' },
+    'ACTIVA': { label: 'Activa', cls: 'vnm-badge-success' },
+    'PROCESANDO_CICLO': { label: 'Procesando envío de hoy', cls: 'vnm-badge-warning' },
     'ANULADA': { label: 'Anulada', cls: 'vnm-badge-anulada' },
     'ERROR': { label: 'Error', cls: 'vnm-badge-error' },
 };
@@ -346,21 +348,16 @@ const VerNotificacionesMasivas = () => {
                                                 <td className="vnm-table-cell vnm-table-cell-center">
                                                     <div className="vnm-actions">
                                                         <button
-                                                            onClick={() => fetchDetalle(masiva.id)}
-                                                            className={`vnm-action-button vnm-action-view ${isExpanded ? 'active' : ''}`}
-                                                            title="Ver detalle"
-                                                        ><FaEye /></button>
-                                                        <button
                                                             onClick={() => abrirEdicion(masiva)}
                                                             className="vnm-action-button vnm-action-edit"
                                                             title="Editar días de envío"
-                                                            disabled={masiva.estado !== 'COMPLETADA' || (masiva.diasDeEnvio.length === 1 && masiva.diasDeEnvio[0] === 0)}
+                                                            disabled={masiva.estado !== 'ACTIVA'}
                                                         ><FaEdit /></button>
                                                         <button
                                                             onClick={() => handleAnular(masiva.id)}
                                                             className="vnm-action-button vnm-action-delete"
                                                             title="Anular"
-                                                            disabled={masiva.estado !== 'COMPLETADA' || (masiva.diasDeEnvio.length === 1 && masiva.diasDeEnvio[0] === 0)}
+                                                            disabled={masiva.estado !== 'ACTIVA'}
                                                         ><FaTrash /></button>
                                                     </div>
                                                 </td>
