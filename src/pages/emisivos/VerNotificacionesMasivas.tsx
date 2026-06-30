@@ -348,6 +348,11 @@ const VerNotificacionesMasivas = () => {
                                                 <td className="vnm-table-cell vnm-table-cell-center">
                                                     <div className="vnm-actions">
                                                         <button
+                                                            onClick={() => fetchDetalle(masiva.id)}
+                                                            className={`vnm-action-button vnm-action-view ${isExpanded ? 'active' : ''}`}
+                                                            title="Ver detalle"
+                                                        ><FaEye /></button>
+                                                        <button
                                                             onClick={() => abrirEdicion(masiva)}
                                                             className="vnm-action-button vnm-action-edit"
                                                             title="Editar días de envío"
