@@ -23,6 +23,7 @@ const PlantillaModal = () => {
   const [plan, setPlan] = useState<string>('');
   const [capitas, setCapitas] = useState<string>('');
   const [cuota, setCuota] = useState<string>('');
+  const [operadorPlantilla, setOperadorPlantilla] = useState<string>('');
   
   const dispatch = useDispatch();
   const modalPlantilla = useSelector((state: RootState) => state.action.modalPlantilla);
@@ -50,6 +51,12 @@ const PlantillaModal = () => {
   const ingresoCliente = currentChat?.cliente?.ingreso
     ? new Date(currentChat.cliente.ingreso).toLocaleDateString('es-AR')
     : (dataUser?.mesAlta ? new Date(dataUser.mesAlta).toLocaleDateString('es-AR') : new Date().toLocaleDateString('es-AR'));
+
+  useEffect(() => {
+    if (modalPlantilla) {
+      setOperadorPlantilla(nombreOperador);
+    }
+  }, [modalPlantilla, nombreOperador]);
 
   // Obtener configuración de Meta al abrir el modal
   useEffect(() => {
@@ -102,6 +109,7 @@ const PlantillaModal = () => {
       setPlan('');
       setCapitas('');
       setCuota('');
+      setOperadorPlantilla('');
     }
   }, [modalPlantilla]);
 
@@ -182,6 +190,11 @@ const PlantillaModal = () => {
     return plantillaId === 'duplicados';
   };
 
+  const requiereOperadorEditable = (plantillaId: string): boolean => {
+    return plantillaId === 'retomar_conversacion' || plantillaId === 'inicio' ||
+      plantillaId === 'novedades_tramite' || plantillaId === 'novedades-tramite';
+  };
+
   const handleEnviar = async () => {
     if (!selectedPlantilla) return;
     
@@ -198,6 +211,11 @@ const PlantillaModal = () => {
 
     if (!numeroTelefono) {
       setError('No se pudo obtener el número de teléfono del chat');
+      return;
+    }
+
+    if (requiereOperadorEditable(selectedPlantilla) && !operadorPlantilla.trim()) {
+      setError('Por favor, ingrese el nombre del operador');
       return;
     }
 
@@ -299,13 +317,13 @@ const PlantillaModal = () => {
       // Campos específicos por plantilla (evitar enviar propiedades no contempladas por el DTO del backend)
       if (selectedPlantilla === 'retomar_conversacion' || selectedPlantilla === 'inicio') {
         dataEnvio.afiliado = nombreAfiliado;
-        dataEnvio.operador = nombreOperador;
+        dataEnvio.operador = operadorPlantilla.trim();
       }
 
       // Agregar nroTicket si es requerido
       if (requiereNroTicket(selectedPlantilla)) {
         dataEnvio.afiliado = nombreAfiliado;
-        dataEnvio.operador = nombreOperador;
+        dataEnvio.operador = operadorPlantilla.trim();
         dataEnvio.nroTicket = nroTicket.trim();
       }
 
@@ -391,7 +409,7 @@ const PlantillaModal = () => {
     switch (plantillaId) {
       case 'inicio':
       case 'retomar_conversacion':
-        return `¡Hola ${nombreAfiliado}! Mi nombre es ${nombreOperador} y tengo novedades de tu gestión iniciada. Por favor cuando respondas este mensaje podemos continuar, muchas gracias.`;
+        return `¡Hola ${nombreAfiliado}! Mi nombre es ${operadorPlantilla || nombreOperador} y tengo novedades de tu gestión iniciada. Por favor cuando respondas este mensaje podemos continuar, muchas gracias.`;
       case 'novedades':
         return `¡NOVEDADES!
 
@@ -460,7 +478,7 @@ Cuidar tus datos es cuidar tu salud. Muchas gracias.`;
       case 'novedades_tramite':
         // Usar nroTicket si está disponible, sino mostrar placeholder
         const ticketNum = nroTicket.trim() || '1234';
-        return `¡Hola ${nombreAfiliado}! Soy ${nombreOperador}. Necesito que me brindes información extra sobre tu trámite número ${ticketNum}. Aguardamos respuesta. ¡Muchas gracias!`;
+        return `¡Hola ${nombreAfiliado}! Soy ${operadorPlantilla || nombreOperador}. Necesito que me brindes información extra sobre tu trámite número ${ticketNum}. Aguardamos respuesta. ¡Muchas gracias!`;
       case 'deuda':
       case 'deuda-utilidad':
       case 'deuda_utilidad':
@@ -734,6 +752,21 @@ Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , e
             </>
           )}
 
+          {requiereOperadorEditable(selectedPlantilla) && (
+            <div className="plantilla-modal-input-group">
+              <label className="plantilla-modal-input-label">
+                Nombre del Operador
+              </label>
+              <input
+                type="text"
+                value={operadorPlantilla}
+                onChange={(e) => setOperadorPlantilla(e.target.value)}
+                placeholder="Ingrese el nombre del operador"
+                className="plantilla-modal-input"
+              />
+            </div>
+          )}
+
           <p className="plantilla-modal-description-title">Descripcion del Mensaje</p>
           
           {selectedPlantilla && (
@@ -769,6 +802,7 @@ Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , e
                 loadingMeta || 
                 !metaConfig || 
                 (requiereNroTicket(selectedPlantilla) && !nroTicket.trim()) ||
+                (requiereOperadorEditable(selectedPlantilla) && !operadorPlantilla.trim()) ||
                 (requiereCamposDeuda(selectedPlantilla) && (!periodos.trim() || !vencimiento.trim() || !total.trim())) ||
                 (requiereCamposPagoRecibido(selectedPlantilla) && (!metodo.trim() || !periodos.trim())) ||
                 (requiereCamposPreAlta(selectedPlantilla) && (!plan.trim() || !capitas.trim() || !metodo.trim() || isNaN(Number(capitas)) || Number(capitas) <= 0)) ||
@@ -785,4 +819,3 @@ Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , e
 };
 
 export default PlantillaModal;
-

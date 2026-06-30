@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
-import { Tag as TagIcon, User } from "lucide-react"
+import { Tag as TagIcon, User, X } from "lucide-react"
 import { RootState } from "../../app/store"
 import { setUserData, setViewSide, openSessionExpired, setChats, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState, bumpMentionsRefreshNonce } from "../../app/slices/actionSlice"
 import { jwtDecode } from "jwt-decode"
@@ -14,7 +14,7 @@ import { getSocket } from "../../app/slices/socketSlice"
 import { findChatById, getChatCounts, getChats, searchByConversacion } from "../../services/chats/chats.services"
 import { perfMark, perfTrackNavigation } from "../../utils/perfTracker"
 import { isLightFeatureDisabled } from "../../config/runtimeConfig"
-import { getTagsByChatIds } from "../../services/tags/tags.services"
+import { getTags, getTagsByChatIds } from "../../services/tags/tags.services"
 import { getAuthSessionReason, getSocketAuthSessionReason } from "../../utils/authSession"
 
 const capitalizeText = (text: string | undefined | null): string => {
@@ -40,6 +40,23 @@ const getEmptyStateMessageByTab = (tab: string): string => {
     if (tab === "menciones") return "No tienes menciones"
     if (tab === "bots") return "No tienes chats de bots"
     return "No tienes chats disponibles"
+}
+
+const canUseOperatorFilter = (tab: string): boolean => {
+    return tab === 'otros' || tab === 'archi' || tab === 'menciones'
+}
+
+type TagOption = { id: string; nombre: string }
+
+const mergeTagOptions = (current: TagOption[], incoming: TagOption[]): TagOption[] => {
+    const map = new Map<string, TagOption>()
+    current.forEach((tag) => {
+        if (tag?.id) map.set(String(tag.id), { id: String(tag.id), nombre: String(tag.nombre ?? '') })
+    })
+    incoming.forEach((tag) => {
+        if (tag?.id) map.set(String(tag.id), { id: String(tag.id), nombre: String(tag.nombre ?? '') })
+    })
+    return Array.from(map.values()).filter((tag) => tag.nombre.trim().length > 0)
 }
 
 type CachedChatTags = {
@@ -84,12 +101,13 @@ const ListaChats = () => {
     const [ordenFecha, setOrdenFecha] = useState<'desc' | 'asc'>('desc')
     const [showFilterSelect, setShowFilterSelect] = useState<boolean>(false)
     const [selectedTag, setSelectedTag] = useState<string>('')
-    const [allTags, setAllTags] = useState<{ id: string; nombre: string }[]>([])
+    const [allTags, setAllTags] = useState<TagOption[]>([])
     const [searchChat, setSearchChat] = useState<string>('')
     const [debouncedSearch, setDebouncedSearch] = useState<string>('')
     const [selectedOperator, setSelectedOperator] = useState<string>('')
     const [hydrated, setHydrated] = useState<boolean>(false)
     const [adminTagsByChatId, setAdminTagsByChatId] = useState<Record<string, any[]>>({})
+    const canFilterByOperator = canUseOperatorFilter(styleBtn)
 
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
     const assignAudioRef = useRef(new Audio("/audio/audio1.mp3"));
@@ -225,6 +243,21 @@ const ListaChats = () => {
         dispatch(openSessionExpired(authReason))
         return true
     }, [dispatch])
+
+    useEffect(() => {
+        if (tagsDisabled || !token) return
+        let cancelled = false
+        getTags(token)
+            .then((resp: any) => {
+                if (cancelled) return
+                if (openAuthSessionIfNeeded(resp)) return
+                const tags = dedupeTags(Array.isArray(resp?.tags) ? resp.tags : [])
+                    .map((tag: any) => ({ id: String(tag.id), nombre: String(tag.nombre) }))
+                setAllTags((prev) => mergeTagOptions(prev, tags))
+            })
+            .catch(() => { })
+        return () => { cancelled = true }
+    }, [tagsDisabled, token, openAuthSessionIfNeeded])
 
     const [tabCounts, setTabCounts] = useState<{
         total: number; archived: number; bots: number; unassigned: number; mine: number; others: number;
@@ -458,6 +491,28 @@ const ListaChats = () => {
         return items.length >= limit
     }
 
+    const hydrateItemsWithTags = async (items: ChatState[], filters?: any): Promise<ChatState[]> => {
+        if (tagsDisabled || !filters?.tagId || items.length === 0) return items
+        const chatIds = items.map((chat) => chat?.id).filter(Boolean)
+        if (chatIds.length === 0) return items
+        try {
+            const resp = await getTagsByChatIds(token, chatIds, { rateLimitMs: TAGS_BATCH_RATE_LIMIT_MS })
+            const rawItems = Array.isArray((resp as any)?.items) ? (resp as any).items : []
+            const tagsByChatId = new Map<string, any[]>()
+            rawItems.forEach((item: any) => {
+                const chatId = getBulkItemChatId(item)
+                if (chatId) tagsByChatId.set(chatId, dedupeTags(item?.tags))
+            })
+            if (tagsByChatId.size === 0) return items
+            return items.map((chat) => {
+                const tags = tagsByChatId.get(chat.id)
+                return tags ? { ...chat, tags } : chat
+            })
+        } catch {
+            return items
+        }
+    }
+
     const normalizeFilterValue = (value: string) => `${value ?? ""}`.trim()
 
     const buildChatQueryFilters = () => {
@@ -467,9 +522,8 @@ const ListaChats = () => {
         const filters: any = {}
         if (q) filters.q = q
         if (!tagsDisabled && tagId) filters.tagId = tagId
-        if (operatorValue && operatorValue !== "TODOS") {
-            if (operatorValue === "BOT") filters.assignment = "bot"
-            else filters.operatorId = operatorValue
+        if (canFilterByOperator && operatorValue && operatorValue !== "TODOS") {
+            filters.operatorId = operatorValue
         }
         if (styleBtn === "bots") filters.assignment = "bot"
         else if (styleBtn === "sinAsignar") filters.assignment = "unassigned"
@@ -497,6 +551,17 @@ const ListaChats = () => {
         dispatch(clearBulkReadChatSelection())
         if (styleBtn === 'menciones') setStyleBtn('otros')
     }, [mentionsEnabled, styleBtn, dispatch])
+
+    useEffect(() => {
+        if (canFilterByOperator) return
+        if (!selectedOperator) return
+        setSelectedOperator('')
+        const newSearchParams = new URLSearchParams(searchParams)
+        if (newSearchParams.has('userId')) {
+            newSearchParams.delete('userId')
+            setSearchParams(newSearchParams)
+        }
+    }, [canFilterByOperator, selectedOperator, searchParams, setSearchParams])
 
     useEffect(() => {
         if (!token) return
@@ -545,12 +610,15 @@ const ListaChats = () => {
     }, [])
 
     useEffect(() => {
+        const userIdParam = searchParams.get('userId')
         if (chatListFilters && typeof chatListFilters === "object") {
             activeFiltersRef.current = chatListFilters
             const q = `${(chatListFilters as any)?.q ?? ""}`
             if (q) setDebouncedSearch(q)
         }
-        if (typeof chatListTab === "string" && chatListTab) setStyleBtn(chatListTab)
+        if (typeof chatListTab === "string" && chatListTab) {
+            setStyleBtn(userIdParam && !canUseOperatorFilter(chatListTab) ? 'otros' : chatListTab)
+        }
         if (typeof chatListSearchText === "string") setSearchChat(chatListSearchText)
         if (typeof chatListSelectedOperator === "string") setSelectedOperator(chatListSelectedOperator)
         if (typeof chatListSelectedTag === "string") setSelectedTag(chatListSelectedTag)
@@ -582,9 +650,11 @@ const ListaChats = () => {
         chatsLoadControllerRef.current = controller
         const requestSeq = ++listRequestSeqRef.current
         getChats(token, "1", `${CHAT_PAGE_LIMIT}`, filters, { signal: controller.signal, rateLimitMs: 1200 })
-            .then((resp: any) => {
+            .then(async (resp: any) => {
                 if (requestSeq !== listRequestSeqRef.current) return
-                const items: ChatState[] = Array.isArray(resp?.chats) ? resp.chats : []
+                const rawItems: ChatState[] = Array.isArray(resp?.chats) ? resp.chats : []
+                const items = await hydrateItemsWithTags(rawItems, filters)
+                if (requestSeq !== listRequestSeqRef.current) return
                 const merged = cachedOk ? mergeChatsById(chatsRef.current, items) : items
                 const nextList = Array.isArray(merged) ? merged.slice(0, MAX_CHAT_CACHE) : merged
                 dispatch(setChats(nextList))
@@ -656,7 +726,8 @@ const ListaChats = () => {
         try {
             const filters = activeFiltersRef.current || {}
             const resp = await getChats(token, `${nextPage}`, `${CHAT_PAGE_LIMIT}`, filters, { signal: controller.signal, rateLimitMs: 1200 })
-            const incoming: ChatState[] = Array.isArray((resp as any)?.chats) ? (resp as any).chats : []
+            const rawIncoming: ChatState[] = Array.isArray((resp as any)?.chats) ? (resp as any).chats : []
+            const incoming = await hydrateItemsWithTags(rawIncoming, filters)
             if (incoming.length === 0) { setHasMore(false); return }
             const merged = mergeChatsById(chatsFromRedux, incoming)
             dispatch(setChats(merged.slice(0, MAX_CHAT_CACHE)))
@@ -808,19 +879,38 @@ const ListaChats = () => {
         aplicarFiltros(selectRef.current?.value || '', tagValue, undefined, searchChat)
     }
 
+    const getChatFilterTags = (chat: ChatState): any[] => {
+        const adminTags = adminTagsByChatId[chat.id]
+        const chatTags = Array.isArray(chat.tags) ? chat.tags : []
+        return dedupeTags([...(Array.isArray(adminTags) ? adminTags : []), ...chatTags])
+    }
+
+    const chatMatchesSelectedTag = (chat: ChatState, tagId: string): boolean => {
+        if (!tagId) return true
+        return getChatFilterTags(chat).some((tag: any) => String(tag?.id) === String(tagId))
+    }
+
     const aplicarFiltros = (_operadorValue: string, _tagValue: string, chatsBase?: ChatState[], _searchValue?: string) => {
-        setFiltrados(chatsBase || chats1)
+        const tagValue = tagsDisabled ? '' : normalizeFilterValue(_tagValue)
+        let next = chatsBase || chats1
+        if (tagValue) next = next.filter((chat) => chatMatchesSelectedTag(chat, tagValue))
+        setFiltrados(next)
     }
 
     useEffect(() => {
         const userId = searchParams.get('userId');
-        if (userId && selectRef.current && users.length > 1) { selectRef.current.value = userId; setSelectedOperator(userId) }
-    }, [users, searchParams])
+        if (!userId || users.length <= 1) return
+        const exists = users.some((user) => user.id === userId)
+        if (!exists) return
+        if (!canFilterByOperator) setStyleBtn('otros')
+        setSelectedOperator(userId)
+    }, [users, searchParams, canFilterByOperator])
 
     useEffect(() => {
         if (chatsFromRedux.length === 0) {
             setArchivadas([]); setBots([]); setAsignadas([]); setAsignadasOtros([])
-            setSinAsignar([]); setChats1([]); setAllTags([]); setFiltrados([])
+            setSinAsignar([]); setChats1([]); setFiltrados([])
+            if (tagsDisabled) setAllTags([])
             return
         }
         if (chatsFromRedux.length > 0) {
@@ -857,7 +947,7 @@ const ListaChats = () => {
                         tags.forEach((tag: any) => { if (tag?.id && !tagsMap.has(tag.id)) tagsMap.set(tag.id, { id: tag.id, nombre: tag.nombre }) })
                     }
                 })
-                setAllTags(Array.from(tagsMap.values()))
+                setAllTags((prev) => mergeTagOptions(prev, Array.from(tagsMap.values())))
             }
 
             let chatsBase: ChatState[] = chatsFromRedux
@@ -962,6 +1052,26 @@ const ListaChats = () => {
     const handleOrdenarPorFecha = () => { setOrdenFecha(ordenFecha === 'desc' ? 'asc' : 'desc') }
     const handleExportarConversaciones = () => { console.log('Exportar conversaciones') }
     const handleToggleFilter = () => { setShowFilterSelect(!showFilterSelect) }
+    const hasActiveConversationFilters = (
+        `${searchChat ?? ""}`.trim().length > 0 ||
+        (!tagsDisabled && `${selectedTag ?? ""}`.trim().length > 0) ||
+        (canFilterByOperator && `${selectedOperator ?? ""}`.trim().length > 0 && selectedOperator !== "TODOS")
+    )
+    const shouldRenderChatListControls = chats1.length > 0 || styleBtn === 'menciones' || hasActiveConversationFilters
+    const showNoChatsAvailable = chats1.length === 0 && !loading && styleBtn !== 'menciones' && !hasActiveConversationFilters
+    const showNoFilterMatches = styleBtn !== 'menciones' && !loading && shouldRenderChatListControls && Array.isArray(filtrados) && filtrados.length === 0
+
+    const handleClearFilters = () => {
+        setSearchChat('')
+        setDebouncedSearch('')
+        setSelectedTag('')
+        setSelectedOperator('')
+        const newSearchParams = new URLSearchParams(searchParams)
+        if (newSearchParams.has('userId')) {
+            newSearchParams.delete('userId')
+            setSearchParams(newSearchParams)
+        }
+    }
 
     useEffect(() => {
         return () => {
@@ -1048,10 +1158,13 @@ const ListaChats = () => {
                 </div>
                 <div className="lista-main">
                     <div className="col-lista" ref={listRef} onScroll={handleListScroll}>
-                        {chats1.length === 0 && !loading && styleBtn !== 'menciones' && (
-                            <p className="msg-error">No hay chats disponibles</p>
+                        {showNoChatsAvailable && (
+                            <div className="chat-filter-empty-state">
+                                <p className="chat-filter-empty-title">No hay chats disponibles</p>
+                                <p className="chat-filter-empty-text">Cuando haya conversaciones en esta pestaña, van a aparecer acá.</p>
+                            </div>
                         )}
-                        {(chats1.length > 0 || styleBtn === 'menciones') && (
+                        {shouldRenderChatListControls && (
                             <>
                                 <div className="chat-list-controls">
                                     <div className="w-full flex justify-between px-2 items-center mb-2 py-2">
@@ -1081,15 +1194,16 @@ const ListaChats = () => {
                                     </div>
                                     {showFilterSelect && (
                                         <div className="w-full px-2 mb-2 space-y-2">
-                                            <div className="filter-input-row">
-                                                <User className="filter-input-icon" size={18} />
-                                                <select ref={selectRef} id="operador-select" className={`filter-select ${selectedOperator === '' ? 'filter-select--placeholder' : ''}`} onChange={handleChangeSelect}>
-                                                    <option value="">Filtrar por operador</option>
-                                                    <option value="TODOS" className="bg-gray-500">TODOS</option>
-                                                    <option value="BOT" className="bg-gray-500">BOT OPERADOR</option>
-                                                    {users.map(user => (<option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>))}
-                                                </select>
-                                            </div>
+                                            {canFilterByOperator && (
+                                                <div className="filter-input-row">
+                                                    <User className="filter-input-icon" size={18} />
+                                                    <select ref={selectRef} id="operador-select" className={`filter-select ${selectedOperator === '' ? 'filter-select--placeholder' : ''}`} onChange={handleChangeSelect} value={selectedOperator}>
+                                                        <option value="">Filtrar por operador</option>
+                                                        <option value="TODOS" className="bg-gray-500">TODOS</option>
+                                                        {users.map(user => (<option key={user.id} value={user.id} className="bg-gray-500">{user.apellido} {user.nombre}</option>))}
+                                                    </select>
+                                                </div>
+                                            )}
                                             {!tagsDisabled && (
                                                 <div className="filter-input-row">
                                                     <TagIcon className="filter-input-icon" size={18} />
@@ -1143,7 +1257,9 @@ const ListaChats = () => {
                                     )
                                 })}
                                 {styleBtn === 'menciones' && menciones.length === 0 && (
-                                    <p className="msg-error px-2">No tenés menciones</p>
+                                    <div className="chat-filter-empty-state">
+                                        <p className="chat-filter-empty-title">No tenés menciones</p>
+                                    </div>
                                 )}
 
                                 {/* OTRAS PESTAÑAS */}
@@ -1197,8 +1313,15 @@ const ListaChats = () => {
                                         )
                                     })()
                                 ))}
-                                {styleBtn !== 'menciones' && filtrados && filtrados.length === 0 && (
-                                    <p className="msg-error px-2">No hay coincidencias</p>
+                                {showNoFilterMatches && (
+                                    <div className="chat-filter-empty-state">
+                                        <p className="chat-filter-empty-title">No hay coincidencias</p>
+                                        <p className="chat-filter-empty-text">Probá ajustar la búsqueda o limpiar los filtros activos.</p>
+                                        <button type="button" className="chat-clear-filters-button chat-clear-filters-button--empty" onClick={handleClearFilters}>
+                                            <X size={16} />
+                                            <span>Limpiar filtros</span>
+                                        </button>
+                                    </div>
                                 )}
                             </>
                         )}
