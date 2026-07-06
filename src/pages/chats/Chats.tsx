@@ -1477,7 +1477,14 @@ const Chats = () => {
                 isSendingRef.current = false
                 return
             }
+            console.log('[enviar-mensaje] estado socket antes de enviar', {
+                socketExists: !!socket,
+                connected: socket?.connected,
+                socketId: socket?.id,
+                disconnected: socket?.disconnected
+            })
             if (socket && socket.connected) {
+                console.log('[enviar-mensaje] enviando por socket', { socketId: socket.id, connected: socket.connected, chatId: id })
                 socket.emit("enviar-mensaje", { mensaje, chatId: id, telefono, token, mentions })
                 lastSentMessageRef.current = trimmedMessage
                 setMensaje('')
@@ -1485,6 +1492,7 @@ const Chats = () => {
                 setSelectedMentionUsers([])
                 isSendingRef.current = false
             } else {
+                console.log('[enviar-mensaje] socket no disponible, usando HTTP', { socketExists: !!socket, connected: socket?.connected, chatId: id })
                 await convClient.post('/chats/send-message', { chatId: id, text: mensaje, mentions }, { headers: { Authorization: `Bearer ${token}` } })
                 setMensaje('')
                 setSelectedMentionUsers([])
