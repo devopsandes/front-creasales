@@ -338,6 +338,28 @@ const Chats = () => {
                 </div>
             )
         }
+        const isExternalUrl = /^https?:\/\//i.test(fallbackText.trim())
+        if (isExternalUrl) {
+            return (
+                <a href={fallbackText.trim()} target="_blank" rel="noreferrer" className="chat-media-link">
+                    {fallbackText.trim()}
+                </a>
+            )
+        }
+
+        // Si el texto contiene una URL mezclada con texto (ej: "Hola, adjunto: https://...")
+        const urlMatch = fallbackText.match(/https?:\/\/\S+/i)
+        if (urlMatch) {
+            const url = urlMatch[0]
+            const before = fallbackText.slice(0, urlMatch.index).trim()
+            return (
+                <span className="chat-text">
+                    {before && <>{before} </>}
+                    <a href={url} target="_blank" rel="noreferrer" className="chat-media-link">{url}</a>
+                </span>
+            )
+        }
+
         return <span className="chat-text">{fallbackText}</span>
     }
 
