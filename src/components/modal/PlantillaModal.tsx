@@ -365,7 +365,8 @@ const PlantillaModal = () => {
         dataEnvio.cuil = cuilTitular;
         dataEnvio.plan = planBienvenida;
         dataEnvio.email = emailCliente;
-        dataEnvio.cuota = cuota.trim();
+        // dataEnvio.cuota = cuota.trim();
+        dataEnvio.cuota = Number(cuota.trim());
         dataEnvio.credencial = credencialUrl;
       }
 
