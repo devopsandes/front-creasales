@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+// import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { X, FileText } from 'lucide-react';
 import { switchModalPlantilla } from '../../app/slices/actionSlice';
 import { RootState } from '../../app/store';
@@ -32,11 +33,13 @@ const PlantillaModal = () => {
   const user = useSelector((state: RootState) => state.auth.user);
   
   const { id: chatId } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const token = localStorage.getItem('token') || '';
 
   // Obtener chat actual
   const currentChat = chats.find(chat => chat.id === chatId);
-  const numeroTelefono = currentChat?.cliente?.telefono || '';
+  // const numeroTelefono = currentChat?.cliente?.telefono || '';
+  const numeroTelefono = currentChat?.cliente?.telefono || searchParams.get('telefono') || '';
   // Obtener nombre completo del afiliado: nombre + apellido del chat o dataUser
   const nombreAfiliado = currentChat?.cliente?.nombre && currentChat?.cliente?.apellido
     ? `${currentChat.cliente.nombre} ${currentChat.cliente.apellido}`
