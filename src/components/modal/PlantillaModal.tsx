@@ -25,13 +25,13 @@ const PlantillaModal = () => {
   const [capitas, setCapitas] = useState<string>('');
   const [cuota, setCuota] = useState<string>('');
   const [operadorPlantilla, setOperadorPlantilla] = useState<string>('');
-  
+
   const dispatch = useDispatch();
   const modalPlantilla = useSelector((state: RootState) => state.action.modalPlantilla);
   const chats = useSelector((state: RootState) => state.action.chats);
   const dataUser = useSelector((state: RootState) => state.action.dataUser);
   const user = useSelector((state: RootState) => state.auth.user);
-  
+
   const { id: chatId } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const token = localStorage.getItem('token') || '';
@@ -69,10 +69,10 @@ const PlantillaModal = () => {
         setError(null);
         try {
           const response = await getMeta(token);
-          
+
           //  Verificar que la respuesta tenga los datos
-          if (response.graph_api_token && response.id_phone_number && 
-              response.graph_api_token.trim() !== '' && response.id_phone_number > 0) {
+          if (response.graph_api_token && response.id_phone_number &&
+            response.graph_api_token.trim() !== '' && response.id_phone_number > 0) {
             setMetaConfig({
               graph_api_token: response.graph_api_token,
               id_phone_number: response.id_phone_number
@@ -200,7 +200,7 @@ const PlantillaModal = () => {
 
   const handleEnviar = async () => {
     if (!selectedPlantilla) return;
-    
+
     const opcion = getOpcionPlantilla(selectedPlantilla);
     if (opcion === null) {
       setError('Esta plantilla aún no está implementada');
@@ -298,16 +298,19 @@ const PlantillaModal = () => {
         setError('No se pudo obtener el email');
         return;
       }
+      console.log('DEBUG dataUser:', dataUser);
+      console.log('DEBUG IdAfiliadoTitular:', (dataUser as any)?.IdAfiliadoTitular);
+      console.log('DEBUG IdAfiliado:', (dataUser as any)?.IdAfiliado);
       const idAfiliado = (dataUser as any)?.IdAfiliadoTitular || (dataUser as any)?.IdAfiliado || '';
       if (!idAfiliado) {
         setError('No se pudo obtener el ID del afiliado para la credencial');
         return;
       }
     }
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Preparar datos con conversión a número
       const dataEnvio: any = {
@@ -359,6 +362,9 @@ const PlantillaModal = () => {
       // Agregar campos de bienvenida (case 3)
       if (requiereCamposBienvenida(selectedPlantilla)) {
         const planBienvenida = dataUser?.planAfiliado || plan.trim();
+        console.log('DEBUG dataUser:', dataUser);
+        console.log('DEBUG IdAfiliadoTitular:', (dataUser as any)?.IdAfiliadoTitular);
+        console.log('DEBUG IdAfiliado:', (dataUser as any)?.IdAfiliado);
         const idAfiliado = (dataUser as any)?.IdAfiliadoTitular || (dataUser as any)?.IdAfiliado || '';
         const credencialUrl = `https://andessalud.createch.com.ar/api/credencial?idAfiliado=${idAfiliado}`;
         dataEnvio.afiliado = nombreAfiliado;
@@ -377,14 +383,14 @@ const PlantillaModal = () => {
       const response = await enviarPlantilla(token, dataEnvio);
 
       // Verificar éxito: statusCode 200, 201 o si no hay statusCode pero tampoco hay error
-      if (response.statusCode === 200 || response.statusCode === 201 || 
-          (!response.statusCode && !response.message && !response.error)) {
+      if (response.statusCode === 200 || response.statusCode === 201 ||
+        (!response.statusCode && !response.message && !response.error)) {
         toast.success('Plantilla enviada correctamente');
         dispatch(switchModalPlantilla());
         setSelectedPlantilla('');
       } else {
-        const errorMsg = Array.isArray(response.message) 
-          ? response.message.join(', ') 
+        const errorMsg = Array.isArray(response.message)
+          ? response.message.join(', ')
           : (response.message || response.error || 'Error al enviar la plantilla');
         setError(errorMsg);
       }
@@ -572,7 +578,7 @@ Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , e
         <button className="plantilla-modal-close" onClick={handleCancelar}>
           <X size={20} />
         </button>
-        
+
         <div className="plantilla-modal-header">
           <div className="plantilla-modal-icon">
             <FileText size={32} />
@@ -772,7 +778,7 @@ Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , e
           )}
 
           <p className="plantilla-modal-description-title">Descripcion del Mensaje</p>
-          
+
           {selectedPlantilla && (
             <div className="plantilla-modal-description-box">
               <p className="plantilla-modal-description-text">
@@ -790,21 +796,21 @@ Cualquier duda o consulta 📱 contáctanos en WhatsApp: wa.me/5492613300622 , e
 
         <div className="plantilla-modal-footer">
           <div className="plantilla-modal-actions">
-            <button 
+            <button
               className="plantilla-modal-button plantilla-modal-cancel"
               onClick={handleCancelar}
               disabled={isLoading || loadingMeta}
             >
               Cancelar
             </button>
-            <button 
+            <button
               className="plantilla-modal-button plantilla-modal-confirm"
               onClick={handleEnviar}
               disabled={
-                !selectedPlantilla || 
-                isLoading || 
-                loadingMeta || 
-                !metaConfig || 
+                !selectedPlantilla ||
+                isLoading ||
+                loadingMeta ||
+                !metaConfig ||
                 (requiereNroTicket(selectedPlantilla) && !nroTicket.trim()) ||
                 (requiereOperadorEditable(selectedPlantilla) && !operadorPlantilla.trim()) ||
                 (requiereCamposDeuda(selectedPlantilla) && (!periodos.trim() || !vencimiento.trim() || !total.trim())) ||
