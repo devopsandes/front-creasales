@@ -464,7 +464,22 @@ const VerNotificaciones = () => {
                                               : val !== null && typeof val === 'object'
                                                 ? Object.entries(val as Record<string, unknown>).map(([k, v]) => (
                                                   <span key={k} className="ver-notif-dato-nested">
-                                                    <span className="ver-notif-dato-nested-key">{k}:</span> {String(v ?? '—')}
+                                                    <span className="ver-notif-dato-nested-key">{k}:</span>{' '}
+                                                    {Array.isArray(v)
+                                                      ? v.map((item, idx) => (
+                                                        <div key={idx} style={{ paddingLeft: '8px', borderLeft: '2px solid #e5e7eb', marginTop: '2px' }}>
+                                                          {typeof item === 'object' && item !== null
+                                                            ? Object.entries(item as Record<string, unknown>).map(([ik, iv]) => (
+                                                              <span key={ik} style={{ display: 'block', fontSize: '0.8rem' }}>
+                                                                <span className="ver-notif-dato-nested-key">{ik}:</span> {String(iv ?? '—')}
+                                                              </span>
+                                                            ))
+                                                            : String(item)}
+                                                        </div>
+                                                      ))
+                                                      : typeof v === 'object' && v !== null
+                                                        ? JSON.stringify(v)
+                                                        : String(v ?? '—')}
                                                   </span>
                                                 ))
                                                 : String(val ?? '—')}
