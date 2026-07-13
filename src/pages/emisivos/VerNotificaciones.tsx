@@ -449,13 +449,25 @@ const VerNotificaciones = () => {
                                         <div key={key} className="ver-notif-dato-row">
                                           <span className="ver-notif-dato-key">{key}</span>
                                           <span className="ver-notif-dato-val">
-                                            {val !== null && typeof val === 'object'
-                                              ? Object.entries(val as Record<string, unknown>).map(([k, v]) => (
-                                                <span key={k} className="ver-notif-dato-nested">
-                                                  <span className="ver-notif-dato-nested-key">{k}:</span> {String(v)}
-                                                </span>
+                                            {Array.isArray(val)
+                                              ? val.map((item, idx) => (
+                                                <div key={idx} className="ver-notif-dato-nested" style={{ marginBottom: '4px' }}>
+                                                  {typeof item === 'object' && item !== null
+                                                    ? Object.entries(item as Record<string, unknown>).map(([k, v]) => (
+                                                      <span key={k} style={{ display: 'block' }}>
+                                                        <span className="ver-notif-dato-nested-key">{k}:</span> {String(v ?? '—')}
+                                                      </span>
+                                                    ))
+                                                    : String(item)}
+                                                </div>
                                               ))
-                                              : String(val ?? '—')}
+                                              : val !== null && typeof val === 'object'
+                                                ? Object.entries(val as Record<string, unknown>).map(([k, v]) => (
+                                                  <span key={k} className="ver-notif-dato-nested">
+                                                    <span className="ver-notif-dato-nested-key">{k}:</span> {String(v ?? '—')}
+                                                  </span>
+                                                ))
+                                                : String(val ?? '—')}
                                           </span>
                                         </div>
                                       ))}
