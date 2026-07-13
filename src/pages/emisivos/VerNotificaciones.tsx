@@ -467,7 +467,7 @@ const VerNotificaciones = () => {
                                                     <span className="ver-notif-dato-nested-key">{k}:</span>{' '}
                                                     {Array.isArray(v)
                                                       ? v.map((item, idx) => (
-                                                        <div key={idx} style={{ paddingLeft: '8px', borderLeft: '2px solid #e5e7eb', marginTop: '2px' }}>
+                                                        <div key={idx} style={{ paddingLeft: '8px', borderLeft: '2px solid #e5e7eb', marginTop: '2px', textAlign: 'left' }}>
                                                           {typeof item === 'object' && item !== null
                                                             ? (() => {
                                                               const camposVisibles: Record<string, string> = {
