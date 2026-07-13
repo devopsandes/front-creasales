@@ -469,11 +469,28 @@ const VerNotificaciones = () => {
                                                       ? v.map((item, idx) => (
                                                         <div key={idx} style={{ paddingLeft: '8px', borderLeft: '2px solid #e5e7eb', marginTop: '2px' }}>
                                                           {typeof item === 'object' && item !== null
-                                                            ? Object.entries(item as Record<string, unknown>).map(([ik, iv]) => (
-                                                              <span key={ik} style={{ display: 'block', fontSize: '0.8rem' }}>
-                                                                <span className="ver-notif-dato-nested-key">{ik}:</span> {String(iv ?? '—')}
-                                                              </span>
-                                                            ))
+                                                            ? (() => {
+                                                              const camposVisibles: Record<string, string> = {
+                                                                tipoSaldo: 'Tipo',
+                                                                valor: 'Valor',
+                                                                tipoDeCobranza: 'Tipo de cobranza',
+                                                                fechaVencimiento: 'Vencimiento',
+                                                                linkDePago: 'Link de pago',
+                                                              };
+                                                              const saldo = item as Record<string, unknown>;
+                                                              return Object.entries(camposVisibles).map(([campo, label]) => (
+                                                                saldo[campo] !== undefined ? (
+                                                                  <span key={campo} style={{ display: 'block', fontSize: '0.85rem' }}>
+                                                                    <span className="ver-notif-dato-nested-key">{label}:</span>{' '}
+                                                                    {campo === 'linkDePago'
+                                                                      ? <a href={String(saldo[campo])} target="_blank" rel="noreferrer" style={{ color: '#2563eb', wordBreak: 'break-all' }}>{String(saldo[campo])}</a>
+                                                                      : campo === 'valor'
+                                                                        ? `$${Number(saldo[campo]).toLocaleString('es-AR')}`
+                                                                        : String(saldo[campo] ?? '—')}
+                                                                  </span>
+                                                                ) : null
+                                                              ));
+                                                            })()
                                                             : String(item)}
                                                         </div>
                                                       ))
