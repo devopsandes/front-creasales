@@ -14,7 +14,8 @@ import {
   Tag,
   Plug2,
   LogOut,
-  MailCheckIcon
+  MailCheckIcon,
+  CalendarClock
 } from "lucide-react";
 import { FaMeta } from "react-icons/fa6";
 import QuickReplies from "../icons/QuickReplies";
@@ -71,6 +72,7 @@ const DashSidebar = ({ role }: Props) => {
             <DashItem icon={Grid3x3} path='/dashboard/categorias' titulo="Categorias"/>
             <DashItem icon={CheckSquare} path='/dashboard/acciones' titulo="Acciones"/>
             {!tagsDisabled && <DashItem icon={Tag} path='/dashboard/tags' titulo="Etiquetas"/>}
+            <DashItem icon={CalendarClock} path='/dashboard/dias-especiales' titulo="Días especiales"/>
             <DashItem icon={Settings} path='/dashboard/configuracion' titulo="Configuración"/>
             <DashItem icon={Plug2} path='/dashboard/integraciones' titulo="Integraciones"/>
 

@@ -1,178 +1,187 @@
 import { Tag } from "../interfaces/common.interface"
 
 const navEmpresa: Tag[] = [
-    {
-      id: 1,
-      name: "Datos",
-      path: "/dashboard/empresa"
-    },
-    {
-      id: 2,
-      name: "Form",
-      path: "/dashboard/empresa/form"
-    }
-  ]
+  {
+    id: 1,
+    name: "Datos",
+    path: "/dashboard/empresa"
+  },
+  {
+    id: 2,
+    name: "Form",
+    path: "/dashboard/empresa/form"
+  }
+]
 
-  const navAcciones: Tag[] = [
-     {
-      id: 1,
-      name: "Acciones",
-      path: "/dashboard/acciones"
-    },
-   
-  ]
+const navAcciones: Tag[] = [
+  {
+    id: 1,
+    name: "Acciones",
+    path: "/dashboard/acciones"
+  },
 
-  const navEstados: Tag[] = [
-    {
-      id: 1,
-      name: "Form",
-      path: "/dashboard/estados"
-    },
-    {
-      id: 2,
-      name: "Datos",
-      path: "/dashboard/estados/datos"
-    }
-  ]
+]
 
-  const navMeta: Tag[] = [
-    {
-      id: 1,
-      name: "Form",
-      path: "/dashboard/meta"
-    },
-    {
-      id: 2,
-      name: "Guía",
-      path: "/dashboard/meta/datos"
-    }
-  ]
+const navEstados: Tag[] = [
+  {
+    id: 1,
+    name: "Form",
+    path: "/dashboard/estados"
+  },
+  {
+    id: 2,
+    name: "Datos",
+    path: "/dashboard/estados/datos"
+  }
+]
+
+const navMeta: Tag[] = [
+  {
+    id: 1,
+    name: "Form",
+    path: "/dashboard/meta"
+  },
+  {
+    id: 2,
+    name: "Guía",
+    path: "/dashboard/meta/datos"
+  }
+]
 
 
-  const navModulos: Tag[] = [
-    {
-      id: 1,
-      name: "Form",
-      path: "/dashboard/modulos"
-    },
-    {
-      id: 2,
-      name: "Datos",
-      path: "/dashboard/modulos/datos"
-    }
-  ]
+const navModulos: Tag[] = [
+  {
+    id: 1,
+    name: "Form",
+    path: "/dashboard/modulos"
+  },
+  {
+    id: 2,
+    name: "Datos",
+    path: "/dashboard/modulos/datos"
+  }
+]
 
-  const navUsuarios: Tag[] = [
-   /*  {
-      id: 1,
-      name: "Form",
-      path: "/dashboard/usuarios"
-    }, */
-    {
-      id: 1,
-      name: "Usuarios",
-      path: "/dashboard/usuarios"
-    }
-  ]
+const navUsuarios: Tag[] = [
+  /*  {
+     id: 1,
+     name: "Form",
+     path: "/dashboard/usuarios"
+   }, */
+  {
+    id: 1,
+    name: "Usuarios",
+    path: "/dashboard/usuarios"
+  }
+]
 
-  const navCategorias: Tag[] = [
-    {
-      id: 1,
-      name: "Form",
-      path: "/dashboard/categorias"
-    },
-    {
-      id: 2,
-      name: "Datos",
-      path: "/dashboard/modulos/datos"
-    }
-  ]
+const navCategorias: Tag[] = [
+  {
+    id: 1,
+    name: "Form",
+    path: "/dashboard/categorias"
+  },
+  {
+    id: 2,
+    name: "Datos",
+    path: "/dashboard/modulos/datos"
+  }
+]
 
-  const navTareas: Tag[] = [
-    {
-      id: 1,
-      name: "Acciones",
-      path: "/dashboard/tareas"
-    },
-    {
-      id: 2,
-      name: "Datos",
-      path: "/dashboard/modulos/datos"
-    }
-  ]
+const navTareas: Tag[] = [
+  {
+    id: 1,
+    name: "Acciones",
+    path: "/dashboard/tareas"
+  },
+  {
+    id: 2,
+    name: "Datos",
+    path: "/dashboard/modulos/datos"
+  }
+]
 
-  const navChats: Tag[] = [
-    {
-      id: 1,
-      name: "Chats",
-      path: "/dashboard/chats"
-    },
-   
-  ]
+const navChats: Tag[] = [
+  {
+    id: 1,
+    name: "Chats",
+    path: "/dashboard/chats"
+  },
 
-  const navTickets: Tag[] = [
-    {
-      id: 1,
-      name: "Tickets",
-      path: "/dashboard/tickets"
-    },
-  ]
+]
 
-  const navEmisivos: Tag[] = [
-    {
-      id: 1,
-      name: "Emisivos",
-      path: "/dashboard/emisivos"
-    },
-  ]
+const navTickets: Tag[] = [
+  {
+    id: 1,
+    name: "Tickets",
+    path: "/dashboard/tickets"
+  },
+]
 
-  const navClientes: Tag[] = [
-    {
-      id: 1,
-      name: "Clientes",
-      path: "/dashboard/clientes"
-    },
-  ]
+const navEmisivos: Tag[] = [
+  {
+    id: 1,
+    name: "Emisivos",
+    path: "/dashboard/emisivos"
+  },
+]
 
-  const navTags: Tag[] = [
-    {
-      id: 1,
-      name: "Tags",
-      path: "/dashboard/tags"
-    },
-  ]
+const navClientes: Tag[] = [
+  {
+    id: 1,
+    name: "Clientes",
+    path: "/dashboard/clientes"
+  },
+]
 
-  const navIntegraciones: Tag[] = [
-    {
-      id: 1,
-      name: "Integraciones",
-      path: "/dashboard/integraciones"
-    },
-  ]
+const navTags: Tag[] = [
+  {
+    id: 1,
+    name: "Tags",
+    path: "/dashboard/tags"
+  },
+]
 
-  const navRespuestasRapidas: Tag[] = [
-    {
-      id: 1,
-      name: "Respuestas rápidas",
-      path: "/dashboard/respuestas-rapidas"
-    },
-  ]
+const navIntegraciones: Tag[] = [
+  {
+    id: 1,
+    name: "Integraciones",
+    path: "/dashboard/integraciones"
+  },
+]
+
+const navRespuestasRapidas: Tag[] = [
+  {
+    id: 1,
+    name: "Respuestas rápidas",
+    path: "/dashboard/respuestas-rapidas"
+  },
+]
+
+const navSpecialDayMessages: Tag[] = [
+  {
+    id: 1,
+    name: "Días especiales",
+    path: "/dashboard/dias-especiales"
+  },
+]
 
 
 export {
-    navCategorias,
-    navChats,
-    navEmpresa,
-    navEstados,
-    navMeta,
-    navModulos,
-    navTareas,
-    navUsuarios,
-    navTickets,
-    navEmisivos,
-    navTags,
-    navAcciones,
-    navClientes,
-    navIntegraciones,
-    navRespuestasRapidas
+  navCategorias,
+  navChats,
+  navEmpresa,
+  navEstados,
+  navMeta,
+  navModulos,
+  navTareas,
+  navUsuarios,
+  navTickets,
+  navEmisivos,
+  navTags,
+  navAcciones,
+  navClientes,
+  navIntegraciones,
+  navRespuestasRapidas,
+  navSpecialDayMessages
 }

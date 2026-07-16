@@ -23,7 +23,7 @@ import BotIA from '../pages/bot/BotIA'
 import BotConfig from '../pages/bot-config/BotConfig'
 import DashboardHome from '../pages/dashboard-home/DashboardHome'
 import Chats from '../pages/chats/Chats'
-import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas, navEmisivos } from '../utils/navegacion'
+import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas, navEmisivos, navSpecialDayMessages } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import LogoFondo from '../components/logo/LogoFondo'
 import TableUsers from '../pages/usuarios/TableUsers'
@@ -39,6 +39,7 @@ import TableIntegraciones from '../pages/integraciones/TableIntegraciones'
 import RespuestasRapidasPage from '../pages/respuestas-rapidas/RespuestasRapidasPage'
 import FeatureDisabledNotice from '../components/common/FeatureDisabledNotice'
 import { isLightFeatureDisabled } from '../config/runtimeConfig'
+import SpecialDayMessagesPage from '../pages/special-day-messages/SpecialDayMessagesPage'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -155,6 +156,12 @@ const AppRouter = () => {
         {(role === 'ROOT' || role === 'ADMIN') && (
           <Route path='acciones' element={<NavTag tags={navAcciones} />}>
             <Route index element={<TableAcciones />} />
+          </Route>
+        )}
+
+        {(role === 'ROOT' || role === 'ADMIN') && (
+          <Route path='dias-especiales' element={<NavTag tags={navSpecialDayMessages} />}>
+            <Route index element={<SpecialDayMessagesPage />} />
           </Route>
         )}
 
