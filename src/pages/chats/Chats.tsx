@@ -303,6 +303,29 @@ const Chats = () => {
         return value.toLowerCase().split(' ').filter(Boolean).map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
     }
 
+    const linkifyText = (text: string): React.ReactNode[] => {
+        const urlRegex = /https?:\/\/\S+/gi
+        const parts: React.ReactNode[] = []
+        let lastIndex = 0
+        let match: RegExpExecArray | null
+        let key = 0
+
+        while ((match = urlRegex.exec(text)) !== null) {
+            const url = match[0]
+            if (match.index > lastIndex) {
+                parts.push(<span key={key++}>{text.slice(lastIndex, match.index)}</span>)
+            }
+            parts.push(
+                <a key={key++} href={url} target="_blank" rel="noreferrer" className="chat-media-link">{url}</a>
+            )
+            lastIndex = match.index + url.length
+        }
+        if (lastIndex < text.length) {
+            parts.push(<span key={key++}>{text.slice(lastIndex)}</span>)
+        }
+        return parts
+    }
+
     const getMediaUrl = (value: any): string | null => {
         if (!value) return null
         if (typeof value === "string") return value
@@ -338,26 +361,12 @@ const Chats = () => {
                 </div>
             )
         }
-        const isExternalUrl = /^https?:\/\//i.test(fallbackText.trim())
-        if (isExternalUrl) {
-            return (
-                <a href={fallbackText.trim()} target="_blank" rel="noreferrer" className="chat-media-link">
-                    {fallbackText.trim()}
-                </a>
-            )
-        }
 
-        // Si el texto contiene una URL mezclada con texto (ej: "Hola, adjunto: https://...")
-        const urlMatch = fallbackText.match(/https?:\/\/\S+/i)
-        if (urlMatch) {
-            const url = urlMatch[0]
-            const before = fallbackText.slice(0, urlMatch.index).trim()
-            const after = fallbackText.slice((urlMatch.index ?? 0) + url.length)
+        const hasUrl = /https?:\/\/\S+/i.test(fallbackText)
+        if (hasUrl) {
             return (
                 <span className="chat-text" style={{ whiteSpace: 'pre-wrap' }}>
-                    {before && <>{before} </>}
-                    <a href={url} target="_blank" rel="noreferrer" className="chat-media-link">{url}</a>
-                    {after}
+                    {linkifyText(fallbackText)}
                 </span>
             )
         }
