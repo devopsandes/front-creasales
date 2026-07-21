@@ -352,10 +352,12 @@ const Chats = () => {
         if (urlMatch) {
             const url = urlMatch[0]
             const before = fallbackText.slice(0, urlMatch.index).trim()
+            const after = fallbackText.slice((urlMatch.index ?? 0) + url.length)
             return (
-                <span className="chat-text">
+                <span className="chat-text" style={{ whiteSpace: 'pre-wrap' }}>
                     {before && <>{before} </>}
                     <a href={url} target="_blank" rel="noreferrer" className="chat-media-link">{url}</a>
+                    {after}
                 </span>
             )
         }
