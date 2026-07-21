@@ -13,7 +13,7 @@ import DeleteModal from '../../components/modal/DeleteModal'
 import ErrorModal from '../../components/modal/ErrorModal'
 import { FaFileArrowDown } from "react-icons/fa6";
 import { IoPersonAdd } from "react-icons/io5";
-import { Bot, BotOff, CheckCheck, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { Bot, BotOff, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionExpired, clearMentionChatSelection, setChats } from '../../app/slices/actionSlice'
 import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
@@ -111,6 +111,7 @@ const Chats = () => {
     const [qrFiltered, setQrFiltered] = useState<QuickResponse[]>([])
     const [qrActiveIndex, setQrActiveIndex] = useState(0)
     const [qrTriggerRange, setQrTriggerRange] = useState<{ start: number; end: number } | null>(null)
+    const [qrExpandedId, setQrExpandedId] = useState<string | null>(null)
     const [conversacionNumero, setConversacionNumero] = useState<number | null>(null)
     const [isMentionModalOpen, setIsMentionModalOpen] = useState(false)
     const [detailChatTags, setDetailChatTags] = useState<ChatTag[]>([])
@@ -1618,7 +1619,11 @@ const Chats = () => {
 
     const handleClickFile = () => { fileInputRef.current?.click(); };
 
-    const closeQuickMenu = () => { setQrOpen(false); setQrFiltered([]); setQrActiveIndex(0); setQrTriggerRange(null) }
+    const closeQuickMenu = () => { setQrOpen(false); setQrFiltered([]); setQrActiveIndex(0); setQrTriggerRange(null); setQrExpandedId(null) }
+
+    const toggleQrExpand = (qrId: string) => {
+        setQrExpandedId((prev) => (prev === qrId ? null : qrId))
+    }
 
     const insertQuickResponse = (qr: QuickResponse) => {
         const range = qrTriggerRange
@@ -1965,18 +1970,42 @@ const Chats = () => {
                                         </button>
                                         <input type="file" accept="application/pdf, image/jpeg, image/png, image/webp, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document" id="fileInput" ref={fileInputRef} style={{ display: "none" }} multiple onChange={handleAddFile} />
                                         {qrOpen && (
-                                            <ul className="absolute bottom-12 left-2 w-96 max-h-60 overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden rounded-xl bg-slate-50/95 backdrop-blur-sm shadow-lg ring-1 ring-slate-200">
-                                                {qrFiltered.length ? (
-                                                    qrFiltered.map((qr, idx) => (
-                                                        <li key={qr.id} onMouseDown={(e) => { e.preventDefault(); insertQuickResponse(qr) }} className={`px-3 py-2 cursor-pointer text-slate-700 text-left hover:bg-indigo-50 hover:text-slate-900 transition-colors ${idx === qrActiveIndex ? 'bg-indigo-50 text-slate-900' : ''}`}>
-                                                            <div className="font-semibold">/{qr.shortcut}</div>
-                                                            <div className="text-xs text-slate-500 truncate">{qr.text}</div>
-                                                        </li>
-                                                    ))
-                                                ) : (
-                                                    <li className="px-3 py-2 text-gray-400">No hay coincidencias</li>
-                                                )}
-                                            </ul>
+                                            <div className="qr-modal-overlay" onMouseDown={closeQuickMenu}>
+                                                <div className="qr-modal" onMouseDown={(e) => e.stopPropagation()}>
+                                                    <div className="qr-modal-header">
+                                                        <h3>Respuestas rápidas</h3>
+                                                        <button type="button" className="qr-modal-close" onMouseDown={(e) => { e.preventDefault(); closeQuickMenu() }} aria-label="Cerrar">
+                                                            <X size={18} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="qr-modal-list">
+                                                        {qrFiltered.length ? (
+                                                            qrFiltered.map((qr, idx) => {
+                                                                const isExpanded = qrExpandedId === qr.id
+                                                                const isActive = idx === qrActiveIndex
+                                                                return (
+                                                                    <div key={qr.id} className={`qr-item ${isActive ? 'qr-item--active' : ''} ${isExpanded ? 'qr-item--expanded' : ''}`}>
+                                                                        <button type="button" className="qr-item-header" onMouseDown={(e) => { e.preventDefault(); toggleQrExpand(qr.id) }}>
+                                                                            <span className="qr-item-shortcut">/{qr.shortcut}</span>
+                                                                            <ChevronDown size={16} className="qr-item-chevron" />
+                                                                        </button>
+                                                                        {isExpanded && (
+                                                                            <div className="qr-item-body">
+                                                                                <p className="qr-item-text">{qr.text}</p>
+                                                                                <button type="button" className="qr-item-use-btn" onMouseDown={(e) => { e.preventDefault(); insertQuickResponse(qr) }}>
+                                                                                    Usar esta respuesta
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )
+                                                            })
+                                                        ) : (
+                                                            <div className="qr-modal-empty">No hay coincidencias</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
                                         <button type='button' className='btn-msg btn-plantilla' onClick={() => dispatch(switchModalPlantilla())}>Plantilla</button>
                                         <button type='submit' className='btn-msg' disabled={isSendingRef.current}>Enviar</button>
