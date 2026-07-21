@@ -1619,6 +1619,15 @@ const Chats = () => {
 
     const handleClickFile = () => { fileInputRef.current?.click(); };
 
+    const getShortcutOrder = (shortcut: string): number => {
+        const match = `${shortcut ?? ''}`.match(/^(\d+)/)
+        return match ? parseInt(match[1], 10) : Number.MAX_SAFE_INTEGER
+    }
+
+    const sortQuickResponses = (items: QuickResponse[]): QuickResponse[] => {
+        return [...items].sort((a, b) => getShortcutOrder(a.shortcut) - getShortcutOrder(b.shortcut))
+    }
+
     const closeQuickMenu = () => { setQrOpen(false); setQrFiltered([]); setQrActiveIndex(0); setQrTriggerRange(null); setQrExpandedId(null) }
 
     const toggleQrExpand = (qrId: string) => {
@@ -1656,7 +1665,7 @@ const Chats = () => {
             const start = caretPos - slashMatch[0].length
             const end = caretPos
             const norm = (s: string) => (s || '').toLowerCase()
-            const filtered = quickResponses.filter((qr) => { const a = norm(qr.shortcut); const b = norm(qr.text); if (!q) return true; return a.includes(q) || b.includes(q) })
+            const filtered = sortQuickResponses(quickResponses.filter((qr) => { const a = norm(qr.shortcut); const b = norm(qr.text); if (!q) return true; return a.includes(q) || b.includes(q) }))
             setQrTriggerRange({ start, end })
             setQrFiltered(filtered)
             setQrActiveIndex(0)
