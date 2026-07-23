@@ -436,6 +436,13 @@
   justify-content: center;
 }
 
+.ver-notif-action-plantilla {
+  color: #0b2a4a;
+}
+.ver-notif-action-plantilla:hover {
+  background: #e8f0f8;
+}
+
 .ver-notif-action-view {
   background-color: #dbeafe;
   color: #1e40af;
