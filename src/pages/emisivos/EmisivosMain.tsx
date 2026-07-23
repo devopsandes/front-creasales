@@ -1,5 +1,6 @@
 //EmisivosMain.tsx
 
+import Plantillas from "./Plantillas";
 import { useState } from "react";
 import CrearNotificaciones from "./CrearNotificaciones";
 import VerNotificaciones from "./VerNotificaciones";
@@ -7,7 +8,7 @@ import VerMensajes from "./VerMensajes";
 import VerNotificacionesMasivas from "./VerNotificacionesMasivas";
 import './EmisivosMain.css';
 
-type TabType = 'crear' | 'verNotificacionesMasivas' | 'verNotificaciones' | 'verMensajes';
+type TabType = 'crear' | 'verNotificacionesMasivas' | 'verNotificaciones' | 'verMensajes' | 'plantillas';
 
 const EmisivosMain = () => {
   const [activeTab, setActiveTab] = useState<TabType>('crear');
@@ -40,6 +41,12 @@ const EmisivosMain = () => {
           >
             Ver Mensajes
           </button>
+          <button
+            className={`emisivos-tab ${activeTab === 'plantillas' ? 'emisivos-tab-active' : ''}`}
+            onClick={() => setActiveTab('plantillas')}
+          >
+            Plantillas
+          </button>
         </div>
         <div
           className="emisivos-tab-indicator"
@@ -47,8 +54,9 @@ const EmisivosMain = () => {
             transform: activeTab === 'crear' ? 'translateX(0%)' :
               activeTab === 'verNotificacionesMasivas' ? 'translateX(100%)' :
                 activeTab === 'verNotificaciones' ? 'translateX(200%)' :
-                  'translateX(300%)',
-            width: '25%'
+                  activeTab === 'verMensajes' ? 'translateX(300%)' :
+                    'translateX(400%)',
+            width: '20%'
           }}
         ></div>
       </div>
@@ -58,6 +66,7 @@ const EmisivosMain = () => {
         {activeTab === 'verNotificacionesMasivas' && <VerNotificacionesMasivas />}
         {activeTab === 'verNotificaciones' && <VerNotificaciones />}
         {activeTab === 'verMensajes' && <VerMensajes />}
+        {activeTab === 'plantillas' && <Plantillas />}
       </div>
     </div>
   );
