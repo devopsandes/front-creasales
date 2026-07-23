@@ -195,57 +195,59 @@ const RespuestasRapidasPage = () => {
         <h2 className="quick-header-title">Gestión de Respuestas Rápidas</h2>
         <p className="quick-header-description">Cree, edite y elimine respuestas reutilizables para acelerar la escritura en conversaciones. Luego podrá insertarlas desde el chat escribiendo / y seleccionando la opción deseada.</p>
       </div>
-      <div className="w-full px-4 md:px-8 max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-5">
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por atajo o contenido"
-            className="w-full sm:max-w-md rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <div className="flex gap-2 flex-shrink-0">
-            <button type="button" onClick={openCreate} className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors">Nuevo</button>
-            <button type="button" onClick={() => fetchList().catch(() => { })} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Actualizar</button>
-            <button type="button" onClick={() => setSearch("")} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Limpiar</button>
+      <div className="w-full flex justify-center px-4 md:px-8">
+        <div className="w-full max-w-6xl">
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between mb-5">
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar por atajo o contenido"
+              className="w-full sm:max-w-md rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <div className="flex gap-2 flex-shrink-0">
+              <button type="button" onClick={openCreate} className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors">Nuevo</button>
+              <button type="button" onClick={() => fetchList().catch(() => { })} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Actualizar</button>
+              <button type="button" onClick={() => setSearch("")} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Limpiar</button>
+            </div>
           </div>
-        </div>
 
-        {loading ? (
-          <div className="text-center py-12 text-slate-400 text-sm">Cargando...</div>
-        ) : sortedItems.length ? (
-          <div className="flex flex-col gap-2">
-            {sortedItems.map(qr => {
-              const isExpanded = expandedId === qr.id
-              return (
-                <div key={qr.id} className={`rounded-xl border bg-white transition-colors ${isExpanded ? "border-blue-400 shadow-sm" : "border-slate-200"}`}>
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(qr.id)}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50 rounded-xl transition-colors"
-                  >
-                    <span className="text-sm font-semibold text-slate-800">/{qr.shortcut}</span>
-                    <svg className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${isExpanded ? "rotate-180 text-blue-600" : ""}`} viewBox="0 0 20 20" fill="none">
-                      <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  {isExpanded && (
-                    <div className="px-4 pb-4 border-t border-slate-100">
-                      <p className="mt-3 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap break-words">{qr.text}</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <button type="button" onClick={() => copyShortcut(qr)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Copiar atajo</button>
-                        <button type="button" onClick={() => openEdit(qr)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Editar</button>
-                        <button type="button" onClick={() => openDuplicate(qr)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Duplicar</button>
-                        <button type="button" onClick={() => requestDelete(qr)} className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50">Eliminar</button>
+          {loading ? (
+            <div className="text-center py-12 text-slate-400 text-sm">Cargando...</div>
+          ) : sortedItems.length ? (
+            <div className="flex flex-col gap-2">
+              {sortedItems.map(qr => {
+                const isExpanded = expandedId === qr.id
+                return (
+                  <div key={qr.id} className={`rounded-xl border bg-white transition-colors ${isExpanded ? "border-blue-400 shadow-sm" : "border-slate-200"}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(qr.id)}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50 rounded-xl transition-colors"
+                    >
+                      <span className="text-sm font-semibold text-slate-800">/{qr.shortcut}</span>
+                      <svg className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${isExpanded ? "rotate-180 text-blue-600" : ""}`} viewBox="0 0 20 20" fill="none">
+                        <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    {isExpanded && (
+                      <div className="px-4 pb-4 border-t border-slate-100">
+                        <p className="mt-3 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap break-words">{qr.text}</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button type="button" onClick={() => copyShortcut(qr)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Copiar atajo</button>
+                          <button type="button" onClick={() => openEdit(qr)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Editar</button>
+                          <button type="button" onClick={() => openDuplicate(qr)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Duplicar</button>
+                          <button type="button" onClick={() => requestDelete(qr)} className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50">Eliminar</button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-slate-400 text-sm">Sin resultados</div>
-        )}
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-slate-400 text-sm">Sin resultados</div>
+          )}
+        </div>
       </div>
       {isFormOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
