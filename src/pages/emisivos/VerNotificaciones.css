@@ -894,3 +894,80 @@
   color: #6b7280;
   white-space: nowrap;
 }
+
+.ver-notif-reporte-wrapper {
+  margin-bottom: 1rem;
+}
+
+.ver-notif-reporte-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.25rem;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #0b2a4a;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.ver-notif-reporte-toggle:hover {
+  background-color: #f8fafc;
+}
+
+.ver-notif-reporte-arrow {
+  margin-left: auto;
+  transition: transform 0.2s;
+}
+
+.ver-notif-reporte-arrow.open {
+  transform: rotate(180deg);
+}
+
+.ver-notif-reporte-panel {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 0.75rem 0.75rem;
+  padding: 1.25rem;
+  margin-top: -1px;
+}
+
+.ver-notif-reporte-controles {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.ver-notif-reporte-total {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0 0 0.75rem 0;
+  font-weight: 500;
+}
+
+.ver-notif-reporte-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ver-notif-reporte-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ver-notif-reporte-fecha {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-family: 'Courier New', monospace;
+}

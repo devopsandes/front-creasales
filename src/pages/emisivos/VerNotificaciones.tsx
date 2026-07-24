@@ -36,6 +36,20 @@ interface Notificacion {
   updatedAt: string;
 }
 
+interface ItemReporte {
+  id: number;
+  plantillaId: number;
+  fecha: string;
+  flagCorreo: boolean;
+}
+
+interface GrupoReporte {
+  cuil: string;
+  nombreCompleto: string | null;
+  preAltas: ItemReporte[];
+  bienvenidas: ItemReporte[];
+}
+
 interface ApiResponse {
   status: string;
   data: Notificacion[];
@@ -61,6 +75,14 @@ const ESTADO_CONFIG: Record<string, { label: string; cls: string }> = {
   'ANULADA': { label: 'Anulada', cls: 'ver-notif-badge-anulada' },
 };
 
+const NOMBRES_PLANTILLA: Record<number, string> = {
+  1: 'Bienvenida-ADH',
+  2: 'Bienvenida-MON',
+  3: 'Bienvenida-REL',
+  6: 'Pre-Alta-ADH',
+  7: 'Pre-Alta-REL',
+};
+
 const VerNotificaciones = () => {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,6 +106,13 @@ const VerNotificaciones = () => {
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewNotifId, setPreviewNotifId] = useState<number | null>(null);
   const [loadingPreview, setLoadingPreview] = useState<number | null>(null); // guarda el id que está cargando, para mostrar loading solo en ese botón
+
+  const [mostrarReporte, setMostrarReporte] = useState(false);
+  const [reporteDesde, setReporteDesde] = useState('');
+  const [reporteHasta, setReporteHasta] = useState('');
+  const [reporteData, setReporteData] = useState<GrupoReporte[] | null>(null);
+  const [reporteLoading, setReporteLoading] = useState(false);
+  const [reporteError, setReporteError] = useState<string | null>(null);
 
   const showToastMessage = (type: 'success' | 'error', message: string) => {
     setToastType(type);
@@ -187,6 +216,37 @@ const VerNotificaciones = () => {
     }
   };
 
+  const handleGenerarReporte = async () => {
+    if (!reporteDesde || !reporteHasta) {
+      showToastMessage('error', 'Seleccioná ambas fechas (desde y hasta)');
+      return;
+    }
+    setReporteLoading(true);
+    setReporteError(null);
+    try {
+      const token = localStorage.getItem('token') || '';
+      const params = new URLSearchParams({ desde: reporteDesde, hasta: reporteHasta });
+      const response = await fetch(
+        `https://emisivos.createch.com.ar/notificaciones/reportePreAltasBienvenidas?${params}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (response.ok && data.status === 'success') {
+        setReporteData(data.data);
+      } else {
+        setReporteError(data.meta?.message || 'No se pudo generar el reporte');
+      }
+    } catch {
+      setReporteError('Error de conexión al generar el reporte');
+    } finally {
+      setReporteLoading(false);
+    }
+  };
+
+  const formatDateCorta = (dateStr: string) => {
+    return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(new Date(dateStr));
+  };
+
   return (
     <div className="ver-notif-wrapper">
       <div className="ver-notif-header">
@@ -198,6 +258,132 @@ const VerNotificaciones = () => {
       </div>
 
       <div className="ver-notif-container">
+
+        {/* Reporte de Pre-Altas y Bienvenidas */}
+        <div className="ver-notif-reporte-wrapper">
+          <button
+            className="ver-notif-reporte-toggle"
+            onClick={() => setMostrarReporte(!mostrarReporte)}
+          >
+            <FaFileAlt /> Ver reporte de Pre-Altas y Bienvenidas
+            <span className={`ver-notif-reporte-arrow ${mostrarReporte ? 'open' : ''}`}>▾</span>
+          </button>
+
+          {mostrarReporte && (
+            <div className="ver-notif-reporte-panel">
+              <div className="ver-notif-reporte-controles">
+                <div className="ver-notif-filter-group">
+                  <label className="ver-notif-filter-label">Desde</label>
+                  <input
+                    type="date"
+                    value={reporteDesde}
+                    onChange={(e) => setReporteDesde(e.target.value)}
+                    className="ver-notif-filter-input"
+                  />
+                </div>
+                <div className="ver-notif-filter-group">
+                  <label className="ver-notif-filter-label">Hasta</label>
+                  <input
+                    type="date"
+                    value={reporteHasta}
+                    onChange={(e) => setReporteHasta(e.target.value)}
+                    className="ver-notif-filter-input"
+                  />
+                </div>
+                <div className="ver-notif-filter-group ver-notif-filter-actions">
+                  <button
+                    onClick={handleGenerarReporte}
+                    className="ver-notif-btn-refresh"
+                    disabled={reporteLoading}
+                  >
+                    {reporteLoading ? 'Generando...' : 'Generar reporte'}
+                  </button>
+                </div>
+              </div>
+
+              {reporteError && (
+                <div className="ver-notif-error-banner">
+                  <FaTimesCircle />
+                  <span>{reporteError}</span>
+                </div>
+              )}
+
+              {reporteData && !reporteError && (
+                <>
+                  <p className="ver-notif-reporte-total">
+                    {reporteData.length} afiliados con actividad en el período
+                  </p>
+                  <div className="ver-notif-table-wrapper">
+                    <table className="ver-notif-table">
+                      <thead className="ver-notif-table-header">
+                        <tr>
+                          <th className="ver-notif-table-header-cell">CUIL</th>
+                          <th className="ver-notif-table-header-cell">Nombre</th>
+                          <th className="ver-notif-table-header-cell">Pre-Altas del período</th>
+                          <th className="ver-notif-table-header-cell">Bienvenidas del período</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reporteData.length === 0 ? (
+                          <tr><td colSpan={4} className="ver-notif-empty">Sin registros en el período seleccionado</td></tr>
+                        ) : reporteData.map((grupo) => (
+                          <tr key={grupo.cuil} className="ver-notif-table-row">
+                            <td className="ver-notif-table-cell ver-notif-table-cell-cuil">{grupo.cuil}</td>
+                            <td className="ver-notif-table-cell">{grupo.nombreCompleto || '—'}</td>
+                            <td className="ver-notif-table-cell">
+                              {grupo.preAltas.length === 0 ? (
+                                <span className="ver-notif-sin-dias">—</span>
+                              ) : (
+                                <div className="ver-notif-reporte-items">
+                                  {grupo.preAltas.map((item) => (
+                                    <div key={item.id} className="ver-notif-reporte-item">
+                                      <span className="ver-notif-plantilla-badge">{NOMBRES_PLANTILLA[item.plantillaId]}</span>
+                                      <span className="ver-notif-reporte-fecha">{formatDateCorta(item.fecha)}</span>
+                                      {item.flagCorreo && (
+                                        <button
+                                          onClick={() => handleVerPlantilla(item.id)}
+                                          className="ver-notif-action-button ver-notif-action-plantilla"
+                                          title="Ver plantilla renderizada"
+                                          disabled={loadingPreview === item.id}
+                                        ><FaFileAlt /></button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td className="ver-notif-table-cell">
+                              {grupo.bienvenidas.length === 0 ? (
+                                <span className="ver-notif-sin-dias">—</span>
+                              ) : (
+                                <div className="ver-notif-reporte-items">
+                                  {grupo.bienvenidas.map((item) => (
+                                    <div key={item.id} className="ver-notif-reporte-item">
+                                      <span className="ver-notif-plantilla-badge">{NOMBRES_PLANTILLA[item.plantillaId]}</span>
+                                      <span className="ver-notif-reporte-fecha">{formatDateCorta(item.fecha)}</span>
+                                      {item.flagCorreo && (
+                                        <button
+                                          onClick={() => handleVerPlantilla(item.id)}
+                                          className="ver-notif-action-button ver-notif-action-plantilla"
+                                          title="Ver plantilla renderizada"
+                                          disabled={loadingPreview === item.id}
+                                        ><FaFileAlt /></button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Filtros */}
         <div className="ver-notif-filters">
