@@ -36,11 +36,19 @@ interface Notificacion {
   updatedAt: string;
 }
 
+interface DestinoReporte {
+  email?: string;
+  push?: string;
+  whatsapp?: string;
+}
+
 interface ItemReporte {
   id: number;
   plantillaId: number;
   fecha: string;
   flagCorreo: boolean;
+  estado: string;
+  destino: DestinoReporte;
 }
 
 interface GrupoReporte {
@@ -113,6 +121,7 @@ const VerNotificaciones = () => {
   const [reporteData, setReporteData] = useState<GrupoReporte[] | null>(null);
   const [reporteLoading, setReporteLoading] = useState(false);
   const [reporteError, setReporteError] = useState<string | null>(null);
+  const [reporteHastaBienvenidas, setReporteHastaBienvenidas] = useState<string>('');
 
   const showToastMessage = (type: 'success' | 'error', message: string) => {
     setToastType(type);
@@ -233,6 +242,7 @@ const VerNotificaciones = () => {
       const data = await response.json();
       if (response.ok && data.status === 'success') {
         setReporteData(data.data);
+        setReporteHastaBienvenidas(data.meta?.hastaBienvenidas || '');
       } else {
         setReporteError(data.meta?.message || 'No se pudo generar el reporte');
       }
@@ -245,6 +255,11 @@ const VerNotificaciones = () => {
 
   const formatDateCorta = (dateStr: string) => {
     return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(new Date(dateStr));
+  };
+
+  const formatDateLarga = (dateStr: string) => {
+    if (!dateStr) return '';
+    return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(`${dateStr}T00:00:00`));
   };
 
   return (
@@ -319,8 +334,12 @@ const VerNotificaciones = () => {
                         <tr>
                           <th className="ver-notif-table-header-cell">CUIL</th>
                           <th className="ver-notif-table-header-cell">Nombre</th>
-                          <th className="ver-notif-table-header-cell">Pre-Altas del período</th>
-                          <th className="ver-notif-table-header-cell">Bienvenidas del período</th>
+                          <th className="ver-notif-table-header-cell">
+                            Pre-Altas del período {formatDateLarga(reporteDesde)} al {formatDateLarga(reporteHasta)}
+                          </th>
+                          <th className="ver-notif-table-header-cell">
+                            Bienvenidas desde {formatDateLarga(reporteDesde)} hasta {formatDateLarga(reporteHastaBienvenidas)}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -339,6 +358,12 @@ const VerNotificaciones = () => {
                                     <div key={item.id} className="ver-notif-reporte-item">
                                       <span className="ver-notif-plantilla-badge">{NOMBRES_PLANTILLA[item.plantillaId]}</span>
                                       <span className="ver-notif-reporte-fecha">{formatDateCorta(item.fecha)}</span>
+                                      <span className={`ver-notif-badge ${getEstado(item.estado).cls}`}>{getEstado(item.estado).label}</span>
+                                      {item.destino.email && (
+                                        <span className="ver-notif-reporte-destino" title={item.destino.email}>
+                                          <FaEnvelope className="ver-notif-destino-icon destino-email" /> {item.destino.email}
+                                        </span>
+                                      )}
                                       {item.flagCorreo && (
                                         <button
                                           onClick={() => handleVerPlantilla(item.id)}
@@ -361,6 +386,12 @@ const VerNotificaciones = () => {
                                     <div key={item.id} className="ver-notif-reporte-item">
                                       <span className="ver-notif-plantilla-badge">{NOMBRES_PLANTILLA[item.plantillaId]}</span>
                                       <span className="ver-notif-reporte-fecha">{formatDateCorta(item.fecha)}</span>
+                                      <span className={`ver-notif-badge ${getEstado(item.estado).cls}`}>{getEstado(item.estado).label}</span>
+                                      {item.destino.email && (
+                                        <span className="ver-notif-reporte-destino" title={item.destino.email}>
+                                          <FaEnvelope className="ver-notif-destino-icon destino-email" /> {item.destino.email}
+                                        </span>
+                                      )}
                                       {item.flagCorreo && (
                                         <button
                                           onClick={() => handleVerPlantilla(item.id)}

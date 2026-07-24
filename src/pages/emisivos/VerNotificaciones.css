@@ -971,3 +971,16 @@
   color: #6b7280;
   font-family: 'Courier New', monospace;
 }
+
+.ver-notif-reporte-destino {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: #374151;
+  font-family: 'Courier New', monospace;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
