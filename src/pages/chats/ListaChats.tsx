@@ -808,7 +808,14 @@ const ListaChats = () => {
                 perfMark('socket.chat.updated.received', { chatId: chatFromPayload.id })
                 if (!tagsDisabled && !tagEventApplied) scheduleChatTagsRefresh(chatFromPayload.id)
                 const existing = chatsRef.current.find((c) => c.id === chatFromPayload.id)
-                const normalized = mergeChatPayload(existing, chatFromPayload)
+                const normalized: any = mergeChatPayload(existing, chatFromPayload)
+
+                const isIncomingMessage = (chatFromPayload as any)?.lastMessageDirection === 'incoming'
+                const chatIsCurrentlyOpen = chatFromPayload.id === activeChatId
+                if (isIncomingMessage && !chatIsCurrentlyOpen) {
+                    normalized.unread = true
+                }
+
                 if (existing && normalized) {
                     const nextAssignment = getAssignment(normalized)
                     const prevOperadorId = existing?.operador?.id ?? null
@@ -971,14 +978,9 @@ const ListaChats = () => {
         return Number.isNaN(d.getTime()) ? null : d
     }
 
-    const getUnreadCount = (chat: ChatState): number => {
-        const anyChat: any = chat as any
-        if (typeof anyChat?.unreadCount === 'number') return Math.max(0, anyChat.unreadCount)
-        const msgs = Array.isArray(anyChat?.mensajes) ? anyChat.mensajes : []
-        return msgs.filter((m: any) => m?.msg_entrada && m?.leido === false).length
+    const isChatUnread = (chat: ChatState): boolean => {
+        return (chat as any)?.unread === true
     }
-
-    const isManuallyUnread = (chat: ChatState): boolean => { return (chat as any)?.manualUnread === true }
 
     const getLastIncomingAt = (chat: ChatState): Date | null => {
         const anyChat: any = chat as any
@@ -1268,17 +1270,15 @@ const ListaChats = () => {
                                         if (!chat?.id || !chat?.cliente) return null
                                         const nombre = capitalizeText(chat.cliente?.nombre)
                                         const telefono = chat.cliente?.telefono || ''
-                                        const unread = getUnreadCount(chat)
                                         const lastIncoming = getLastIncomingAt(chat)
                                         const lastIncomingLabel = formatRelativeLastIncoming(lastIncoming)
-                                        const manualUnread = isManuallyUnread(chat)
-                                        const showMarker = unread > 0 || manualUnread
+                                        const showMarker = isChatUnread(chat) && chat.id !== activeChatId
                                         const bulkChecked = (selectedBulkReadChatIds || []).includes(chat.id)
                                         const chatTags = getRenderTags(chat)
                                         return (
                                             <Link
                                                 to={`/dashboard/chats/${chat.id}?telefono=${chat.cliente?.telefono || ''}&nombre=${chat.cliente?.nombre || ''}`}
-                                                className={`item-lista text-left ${chat.id === activeChatId ? 'active' : ''}`}
+                                                className={`item-lista text-left ${chat.id === activeChatId ? 'active' : ''} ${showMarker ? 'chat-item-unread' : ''}`}
                                                 key={chat.id}
                                                 onClick={handleOpenChat}
                                             >
@@ -1287,7 +1287,7 @@ const ListaChats = () => {
                                                         <div className="chat-item-name-row">
                                                             <span className="chat-item-name">{nombre}</span>
                                                             {showMarker && (
-                                                                <span className="chat-unread-indicator" title={manualUnread ? "Marcado como no leído" : `${unread} mensaje(s) sin leer`} aria-label={manualUnread ? "Marcado como no leído" : `${unread} mensaje(s) sin leer`}>
+                                                                <span className="chat-unread-indicator" title="Tenés mensajes nuevos" aria-label="Tenés mensajes nuevos">
                                                                     <span className="chat-unread-dot" />
                                                                 </span>
                                                             )}

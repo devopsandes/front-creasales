@@ -940,6 +940,16 @@ const Chats = () => {
     }, [, location])
 
     useEffect(() => {
+        if (!id || !token) return
+        setChatReadState(token, id, 'read')
+            .then((resp: any) => {
+                if (openAuthSessionIfNeeded(resp)) return
+                dispatch(markChatReadLocal(id))
+            })
+            .catch(() => { })
+    }, [id, token])
+
+    useEffect(() => {
         const socket = getSocket()
         if (!socket) {
             dispatch(connectSocket())
