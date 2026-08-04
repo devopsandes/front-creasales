@@ -806,6 +806,8 @@ const ListaChats = () => {
             const chatFromPayload = pickChatFromPayload(payload)
             if (chatFromPayload?.id) {
                 perfMark('socket.chat.updated.received', { chatId: chatFromPayload.id })
+                console.log('[DEBUG] payload completo:', JSON.stringify(payload, null, 2))
+                console.log('[DEBUG] chatFromPayload:', JSON.stringify(chatFromPayload, null, 2))
                 if (!tagsDisabled && !tagEventApplied) scheduleChatTagsRefresh(chatFromPayload.id)
                 const existing = chatsRef.current.find((c) => c.id === chatFromPayload.id)
                 const normalized: any = mergeChatPayload(existing, chatFromPayload)
