@@ -810,8 +810,10 @@ const ListaChats = () => {
                 const existing = chatsRef.current.find((c) => c.id === chatFromPayload.id)
                 const normalized: any = mergeChatPayload(existing, chatFromPayload)
 
-                const isIncomingMessage = (chatFromPayload as any)?.lastMessageDirection === 'incoming'
                 const chatIsCurrentlyOpen = chatFromPayload.id === activeChatId
+                const payloadDirection = (chatFromPayload as any)?.lastMessageDirection
+                const payloadLastIncoming = (chatFromPayload as any)?.lastIncomingMessageAt
+                const isIncomingMessage = payloadDirection === 'incoming' || Boolean(payloadLastIncoming)
                 if (isIncomingMessage && !chatIsCurrentlyOpen) {
                     normalized.unread = true
                 }
