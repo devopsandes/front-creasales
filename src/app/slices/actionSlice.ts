@@ -144,6 +144,7 @@ const actionSlice = createSlice({
             const chat: any = chats[idx]
             chat.unreadCount = 0
             chat.manualUnread = false
+            chat.unread = false
 
             if (Array.isArray(chat.mensajes)) {
                 chat.mensajes = chat.mensajes.map((m: any) => {
@@ -170,6 +171,7 @@ const actionSlice = createSlice({
 
             const chat: any = chats[idx]
             chat.manualUnread = true
+            chat.unread = true
 
             state.chats = [...chats]
         },
