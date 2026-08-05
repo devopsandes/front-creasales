@@ -232,6 +232,11 @@ const ListaConversaciones = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Columna dummy: en chats.css, .col-lista:last-child se oculta a propósito
+                        (era el panel lateral legacy). Sin esta 3ra columna, la del detalle
+                        pasaría a ser :last-child y quedaría oculta por CSS. */}
+                    <div className="col-lista"></div>
                 </div>
             </div>
         </div>
