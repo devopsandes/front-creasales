@@ -119,46 +119,48 @@ const ConversacionDetalle = () => {
         : "Sistema"
 
     return (
-        <div className="chat-main-col">
-            <div className="header-chat">
-                <div className="header-icon">
-                    <FaCircleUser size={25} />
-                </div>
-                <p className="nombre-chat">
-                    <span>{nombre}</span>
-                    <span>+{telefono}</span>
-                </p>
-                {conversacion.numeroConversacion && (
-                    <span className="chat-conversacion-id">Nro.Conversación: {conversacion.numeroConversacion}</span>
-                )}
-                <span className="chat-conversacion-id">Archivó: {archivadoPorLabel}</span>
-            </div>
-
-            <div className="body-chat">
-                {items.length === 0 && (
-                    <div className="chat-filter-empty-state">
-                        <p className="chat-filter-empty-title">Esta conversación no tiene mensajes.</p>
+        <div className="chat-with-panel">
+            <div className="chat-main-col">
+                <div className="header-chat">
+                    <div className="header-icon">
+                        <FaCircleUser size={25} />
                     </div>
-                )}
-                {items.map((msj) => {
-                    const key = msj.id ?? `${msj.createdAt}`
-                    if (msj.kind === "event") {
+                    <p className="nombre-chat">
+                        <span>{nombre}</span>
+                        <span>+{telefono}</span>
+                    </p>
+                    {conversacion.numeroConversacion && (
+                        <span className="chat-conversacion-id">Nro.Conversación: {conversacion.numeroConversacion}</span>
+                    )}
+                    <span className="chat-conversacion-id">Archivó: {archivadoPorLabel}</span>
+                </div>
+
+                <div className="body-chat">
+                    {items.length === 0 && (
+                        <div className="chat-filter-empty-state">
+                            <p className="chat-filter-empty-title">Esta conversación no tiene mensajes.</p>
+                        </div>
+                    )}
+                    {items.map((msj) => {
+                        const key = msj.id ?? `${msj.createdAt}`
+                        if (msj.kind === "event") {
+                            return (
+                                <div className="contenedor-archivado" key={key}>
+                                    <p className="mensaje-archivado">{resolveEventText(msj)}</p>
+                                    <span className="timestamp">{formatCreatedAt(`${msj.createdAt}`)}</span>
+                                </div>
+                            )
+                        }
                         return (
-                            <div className="contenedor-archivado" key={key}>
-                                <p className="mensaje-archivado">{resolveEventText(msj)}</p>
+                            <div key={key} className={`${msj.msg_entrada ? "contenedor-entrada" : "contenedor-salida"}`}>
+                                <div className={`${msj.msg_entrada ? "mensaje-entrada" : "mensaje-salida"}`}>
+                                    <MessageContent msg={msj} />
+                                </div>
                                 <span className="timestamp">{formatCreatedAt(`${msj.createdAt}`)}</span>
                             </div>
                         )
-                    }
-                    return (
-                        <div key={key} className={`${msj.msg_entrada ? "contenedor-entrada" : "contenedor-salida"}`}>
-                            <div className={`${msj.msg_entrada ? "mensaje-entrada" : "mensaje-salida"}`}>
-                                <MessageContent msg={msj} />
-                            </div>
-                            <span className="timestamp">{formatCreatedAt(`${msj.createdAt}`)}</span>
-                        </div>
-                    )
-                })}
+                    })}
+                </div>
             </div>
         </div>
     )
