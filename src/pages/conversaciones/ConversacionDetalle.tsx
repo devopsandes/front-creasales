@@ -69,14 +69,17 @@ const ConversacionDetalle = () => {
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
+        console.log('[ConversacionDetalle] effect corrió, id=', id, 'token existe=', Boolean(token))
         if (!id || !token) return
         const controller = new AbortController()
         setLoading(true)
         setError(null)
         getConversacionDetalle(token, id, { signal: controller.signal })
             .then((resp: any) => {
+                console.log('[ConversacionDetalle] respuesta recibida', resp)
                 const authReason = getAuthSessionReason(resp)
                 if (authReason) {
+                    console.log('[ConversacionDetalle] auth session reason detectado (falso positivo?)', authReason)
                     dispatch(openSessionExpired(authReason))
                     return
                 }
@@ -87,6 +90,7 @@ const ConversacionDetalle = () => {
                 setData(resp)
             })
             .catch((err: any) => {
+                console.log('[ConversacionDetalle] error en el catch', err)
                 if (err?.name === "AbortError" || err?.code === "ERR_CANCELED") return
                 setError("No se pudo cargar la conversación.")
             })
@@ -94,6 +98,8 @@ const ConversacionDetalle = () => {
 
         return () => controller.abort()
     }, [id, token, dispatch])
+
+    console.log('[ConversacionDetalle] render, loading=', loading, 'error=', error, 'data=', data)
 
     if (loading) {
         return (
