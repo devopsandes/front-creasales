@@ -166,7 +166,7 @@ const ListaConversaciones = () => {
                     </div>
                 </div>
                 <div className="lista-main">
-                    <div className="col-lista">
+                    <div className="col-lista" ref={listRef} onScroll={handleListScroll}>
                         <div className="w-full px-2 mb-2 mt-2">
                             <div className="filter-input-row">
                                 <User className="filter-input-icon" size={18} />
@@ -184,45 +184,43 @@ const ListaConversaciones = () => {
                             </div>
                         </div>
 
-                        <div className="col-lista" ref={listRef} onScroll={handleListScroll} style={{ overflowY: "auto" }}>
-                            {loading && (
-                                <div className="chat-loader-center">
-                                    <div className="loader2"></div>
-                                </div>
-                            )}
-                            {!loading && conversaciones.length === 0 && (
-                                <div className="chat-filter-empty-state">
-                                    <p className="chat-filter-empty-title">No hay conversaciones archivadas</p>
-                                </div>
-                            )}
-                            {!loading && conversaciones.map((conv) => {
-                                const nombre = capitalizeText(conv.cliente?.nombre)
-                                const telefono = conv.cliente?.telefono || ""
-                                return (
-                                    <Link
-                                        to={`/dashboard/conversaciones/${conv.id}`}
-                                        className={`item-lista text-left ${conv.id === activeConversacionId ? "active" : ""}`}
-                                        key={conv.id}
-                                    >
-                                        <div className="chat-item-header">
-                                            <div className="chat-item-title">
-                                                <div className="chat-item-name-row">
-                                                    <span className="chat-item-name">{nombre}</span>
-                                                </div>
-                                                <div className="chat-item-phone">{telefono}</div>
-                                                <div className="chat-item-phone">Archivó: {formatArchivadoPor(conv)}</div>
-                                                <div className="chat-item-phone">{formatFecha(conv.closedAt)}</div>
+                        {loading && (
+                            <div className="chat-loader-center">
+                                <div className="loader2"></div>
+                            </div>
+                        )}
+                        {!loading && conversaciones.length === 0 && (
+                            <div className="chat-filter-empty-state">
+                                <p className="chat-filter-empty-title">No hay conversaciones archivadas</p>
+                            </div>
+                        )}
+                        {!loading && conversaciones.map((conv) => {
+                            const nombre = capitalizeText(conv.cliente?.nombre)
+                            const telefono = conv.cliente?.telefono || ""
+                            return (
+                                <Link
+                                    to={`/dashboard/conversaciones/${conv.id}`}
+                                    className={`item-lista text-left ${conv.id === activeConversacionId ? "active" : ""}`}
+                                    key={conv.id}
+                                >
+                                    <div className="chat-item-header">
+                                        <div className="chat-item-title">
+                                            <div className="chat-item-name-row">
+                                                <span className="chat-item-name">{nombre}</span>
                                             </div>
+                                            <div className="chat-item-phone">{telefono}</div>
+                                            <div className="chat-item-phone">Archivó: {formatArchivadoPor(conv)}</div>
+                                            <div className="chat-item-phone">{formatFecha(conv.closedAt)}</div>
                                         </div>
-                                    </Link>
-                                )
-                            })}
-                            {isLoadingMore && (
-                                <div className="timeline-loader">
-                                    <div className="loader2"></div>
-                                </div>
-                            )}
-                        </div>
+                                    </div>
+                                </Link>
+                            )
+                        })}
+                        {isLoadingMore && (
+                            <div className="timeline-loader">
+                                <div className="loader2"></div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="col-lista">
