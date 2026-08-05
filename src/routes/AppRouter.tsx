@@ -23,8 +23,10 @@ import BotIA from '../pages/bot/BotIA'
 import BotConfig from '../pages/bot-config/BotConfig'
 import DashboardHome from '../pages/dashboard-home/DashboardHome'
 import Chats from '../pages/chats/Chats'
-import { navCategorias, navChats, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas, navEmisivos, navSpecialDayMessages } from '../utils/navegacion'
+import { navCategorias, navChats, navConversaciones, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas, navEmisivos, navSpecialDayMessages } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
+import ListaConversaciones from '../pages/conversaciones/ListaConversaciones'
+import ConversacionDetalle from '../pages/conversaciones/ConversacionDetalle'
 import LogoFondo from '../components/logo/LogoFondo'
 import TableUsers from '../pages/usuarios/TableUsers'
 import TableTickets from '../pages/tickets/TableTickets'
@@ -173,6 +175,13 @@ const AppRouter = () => {
             <Route path=':id' element={<Chats />} />
           </Route >
           {/* <Route path=':id' element={<Chats/>}/> */}
+        </Route>
+
+        <Route path='conversaciones' element={<NavTag tags={navConversaciones} />}>
+          <Route element={<ListaConversaciones />}>
+            <Route index element={<LogoFondo />} />
+            <Route path=':id' element={<ConversacionDetalle />} />
+          </Route>
         </Route>
 
         <Route path='tickets' element={<NavTag tags={navTickets} />}>

@@ -110,6 +110,14 @@ const navChats: Tag[] = [
 
 ]
 
+const navConversaciones: Tag[] = [
+  {
+    id: 1,
+    name: "Conversaciones",
+    path: "/dashboard/conversaciones"
+  },
+]
+
 const navTickets: Tag[] = [
   {
     id: 1,
@@ -170,6 +178,7 @@ const navSpecialDayMessages: Tag[] = [
 export {
   navCategorias,
   navChats,
+  navConversaciones,
   navEmpresa,
   navEstados,
   navMeta,

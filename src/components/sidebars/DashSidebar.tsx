@@ -15,7 +15,8 @@ import {
   Plug2,
   LogOut,
   MailCheckIcon,
-  CalendarClock
+  CalendarClock,
+  History
 } from "lucide-react";
 import { FaMeta } from "react-icons/fa6";
 import QuickReplies from "../icons/QuickReplies";
@@ -59,6 +60,7 @@ const DashSidebar = ({ role }: Props) => {
           <>
             <DashItem icon={Building2} path='/dashboard/empresa' titulo="Empresa"/>
             <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
+            <DashItem icon={History} path='/dashboard/conversaciones' titulo="Conversaciones"/>
             <DashItem icon={MailCheckIcon} path='/dashboard/emisivos' titulo="Emisivos"/>
             {!ticketsDisabled && <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>}
             <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes"/>
@@ -84,6 +86,7 @@ const DashSidebar = ({ role }: Props) => {
         {role === 'USER' && (
           <>
             <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats"/>
+            <DashItem icon={History} path='/dashboard/conversaciones' titulo="Conversaciones"/>
             {!ticketsDisabled && <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets"/>}
             <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes"/>
             {!quickResponsesDisabled && <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas"/>}
