@@ -1,7 +1,7 @@
 import React, { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatById, findChatMessagesLite, findChatTimeline, getUserData, setChatBotState } from '../../services/chats/chats.services'
+import { findChatById, findChatMessagesLite, findChatTimeline, getUserData, getAfiliadoIdentificado, setChatBotState } from '../../services/chats/chats.services'
 import { MessageLiteItem, TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
@@ -116,6 +116,7 @@ const Chats = () => {
     const [isMentionModalOpen, setIsMentionModalOpen] = useState(false)
     const [detailChatTags, setDetailChatTags] = useState<ChatTag[]>([])
     const [detailTagsFetched, setDetailTagsFetched] = useState(false)
+    const [afiliadoIdentificado, setAfiliadoIdentificado] = useState<any | null>(null)
     const [showScrollBtn, setShowScrollBtn] = useState(false)
     const [newMessagesCount, setNewMessagesCount] = useState(0)
 
@@ -974,6 +975,7 @@ const Chats = () => {
         const activeChatId = id
         const messageEventName = `new-message-${activeChatId}`
         const chatEventName = `chat-event-${activeChatId}`
+        const afiliadoIdentificadoEventName = `afiliado-identificado-${activeChatId}`
         const emitJoinChat = (origin: string) => {
             debugSocketLog('socket.join-chat.emit', { origin, eventName: chatEventName, connected: socket.connected })
             socket.emit('join-chat', activeChatId, (ack: any) => {
@@ -1093,6 +1095,9 @@ const Chats = () => {
                 })
             })
         }
+        const handleAfiliadoIdentificado = (payload: any) => {
+            if (payload?.afiliado) setAfiliadoIdentificado(payload.afiliado)
+        }
         const handleError = (error: any) => {
             const authReason = getSocketAuthSessionReason(error)
             if (authReason === 'expired') { dispatch(openSessionExpired('expired')); return }
@@ -1118,6 +1123,7 @@ const Chats = () => {
         socket.on("nota-privada-ack", handleNotaPrivadaAck)
         socket.on(messageEventName, handleNewMessage)
         socket.on(chatEventName, handleChatEvent)
+        socket.on(afiliadoIdentificadoEventName, handleAfiliadoIdentificado)
         socket.on("chat.updated", handleChatUpdated)
         socket.on('TAGS_UPDATED', handleTagsUpdatedEvent)
         socket.on('TAG_ASSIGNED', handleTagAssignedEvent)
@@ -1138,6 +1144,7 @@ const Chats = () => {
             socket.off("nota-privada-ack", handleNotaPrivadaAck)
             socket.off(messageEventName, handleNewMessage)
             socket.off(chatEventName, handleChatEvent)
+            socket.off(afiliadoIdentificadoEventName, handleAfiliadoIdentificado)
             socket.off("chat.updated", handleChatUpdated)
             socket.off('TAGS_UPDATED', handleTagsUpdatedEvent)
             socket.off('TAG_ASSIGNED', handleTagAssignedEvent)
@@ -1580,6 +1587,22 @@ const Chats = () => {
         }
     }, [])
 
+    useEffect(() => {
+        if (!id || !token) return
+        const controller = new AbortController()
+        getAfiliadoIdentificado(token, id, { signal: controller.signal })
+            .then((resp: any) => {
+                if (openAuthSessionIfNeeded(resp)) return
+                if (resp?.afiliado) setAfiliadoIdentificado(resp.afiliado)
+            })
+            .catch(() => { })
+        return () => controller.abort()
+    }, [id, token])
+
+    useEffect(() => {
+        setAfiliadoIdentificado(null)
+    }, [id])
+
     const handleArchivarCancel = () => { setIsArchiveModalOpen(false); }
     const handleDeleteClick = () => { setIsDeleteModalOpen(true); }
 
@@ -1697,6 +1720,27 @@ const Chats = () => {
             }
         }
     }
+
+    const mapAfiliadoIdentificado = (a: any) => {
+        if (!a) return null
+        return {
+            mail: a.mail ?? null,
+            celular: a.numCelular ?? null,
+            planAfiliado: a.planPrestacional ?? null,
+            provinciaDom: a.provincia ?? null,
+            viasClinicas: a.viasClinicas ?? null,
+            CUILTitular: a.cuilTitular ?? null,
+            IdAfiliadoTitular: a.idAfiliadoTitular ?? null,
+            mesAlta: a.perAltaGuion ?? a.perAlta ?? null,
+            OSAndes: a.obraSocial ?? null,
+            localidadDom: a.localidadSinCP ?? null,
+            tipoAltaBaja: a.tipoAltaBaja ?? null,
+            nroDocumento: a.nroDocumento ?? null,
+        }
+    }
+
+    const mappedIdentificado = useMemo(() => mapAfiliadoIdentificado(afiliadoIdentificado), [afiliadoIdentificado])
+    const panelData: any = { ...(dataUser ?? {}), ...(mappedIdentificado ?? {}) }
 
     return (
         <div className='chats-container'>
@@ -2107,72 +2151,81 @@ const Chats = () => {
                                         <div className='chat-info-panel-section'>
                                             <div className='chat-info-panel-section-title'>Datos del Afiliado</div>
                                             <div className='chat-info-panel-rows'>
-                                                {dataUser?.mail && (
+                                                {panelData?.mail && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>Email</span>
-                                                        <span className='chat-info-panel-value'>{dataUser.mail}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.mail}</span>
                                                     </div>
                                                 )}
-                                                {dataUser?.celular && (
+                                                {panelData?.celular && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>Teléfono</span>
-                                                        <span className='chat-info-panel-value'>{dataUser.celular}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.celular}</span>
                                                     </div>
                                                 )}
-                                                <div className='chat-info-panel-row'>
-                                                    <span className='chat-info-panel-label'>Tipo Alta/Baja</span>
-                                                    <span className='chat-info-panel-value'>Sin Datos</span>
-                                                </div>
-                                                {dataUser?.planAfiliado && (
+                                                {panelData?.tipoAltaBaja && (
+                                                    <div className='chat-info-panel-row'>
+                                                        <span className='chat-info-panel-label'>Tipo Alta/Baja</span>
+                                                        <span className='chat-info-panel-value'>{panelData.tipoAltaBaja}</span>
+                                                    </div>
+                                                )}
+                                                {panelData?.planAfiliado && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>Plan</span>
-                                                        <span className='chat-info-panel-value'>{dataUser.planAfiliado}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.planAfiliado}</span>
                                                     </div>
                                                 )}
-                                                {dataUser?.provinciaDom && (
+                                                {panelData?.provinciaDom && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>Provincia</span>
-                                                        <span className='chat-info-panel-value'>{dataUser.provinciaDom}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.provinciaDom}</span>
                                                     </div>
                                                 )}
-                                                <div className='chat-info-panel-row'>
-                                                    <span className='chat-info-panel-label'>Vía Clínica</span>
-                                                    <span className='chat-info-panel-value'>Sin Datos</span>
-                                                </div>
-                                                {dataUser?.CUILTitular && (
+                                                {panelData?.viasClinicas && (
+                                                    <div className='chat-info-panel-row'>
+                                                        <span className='chat-info-panel-label'>Vía Clínica</span>
+                                                        <span className='chat-info-panel-value'>{panelData.viasClinicas}</span>
+                                                    </div>
+                                                )}
+                                                {panelData?.CUILTitular && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>CUIL</span>
-                                                        <span className='chat-info-panel-value'>{dataUser.CUILTitular}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.CUILTitular}</span>
                                                     </div>
                                                 )}
-                                                {dataUser?.IdAfiliadoTitular && (
+                                                {panelData?.IdAfiliadoTitular && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>Id Titular</span>
-                                                        <span className='chat-info-panel-value'>{dataUser.IdAfiliadoTitular}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.IdAfiliadoTitular}</span>
                                                     </div>
                                                 )}
-                                                {dataUser?.mesAlta && (
+                                                {panelData?.mesAlta && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>Fecha Alta</span>
-                                                        <span className='chat-info-panel-value'>{dataUser.mesAlta}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.mesAlta}</span>
                                                     </div>
                                                 )}
-                                                {dataUser?.OSAndes && (
+                                                {panelData?.OSAndes && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>Obra Social</span>
-                                                        <span className='chat-info-panel-value'>{dataUser.OSAndes}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.OSAndes}</span>
                                                     </div>
                                                 )}
-                                                {dataUser?.localidadDom && (
+                                                {panelData?.localidadDom && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>Localidad</span>
-                                                        <span className='chat-info-panel-value'>{dataUser.localidadDom}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.localidadDom}</span>
                                                     </div>
                                                 )}
-                                                {dataUser?.CUILTitular && (
+                                                {panelData?.nroDocumento ? (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>DNI</span>
-                                                        <span className='chat-info-panel-value'>{dataUser.CUILTitular.toString().slice(2, -1)}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.nroDocumento}</span>
+                                                    </div>
+                                                ) : panelData?.CUILTitular && (
+                                                    <div className='chat-info-panel-row'>
+                                                        <span className='chat-info-panel-label'>DNI</span>
+                                                        <span className='chat-info-panel-value'>{panelData.CUILTitular.toString().slice(2, -1)}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -2186,7 +2239,7 @@ const Chats = () => {
                                                     <span className='chat-info-panel-label'>Canal</span>
                                                     <span className='chat-info-panel-value'>WhatsApp</span>
                                                 </div>
-                                                <div className='chat-info-panel-row'>
+                                                {/* <div className='chat-info-panel-row'>
                                                     <span className='chat-info-panel-label'>Estado</span>
                                                     <span className='chat-info-panel-value'>Abierto</span>
                                                 </div>
@@ -2197,17 +2250,17 @@ const Chats = () => {
                                                 <div className='chat-info-panel-row'>
                                                     <span className='chat-info-panel-label'>Departamento</span>
                                                     <span className='chat-info-panel-value'>Sin Datos</span>
-                                                </div>
+                                                </div> */}
                                                 <div className='chat-info-panel-row'>
                                                     <span className='chat-info-panel-label'>Asignado</span>
                                                     <span className='chat-info-panel-value'>
                                                         {operador ? `${operador.nombre} ${operador.apellido}` : 'Sin asignar'}
                                                     </span>
                                                 </div>
-                                                <div className='chat-info-panel-row'>
+                                                {/* <div className='chat-info-panel-row'>
                                                     <span className='chat-info-panel-label'>Zoho Ticket</span>
                                                     <span className='chat-info-panel-value'>Sin Datos</span>
-                                                </div>
+                                                </div> */}
                                             </div>
                                         </div>
 
