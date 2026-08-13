@@ -66,7 +66,7 @@ const ListaConversaciones = () => {
     useEffect(() => {
         const ejecucion = async () => {
             try {
-                const resp = await usuariosXRole("USER", token)
+                const resp = await usuariosXRole("", token)
                 const list = Array.isArray((resp as any)?.users) ? (resp as any).users : []
                 const ordered = [...list].sort((a: Usuario, b: Usuario) => {
                     const aa = `${a.apellido ?? ""} ${a.nombre ?? ""}`.trim().toLowerCase()
