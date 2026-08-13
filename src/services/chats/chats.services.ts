@@ -15,21 +15,6 @@ const pendingChatById = new Map<string, Promise<ChatResponse & ErrorResponse>>()
 const endpointLastAt = new Map<string, number>()
 const chatsClient = resolveClient("chats")
 
-const getAfiliadoIdentificado = async (
-    token: string,
-    chatId: string,
-    options?: { signal?: AbortSignal }
-): Promise<{ statusCode?: number; afiliado?: any } & ErrorResponse> => {
-    try {
-        const headers = { authorization: `Bearer ${token}` }
-        const { data } = await chatsClient.get(`/chats/${chatId}/afiliado-identificado`, { headers, signal: options?.signal })
-        return data
-    } catch (error) {
-        if (axios.isAxiosError(error) && error.response) return error.response.data as any
-        throw error
-    }
-}
-
 const withPending = async <T>(store: Map<string, Promise<T>>, key: string, taskFactory: () => Promise<T>): Promise<T> => {
     const inflight = store.get(key)
     if (inflight) return inflight
@@ -478,4 +463,4 @@ const desasignarChat = async (
 }
 
 
-export { findChatById, findChatTimeline, findChatMessagesLite, getUserData, getChats, getChatCounts, getChatCountsByOperator, setChatReadState, setChatBotState, searchByConversacion, desasignarChat, getAfiliadoIdentificado }
+export { findChatById, findChatTimeline, findChatMessagesLite, getUserData, getChats, getChatCounts, getChatCountsByOperator, setChatReadState, setChatBotState, searchByConversacion, desasignarChat }
