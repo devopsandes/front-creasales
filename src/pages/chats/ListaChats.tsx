@@ -112,8 +112,8 @@ const ListaChats = () => {
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
     const assignAudioRef = useRef(new Audio("/audio/audio1.mp3"));
 
-    const dataUser = useSelector((state: RootState) => state.action.dataUser);
-    const viewSide = useSelector((state: RootState) => state.action.viewSide);
+    // const dataUser = useSelector((state: RootState) => state.action.dataUser);
+    // const viewSide = useSelector((state: RootState) => state.action.viewSide);
     const chatsFromRedux = useSelector((state: RootState) => state.action.chats);
     const chatListLoadedQueryKey = useSelector((state: RootState) => state.action.chatListLoadedQueryKey);
     const chatListPage = useSelector((state: RootState) => state.action.chatListPage);
@@ -1050,10 +1050,10 @@ const ListaChats = () => {
         return Array.isArray(chat.tags) ? chat.tags : []
     }
 
-    const activeChatForSidePanel = activeChatId
-        ? (Array.isArray(chatsFromRedux) ? chatsFromRedux : []).find((chat) => chat?.id === activeChatId)
-        : null
-    const activeChatTags = activeChatForSidePanel ? getRenderTags(activeChatForSidePanel) : []
+    // const activeChatForSidePanel = activeChatId
+    //     ? (Array.isArray(chatsFromRedux) ? chatsFromRedux : []).find((chat) => chat?.id === activeChatId)
+    //     : null
+    // const activeChatTags = activeChatForSidePanel ? getRenderTags(activeChatForSidePanel) : []
 
     const handleOrdenarPorFecha = () => { setOrdenFecha(ordenFecha === 'desc' ? 'asc' : 'desc') }
     const handleExportarConversaciones = () => { console.log('Exportar conversaciones') }
@@ -1351,7 +1351,7 @@ const ListaChats = () => {
                             </div>
                         )}
                     </div>
-                    <div className="col-lista">
+                    {/* <div className="col-lista">
                         {viewSide && (
                             <>
                                 {!tagsDisabled && (
@@ -1391,7 +1391,7 @@ const ListaChats = () => {
                                 <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Zoho Ticket id: </span>#260937</p>
                             </>
                         )}
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>
