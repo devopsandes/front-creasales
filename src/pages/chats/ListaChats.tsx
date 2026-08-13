@@ -596,7 +596,7 @@ const ListaChats = () => {
         const ejecucion = async () => {
             setLoading(false)
             if (role !== 'USER') {
-                const respUsers = await usuariosXRole('USER', token);
+                const respUsers = await usuariosXRole('', token);
                 const list = Array.isArray((respUsers as any)?.users) ? (respUsers as any).users : []
                 const usersIds = new Set<string>()
                 const uniqueUsers: Usuario[] = []
