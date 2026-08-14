@@ -1156,6 +1156,7 @@ const Chats = () => {
 
     useEffect(() => {
         const inicio = async () => {
+            console.log('🔵 [inicio] start', { id, ts: Date.now() })
             if (!id) return
             setTimelineError(null)
             setMensajes([])
@@ -1192,6 +1193,8 @@ const Chats = () => {
                     try {
                         const liteWindow = await loadMessagesLiteWindow(id, timelineLoadControllerRef.current?.signal)
                         if (!liteWindow) {
+                            
+                            console.log('🟡 [inicio] exit: liteWindow null (path A)', { id, ts: Date.now() })
                             setLoading(false)
                             return
                         }
@@ -1203,6 +1206,8 @@ const Chats = () => {
                         const lastLiteMessage = [...mergedWithCache].reverse().find((x: any) => x && x.kind === "message")
                         if (lastLiteMessage?.createdAt) { setCondChat(menos24hs(new Date(lastLiteMessage.createdAt))) }
                         else { setCondChat(true) }
+                        
+                        console.log('🟡 [inicio] exit: liteWindow null (path B)', { id, ts: Date.now() })
                         setLoading(false)
                         return
                     } catch (messagesLiteError) {
@@ -1221,12 +1226,16 @@ const Chats = () => {
                 const lastMessage = [...mergedWithCache].reverse().find((x: any) => x && x.kind === "message")
                 if (lastMessage?.createdAt) { setCondChat(menos24hs(new Date(lastMessage.createdAt))) }
                 else { setCondChat(true) }
+                
+                console.log('🟡 [inicio] exit: liteWindow null (path C)', { id, ts: Date.now() })
                 setLoading(false)
             } catch (timelineError) {
                 if ((timelineError as any)?.name === 'AbortError' || (timelineError as any)?.code === 'ERR_CANCELED') return
                 try {
                     const liteWindow = await loadMessagesLiteWindow(id, timelineLoadControllerRef.current?.signal)
                     if (!liteWindow) {
+                        
+                        console.log('🟡 [inicio] exit: liteWindow null (path D)', { id, ts: Date.now() })
                         setLoading(false)
                         return
                     }
@@ -1238,6 +1247,8 @@ const Chats = () => {
                     const lastMessage = [...mergedWithCache].reverse().find((x: any) => x && x.kind === "message")
                     if (lastMessage?.createdAt) { setCondChat(menos24hs(new Date(lastMessage.createdAt))) }
                     else { setCondChat(true) }
+                    
+                    console.log('🟡 [inicio] exit: liteWindow null (path E)', { id, ts: Date.now() })
                     setLoading(false)
                 } catch (messagesLiteError) {
                     if ((messagesLiteError as any)?.name === 'AbortError' || (messagesLiteError as any)?.code === 'ERR_CANCELED') return
@@ -1587,16 +1598,35 @@ const Chats = () => {
         }
     }, [])
 
+    // useEffect(() => {
+    //     if (!id || !token) return
+    //     const controller = new AbortController()
+    //     getAfiliadoIdentificado(token, id, { signal: controller.signal })
+    //         .then((resp: any) => {
+    //             if (openAuthSessionIfNeeded(resp)) return
+    //             if (resp?.afiliado) setAfiliadoIdentificado(resp.afiliado)
+    //         })
+    //         .catch(() => { })
+    //     return () => controller.abort()
+    // }, [id, token])
+
     useEffect(() => {
         if (!id || !token) return
+        console.log('🟣 [afiliado-identificado] fetch start', { id, ts: Date.now() })
         const controller = new AbortController()
         getAfiliadoIdentificado(token, id, { signal: controller.signal })
             .then((resp: any) => {
+                console.log('🟣 [afiliado-identificado] fetch resolved', { id, resp, ts: Date.now() })
                 if (openAuthSessionIfNeeded(resp)) return
                 if (resp?.afiliado) setAfiliadoIdentificado(resp.afiliado)
             })
-            .catch(() => { })
-        return () => controller.abort()
+            .catch((err) => {
+                console.log('🟣 [afiliado-identificado] fetch aborted/error', { id, err, ts: Date.now() })
+            })
+        return () => {
+            console.log('🟣 [afiliado-identificado] cleanup/abort', { id, ts: Date.now() })
+            controller.abort()
+        }
     }, [id, token])
 
     useEffect(() => {
@@ -1741,6 +1771,11 @@ const Chats = () => {
 
     const mappedIdentificado = useMemo(() => mapAfiliadoIdentificado(afiliadoIdentificado), [afiliadoIdentificado])
     const panelData: any = { ...(dataUser ?? {}), ...(mappedIdentificado ?? {}) }
+
+    useEffect(() => {
+        console.log('🟢 [Chats] MOUNT', { id, telefono })
+        return () => console.log('🔴 [Chats] UNMOUNT', { id, telefono })
+    }, [id])
 
     return (
         <div className='chats-container'>
