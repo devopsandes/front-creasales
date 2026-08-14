@@ -16,7 +16,6 @@ import { perfMark, perfTrackNavigation } from "../../utils/perfTracker"
 import { isLightFeatureDisabled } from "../../config/runtimeConfig"
 import { getTags, getTagsByChatIds } from "../../services/tags/tags.services"
 import { getAuthSessionReason, getSocketAuthSessionReason } from "../../utils/authSession"
-import { DebugErrorBoundary } from '../../components/DebugErrorBoundary'
 
 const capitalizeText = (text: string | undefined | null): string => {
     if (!text || typeof text !== 'string') return '';
@@ -1338,9 +1337,7 @@ const ListaChats = () => {
                                 <p className="chat-empty-text">Aguarda un momento mientras cargamos la información.</p>
                             </div>
                         ) : activeChatId ? (
-                            <DebugErrorBoundary>
-                                <Outlet />
-                            </DebugErrorBoundary>
+                            <Outlet />
                         ) : (
                             <div className="chat-empty-prompt">
                                 <p className="chat-empty-text">
