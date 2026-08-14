@@ -16,6 +16,7 @@ import { perfMark, perfTrackNavigation } from "../../utils/perfTracker"
 import { isLightFeatureDisabled } from "../../config/runtimeConfig"
 import { getTags, getTagsByChatIds } from "../../services/tags/tags.services"
 import { getAuthSessionReason, getSocketAuthSessionReason } from "../../utils/authSession"
+import { DebugErrorBoundary } from '../../components/DebugErrorBoundary'
 
 const capitalizeText = (text: string | undefined | null): string => {
     if (!text || typeof text !== 'string') return '';
@@ -112,8 +113,8 @@ const ListaChats = () => {
     const audioRef = useRef(new Audio("/audio/audio1.mp3"));
     const assignAudioRef = useRef(new Audio("/audio/audio1.mp3"));
 
-    const dataUser = useSelector((state: RootState) => state.action.dataUser);
-    const viewSide = useSelector((state: RootState) => state.action.viewSide);
+    // const dataUser = useSelector((state: RootState) => state.action.dataUser);
+    // const viewSide = useSelector((state: RootState) => state.action.viewSide);
     const chatsFromRedux = useSelector((state: RootState) => state.action.chats);
     const chatListLoadedQueryKey = useSelector((state: RootState) => state.action.chatListLoadedQueryKey);
     const chatListPage = useSelector((state: RootState) => state.action.chatListPage);
@@ -1050,10 +1051,10 @@ const ListaChats = () => {
         return Array.isArray(chat.tags) ? chat.tags : []
     }
 
-    const activeChatForSidePanel = activeChatId
-        ? (Array.isArray(chatsFromRedux) ? chatsFromRedux : []).find((chat) => chat?.id === activeChatId)
-        : null
-    const activeChatTags = activeChatForSidePanel ? getRenderTags(activeChatForSidePanel) : []
+    // const activeChatForSidePanel = activeChatId
+    //     ? (Array.isArray(chatsFromRedux) ? chatsFromRedux : []).find((chat) => chat?.id === activeChatId)
+    //     : null
+    // const activeChatTags = activeChatForSidePanel ? getRenderTags(activeChatForSidePanel) : []
 
     const handleOrdenarPorFecha = () => { setOrdenFecha(ordenFecha === 'desc' ? 'asc' : 'desc') }
     const handleExportarConversaciones = () => { console.log('Exportar conversaciones') }
@@ -1337,7 +1338,9 @@ const ListaChats = () => {
                                 <p className="chat-empty-text">Aguarda un momento mientras cargamos la información.</p>
                             </div>
                         ) : activeChatId ? (
-                            <Outlet />
+                            <DebugErrorBoundary>
+                                <Outlet />
+                            </DebugErrorBoundary>
                         ) : (
                             <div className="chat-empty-prompt">
                                 <p className="chat-empty-text">
@@ -1351,7 +1354,7 @@ const ListaChats = () => {
                             </div>
                         )}
                     </div>
-                    <div className="col-lista">
+                    {/* <div className="col-lista">
                         {viewSide && (
                             <>
                                 {!tagsDisabled && (
@@ -1391,7 +1394,7 @@ const ListaChats = () => {
                                 <p className="text-left text-gray-700 w-full p-1">&#9658;<span className="font-bold">Zoho Ticket id: </span>#260937</p>
                             </>
                         )}
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>
