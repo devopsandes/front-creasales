@@ -2188,10 +2188,10 @@ const Chats = () => {
                                                         <span className='chat-info-panel-value'>{panelData.viasClinicas}</span>
                                                     </div>
                                                 )}
-                                                {panelData?.cuilAfiliado && (
+                                                {(panelData?.cuilAfiliado ?? panelData?.CUILAfiliado) && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>CUIL Afiliado</span>
-                                                        <span className='chat-info-panel-value'>{panelData.cuilAfiliado}</span>
+                                                        <span className='chat-info-panel-value'>{panelData.cuilAfiliado ?? panelData.CUILAfiliado}</span>
                                                     </div>
                                                 )}
                                                 {panelData?.CUILTitular && (
