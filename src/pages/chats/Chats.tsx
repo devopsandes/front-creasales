@@ -1729,6 +1729,7 @@ const Chats = () => {
             planAfiliado: a.planPrestacional ?? null,
             provinciaDom: a.provincia ?? null,
             viasClinicas: a.viasClinicas ?? null,
+            cuilAfiliado: a.cuil ?? null,
             CUILTitular: a.cuilTitular ?? null,
             IdAfiliadoTitular: a.idAfiliadoTitular ?? null,
             mesAlta: a.perAltaGuion ?? a.perAlta ?? null,
@@ -2187,9 +2188,15 @@ const Chats = () => {
                                                         <span className='chat-info-panel-value'>{panelData.viasClinicas}</span>
                                                     </div>
                                                 )}
+                                                {panelData?.cuilAfiliado && (
+                                                    <div className='chat-info-panel-row'>
+                                                        <span className='chat-info-panel-label'>CUIL Afiliado</span>
+                                                        <span className='chat-info-panel-value'>{panelData.cuilAfiliado}</span>
+                                                    </div>
+                                                )}
                                                 {panelData?.CUILTitular && (
                                                     <div className='chat-info-panel-row'>
-                                                        <span className='chat-info-panel-label'>CUIL</span>
+                                                        <span className='chat-info-panel-label'>CUIL Titular</span>
                                                         <span className='chat-info-panel-value'>{panelData.CUILTitular}</span>
                                                     </div>
                                                 )}
