@@ -645,13 +645,13 @@
     padding: 0;
 }
 
-.col-lista:last-child {
+/* .col-lista:last-child {
     display: none;
     padding: 1.5rem;
     width: 0;
     background-color: white;
     border-left: 1px solid #e5e7eb;
-}
+} */
 
 .item-lista {
     color: #111827;
