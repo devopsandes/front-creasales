@@ -373,7 +373,7 @@ const Chats = () => {
             )
         }
 
-        return <span className="chat-text">{fallbackText}</span>
+        return <span className="chat-text" style={{ whiteSpace: 'pre-wrap' }}>{fallbackText}</span>
     }
 
     type DateSeparator = { kind: "date_separator"; id: string; createdAt: string | Date; label: string; }
