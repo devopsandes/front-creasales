@@ -1631,7 +1631,7 @@ const Chats = () => {
     const handleDeleteCancel = () => { setIsDeleteModalOpen(false); }
 
     const handleAddFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const MAX_FILE_SIZE = 50 * 1024 * 1024;
+        const MAX_FILE_SIZE = 100 * 1024 * 1024;
         const files = Array.from(e.target.files ?? [])
         if (files.length === 0) return;
         const tipos = ["application/pdf", "image/jpeg", "image/png", "image/webp", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
@@ -1643,7 +1643,7 @@ const Chats = () => {
             if (!tipos.includes(file.type)) { hasTypeError = true; continue }
             valid.push(file)
         }
-        if (hasSizeError) toast.error("El archivo debe pesar menos de 50MB");
+        if (hasSizeError) toast.error("El archivo debe pesar menos de 100MB");
         if (hasTypeError) toast.error("Solo se permiten archivos pdf, jpeg, png");
         if (valid.length > MAX_FILES_PER_MESSAGE) { toast.error(`Solo se permiten hasta ${MAX_FILES_PER_MESSAGE} archivos por mensaje`); valid.splice(MAX_FILES_PER_MESSAGE) }
         if (valid.length > 0) setArchivos(valid);
