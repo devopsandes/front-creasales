@@ -79,7 +79,7 @@ const findChatById = async (
                 authorization: `Bearer ${token}`
             }
             perfCounter("findChatById")
-            await waitForEndpointSlot("/chats/:id", options?.rateLimitMs ?? 800, options?.signal)
+            await waitForEndpointSlot(`/chats/${id}`, options?.rateLimitMs ?? 800, options?.signal)
             perfTrackRequest("/chats/:id")
             const { data } = await chatsClient.get<ChatResponse & ErrorResponse>(`/chats/${id}`, { headers, signal: options?.signal })
             return data
