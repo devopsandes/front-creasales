@@ -676,6 +676,11 @@ const ListaChats = () => {
         dispatch(clearBulkReadChatSelection())
     }, [dispatch])
 
+    const mentionChatIdsKey = useMemo(
+        () => (Array.isArray(mentionChatIds) ? mentionChatIds.map((m: any) => m?.chatId ?? m).join(',') : ''),
+        [mentionChatIds]
+    )
+
     // Hidratar chats de menciones que no estén en Redux
     useEffect(() => {
         if (!token) return
@@ -705,7 +710,7 @@ const ListaChats = () => {
         }
         hydrateMentionChats().catch(() => { })
         return () => { cancelled = true; controller.abort() }
-    }, [styleBtn, mentionChatIds, token, dispatch, mentionsEnabled])
+    }, [styleBtn, mentionChatIdsKey, token, dispatch, mentionsEnabled])
 
     // Sincronizar menciones desde Redux a estado local
     useEffect(() => {
