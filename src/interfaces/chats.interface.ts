@@ -95,6 +95,7 @@ export interface ChatState {
     mensajes:  Mensaje[];
     tags?:     ChatTag[];
     assignment?: 'bot' | 'unassigned' | 'assigned' | 'archived';
+    canal?: 'WHATSAPP' | 'WEB' | 'ANDROID' | 'IOS';
     /**
      * Toggle Bot por conversación (backend nuevo).
      * Campos opcionales para mantener compatibilidad con backends viejos o entornos desactualizados.

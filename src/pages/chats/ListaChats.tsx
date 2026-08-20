@@ -17,6 +17,18 @@ import { isLightFeatureDisabled } from "../../config/runtimeConfig"
 import { getTags, getTagsByChatIds } from "../../services/tags/tags.services"
 import { getAuthSessionReason, getSocketAuthSessionReason } from "../../utils/authSession"
 
+const CANAL_LABELS: Record<string, string> = {
+    WHATSAPP: 'WhatsApp',
+    WEB: 'Web',
+    ANDROID: 'App Android',
+    IOS: 'App iOS',
+}
+
+const getCanalLabel = (canal: string | undefined | null): string => {
+    if (!canal) return 'WhatsApp' // fallback para chats viejos sin canal seteado
+    return CANAL_LABELS[canal] ?? canal
+}
+
 const capitalizeText = (text: string | undefined | null): string => {
     if (!text || typeof text !== 'string') return '';
     return text.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -1250,7 +1262,9 @@ const ListaChats = () => {
                                                         <span className="chat-item-name">{nombre}</span>
                                                         {!isRead && <span className="chat-unread-dot" />}
                                                     </div>
-                                                    <div className="chat-item-phone">{telefono}</div>
+                                                    <div className="chat-item-phone">{telefono}
+                                                        <span className="chat-item-canal">{getCanalLabel(chat.canal)}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="chat-tags-container">
@@ -1300,7 +1314,9 @@ const ListaChats = () => {
                                                             )}
                                                             {lastIncomingLabel && <span className="chat-last-incoming">{lastIncomingLabel}</span>}
                                                         </div>
-                                                        <div className="chat-item-phone">{telefono}</div>
+                                                        <div className="chat-item-phone">{telefono}
+                                                            <span className="chat-item-canal">{getCanalLabel(chat.canal)}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="chat-tags-container">

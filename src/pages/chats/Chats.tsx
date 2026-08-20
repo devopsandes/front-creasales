@@ -39,6 +39,18 @@ import MentionModal from '../../components/modal/MentionModal'
 import { getAuthSessionReason, getSocketAuthSessionReason } from '../../utils/authSession'
 import { useQuickResponsesCatalog } from '../../hooks/useQuickResponsesCatalog'
 
+const CANAL_LABELS: Record<string, string> = {
+    WHATSAPP: 'WhatsApp',
+    WEB: 'Web',
+    ANDROID: 'App Android',
+    IOS: 'App iOS',
+}
+
+const getCanalLabel = (canal: string | undefined | null): string => {
+    if (!canal) return 'WhatsApp'
+    return CANAL_LABELS[canal] ?? canal
+}
+
 /** Normaliza GET /tags/chat/:chatId (admin); admite `tags` o `items` y aliases de campo. */
 const normalizeChatTagsFromApi = (resp: any): ChatTag[] => {
     const raw = Array.isArray(resp?.tags) ? resp.tags : Array.isArray(resp?.items) ? resp.items : []
@@ -2244,7 +2256,7 @@ const Chats = () => {
                                             <div className='chat-info-panel-rows'>
                                                 <div className='chat-info-panel-row'>
                                                     <span className='chat-info-panel-label'>Canal</span>
-                                                    <span className='chat-info-panel-value'>WhatsApp</span>
+                                                    <span className='chat-info-panel-value'>{getCanalLabel((currentChat as any)?.canal)}</span>
                                                 </div>
                                                 {/* <div className='chat-info-panel-row'>
                                                     <span className='chat-info-panel-label'>Estado</span>
