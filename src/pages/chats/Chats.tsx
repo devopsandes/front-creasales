@@ -23,6 +23,7 @@ import { toast } from 'react-toastify'
 import { Usuario } from '../../interfaces/auth.interface'
 import axios from 'axios'
 import { getOperadoresEmpresa } from '../../services/empresas/empresa.services'
+import { asignarOperador } from '../../services/auth/auth.services'
 import { getMentionsUnreadCount, markMentionsRead } from '../../services/mentions/mentions.services'
 import { bumpMentionsRefreshNonce, clearBulkReadChatSelection, markChatReadLocal, markChatUnreadLocal, setMentionUnreadCount } from '../../app/slices/actionSlice'
 import SuccessModal from '../../components/modal/SuccessModal'
@@ -113,6 +114,7 @@ const Chats = () => {
     const [showMentionReadSuccess, setShowMentionReadSuccess] = useState(false)
     const [mentionReadSuccessMsg, setMentionReadSuccessMsg] = useState<string>('El chat fue marcado como leído exitosamente.')
     const [isTogglingBot, setIsTogglingBot] = useState(false)
+    const [isAsignandome, setIsAsignandome] = useState(false)
     const [infoPanelOpen, setInfoPanelOpen] = useState(true)
     const [isAddTagModalOpen, setIsAddTagModalOpen] = useState(false)
     const [isRemoveTagModalOpen, setIsRemoveTagModalOpen] = useState(false)
@@ -1562,6 +1564,32 @@ const Chats = () => {
         finally { setIsTogglingBot(false) }
     }
 
+    const handleAsignarme = async () => {
+        if (!token || !id || !userIdFromToken) return
+        if (isAsignandome) return
+        setIsAsignandome(true)
+        try {
+            const resp: any = await asignarOperador(id, userIdFromToken, token)
+            if (resp?.statusCode === 200) {
+                const usuarioActual = usuarios.find((u) => u.id === userIdFromToken)
+                const updated = (Array.isArray(chats) ? chats : []).map((c: any) =>
+                    c?.id === id
+                        ? { ...c, assignment: 'assigned', operador: usuarioActual || c?.operador, botEnabled: false }
+                        : c
+                )
+                dispatch(setChats(updated))
+                toast.success('Te asignaste el chat')
+            } else {
+                const errorMsg = Array.isArray(resp?.message) ? resp.message.join(', ') : (resp?.message || 'No se pudo asignar el chat')
+                toast.error(errorMsg)
+            }
+        } catch (e) {
+            toast.error('Error al asignar el chat')
+        } finally {
+            setIsAsignandome(false)
+        }
+    }
+
     const handleArchivarConfirm = () => {
         try {
             const socket = getSocket()
@@ -1794,6 +1822,10 @@ const Chats = () => {
                                     <button onClick={() => dispatch(openModal())} className="chat-action-button chat-button-assign">
                                         <IoPersonAdd />
                                         <span>Asignar</span>
+                                    </button>
+                                    <button onClick={handleAsignarme} className="chat-action-button chat-button-assign" disabled={isAsignandome}>
+                                        <IoPersonAdd />
+                                        <span>{isAsignandome ? 'Asignando...' : 'Asignarme'}</span>
                                     </button>
                                     {!mentionsDisabled && (
                                         <button onClick={() => setIsMentionModalOpen(true)} className="chat-action-button chat-button-assign">
