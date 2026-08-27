@@ -1474,6 +1474,7 @@ const Chats = () => {
     const handleClickBtn = async (e: FormEvent<HTMLFormElement>) => {
         try {
             e.preventDefault()
+            console.log('[handleClickBtn] click detectado', { isSending: isSendingRef.current, chatId: id, mensaje: mensaje.slice(0, 20) })
             const trimmedMessage = mensaje.trim()
             const hasFiles = archivos.length > 0
             const mentions = mentionsDisabled ? [] : selectedMentionUsers.map((user) => ({ userId: user.id }))
