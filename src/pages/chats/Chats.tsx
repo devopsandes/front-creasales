@@ -1474,13 +1474,12 @@ const Chats = () => {
     const handleClickBtn = async (e: FormEvent<HTMLFormElement>) => {
         try {
             e.preventDefault()
-            console.log('[handleClickBtn] click detectado', { isSending: isSendingRef.current, chatId: id, mensaje: mensaje.slice(0, 20) })
             const trimmedMessage = mensaje.trim()
             const hasFiles = archivos.length > 0
             const mentions = mentionsDisabled ? [] : selectedMentionUsers.map((user) => ({ userId: user.id }))
             if (trimmedMessage.length === 0 && !hasFiles) { setErrorModalMessage('Debe escribir un mensaje'); setIsErrorModalOpen(true); return }
             if (isSendingRef.current) return
-            if (lastSentMessageRef.current === trimmedMessage && !hasFiles) return
+            if (lastSentMessageRef.current === `${id}:${trimmedMessage}` && !hasFiles) return
             isSendingRef.current = true
             const socket = getSocket()
             if (hasFiles) {
@@ -1503,7 +1502,7 @@ const Chats = () => {
                 if (trimmedMessage.length > 0) {
                     if (socket && socket.connected) { socket.emit("enviar-mensaje", { mensaje: trimmedMessage, chatId: id, telefono, token, mentions }) }
                     else { await convClient.post('/chats/send-message', { chatId: id, text: trimmedMessage, mentions }, { headers: { Authorization: `Bearer ${token}` } }) }
-                    lastSentMessageRef.current = trimmedMessage
+                    lastSentMessageRef.current = `${id}:${trimmedMessage}`
                     setMensaje("")
                     setSelectedMentionUsers([])
                 }
@@ -1528,7 +1527,7 @@ const Chats = () => {
             if (socket && socket.connected) {
                 console.log('[enviar-mensaje] enviando por socket', { socketId: socket.id, connected: socket.connected, chatId: id })
                 socket.emit("enviar-mensaje", { mensaje, chatId: id, telefono, token, mentions })
-                lastSentMessageRef.current = trimmedMessage
+                lastSentMessageRef.current = `${id}:${trimmedMessage}`
                 setMensaje('')
                 setArchivos([])
                 setSelectedMentionUsers([])
