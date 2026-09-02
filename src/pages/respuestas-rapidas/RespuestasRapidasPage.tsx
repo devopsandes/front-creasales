@@ -113,8 +113,8 @@ const RespuestasRapidasPage = () => {
       setFormError("El atajo es requerido")
       return
     }
-    if (s.length > 50) {
-      setFormError("El atajo debe tener entre 1 y 50 caracteres")
+    if (s.length > 100) {
+      setFormError("El atajo debe tener entre 1 y 100 caracteres")
       return
     }
     if (!t) {
