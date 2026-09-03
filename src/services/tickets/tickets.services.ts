@@ -113,7 +113,7 @@ const deleteTicket = async (token: string, id: string): Promise<any> => {
 
 const consultarDeuda = async (token: string, cuil: string) => {
     try {
-        const url = `https://fiscalizacion.createch.com.ar/contratos/deuda?search=${cuil}`
+        const url = `https://fiscalizacion.creasales.com/contratos/deuda?search=${cuil}`
 
         const headers = {
             'Content-Type': 'application/json',

@@ -181,7 +181,7 @@ const CrearNotificaciones = () => {
       if (montoSuperior) body.montoSuperior = montoSuperior;
       if (periodoAdeudado) body.periodoAdeudado = periodoAdeudado;
       console.log('body filtros:', JSON.stringify(body, null, 2));
-      const response = await fetch('https://fiscalizacion.createch.com.ar/padrones/filtros', {
+      const response = await fetch('https://fiscalizacion.creasales.com/padrones/filtros', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
