@@ -240,7 +240,7 @@ const findChatMessagesLite = async (
 
 const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse> => {
     try {
-        const url = `https://tickets.createch.com.ar/mensajes/getUserData?telefono=${telefono}`
+        const url = `https://tickets.creasales.com/mensajes/getUserData?telefono=${telefono}`
 
         const { data } = await axios.get<DataUser & ErrorResponse>(url)
 
