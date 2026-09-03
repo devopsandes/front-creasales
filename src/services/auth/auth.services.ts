@@ -30,7 +30,7 @@ const getCachedUsersRole = (key: string): (UsersResponse & ErrorResponse) | null
 
 const authLogin = async ({ email, password }: DataLogin): Promise<LoginResponse & ErrorResponse> => {
     try {
-        const url = 'https://sales.createch.com.ar/api/v1/auth/signin'
+        const url = 'https://sales.andessalud.ar/api/v1/auth/signin'
 
         const { data } = await axios.post<LoginResponse & ErrorResponse>(url, { email, password })
 
@@ -50,9 +50,9 @@ const authRegister = async (dataRegister: DataRegister): Promise<SuccessResponse
     try {
         let url
         if (dataRegister.empresa_id != undefined) {
-            url = `https://sales.createch.com.ar/api/v1/auth/signup?empresa_id=${dataRegister.empresa_id}`
+            url = `https://sales.andessalud.ar/api/v1/auth/signup?empresa_id=${dataRegister.empresa_id}`
         } else {
-            url = `https://sales.createch.com.ar/api/v1/auth/signup`
+            url = `https://sales.andessalud.ar/api/v1/auth/signup`
         }
 
         const objeto: Objeto = {
@@ -82,7 +82,7 @@ const authRegister = async (dataRegister: DataRegister): Promise<SuccessResponse
 
 const tokenValidacion = async (token: string): Promise<ValidationResponse & ErrorResponse> => {
     try {
-        const url = `https://sales.createch.com.ar/api/v1/auth/user?token=${token}`
+        const url = `https://sales.andessalud.ar/api/v1/auth/user?token=${token}`
 
         const { data } = await axios<ValidationResponse & ErrorResponse>(url)
 
@@ -99,7 +99,7 @@ const tokenValidacion = async (token: string): Promise<ValidationResponse & Erro
 
 const sendEmailRecuperarPass = async (email: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `https://sales.createch.com.ar/api/v1/auth/recuperar-pass?email=${email}`
+        const url = `https://sales.andessalud.ar/api/v1/auth/recuperar-pass?email=${email}`
 
         const { data } = await axios<SuccessResponse & ErrorResponse>(url)
 
@@ -116,7 +116,7 @@ const sendEmailRecuperarPass = async (email: string): Promise<SuccessResponse & 
 const cambiarPassword = async (token: string, password: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
 
-        const url = `https://sales.createch.com.ar/api/v1/auth/cambiar-pass?token=${token}`
+        const url = `https://sales.andessalud.ar/api/v1/auth/cambiar-pass?token=${token}`
 
         const { data } = await axios.post<SuccessResponse & ErrorResponse>(url, { password })
 
@@ -143,9 +143,9 @@ const usuariosXRole = async (role: string, token: string): Promise<UsersResponse
         try {
             let url = ''
             if (normalizedRole === '')
-                url = `https://sales.createch.com.ar/api/v1/auth/usuarios`
+                url = `https://sales.andessalud.ar/api/v1/auth/usuarios`
             else
-                url = `https://sales.createch.com.ar/api/v1/auth/usuarios?role=${normalizedRole}`
+                url = `https://sales.andessalud.ar/api/v1/auth/usuarios?role=${normalizedRole}`
 
             const headers = {
                 authorization: `Bearer ${token}`
@@ -171,7 +171,7 @@ const usuariosXRole = async (role: string, token: string): Promise<UsersResponse
 
 const switchActivo = async (userId: string | undefined, token: string, activo: boolean | undefined): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `https://sales.createch.com.ar/api/v1/auth/usuarios/${userId}`
+        const url = `https://sales.andessalud.ar/api/v1/auth/usuarios/${userId}`
 
         const headers = {
             authorization: `Bearer ${token}`
@@ -222,7 +222,7 @@ const asignarOperador = async (chat_id: string, user_id: string, token: string):
 
 const deleteUser = async (userId: string, token: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `https://sales.createch.com.ar/api/v1/auth/user/${userId}`
+        const url = `https://sales.andessalud.ar/api/v1/auth/user/${userId}`
 
         const headers = {
             authorization: `Bearer ${token}`
@@ -246,7 +246,7 @@ const updateUser = async (
     userData: Partial<Objeto & { activo?: boolean; role?: string }>
 ): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `https://sales.createch.com.ar/api/v1/auth/usuarios/${userId}`
+        const url = `https://sales.andessalud.ar/api/v1/auth/usuarios/${userId}`
 
         const headers = {
             authorization: `Bearer ${token}`

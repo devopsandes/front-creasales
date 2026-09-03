@@ -103,7 +103,7 @@ const VerNotificacionesMasivas = () => {
                 ...(filtroId.trim() && { id: filtroId.trim() }),
             });
             const response = await fetch(
-                `https://emisivos.createch.com.ar/notificacionesMasivas?${params}`,
+                `https://emisivos.andessalud.ar/notificacionesMasivas?${params}`,
                 { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
             );
             if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -134,7 +134,7 @@ const VerNotificacionesMasivas = () => {
         try {
             const token = localStorage.getItem('token') || '';
             const response = await fetch(
-                `https://emisivos.createch.com.ar/notificacionesMasivas/${id}`,
+                `https://emisivos.andessalud.ar/notificacionesMasivas/${id}`,
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
             const data: DetalleResponse = await response.json();
@@ -151,7 +151,7 @@ const VerNotificacionesMasivas = () => {
         try {
             const token = localStorage.getItem('token') || '';
             const response = await fetch(
-                `https://emisivos.createch.com.ar/notificacionesMasivas/${id}/anular`,
+                `https://emisivos.andessalud.ar/notificacionesMasivas/${id}/anular`,
                 { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` } }
             );
             const data = await response.json();
@@ -184,7 +184,7 @@ const VerNotificacionesMasivas = () => {
         try {
             const token = localStorage.getItem('token') || '';
             const response = await fetch(
-                `https://emisivos.createch.com.ar/notificacionesMasivas/${editingId}/editar`,
+                `https://emisivos.andessalud.ar/notificacionesMasivas/${editingId}/editar`,
                 {
                     method: 'PATCH',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },

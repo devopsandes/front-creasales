@@ -266,7 +266,7 @@ const CrearNotificaciones = () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token') || '';
-      const response = await fetch('https://emisivos.createch.com.ar/notificaciones/enviarNotificacionesMasivas', {
+      const response = await fetch('https://emisivos.andessalud.ar/notificaciones/enviarNotificacionesMasivas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(pendingPayload),

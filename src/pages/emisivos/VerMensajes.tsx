@@ -96,7 +96,7 @@ const VerMensajes = () => {
       });
 
       const response = await fetch(
-        `https://emisivos.createch.com.ar/notificaciones/mensajes/listar?${params}`,
+        `https://emisivos.andessalud.ar/notificaciones/mensajes/listar?${params}`,
         { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
       );
       if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);

@@ -145,7 +145,7 @@ const VerNotificaciones = () => {
       });
 
       const response = await fetch(
-        `https://emisivos.createch.com.ar/notificaciones/listar?${params}`,
+        `https://emisivos.andessalud.ar/notificaciones/listar?${params}`,
         { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
       );
       if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -178,7 +178,7 @@ const VerNotificaciones = () => {
     if (!window.confirm(`¿Estás seguro de anular la notificación "${tipo}"?`)) return;
     try {
       const token = localStorage.getItem('token') || '';
-      const response = await fetch(`https://emisivos.createch.com.ar/notificaciones/${id}/anular`, {
+      const response = await fetch(`https://emisivos.andessalud.ar/notificaciones/${id}/anular`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -207,7 +207,7 @@ const VerNotificaciones = () => {
     setLoadingPreview(id);
     try {
       const token = localStorage.getItem('token') || '';
-      const response = await fetch(`https://emisivos.createch.com.ar/notificaciones/${id}/previewPlantilla`, {
+      const response = await fetch(`https://emisivos.andessalud.ar/notificaciones/${id}/previewPlantilla`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       const data = await response.json();
@@ -236,7 +236,7 @@ const VerNotificaciones = () => {
       const token = localStorage.getItem('token') || '';
       const params = new URLSearchParams({ desde: reporteDesde, hasta: reporteHasta });
       const response = await fetch(
-        `https://emisivos.createch.com.ar/notificaciones/reportePreAltasBienvenidas?${params}`,
+        `https://emisivos.andessalud.ar/notificaciones/reportePreAltasBienvenidas?${params}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       const data = await response.json();

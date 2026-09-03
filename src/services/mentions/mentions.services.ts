@@ -42,7 +42,7 @@ const pendingUnread = new Map<string, Promise<MentionsUnreadCountResponse>>()
 const pendingChats = new Map<string, Promise<MentionChatsResponse>>()
 const endpointLastAt = new Map<string, number>()
 const mentionsClient = axios.create({
-  baseURL: 'https://consumer.createch.com.ar/api/v1',
+  baseURL: 'https://consumer.andessalud.ar/api/v1',
   withCredentials: true
 })
 

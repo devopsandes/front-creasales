@@ -12,7 +12,7 @@ type SaveStatus = 'idle' | 'saving' | 'success' | 'error'
 
 // ─── URL del backend conversacional ──────────────────────
 // Ajustá esto según tu .env del frontend
-const CONV_API_URL = import.meta.env.VITE_CONV_API_URL || 'https://sales.createch.com.ar'
+const CONV_API_URL = import.meta.env.VITE_CONV_API_URL || 'https://sales.andessalud.ar'
 
 // ─── Helpers ─────────────────────────────────────────────
 const isValidJson = (str: string): boolean => {
