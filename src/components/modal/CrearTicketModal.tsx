@@ -285,6 +285,18 @@ const CrearTicketModal = () => {
                                         <span>Provincia:</span>
                                         <span>{afiliadoData.provincia}</span>
                                     </div>
+                                    <div className="info-row">
+                                        <span>idAfiliadoZoho:</span>
+                                        <span
+                                            style={{
+                                                color: (!afiliadoData.idAfiliadoZoho || afiliadoData.idAfiliadoZoho === '---')
+                                                    ? '#dc2626'
+                                                    : 'inherit'
+                                            }}
+                                        >
+                                            {afiliadoData.idAfiliadoZoho || '---'}
+                                        </span>
+                                    </div>
 
                                     <div className="ticket-modal-buttons">
                                         <button
