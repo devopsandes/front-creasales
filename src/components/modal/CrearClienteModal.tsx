@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { closeModalCrearCliente } from '../../app/slices/actionSlice';
+import { jwtDecode } from 'jwt-decode';
+import {
+    closeModalCrearCliente,
+    setChatListUiState,
+    setChatListCacheMeta,
+    setMentionsMode,
+    clearMentionChatSelection,
+    clearBulkReadChatSelection,
+} from '../../app/slices/actionSlice';
 import { UserPlus, X, Search } from 'lucide-react';
 import { RootState } from '../../app/store';
 import {
@@ -11,8 +19,18 @@ import {
     AfiliadoBusquedaDto,
     ClienteExistenteInfo,
 } from '../../services/clientes/clientes.services';
+import { findChatById } from '../../services/chats/chats.services';
 import ErrorModal from './ErrorModal';
 import './user-search-modal.css';
+
+const resolveTabForChat = (chat: any, currentUserId: string | null): string => {
+    const assignment = chat?.assignment ?? (chat?.operador ? 'assigned' : 'unassigned');
+    if (assignment === 'archived') return 'archi';
+    if (assignment === 'bot') return 'bots';
+    if (assignment === 'unassigned') return 'sinAsignar';
+    if (assignment === 'assigned') return chat?.operador?.id === currentUserId ? 'asig' : 'otros';
+    return 'sinAsignar';
+};
 
 const CrearClienteModal = () => {
     const [dni, setDni] = useState('');
@@ -25,6 +43,7 @@ const CrearClienteModal = () => {
     const [telefonoConflictChatId, setTelefonoConflictChatId] = useState<string | null>(null);
 
     const [isCreating, setIsCreating] = useState(false);
+    const [isNavigatingToChat, setIsNavigatingToChat] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -35,6 +54,15 @@ const CrearClienteModal = () => {
     const modalView = useSelector((state: RootState) => state.action.modalCrearCliente);
     const token = localStorage.getItem('token') || '';
 
+    const currentUserId = (() => {
+        try {
+            if (!token) return null;
+            return jwtDecode<{ id?: string }>(token)?.id ?? null;
+        } catch {
+            return null;
+        }
+    })();
+
     const resetState = () => {
         setDni('');
         setIsSearching(false);
@@ -44,6 +72,7 @@ const CrearClienteModal = () => {
         setIsCheckingTelefono(false);
         setTelefonoConflictChatId(null);
         setIsCreating(false);
+        setIsNavigatingToChat(false);
         if (telefonoCheckTimer.current) {
             window.clearTimeout(telefonoCheckTimer.current);
             telefonoCheckTimer.current = null;
@@ -113,18 +142,41 @@ const CrearClienteModal = () => {
         }
     };
 
-    const irAChat = (chatId: string, telefonoChat: string, nombreChat?: string) => {
-        dispatch(closeModalCrearCliente());
-        const nombreParam = nombreChat ? encodeURIComponent(nombreChat) : '';
-        navigate(`/dashboard/chats/${chatId}?telefono=${telefonoChat}&nombre=${nombreParam}`);
+    // Replica lo que hace el buscador de Nro.Conversación en ListaChats: resuelve
+    // en qué pestaña vive el chat, deja la UI de la lista posicionada ahí, y recién
+    // después navega — así el chat abre en el lugar correcto, no solo por URL directa.
+    const irAChat = async (chatId: string, telefonoChat: string, nombreChat?: string) => {
+        setIsNavigatingToChat(true);
+        try {
+            const resp = await findChatById(token, chatId);
+            const chat = (resp as any)?.chat;
+            if (!chat?.id) {
+                setErrorMessage('No se pudo abrir el chat asociado a ese celular.');
+                setShowErrorModal(true);
+                return;
+            }
+            const tab = resolveTabForChat(chat, currentUserId);
+            const nombreFinal = nombreChat ?? chat?.cliente?.nombre ?? '';
+            const telefonoFinal = telefonoChat || chat?.cliente?.telefono || '';
+
+            dispatch(setMentionsMode(false));
+            dispatch(clearMentionChatSelection());
+            dispatch(clearBulkReadChatSelection());
+            dispatch(setChatListUiState({ chatListTab: tab }));
+            dispatch(setChatListCacheMeta({ chatListQueryKey: '', chatListLoadedQueryKey: '', chatListUpdatedAt: 0 }));
+            dispatch(closeModalCrearCliente());
+            navigate(`/dashboard/chats/${chat.id}?telefono=${telefonoFinal}&nombre=${encodeURIComponent(nombreFinal)}`);
+        } catch {
+            setErrorMessage('Error inesperado al abrir el chat asociado.');
+            setShowErrorModal(true);
+        } finally {
+            setIsNavigatingToChat(false);
+        }
     };
 
-    // Bloquea completamente: mismo DNI y mismo teléfono → es el mismo chat, no tiene sentido crear
-    const bloqueadoPorDniIdentico = Boolean(dniConflict?.mismoTelefono);
-    // Bloquea la confirmación: el teléfono final (editado o no) ya pertenece a otro cliente
     const bloqueadoPorTelefono = Boolean(telefonoConflictChatId);
 
-    const puedeConfirmar = Boolean(afiliado) && !bloqueadoPorDniIdentico && !bloqueadoPorTelefono && !isCheckingTelefono && telefono.replace(/\D/g, '').length >= 10;
+    const puedeConfirmar = Boolean(afiliado) && !bloqueadoPorTelefono && !isCheckingTelefono && telefono.replace(/\D/g, '').length >= 10;
 
     const handleConfirmar = async () => {
         if (!afiliado || !puedeConfirmar) return;
@@ -141,8 +193,10 @@ const CrearClienteModal = () => {
                 const nombreCompleto = `${afiliado.nombre ?? ''} ${afiliado.apellido ?? ''}`.trim();
                 dispatch(closeModalCrearCliente());
                 // El chat ya se crea ASIGNADO al operador actual del lado del backend
-                // (ver ClientesService.crearManual). Acá solo redirigimos a esa vista;
-                // no hace falta llamar a asignarOperador por separado.
+                // (ver ClientesService.crearManual). Nace directo en "Asignadas a mi",
+                // así que alcanza con navegar; no hace falta resolver tab como en irAChat.
+                dispatch(setChatListUiState({ chatListTab: 'asig' }));
+                dispatch(setChatListCacheMeta({ chatListQueryKey: '', chatListLoadedQueryKey: '', chatListUpdatedAt: 0 }));
                 navigate(`/dashboard/chats/${chatId}?telefono=${telefono.replace(/\D/g, '')}&nombre=${encodeURIComponent(nombreCompleto)}`);
             } else {
                 // Conflicto detectado recién al confirmar (carrera entre operadoras)
@@ -216,11 +270,17 @@ const CrearClienteModal = () => {
                                 {afiliado.plan && <p><strong>Plan:</strong> {afiliado.plan}</p>}
                                 {afiliado.provincia && <p><strong>Provincia:</strong> {afiliado.provincia}</p>}
 
-                                {/* Aviso: DNI ya existe con el MISMO teléfono → es el mismo chat, bloqueado */}
-                                {dniConflict && dniConflict.mismoTelefono && (
-                                    <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#fee2e2', borderRadius: '0.375rem' }}>
-                                        <p style={{ color: '#991b1b', fontWeight: 600, margin: 0 }}>
-                                            Ya existe un chat para este DNI, con el celular {dniConflict.telefono}.
+                                {/* Aviso informativo: el DNI ya tiene un chat. Nunca bloquea la creación
+                                    de uno nuevo — solo ofrece el atajo de ir al existente, para el caso
+                                    en que la operadora prefiera usarlo en vez de crear otro. */}
+                                {dniConflict && (
+                                    <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: dniConflict.mismoTelefono ? '#fee2e2' : '#fef3c7', borderRadius: '0.375rem' }}>
+                                        <p style={{ color: dniConflict.mismoTelefono ? '#991b1b' : '#92400e', fontWeight: 600, margin: 0 }}>
+                                            Ya existe un chat para este DNI, con el celular {dniConflict.telefono}
+                                            {dniConflict.mismoTelefono ? '.' : ' (distinto al celular actual).'}
+                                        </p>
+                                        <p style={{ color: dniConflict.mismoTelefono ? '#991b1b' : '#92400e', margin: '0.25rem 0 0' }}>
+                                            Podés ir a ese chat, o continuar y crear un chat nuevo con el celular que quede cargado abajo.
                                         </p>
                                         {dniConflict.chatId && (
                                             <button
@@ -228,70 +288,49 @@ const CrearClienteModal = () => {
                                                 className="assign-modal-button assign-modal-confirm"
                                                 style={{ marginTop: '0.5rem' }}
                                                 onClick={() => irAChat(dniConflict.chatId as string, dniConflict.telefono, nombreCompleto)}
+                                                disabled={isNavigatingToChat}
                                             >
-                                                Ir a Chat asociado a celular {dniConflict.telefono}
+                                                {isNavigatingToChat ? 'Abriendo chat...' : `Ir a Chat asociado a celular ${dniConflict.telefono}`}
                                             </button>
                                         )}
                                     </div>
                                 )}
 
-                                {/* Aviso: DNI ya existe pero con OTRO teléfono → informativo, no bloquea crear uno nuevo */}
-                                {dniConflict && !dniConflict.mismoTelefono && (
-                                    <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#fef3c7', borderRadius: '0.375rem' }}>
-                                        <p style={{ color: '#92400e', fontWeight: 600, margin: 0 }}>
-                                            Ya existe un chat para este DNI, con el celular {dniConflict.telefono} (distinto al actual).
+                                {/* Input de celular, siempre editable — cubre el caso de que la operadora
+                                    sepa de un cambio de celular que el padrón todavía no refleja. */}
+                                <div style={{ marginTop: '1rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.25rem' }}>
+                                        Celular (formato: 549261...)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={telefono}
+                                        onChange={(e) => handleTelefonoChange(e.target.value)}
+                                        className="assign-modal-search-input"
+                                        style={{ width: '100%' }}
+                                    />
+                                    {isCheckingTelefono && (
+                                        <p style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                                            Verificando celular...
                                         </p>
-                                        <p style={{ color: '#92400e', margin: '0.25rem 0 0' }}>
-                                            Podés ir a ese chat, o crear un chat nuevo con el celular actual.
-                                        </p>
-                                        {dniConflict.chatId && (
-                                            <button
-                                                type="button"
-                                                className="assign-modal-button assign-modal-confirm"
-                                                style={{ marginTop: '0.5rem' }}
-                                                onClick={() => irAChat(dniConflict.chatId as string, dniConflict.telefono, nombreCompleto)}
-                                            >
-                                                Ir a Chat asociado a celular {dniConflict.telefono}
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Input de celular editable, solo si no está bloqueado por DNI idéntico */}
-                                {!bloqueadoPorDniIdentico && (
-                                    <div style={{ marginTop: '1rem' }}>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-                                            Celular (formato: 549261...)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={telefono}
-                                            onChange={(e) => handleTelefonoChange(e.target.value)}
-                                            className="assign-modal-search-input"
-                                            style={{ width: '100%' }}
-                                        />
-                                        {isCheckingTelefono && (
-                                            <p style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                                                Verificando celular...
+                                    )}
+                                    {telefonoConflictChatId && !isCheckingTelefono && (
+                                        <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#fee2e2', borderRadius: '0.375rem' }}>
+                                            <p style={{ color: '#991b1b', fontWeight: 600, margin: 0 }}>
+                                                Ya existe un chat asociado a este celular.
                                             </p>
-                                        )}
-                                        {telefonoConflictChatId && !isCheckingTelefono && (
-                                            <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#fee2e2', borderRadius: '0.375rem' }}>
-                                                <p style={{ color: '#991b1b', fontWeight: 600, margin: 0 }}>
-                                                    Ya existe un chat asociado a este celular.
-                                                </p>
-                                                <button
-                                                    type="button"
-                                                    className="assign-modal-button assign-modal-confirm"
-                                                    style={{ marginTop: '0.5rem' }}
-                                                    onClick={() => irAChat(telefonoConflictChatId as string, telefono.replace(/\D/g, ''))}
-                                                >
-                                                    Ir a Chat asociado a celular {telefono.replace(/\D/g, '')}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                            <button
+                                                type="button"
+                                                className="assign-modal-button assign-modal-confirm"
+                                                style={{ marginTop: '0.5rem' }}
+                                                onClick={() => irAChat(telefonoConflictChatId as string, telefono.replace(/\D/g, ''))}
+                                                disabled={isNavigatingToChat}
+                                            >
+                                                {isNavigatingToChat ? 'Abriendo chat...' : `Ir a Chat asociado a celular ${telefono.replace(/\D/g, '')}`}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -299,15 +338,13 @@ const CrearClienteModal = () => {
                             <button className="assign-modal-button assign-modal-cancel" onClick={handleCancelar}>
                                 Cancelar
                             </button>
-                            {!bloqueadoPorDniIdentico && (
-                                <button
-                                    className="assign-modal-button assign-modal-confirm"
-                                    onClick={handleConfirmar}
-                                    disabled={!puedeConfirmar || isCreating}
-                                >
-                                    {isCreating ? 'Creando...' : 'Confirmar y crear'}
-                                </button>
-                            )}
+                            <button
+                                className="assign-modal-button assign-modal-confirm"
+                                onClick={handleConfirmar}
+                                disabled={!puedeConfirmar || isCreating}
+                            >
+                                {isCreating ? 'Creando...' : 'Confirmar y crear'}
+                            </button>
                         </div>
                     </div>
                 </div>
