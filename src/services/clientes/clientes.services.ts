@@ -6,21 +6,21 @@ import { resolveClient } from "../apiClient"
 
 const clientesClient = resolveClient("chats") // cae en convClient, igual que /chats
 
-const getClientes = async (token: string, { limit, page } : QueryParams): Promise<ClientesResponse & ErrorResponse> => {
+const getClientes = async (token: string, { limit, page }: QueryParams): Promise<ClientesResponse & ErrorResponse> => {
     try {
         const url = `${import.meta.env.VITE_URL_BACKEND}/clientes?limit=${limit}&page=${page}`
 
         const headers = {
             authorization: `Bearer ${token}`
         }
-      
+
         const { data } = await axios<ClientesResponse & ErrorResponse>(url, { headers })
 
 
         return data
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
-            const objeto:  ClientesResponse & ErrorResponse  = error.response.data
+            const objeto: ClientesResponse & ErrorResponse = error.response.data
             return objeto
         }
         throw error; // Lanza el error si no es del tipo esperado
@@ -37,10 +37,22 @@ export interface AfiliadoBusquedaDto {
     provincia: string | null
 }
 
+export interface ClienteExistenteInfo {
+    chatId: string | null
+    telefono: string
+    mismoTelefono: boolean
+}
+
 export interface BuscarClientePorDniResponse {
     statusCode?: number
     afiliado?: AfiliadoBusquedaDto
-    telefonoYaExiste?: boolean
+    clienteExistente?: ClienteExistenteInfo | null
+}
+
+export interface VerificarTelefonoResponse {
+    statusCode?: number
+    existe?: boolean
+    chatId?: string | null
 }
 
 export interface CrearClienteManualPayload {
@@ -84,4 +96,18 @@ const crearClienteManual = async (
     }
 }
 
-export { getClientes, buscarClientePorDni, crearClienteManual }
+const verificarTelefono = async (
+    token: string,
+    telefono: string
+): Promise<VerificarTelefonoResponse & ErrorResponse> => {
+    try {
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await clientesClient.get(`/clientes/verificar-telefono/${telefono}`, { headers })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) return error.response.data as any
+        throw error
+    }
+}
+
+export { getClientes, buscarClientePorDni, crearClienteManual, verificarTelefono }
