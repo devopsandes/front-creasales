@@ -7,6 +7,7 @@ const initialState: ActionState = {
     modalTicket: false,
     modalUser: false,
     modalPlantilla: false,
+    modalCrearCliente: false,
     msg: '',
     alerta: false,
     newTag: null,
@@ -94,6 +95,12 @@ const actionSlice = createSlice({
         },
         switchModalPlantilla: (state) => {
             state.modalPlantilla = !state.modalPlantilla
+        },
+        openModalCrearCliente: (state) => {
+            state.modalCrearCliente = true
+        },
+        closeModalCrearCliente: (state) => {
+            state.modalCrearCliente = false
         },
         eraseDataUser: (state) => {
             state.dataUser = null
@@ -236,6 +243,8 @@ export const {
     openModalTeca,
     closeModalTeca,
     switchModalPlantilla,
+    openModalCrearCliente,
+    closeModalCrearCliente,
     eraseDataUser,
     openSessionExpired,
     closeSessionExpired,

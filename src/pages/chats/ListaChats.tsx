@@ -5,9 +5,10 @@ import { useDispatch, useSelector } from "react-redux"
 import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
 import { LuArrowDownFromLine, LuArrowUpFromLine, LuDownload, LuFilter } from "react-icons/lu";
-import { Tag as TagIcon, User, X } from "lucide-react"
+import { Tag as TagIcon, User, UserPlus, X } from "lucide-react"
 import { RootState } from "../../app/store"
-import { setUserData, setViewSide, openSessionExpired, setChats, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState, bumpMentionsRefreshNonce } from "../../app/slices/actionSlice"
+import { setUserData, setViewSide, openSessionExpired, setChats, setMentionsMode, toggleMentionChatSelection, clearMentionChatSelection, toggleBulkReadChatSelection, clearBulkReadChatSelection, setChatListCacheMeta, setChatListUiState, bumpMentionsRefreshNonce, openModalCrearCliente } from "../../app/slices/actionSlice"
+import CrearClienteModal from "../../components/modal/CrearClienteModal"
 import { jwtDecode } from "jwt-decode"
 import './chats.css'
 import { getSocket } from "../../app/slices/socketSlice"
@@ -1141,6 +1142,12 @@ const ListaChats = () => {
                             Bots <span>{tabCounts.bots}</span>
                         </button>
                     </div>
+                    <div className="header-item">
+                        <button onClick={() => dispatch(openModalCrearCliente())} className="btn-item">
+                            <UserPlus size={16} style={{ marginRight: 4 }} />
+                            Nuevo contacto
+                        </button>
+                    </div>
                     <div className="header-item header-item-search-conv">
                         <input
                             type="text"
@@ -1413,6 +1420,7 @@ const ListaChats = () => {
                     </div> */}
                 </div>
             </div>
+            <CrearClienteModal />
         </div>
     )
 }

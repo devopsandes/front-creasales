@@ -11,6 +11,7 @@ export interface ActionState  {
    modalUser: boolean;
    modalTeca: boolean;
    modalPlantilla: boolean;
+   modalCrearCliente: boolean;
    msg: string;
    alerta: boolean;
    newTag: string | null;
