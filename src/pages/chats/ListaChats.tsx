@@ -1145,7 +1145,7 @@ const ListaChats = () => {
                     <div className="header-item">
                         <button onClick={() => dispatch(openModalCrearCliente())} className="btn-item">
                             <UserPlus size={16} style={{ marginRight: 4 }} />
-                            Nuevo contacto
+                            Nuevo chat
                         </button>
                     </div>
                     <div className="header-item header-item-search-conv">
