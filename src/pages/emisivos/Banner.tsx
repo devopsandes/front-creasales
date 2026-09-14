@@ -4,8 +4,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  FaArrowDown,
-  FaArrowUp,
   FaCheckCircle,
   FaEdit,
   FaPause,
@@ -17,7 +15,7 @@ import {
 } from 'react-icons/fa';
 import BannerForm from './BannerForm';
 import BannerPreview from './BannerPreview';
-import { borrarBanner, cambiarActivoBanner, listarBanners, reordenarBanners } from './banner.api';
+import { borrarBanner, cambiarActivoBanner, listarBanners } from './banner.api';
 import type { Banner as BannerItem } from './banner.api';
 import {
   FAMILIAS_PLAN,
@@ -90,14 +88,6 @@ const Banner = () => {
     }
   };
 
-  const mover = (indice: number, direccion: -1 | 1) => {
-    const destino = indice + direccion;
-    if (destino < 0 || destino >= banners.length) return;
-    const ids = banners.map((banner) => banner.id);
-    [ids[indice], ids[destino]] = [ids[destino], ids[indice]];
-    void ejecutar(() => reordenarBanners(ids), 'Orden actualizado');
-  };
-
   const alternarActivo = (banner: BannerItem) => {
     void ejecutar(() => cambiarActivoBanner(banner.id, !banner.activo), banner.activo ? 'Banner pausado' : 'Banner activado');
   };
@@ -116,8 +106,7 @@ const Banner = () => {
     void cargar();
   };
 
-  // Con un filtro puesto se ven solo los banners que le salen a ese afiliado; las flechas se apagan
-  // porque mover dentro de una lista filtrada confunde (el orden es de todos los banners).
+  // Con un filtro puesto se ven solo los banners que le salen a ese afiliado. La prioridad se cambia en Editar.
   const filtrando = hayFiltro(filtro);
   const visibles = banners.filter((banner) => bannerAplicaA(banner, filtro));
 
@@ -196,7 +185,6 @@ const Banner = () => {
       {filtrando && (
         <p className="banner-ayuda banner-filtro-resumen">
           Mostrando {visibles.length} de {banners.length}: los que le salen a ese afiliado (incluye los que son para todos).
-          Para mover con las flechas, limpiá los filtros o cambiá la prioridad en Editar.
         </p>
       )}
 
@@ -210,30 +198,8 @@ const Banner = () => {
       )}
 
       <ul className="banner-lista">
-        {visibles.map((banner) => {
-          const indice = banners.indexOf(banner);
-          return (
+        {visibles.map((banner) => (
           <li key={banner.id} className={`banner-item ${banner.activo ? '' : 'banner-item-pausado'}`}>
-            <div className="banner-orden">
-              <button
-                className="banner-icon-btn"
-                onClick={() => mover(indice, -1)}
-                disabled={ocupado || filtrando || indice === 0}
-                aria-label="Subir en el carrusel"
-              >
-                <FaArrowUp />
-              </button>
-              <span className="banner-orden-numero" title="Prioridad">{banner.orden}</span>
-              <button
-                className="banner-icon-btn"
-                onClick={() => mover(indice, 1)}
-                disabled={ocupado || filtrando || indice === banners.length - 1}
-                aria-label="Bajar en el carrusel"
-              >
-                <FaArrowDown />
-              </button>
-            </div>
-
             <BannerPreview
               etiqueta={banner.etiqueta}
               titulo={banner.titulo}
@@ -254,6 +220,7 @@ const Banner = () => {
                   {banner.activo ? 'Activo' : 'Pausado'}
                 </span>
               </div>
+              <div className="banner-info-linea">Prioridad: {banner.orden}</div>
               <div className="banner-info-linea">{textoVigencia(banner.vigenciaDesde, banner.vigenciaHasta)}</div>
               <div className="banner-info-linea">{resumenSegmentacion(banner.segmentacion)}</div>
               <div className="banner-info-linea">
@@ -292,8 +259,7 @@ const Banner = () => {
               </button>
             </div>
           </li>
-          );
-        })}
+        ))}
       </ul>
 
       {formulario.abierto && (

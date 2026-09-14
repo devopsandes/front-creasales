@@ -234,8 +234,8 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
                 />
               </label>
               <p className="banner-ayuda">
-                Cada afiliado ve solo los banners que le corresponden, ordenados por esta prioridad. Si dos tienen la misma,
-                sale primero el más viejo.
+                Cada afiliado ve solo los banners que le corresponden, ordenados por esta prioridad. Si ponés un número que ya
+                tiene otro banner, ese y los que siguen bajan un lugar (ej. ponés 1: el que estaba en 1 pasa a 2).
               </p>
 
               <div className="banner-fila">

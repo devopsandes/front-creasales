@@ -112,7 +112,4 @@ export const editarBanner = (id: number, datos: DatosFormularioBanner) =>
 export const cambiarActivoBanner = (id: number, activo: boolean) =>
   pedir<Banner>(`/banners/${id}/activo`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ activo }) });
 
-export const reordenarBanners = (ids: number[]) =>
-  pedir<never>('/banners/orden', { method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify({ ids }) });
-
 export const borrarBanner = (id: number) => pedir<never>(`/banners/${id}`, { method: 'DELETE' });
