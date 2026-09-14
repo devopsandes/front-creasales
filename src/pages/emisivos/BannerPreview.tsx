@@ -15,10 +15,12 @@ interface BannerPreviewProps {
   mostrarCarita: boolean;
   /** La app dibuja el botón solo si el banner tiene link. */
   conLink: boolean;
+  /** Tema de la app del afiliado: las plantillas Cálida y Clara cambian de colores en modo oscuro. */
+  modo?: 'claro' | 'oscuro';
 }
 
-const BannerPreview = ({ etiqueta, titulo, texto, imagenUrl, plantilla, textoBoton, mostrarCarita, conLink }: BannerPreviewProps) => (
-  <div className="banner-preview" title="Vista previa en la app">
+const BannerPreview = ({ etiqueta, titulo, texto, imagenUrl, plantilla, textoBoton, mostrarCarita, conLink, modo = 'claro' }: BannerPreviewProps) => (
+  <div className={`banner-preview ${modo === 'oscuro' ? 'banner-preview-oscuro' : ''}`} title="Vista previa en la app">
     {imagenUrl ? (
       <img className="banner-preview-imagen" src={imagenUrl} alt="Vista previa del banner" />
     ) : (

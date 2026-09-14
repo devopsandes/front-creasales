@@ -15,7 +15,7 @@ interface BannerFormProps {
   onGuardado: (mensaje: string) => void;
 }
 
-type CampoTexto = 'etiqueta' | 'titulo' | 'texto' | 'textoBoton' | 'linkUrl' | 'vigenciaDesde' | 'vigenciaHasta';
+type CampoTexto = 'etiqueta' | 'titulo' | 'texto' | 'textoBoton' | 'linkUrl' | 'vigenciaDesde' | 'vigenciaHasta' | 'orden';
 
 const datosIniciales = (banner: Banner | null): DatosFormularioBanner => ({
   etiqueta: banner?.etiqueta ?? '',
@@ -33,6 +33,7 @@ const datosIniciales = (banner: Banner | null): DatosFormularioBanner => ({
   plantilla: banner?.plantilla ?? 'azul',
   textoBoton: banner?.textoBoton ?? '',
   mostrarCarita: banner?.mostrarCarita ?? false,
+  orden: banner ? String(banner.orden) : '',
   imagen: null,
   quitarImagen: false,
 });
@@ -42,6 +43,7 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
   const [urlImagenNueva, setUrlImagenNueva] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [modoVista, setModoVista] = useState<'claro' | 'oscuro'>('claro');
 
   // Vista previa de la imagen elegida: se libera al cambiarla o al cerrar el formulario.
   useEffect(() => {
@@ -219,6 +221,23 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
                 Con imagen, la app muestra solo la imagen (sin diseño, etiqueta, título, texto, botón ni carita).
               </p>
 
+              <label className="banner-label">
+                Prioridad <span className="banner-ayuda">(1 = sale primero en el carrusel; vacío = al final)</span>
+                <input
+                  className="banner-input banner-input-corto"
+                  type="number"
+                  min={1}
+                  max={999}
+                  step={1}
+                  value={datos.orden}
+                  onChange={cambiarTexto('orden')}
+                />
+              </label>
+              <p className="banner-ayuda">
+                Cada afiliado ve solo los banners que le corresponden, ordenados por esta prioridad. Si dos tienen la misma,
+                sale primero el más viejo.
+              </p>
+
               <div className="banner-fila">
                 <label className="banner-label">
                   Se muestra desde
@@ -305,9 +324,23 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
               </fieldset>
             </div>
 
-            <div className="banner-form-preview">
+            <div className={`banner-form-preview ${modoVista === 'oscuro' ? 'banner-form-preview-oscuro' : ''}`}>
               <span className="banner-sublabel">Vista previa en la app</span>
+              <div className="banner-modo" role="group" aria-label="Tema de la app">
+                {(['claro', 'oscuro'] as const).map((modo) => (
+                  <button
+                    type="button"
+                    key={modo}
+                    className={`banner-modo-opcion ${modoVista === modo ? 'banner-modo-opcion-activa' : ''}`}
+                    onClick={() => setModoVista(modo)}
+                    aria-pressed={modoVista === modo}
+                  >
+                    {modo === 'claro' ? 'Modo claro' : 'Modo oscuro'}
+                  </button>
+                ))}
+              </div>
               <BannerPreview
+                modo={modoVista}
                 etiqueta={datos.etiqueta}
                 titulo={datos.titulo}
                 texto={datos.texto}

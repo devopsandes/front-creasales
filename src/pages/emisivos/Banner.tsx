@@ -19,7 +19,18 @@ import BannerForm from './BannerForm';
 import BannerPreview from './BannerPreview';
 import { borrarBanner, cambiarActivoBanner, listarBanners, reordenarBanners } from './banner.api';
 import type { Banner as BannerItem } from './banner.api';
-import { linkLoAbreLaApp, nombrePlantilla, resumenSegmentacion, textoVigencia } from './bannerOpciones';
+import {
+  FAMILIAS_PLAN,
+  FILTRO_VACIO,
+  PROVINCIAS,
+  bannerAplicaA,
+  hayFiltro,
+  linkLoAbreLaApp,
+  nombrePlantilla,
+  resumenSegmentacion,
+  textoVigencia,
+} from './bannerOpciones';
+import type { FiltroBanners } from './bannerOpciones';
 import './Banner.css';
 
 interface EstadoFormulario {
@@ -34,6 +45,7 @@ const Banner = () => {
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [formulario, setFormulario] = useState<EstadoFormulario>({ abierto: false, banner: null });
+  const [filtro, setFiltro] = useState<FiltroBanners>(FILTRO_VACIO);
 
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -104,6 +116,11 @@ const Banner = () => {
     void cargar();
   };
 
+  // Con un filtro puesto se ven solo los banners que le salen a ese afiliado; las flechas se apagan
+  // porque mover dentro de una lista filtrada confunde (el orden es de todos los banners).
+  const filtrando = hayFiltro(filtro);
+  const visibles = banners.filter((banner) => bannerAplicaA(banner, filtro));
+
   return (
     <div className="banner-container">
       <div className="banner-header">
@@ -124,29 +141,93 @@ const Banner = () => {
         </div>
       </div>
 
+      <div className="banner-filtros">
+        <div className="banner-filtro-grupo">
+          <span className="banner-sublabel">Provincia</span>
+          <div className="banner-pastillas">
+            {[{ valor: '', etiqueta: 'Todas' }, ...PROVINCIAS].map((opcion) => (
+              <button
+                type="button"
+                key={opcion.valor || 'todas'}
+                className={`banner-pastilla ${filtro.provincia === opcion.valor ? 'banner-pastilla-activa' : ''}`}
+                onClick={() => setFiltro((actual) => ({ ...actual, provincia: opcion.valor }))}
+              >
+                {opcion.etiqueta}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="banner-filtro-grupo">
+          <span className="banner-sublabel">Plan</span>
+          <div className="banner-pastillas">
+            {[{ valor: '', etiqueta: 'Todos' }, ...FAMILIAS_PLAN].map((opcion) => (
+              <button
+                type="button"
+                key={opcion.valor || 'todos'}
+                className={`banner-pastilla ${filtro.plan === opcion.valor ? 'banner-pastilla-activa' : ''}`}
+                onClick={() => setFiltro((actual) => ({ ...actual, plan: opcion.valor }))}
+              >
+                {opcion.etiqueta}
+              </button>
+            ))}
+          </div>
+        </div>
+        <label className="banner-filtro-grupo">
+          <span className="banner-sublabel">Edad del afiliado</span>
+          <input
+            className="banner-input banner-input-corto"
+            type="number"
+            min={0}
+            max={120}
+            placeholder="Todas"
+            value={filtro.edad}
+            onChange={(e) => {
+              const edad = e.target.value;
+              setFiltro((actual) => ({ ...actual, edad }));
+            }}
+          />
+        </label>
+        {filtrando && (
+          <button type="button" className="banner-btn banner-btn-secundario banner-btn-chico" onClick={() => setFiltro(FILTRO_VACIO)}>
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+      {filtrando && (
+        <p className="banner-ayuda banner-filtro-resumen">
+          Mostrando {visibles.length} de {banners.length}: los que le salen a ese afiliado (incluye los que son para todos).
+          Para mover con las flechas, limpiá los filtros o cambiá la prioridad en Editar.
+        </p>
+      )}
+
       {error && <div className="banner-error">{error}</div>}
       {cargando && banners.length === 0 && <p className="banner-estado">Cargando banners...</p>}
       {!cargando && !error && banners.length === 0 && (
         <p className="banner-estado">Todavía no hay banners. Creá el primero con "Nuevo banner".</p>
       )}
+      {!cargando && banners.length > 0 && visibles.length === 0 && (
+        <p className="banner-estado">Con esos filtros no le sale ningún banner a ese afiliado.</p>
+      )}
 
       <ul className="banner-lista">
-        {banners.map((banner, indice) => (
+        {visibles.map((banner) => {
+          const indice = banners.indexOf(banner);
+          return (
           <li key={banner.id} className={`banner-item ${banner.activo ? '' : 'banner-item-pausado'}`}>
             <div className="banner-orden">
               <button
                 className="banner-icon-btn"
                 onClick={() => mover(indice, -1)}
-                disabled={ocupado || indice === 0}
+                disabled={ocupado || filtrando || indice === 0}
                 aria-label="Subir en el carrusel"
               >
                 <FaArrowUp />
               </button>
-              <span className="banner-orden-numero">{indice + 1}</span>
+              <span className="banner-orden-numero" title="Prioridad">{banner.orden}</span>
               <button
                 className="banner-icon-btn"
                 onClick={() => mover(indice, 1)}
-                disabled={ocupado || indice === banners.length - 1}
+                disabled={ocupado || filtrando || indice === banners.length - 1}
                 aria-label="Bajar en el carrusel"
               >
                 <FaArrowDown />
@@ -211,7 +292,8 @@ const Banner = () => {
               </button>
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       {formulario.abierto && (

@@ -44,6 +44,8 @@ export interface DatosFormularioBanner {
   plantilla: PlantillaBanner;
   textoBoton: string;
   mostrarCarita: boolean;
+  /** Prioridad en el carrusel (1 = primero). Vacía: al crear va al final, al editar no cambia. */
+  orden: string;
   imagen: File | null;
   quitarImagen: boolean;
 }
@@ -91,6 +93,7 @@ const armarFormData = (datos: DatosFormularioBanner): FormData => {
   formData.append('plantilla', datos.plantilla);
   formData.append('textoBoton', datos.textoBoton);
   formData.append('mostrarCarita', String(datos.mostrarCarita));
+  formData.append('orden', datos.orden.trim());
   if (datos.imagen) formData.append('imagen', datos.imagen);
   if (datos.quitarImagen) formData.append('quitarImagen', 'true');
   return formData;

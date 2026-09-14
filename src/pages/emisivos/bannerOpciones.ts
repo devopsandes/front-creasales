@@ -1,7 +1,38 @@
 // bannerOpciones.ts — opciones y textos de la pestaña Banner. Las reglas son las mismas que valida
 // emisivos (docs/banners.md); acá se chequean antes de mandar para avisar rápido.
 
-import type { PlantillaBanner, SegmentacionBanner } from './banner.api';
+import type { Banner, PlantillaBanner, SegmentacionBanner } from './banner.api';
+
+/** Filtros del listado (pedido de Nico 14/09): ver qué banners le salen a una provincia, un plan o una edad. */
+export interface FiltroBanners {
+  provincia: string;
+  plan: string;
+  edad: string;
+}
+
+export const FILTRO_VACIO: FiltroBanners = { provincia: '', plan: '', edad: '' };
+
+export const hayFiltro = (filtro: FiltroBanners): boolean =>
+  Boolean(filtro.provincia || filtro.plan || filtro.edad.trim());
+
+/**
+ * true si a un afiliado con ese filtro le saldría el banner, con la misma lógica que la app: un criterio vacío
+ * en el banner es "para todos", así que los banners para todos aparecen en cualquier filtro.
+ */
+export const bannerAplicaA = (banner: Banner, filtro: FiltroBanners): boolean => {
+  const segmentacion = banner.segmentacion;
+  if (!segmentacion) return true;
+  const provincias = segmentacion.provincias ?? [];
+  const planes = segmentacion.planes ?? [];
+  if (filtro.provincia && provincias.length > 0 && !provincias.includes(filtro.provincia)) return false;
+  if (filtro.plan && planes.length > 0 && !planes.includes(filtro.plan)) return false;
+  const edad = filtro.edad.trim() === '' ? null : Number(filtro.edad);
+  if (edad !== null && Number.isFinite(edad)) {
+    if (segmentacion.edadMin !== null && edad < segmentacion.edadMin) return false;
+    if (segmentacion.edadMax !== null && edad > segmentacion.edadMax) return false;
+  }
+  return true;
+};
 
 /** Diseños que dibuja la app si el banner no tiene imagen (mismos colores que el Home de la app). */
 export const PLANTILLAS: { valor: PlantillaBanner; etiqueta: string }[] = [
