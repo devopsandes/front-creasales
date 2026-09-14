@@ -24,6 +24,7 @@ import {
   bannerAplicaA,
   hayFiltro,
   linkLoAbreLaApp,
+  nombrePantalla,
   nombrePlantilla,
   resumenSegmentacion,
   textoVigencia,
@@ -208,7 +209,7 @@ const Banner = () => {
               plantilla={banner.plantilla}
               textoBoton={banner.textoBoton}
               mostrarCarita={banner.mostrarCarita}
-              conLink={Boolean(banner.linkUrl && linkLoAbreLaApp(banner.linkUrl))}
+              conLink={Boolean((banner.linkUrl && linkLoAbreLaApp(banner.linkUrl)) || banner.pantalla)}
             />
 
             <div className="banner-info">
@@ -229,6 +230,7 @@ const Banner = () => {
                   : `Diseño: ${nombrePlantilla(banner.plantilla)}${banner.textoBoton ? ` · Botón: ${banner.textoBoton}` : ''}${banner.mostrarCarita ? ' · Con carita' : ''}`}
               </div>
               {banner.linkUrl && <div className="banner-info-linea banner-info-link">Link: {banner.linkUrl}</div>}
+              {banner.pantalla && <div className="banner-info-linea">Abre en la app: {nombrePantalla(banner.pantalla)}</div>}
             </div>
 
             <div className="banner-acciones">

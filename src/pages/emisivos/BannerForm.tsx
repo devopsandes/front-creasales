@@ -6,7 +6,7 @@ import { FaSave, FaTimes } from 'react-icons/fa';
 import BannerPreview from './BannerPreview';
 import { crearBanner, editarBanner } from './banner.api';
 import type { Banner, DatosFormularioBanner } from './banner.api';
-import { FAMILIAS_PLAN, LARGOS, PLANTILLAS, PROVINCIAS, errorDeImagen, linkLoAbreLaApp } from './bannerOpciones';
+import { FAMILIAS_PLAN, LARGOS, PANTALLAS_APP, PLANTILLAS, PROVINCIAS, errorDeImagen, linkLoAbreLaApp } from './bannerOpciones';
 
 interface BannerFormProps {
   /** null = banner nuevo */
@@ -16,6 +16,14 @@ interface BannerFormProps {
 }
 
 type CampoTexto = 'etiqueta' | 'titulo' | 'texto' | 'textoBoton' | 'linkUrl' | 'vigenciaDesde' | 'vigenciaHasta' | 'orden';
+
+type AccionBanner = 'nada' | 'link' | 'pantalla';
+
+const ACCIONES: { valor: AccionBanner; etiqueta: string }[] = [
+  { valor: 'nada', etiqueta: 'Nada' },
+  { valor: 'link', etiqueta: 'Abrir un link de Andes' },
+  { valor: 'pantalla', etiqueta: 'Abrir una pantalla de la app' },
+];
 
 const datosIniciales = (banner: Banner | null): DatosFormularioBanner => ({
   etiqueta: banner?.etiqueta ?? '',
@@ -34,6 +42,7 @@ const datosIniciales = (banner: Banner | null): DatosFormularioBanner => ({
   textoBoton: banner?.textoBoton ?? '',
   mostrarCarita: banner?.mostrarCarita ?? false,
   orden: banner ? String(banner.orden) : '',
+  pantalla: banner?.pantalla ?? '',
   imagen: null,
   quitarImagen: false,
 });
@@ -44,6 +53,19 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [modoVista, setModoVista] = useState<'claro' | 'oscuro'>('claro');
+  // Qué hace al tocar (Nico 14/09): nada, abrir un link de Andes o abrir una pantalla de la app. Una sola cosa.
+  const [accion, setAccion] = useState<AccionBanner>(() =>
+    banner?.pantalla ? 'pantalla' : banner?.linkUrl ? 'link' : 'nada',
+  );
+
+  const elegirAccion = (nueva: AccionBanner) => {
+    setAccion(nueva);
+    setDatos((prev) => ({
+      ...prev,
+      linkUrl: nueva === 'link' ? prev.linkUrl : '',
+      pantalla: nueva === 'pantalla' ? prev.pantalla : '',
+    }));
+  };
 
   // Vista previa de la imagen elegida: se libera al cambiarla o al cerrar el formulario.
   useEffect(() => {
@@ -103,6 +125,7 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
   // La imagen que se va a ver: la recién elegida, o la que ya tenía (si no la quitaron).
   const imagenVista = urlImagenNueva ?? (!datos.quitarImagen && banner?.imagenUrl ? banner.imagenUrl : null);
   const linkNoLoAbreLaApp = datos.linkUrl.trim() !== '' && !linkLoAbreLaApp(datos.linkUrl.trim());
+  const tieneAccion = linkLoAbreLaApp(datos.linkUrl.trim()) || datos.pantalla !== '';
 
   const guardar = async (e: FormEvent) => {
     e.preventDefault();
@@ -112,6 +135,14 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
     }
     if (linkNoLoAbreLaApp) {
       setError('El link tiene que ser de andessalud.com.ar o andessalud.ar (con https://).');
+      return;
+    }
+    if (accion === 'link' && !datos.linkUrl.trim()) {
+      setError('Cargá el link o elegí otra opción en "Al tocar el banner".');
+      return;
+    }
+    if (accion === 'pantalla' && !datos.pantalla) {
+      setError('Elegí a qué pantalla de la app lleva el banner.');
       return;
     }
     setGuardando(true);
@@ -153,29 +184,69 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
                 <input className="banner-input" maxLength={LARGOS.texto} value={datos.texto} onChange={cambiarTexto('texto')} />
               </label>
 
-              <label className="banner-label">
-                Link <span className="banner-ayuda">(opcional, se abre al tocar el banner)</span>
-                <input
-                  className="banner-input"
-                  type="url"
-                  placeholder="https://"
-                  value={datos.linkUrl}
-                  onChange={cambiarTexto('linkUrl')}
-                />
-              </label>
-              {linkNoLoAbreLaApp && (
+              <div className="banner-label">
+                Al tocar el banner
+                <div className="banner-modo" role="group" aria-label="Qué hace al tocar el banner">
+                  {ACCIONES.map((opcion) => (
+                    <button
+                      type="button"
+                      key={opcion.valor}
+                      className={`banner-modo-opcion ${accion === opcion.valor ? 'banner-modo-opcion-activa' : ''}`}
+                      onClick={() => elegirAccion(opcion.valor)}
+                      aria-pressed={accion === opcion.valor}
+                    >
+                      {opcion.etiqueta}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {accion === 'link' && (
+                <label className="banner-label">
+                  Link <span className="banner-ayuda">(solo andessalud.com.ar o andessalud.ar, se abre en el navegador)</span>
+                  <input
+                    className="banner-input"
+                    type="url"
+                    placeholder="https://"
+                    value={datos.linkUrl}
+                    onChange={cambiarTexto('linkUrl')}
+                  />
+                </label>
+              )}
+              {accion === 'link' && linkNoLoAbreLaApp && (
                 <p className="banner-aviso">
                   El link tiene que empezar con https:// y ser de andessalud.com.ar o andessalud.ar. La app no abre otros sitios
                   desde un banner y no se va a poder guardar.
                 </p>
               )}
 
+              {accion === 'pantalla' && (
+                <label className="banner-label">
+                  Pantalla de la app
+                  <select
+                    className="banner-input"
+                    value={datos.pantalla}
+                    onChange={(e) => {
+                      const pantalla = e.target.value;
+                      setDatos((prev) => ({ ...prev, pantalla }));
+                    }}
+                  >
+                    <option value="">Elegí una pantalla...</option>
+                    {PANTALLAS_APP.map((opcion) => (
+                      <option key={opcion.valor} value={opcion.valor}>
+                        {opcion.etiqueta}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
               <label className="banner-label">
-                Texto del botón <span className="banner-ayuda">(opcional, ej. Solicitalo)</span>
+                Texto del botón <span className="banner-ayuda">(opcional, ej. Entrá a Gestión)</span>
                 <input className="banner-input" maxLength={LARGOS.textoBoton} value={datos.textoBoton} onChange={cambiarTexto('textoBoton')} />
               </label>
-              {datos.textoBoton.trim() !== '' && !linkLoAbreLaApp(datos.linkUrl.trim()) && (
-                <p className="banner-aviso">El botón solo se muestra si el banner tiene un link de Andes.</p>
+              {datos.textoBoton.trim() !== '' && !tieneAccion && (
+                <p className="banner-aviso">El botón solo se muestra si al tocar el banner abre un link o una pantalla.</p>
               )}
 
               <div className="banner-label">
@@ -348,7 +419,7 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
                 plantilla={datos.plantilla}
                 textoBoton={datos.textoBoton}
                 mostrarCarita={datos.mostrarCarita}
-                conLink={linkLoAbreLaApp(datos.linkUrl.trim())}
+                conLink={tieneAccion}
               />
             </div>
           </div>

@@ -26,6 +26,8 @@ export interface Banner {
   plantilla: PlantillaBanner;
   textoBoton: string | null;
   mostrarCarita: boolean;
+  /** Pantalla de la app que abre al tocar (clave de PANTALLAS_APP), o null. Link o pantalla, no las dos. */
+  pantalla: string | null;
   tieneImagen: boolean;
   imagenUrl: string | null;
   createdAt: string;
@@ -46,6 +48,8 @@ export interface DatosFormularioBanner {
   mostrarCarita: boolean;
   /** Prioridad en el carrusel (1 = primero). Vacía: al crear va al final, al editar no cambia. */
   orden: string;
+  /** '' = sin pantalla */
+  pantalla: string;
   imagen: File | null;
   quitarImagen: boolean;
 }
@@ -94,6 +98,7 @@ const armarFormData = (datos: DatosFormularioBanner): FormData => {
   formData.append('textoBoton', datos.textoBoton);
   formData.append('mostrarCarita', String(datos.mostrarCarita));
   formData.append('orden', datos.orden.trim());
+  formData.append('pantalla', datos.pantalla);
   if (datos.imagen) formData.append('imagen', datos.imagen);
   if (datos.quitarImagen) formData.append('quitarImagen', 'true');
   return formData;

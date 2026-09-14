@@ -44,6 +44,34 @@ export const PLANTILLAS: { valor: PlantillaBanner; etiqueta: string }[] = [
 export const nombrePlantilla = (plantilla: PlantillaBanner): string =>
   PLANTILLAS.find((opcion) => opcion.valor === plantilla)?.etiqueta ?? 'Azul';
 
+/**
+ * Pantallas de la app a las que puede llevar un banner (Nico 14/09). Mismas claves que PANTALLAS de emisivos y que
+ * services/banners/pantallasBanner.ts de la app.
+ */
+export const PANTALLAS_APP = [
+  { valor: 'gestion', etiqueta: 'Gestión (pestaña)' },
+  { valor: 'consulta', etiqueta: 'Orden de consulta' },
+  { valor: 'estudios', etiqueta: 'Autorizar estudio' },
+  { valor: 'consumos', etiqueta: 'Mis consumos' },
+  { valor: 'andesPet', etiqueta: 'Andes Pet (solo a quien puede usarlo)' },
+  { valor: 'doctorOnline', etiqueta: 'Doctor Online' },
+  { valor: 'formularios', etiqueta: 'Formularios' },
+  { valor: 'estadoPagos', etiqueta: 'Estado de mis pagos' },
+  { valor: 'pagos', etiqueta: 'Pagos' },
+  { valor: 'facturas', etiqueta: 'Facturas' },
+  { valor: 'cartilla', etiqueta: 'Cartilla (pestaña)' },
+  { valor: 'token', etiqueta: 'Token (pestaña)' },
+  { valor: 'credencial', etiqueta: 'Mi credencial' },
+  { valor: 'notificaciones', etiqueta: 'Notificaciones' },
+  { valor: 'grupoFamiliar', etiqueta: 'Grupo familiar' },
+  { valor: 'perfil', etiqueta: 'Perfil (pestaña)' },
+  { valor: 'misDatos', etiqueta: 'Mis datos' },
+  { valor: 'configuracion', etiqueta: 'Configuración' },
+];
+
+export const nombrePantalla = (pantalla: string): string =>
+  PANTALLAS_APP.find((opcion) => opcion.valor === pantalla)?.etiqueta ?? pantalla;
+
 /** Familias de plan que entiende la app (junta Titanium Plus C/C y S/C). */
 export const FAMILIAS_PLAN = [
   { valor: 'TITANIUM', etiqueta: 'Titanium' },
