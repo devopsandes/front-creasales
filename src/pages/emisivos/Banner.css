@@ -198,6 +198,69 @@
   font-size: 0.875rem;
 }
 
+/* Selector de pantalla de la app: lista propia que se abre siempre hacia abajo (el select nativo se abría para arriba) */
+.banner-selector {
+  position: relative;
+}
+
+.banner-selector-boton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.banner-selector-vacio {
+  color: #6b7280;
+}
+
+.banner-selector-lista {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(17, 24, 39, 0.12);
+}
+
+.banner-selector-opcion {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: #111827;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+}
+
+.banner-selector-opcion:hover {
+  background: #f3f4f6;
+}
+
+.banner-selector-opcion-activa {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
 .banner-aviso {
   margin: -0.25rem 0 0;
   padding: 0.5rem 0.75rem;

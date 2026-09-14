@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { FaSave, FaTimes } from 'react-icons/fa';
 import BannerPreview from './BannerPreview';
+import SelectorPantalla from './SelectorPantalla';
 import { crearBanner, editarBanner } from './banner.api';
 import type { Banner, DatosFormularioBanner } from './banner.api';
-import { FAMILIAS_PLAN, LARGOS, PANTALLAS_APP, PLANTILLAS, PROVINCIAS, errorDeImagen, linkLoAbreLaApp } from './bannerOpciones';
+import { FAMILIAS_PLAN, LARGOS, PLANTILLAS, PROVINCIAS, errorDeImagen, linkLoAbreLaApp } from './bannerOpciones';
 
 interface BannerFormProps {
   /** null = banner nuevo */
@@ -221,24 +222,13 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
               )}
 
               {accion === 'pantalla' && (
-                <label className="banner-label">
+                <div className="banner-label">
                   Pantalla de la app
-                  <select
-                    className="banner-input"
-                    value={datos.pantalla}
-                    onChange={(e) => {
-                      const pantalla = e.target.value;
-                      setDatos((prev) => ({ ...prev, pantalla }));
-                    }}
-                  >
-                    <option value="">Elegí una pantalla...</option>
-                    {PANTALLAS_APP.map((opcion) => (
-                      <option key={opcion.valor} value={opcion.valor}>
-                        {opcion.etiqueta}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <SelectorPantalla
+                    valor={datos.pantalla}
+                    onCambiar={(pantalla) => setDatos((prev) => ({ ...prev, pantalla }))}
+                  />
+                </div>
               )}
 
               <label className="banner-label">
@@ -247,6 +237,12 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
               </label>
               {datos.textoBoton.trim() !== '' && !tieneAccion && (
                 <p className="banner-aviso">El botón solo se muestra si al tocar el banner abre un link o una pantalla.</p>
+              )}
+              {imagenVista && (
+                <p className="banner-aviso">
+                  Este banner tiene imagen: la app muestra solo la imagen, sin este botón. Si querés un botón, tiene que venir
+                  dibujado en la imagen. Al tocar la imagen igual abre el link o la pantalla elegida.
+                </p>
               )}
 
               <div className="banner-label">
