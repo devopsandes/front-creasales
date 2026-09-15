@@ -7,7 +7,18 @@ import BannerPreview from './BannerPreview';
 import SelectorPantalla from './SelectorPantalla';
 import { crearBanner, editarBanner } from './banner.api';
 import type { Banner, DatosFormularioBanner } from './banner.api';
-import { FAMILIAS_PLAN, LARGOS, PLANTILLAS, PROVINCIAS, errorDeImagen, linkLoAbreLaApp } from './bannerOpciones';
+import {
+  FAMILIAS_PLAN,
+  LARGOS,
+  LARGO_MENSAJE_WHATSAPP,
+  PLANTILLAS,
+  PROVINCIAS,
+  armarLinkWhatsApp,
+  errorDeImagen,
+  esLinkWhatsApp,
+  leerLinkWhatsApp,
+  linkLoAbreLaApp,
+} from './bannerOpciones';
 
 interface BannerFormProps {
   /** null = banner nuevo */
@@ -18,13 +29,19 @@ interface BannerFormProps {
 
 type CampoTexto = 'etiqueta' | 'titulo' | 'texto' | 'textoBoton' | 'linkUrl' | 'vigenciaDesde' | 'vigenciaHasta' | 'orden';
 
-type AccionBanner = 'nada' | 'link' | 'pantalla';
+type AccionBanner = 'nada' | 'link' | 'whatsapp' | 'pantalla';
 
 const ACCIONES: { valor: AccionBanner; etiqueta: string }[] = [
   { valor: 'nada', etiqueta: 'Nada' },
   { valor: 'link', etiqueta: 'Abrir un link de Andes' },
+  { valor: 'whatsapp', etiqueta: 'Abrir un WhatsApp' },
   { valor: 'pantalla', etiqueta: 'Abrir una pantalla de la app' },
 ];
+
+const esLinkWa = (link: string | null | undefined) => (link ?? '').startsWith('https://wa.me/');
+
+/** Largo máximo del link que acepta emisivos (LARGOS.linkUrl en banners.helpers.js). */
+const MAX_LARGO_LINK = 500;
 
 const datosIniciales = (banner: Banner | null): DatosFormularioBanner => ({
   etiqueta: banner?.etiqueta ?? '',
@@ -56,14 +73,29 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
   const [modoVista, setModoVista] = useState<'claro' | 'oscuro'>('claro');
   // Qué hace al tocar (Nico 14/09): nada, abrir un link de Andes o abrir una pantalla de la app. Una sola cosa.
   const [accion, setAccion] = useState<AccionBanner>(() =>
-    banner?.pantalla ? 'pantalla' : banner?.linkUrl ? 'link' : 'nada',
+    banner?.pantalla ? 'pantalla' : esLinkWa(banner?.linkUrl) ? 'whatsapp' : banner?.linkUrl ? 'link' : 'nada',
   );
+  // WhatsApp (Nico 15/09): la operadora carga número y mensaje; el link wa.me se arma solo en datos.linkUrl.
+  const [whatsapp, setWhatsapp] = useState(() =>
+    esLinkWa(banner?.linkUrl) ? leerLinkWhatsApp(banner?.linkUrl ?? '') : { numero: '', mensaje: '' },
+  );
+
+  const cambiarWhatsapp = (campo: 'numero' | 'mensaje') => (e: ChangeEvent<HTMLInputElement>) => {
+    const nuevo = { ...whatsapp, [campo]: e.target.value };
+    setWhatsapp(nuevo);
+    setDatos((prev) => ({ ...prev, linkUrl: armarLinkWhatsApp(nuevo.numero, nuevo.mensaje) }));
+  };
 
   const elegirAccion = (nueva: AccionBanner) => {
     setAccion(nueva);
     setDatos((prev) => ({
       ...prev,
-      linkUrl: nueva === 'link' ? prev.linkUrl : '',
+      linkUrl:
+        nueva === 'whatsapp'
+          ? armarLinkWhatsApp(whatsapp.numero, whatsapp.mensaje)
+          : nueva === 'link' && accion === 'link'
+            ? prev.linkUrl
+            : '',
       pantalla: nueva === 'pantalla' ? prev.pantalla : '',
     }));
   };
@@ -125,8 +157,14 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
 
   // La imagen que se va a ver: la recién elegida, o la que ya tenía (si no la quitaron).
   const imagenVista = urlImagenNueva ?? (!datos.quitarImagen && banner?.imagenUrl ? banner.imagenUrl : null);
-  const linkNoLoAbreLaApp = datos.linkUrl.trim() !== '' && !linkLoAbreLaApp(datos.linkUrl.trim());
-  const tieneAccion = linkLoAbreLaApp(datos.linkUrl.trim()) || datos.pantalla !== '';
+  const linkNoLoAbreLaApp = accion === 'link' && datos.linkUrl.trim() !== '' && !linkLoAbreLaApp(datos.linkUrl.trim());
+  const whatsappInvalido = accion === 'whatsapp' && !esLinkWhatsApp(datos.linkUrl);
+  // Con tildes o emojis el mensaje codificado ocupa mucho más: emisivos acepta links de hasta 500 caracteres.
+  const whatsappMuyLargo = accion === 'whatsapp' && datos.linkUrl.length > MAX_LARGO_LINK;
+  const tieneAccion =
+    (accion === 'link' && linkLoAbreLaApp(datos.linkUrl.trim())) ||
+    (accion === 'whatsapp' && !whatsappInvalido) ||
+    (accion === 'pantalla' && datos.pantalla !== '');
 
   const guardar = async (e: FormEvent) => {
     e.preventDefault();
@@ -140,6 +178,14 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
     }
     if (accion === 'link' && !datos.linkUrl.trim()) {
       setError('Cargá el link o elegí otra opción en "Al tocar el banner".');
+      return;
+    }
+    if (whatsappInvalido) {
+      setError('El WhatsApp tiene que ser un número de Argentina con 54 adelante (ej. 5492613300622).');
+      return;
+    }
+    if (whatsappMuyLargo) {
+      setError('El mensaje de WhatsApp es muy largo (los emojis y las tildes ocupan más). Acortalo un poco.');
       return;
     }
     if (accion === 'pantalla' && !datos.pantalla) {
@@ -219,6 +265,40 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
                   El link tiene que empezar con https:// y ser de andessalud.com.ar o andessalud.ar. La app no abre otros sitios
                   desde un banner y no se va a poder guardar.
                 </p>
+              )}
+
+              {accion === 'whatsapp' && (
+                <>
+                  <label className="banner-label">
+                    Número de WhatsApp{' '}
+                    <span className="banner-ayuda">(de Argentina, con 54 adelante y sin 0 ni 15: ej. 5492613300622)</span>
+                    <input
+                      className="banner-input"
+                      inputMode="numeric"
+                      placeholder="5492613300622"
+                      value={whatsapp.numero}
+                      onChange={cambiarWhatsapp('numero')}
+                    />
+                  </label>
+                  <label className="banner-label">
+                    Mensaje inicial <span className="banner-ayuda">(opcional, lo que queda escrito al abrir el chat)</span>
+                    <input
+                      className="banner-input"
+                      maxLength={LARGO_MENSAJE_WHATSAPP}
+                      placeholder="Hola, quiero info de Andes Pet"
+                      value={whatsapp.mensaje}
+                      onChange={cambiarWhatsapp('mensaje')}
+                    />
+                  </label>
+                  {whatsappMuyLargo && (
+                    <p className="banner-aviso">El mensaje es muy largo (los emojis y las tildes ocupan más). Acortalo un poco.</p>
+                  )}
+                  {whatsapp.numero.trim() !== '' && whatsappInvalido && (
+                    <p className="banner-aviso">
+                      El número tiene que ser de Argentina: 54 + código de área + número, sin 0 ni 15 (ej. 5492613300622).
+                    </p>
+                  )}
+                </>
               )}
 
               {accion === 'pantalla' && (

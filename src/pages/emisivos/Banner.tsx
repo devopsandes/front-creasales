@@ -23,6 +23,8 @@ import {
   PROVINCIAS,
   bannerAplicaA,
   hayFiltro,
+  esLinkWhatsApp,
+  leerLinkWhatsApp,
   linkLoAbreLaApp,
   nombrePantalla,
   nombrePlantilla,
@@ -209,7 +211,9 @@ const Banner = () => {
               plantilla={banner.plantilla}
               textoBoton={banner.textoBoton}
               mostrarCarita={banner.mostrarCarita}
-              conLink={Boolean((banner.linkUrl && linkLoAbreLaApp(banner.linkUrl)) || banner.pantalla)}
+              conLink={Boolean(
+                (banner.linkUrl && (linkLoAbreLaApp(banner.linkUrl) || esLinkWhatsApp(banner.linkUrl))) || banner.pantalla,
+              )}
             />
 
             <div className="banner-info">
@@ -229,7 +233,15 @@ const Banner = () => {
                   ? 'Diseño: imagen propia'
                   : `Diseño: ${nombrePlantilla(banner.plantilla)}${banner.textoBoton ? ` · Botón: ${banner.textoBoton}` : ''}${banner.mostrarCarita ? ' · Con carita' : ''}`}
               </div>
-              {banner.linkUrl && <div className="banner-info-linea banner-info-link">Link: {banner.linkUrl}</div>}
+              {banner.linkUrl && esLinkWhatsApp(banner.linkUrl) && (
+                <div className="banner-info-linea banner-info-link">
+                  Abre WhatsApp: +{leerLinkWhatsApp(banner.linkUrl).numero}
+                  {leerLinkWhatsApp(banner.linkUrl).mensaje && ` · Mensaje: "${leerLinkWhatsApp(banner.linkUrl).mensaje}"`}
+                </div>
+              )}
+              {banner.linkUrl && !esLinkWhatsApp(banner.linkUrl) && (
+                <div className="banner-info-linea banner-info-link">Link: {banner.linkUrl}</div>
+              )}
               {banner.pantalla && <div className="banner-info-linea">Abre en la app: {nombrePantalla(banner.pantalla)}</div>}
             </div>
 

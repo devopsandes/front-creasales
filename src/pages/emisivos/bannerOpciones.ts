@@ -115,6 +115,35 @@ export const linkLoAbreLaApp = (link: string): boolean => {
   return DOMINIOS_BANNER.some((dominio) => host === dominio || host.endsWith(`.${dominio}`));
 };
 
+/**
+ * WhatsApp en un banner (Nico 15/09): cualquier número de Argentina (54 + 8 a 11 dígitos) con el link oficial wa.me y
+ * mensaje opcional codificado. Misma regla que emisivos (banners.helpers.js) y la app (services/urlPermitida.ts).
+ */
+const REGEX_WHATSAPP = /^https:\/\/wa\.me\/54\d{8,11}(\?text=[A-Za-z0-9%\-_.!~*'()]*)?$/;
+
+export const esLinkWhatsApp = (link: string): boolean => REGEX_WHATSAPP.test(link || '');
+
+/** El mensaje inicial se limita para que el link codificado no pase los 500 caracteres que acepta emisivos. */
+export const LARGO_MENSAJE_WHATSAPP = 120;
+
+/** Arma el link wa.me con el número (se queda solo con los dígitos) y el mensaje opcional. */
+export const armarLinkWhatsApp = (numero: string, mensaje: string): string => {
+  const digitos = numero.replace(/\D/g, '');
+  const texto = mensaje.trim();
+  return `https://wa.me/${digitos}${texto ? `?text=${encodeURIComponent(texto)}` : ''}`;
+};
+
+/** Lee número y mensaje de un link wa.me guardado (para editar o mostrarlo en el listado). */
+export const leerLinkWhatsApp = (link: string): { numero: string; mensaje: string } => {
+  const partes = (link || '').match(/^https:\/\/wa\.me\/(\d+)(?:\?text=(.*))?$/);
+  if (!partes) return { numero: '', mensaje: '' };
+  try {
+    return { numero: partes[1], mensaje: partes[2] ? decodeURIComponent(partes[2]) : '' };
+  } catch {
+    return { numero: partes[1], mensaje: '' };
+  }
+};
+
 /** Mensaje de error si la imagen no sirve, o null si está bien. */
 export const errorDeImagen = (archivo: File): string | null => {
   if (!MIMES_IMAGEN.includes(archivo.type)) return 'La imagen tiene que ser JPG, PNG o WEBP.';
