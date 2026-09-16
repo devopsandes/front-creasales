@@ -1763,7 +1763,9 @@ const Chats = () => {
 
     const mapAfiliadoIdentificado = (a: any) => {
         if (!a) return null
+        const nombreCompleto = `${a.apellido ?? ''} ${a.nombre ?? ''}`.trim()
         return {
+            apellidoNombre: a.apellNomb ?? (nombreCompleto || null),
             mail: a.mail ?? null,
             celular: a.numCelular ?? null,
             planAfiliado: a.planPrestacional ?? null,
@@ -2196,6 +2198,12 @@ const Chats = () => {
                                         <div className='chat-info-panel-section'>
                                             <div className='chat-info-panel-section-title'>Datos del Afiliado</div>
                                             <div className='chat-info-panel-rows'>
+                                                {panelData?.apellidoNombre && (
+                                                    <div className='chat-info-panel-row'>
+                                                        <span className='chat-info-panel-label'>Apellido y Nombre</span>
+                                                        <span className='chat-info-panel-value'>{panelData.apellidoNombre}</span>
+                                                    </div>
+                                                )}
                                                 {panelData?.mail && (
                                                     <div className='chat-info-panel-row'>
                                                         <span className='chat-info-panel-label'>Email</span>
