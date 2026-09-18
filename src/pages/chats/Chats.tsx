@@ -1596,7 +1596,10 @@ const Chats = () => {
             if (socket && socket.connected) {
                 const objMsj = { mensaje, chatId: id, telefono, token }
                 socket.emit("archivar", objMsj, (ack: any) => {
-                    if (!ack?.ok) return
+                    if (!ack?.ok) {
+                        toast.error(ack?.error || 'No se pudo archivar el chat')
+                        return
+                    }
                     setMensajes((prev) => {
                         const evt: TimelineItem = {
                             kind: "event" as const,
