@@ -135,7 +135,7 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                 'Información de ópticas consultada',
                 'Preexistencia',
                 'Anticonceptivos',
-                'Reclamo Vendedor'
+                'Reclamo Asesor Comercial'
             ]
         },
         '564264000042384029': {
@@ -1760,8 +1760,8 @@ const DepartamentosTipificaciones = ({ onDataChange, afiliadoData }: Departament
                 </div>
             )}
 
-            {/* 13. Reclamo Vendedor */}
-            {departamento === '564264000000184906' && tipificacion === 'Reclamo Vendedor' && (
+            {/* 13. Reclamo Asesor Comercial */}
+            {departamento === '564264000000184906' && tipificacion === 'Reclamo Asesor Comercial' && (
                 <>
                     <div className="ticket-modal-form-group">
                         <label htmlFor="observacionesAtencion" className="ticket-modal-label">Observación</label>
