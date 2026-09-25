@@ -174,6 +174,14 @@ const navSpecialDayMessages: Tag[] = [
   },
 ]
 
+const navEstudiosBot: Tag[] = [
+  {
+    id: 1,
+    name: "Estudios (bot)",
+    path: "/dashboard/estudios-bot"
+  },
+]
+
 
 export {
   navCategorias,
@@ -192,5 +200,6 @@ export {
   navClientes,
   navIntegraciones,
   navRespuestasRapidas,
-  navSpecialDayMessages
+  navSpecialDayMessages,
+  navEstudiosBot
 }

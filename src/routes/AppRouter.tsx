@@ -23,7 +23,7 @@ import BotIA from '../pages/bot/BotIA'
 import BotConfig from '../pages/bot-config/BotConfig'
 import DashboardHome from '../pages/dashboard-home/DashboardHome'
 import Chats from '../pages/chats/Chats'
-import { navCategorias, navChats, navConversaciones, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas, navEmisivos, navSpecialDayMessages } from '../utils/navegacion'
+import { navCategorias, navChats, navConversaciones, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas, navEmisivos, navSpecialDayMessages, navEstudiosBot } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import ListaConversaciones from '../pages/conversaciones/ListaConversaciones'
 import ConversacionDetalle from '../pages/conversaciones/ConversacionDetalle'
@@ -42,6 +42,8 @@ import RespuestasRapidasPage from '../pages/respuestas-rapidas/RespuestasRapidas
 import FeatureDisabledNotice from '../components/common/FeatureDisabledNotice'
 import { isLightFeatureDisabled } from '../config/runtimeConfig'
 import SpecialDayMessagesPage from '../pages/special-day-messages/SpecialDayMessagesPage'
+import EstudiosBot from '../pages/estudios-bot/EstudiosBot'
+import EstudioBotDetalle from '../pages/estudios-bot/EstudioBotDetalle'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -194,6 +196,11 @@ const AppRouter = () => {
 
         <Route path='clientes' element={<NavTag tags={navClientes} />}>
           <Route index element={<TableClientes />} />
+        </Route>
+
+        <Route path='estudios-bot' element={<NavTag tags={navEstudiosBot} />}>
+          <Route index element={<EstudiosBot />} />
+          <Route path=':id' element={<EstudioBotDetalle />} />
         </Route>
 
         <Route path='respuestas-rapidas' element={<NavTag tags={navRespuestasRapidas} />}>
