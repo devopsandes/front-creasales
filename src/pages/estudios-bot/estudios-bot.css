@@ -912,3 +912,15 @@
         position: static;
     }
 }
+
+/* Opinión final */
+.eb-final {
+    margin-top: 1rem;
+}
+
+.eb-final-texto {
+    font-size: .875rem;
+    color: #111827;
+    margin: .6rem 0;
+    white-space: pre-wrap;
+}
