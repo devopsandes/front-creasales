@@ -107,7 +107,7 @@ const EstudioBotDetalle = () => {
 
     const validar = (): string | null => {
         if (veredicto === 'RECHAZAR' && !motivoSel) return 'Elegí el motivo de rechazo'
-        if (veredicto === 'DERIVAR' && !comentario.trim()) return 'Indicá por qué lo derivás'
+        if (comentario.trim().length < 15) return 'Explicá por qué elegiste lo que elegiste (mínimo 15 caracteres)'
         if (veredicto === 'CODIFICAR') {
             if (!solicitante.id) return 'Falta el profesional solicitante'
             if (!diagnostico.id) return 'Falta el diagnóstico'
@@ -148,6 +148,7 @@ const EstudioBotDetalle = () => {
 
     const guardarFinal = async () => {
         if (!id || !opinionBot) { avisar('err', 'Elegí una opción'); return }
+        if (comentarioFinal.trim().length < 15) { avisar('err', 'Explicá por qué el bot lo hizo bien o mal (mínimo 15 caracteres)'); return }
         setGuardandoFinal(true)
         try {
             const r = await guardarComentarioFinal(id, { opinionBot, comentario: comentarioFinal.trim() || undefined })
@@ -313,9 +314,13 @@ const EstudioBotDetalle = () => {
                                 )}
 
                                 <div className="eb-field">
-                                    <label className="eb-label">{veredicto === 'DERIVAR' ? 'Por qué lo derivás' : 'Comentario (opcional)'}</label>
+                                    <label className="eb-label">Por qué elegiste esto (obligatorio)</label>
                                     <textarea className="eb-input eb-textarea" rows={3} value={comentario} onChange={(e) => setComentario(e.target.value)}
-                                        placeholder={veredicto === 'DERIVAR' ? 'Ej.: necesita auditoría médica, el prestador no realiza el estudio...' : ''} />
+                                        placeholder={veredicto === 'DERIVAR'
+                                            ? 'Ej.: necesita auditoría médica, el prestador no realiza el estudio...'
+                                            : veredicto === 'RECHAZAR'
+                                                ? 'Ej.: la fecha del pedido es del 3/6, ya pasaron más de 30 días...'
+                                                : 'Ej.: elegí OCT posterior porque el diagnóstico es glaucoma; el médico pidió "Eco TV" que en este prestador es ECOGRAFIA GINECOLOGICA TRANSVAGINAL...'} />
                                 </div>
 
                                 <div className="eb-actions">
@@ -354,12 +359,12 @@ const EstudioBotDetalle = () => {
                                                     ))}
                                                 </div>
                                                 <div className="eb-field">
-                                                    <label className="eb-label">Comentario (opcional)</label>
+                                                    <label className="eb-label">Por qué el bot lo hizo bien o mal (obligatorio)</label>
                                                     <textarea className="eb-input eb-textarea" rows={3} value={comentarioFinal} onChange={(e) => setComentarioFinal(e.target.value)}
                                                         placeholder="Ej.: el bot eligió OCT posterior, yo la bilateral; las dos sirven para glaucoma..." />
                                                 </div>
                                                 <div className="eb-actions">
-                                                    <button className="eb-btn-primary" onClick={guardarFinal} disabled={guardandoFinal || !opinionBot}>
+                                                    <button className="eb-btn-primary" onClick={guardarFinal} disabled={guardandoFinal || !opinionBot || comentarioFinal.trim().length < 15}>
                                                         <FaSave /> {guardandoFinal ? 'Guardando...' : 'Guardar opinión'}
                                                     </button>
                                                 </div>
