@@ -28,6 +28,7 @@ import {
   linkLoAbreLaApp,
   nombrePantalla,
   nombrePlantilla,
+  resumenDnis,
   resumenSegmentacion,
   textoVigencia,
 } from './bannerOpciones';
@@ -120,7 +121,7 @@ const Banner = () => {
           <h1 className="banner-title">Banners de la App</h1>
           <p className="banner-subtitle">
             Se muestran en el inicio de la App de Andes Salud, rotando en este orden. A cada afiliado le salen solo los que le
-            corresponden por plan, edad y provincia, y dentro de sus fechas.
+            corresponden por plan, edad y provincia (o por lista de DNIs), y dentro de sus fechas.
           </p>
         </div>
         <div className="banner-header-acciones">
@@ -228,6 +229,7 @@ const Banner = () => {
               <div className="banner-info-linea">Prioridad: {banner.orden}</div>
               <div className="banner-info-linea">{textoVigencia(banner.vigenciaDesde, banner.vigenciaHasta)}</div>
               <div className="banner-info-linea">{resumenSegmentacion(banner.segmentacion)}</div>
+              {resumenDnis(banner.cantidadDnis) && <div className="banner-info-linea">{resumenDnis(banner.cantidadDnis)}</div>}
               <div className="banner-info-linea">
                 {banner.tieneImagen
                   ? 'Diseño: imagen propia'

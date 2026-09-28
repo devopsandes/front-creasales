@@ -11,9 +11,11 @@ import {
   FAMILIAS_PLAN,
   LARGOS,
   LARGO_MENSAJE_WHATSAPP,
+  ACEPTA_DNIS,
   PLANTILLAS,
   PROVINCIAS,
   armarLinkWhatsApp,
+  errorDeArchivoDnis,
   errorDeImagen,
   esLinkWhatsApp,
   leerLinkWhatsApp,
@@ -63,6 +65,8 @@ const datosIniciales = (banner: Banner | null): DatosFormularioBanner => ({
   pantalla: banner?.pantalla ?? '',
   imagen: null,
   quitarImagen: false,
+  archivoDnis: null,
+  quitarDnis: false,
 });
 
 const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
@@ -154,6 +158,28 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
   const quitarImagen = () => {
     setDatos((prev) => ({ ...prev, imagen: null, quitarImagen: Boolean(banner?.tieneImagen) }));
   };
+
+  // Lista de DNIs (Nico 28/09): la operadora sube el archivo y emisivos saca los DNIs al guardar.
+  const elegirArchivoDnis = (e: ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0] ?? null;
+    e.target.value = ''; // permite volver a elegir el mismo archivo
+    if (!archivo) return;
+    const problema = errorDeArchivoDnis(archivo);
+    if (problema) {
+      setError(problema);
+      return;
+    }
+    setError(null);
+    setDatos((prev) => ({ ...prev, archivoDnis: archivo, quitarDnis: false }));
+  };
+
+  const quitarListaDnis = () => {
+    setDatos((prev) => ({ ...prev, archivoDnis: null, quitarDnis: (banner?.cantidadDnis ?? 0) > 0 }));
+  };
+
+  // Lo que va a quedar guardado: el archivo recién elegido, o la lista que ya tenía (si no la quitaron).
+  const dnisGuardados = !datos.quitarDnis ? (banner?.cantidadDnis ?? 0) : 0;
+  const tieneListaDnis = Boolean(datos.archivoDnis) || dnisGuardados > 0;
 
   // La imagen que se va a ver: la recién elegida, o la que ya tenía (si no la quitaron).
   const imagenVista = urlImagenNueva ?? (!datos.quitarImagen && banner?.imagenUrl ? banner.imagenUrl : null);
@@ -468,6 +494,40 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
                     />
                   </label>
                 </div>
+
+                <span className="banner-sublabel">Solo a una lista de DNIs</span>
+                <label className="banner-label">
+                  Archivo con los DNIs <span className="banner-ayuda">(opcional: Excel .xlsx, .csv o .txt, hasta 20.000 DNIs)</span>
+                  <input className="banner-input" type="file" accept={ACEPTA_DNIS} onChange={elegirArchivoDnis} />
+                </label>
+                {datos.archivoDnis && (
+                  <p className="banner-ayuda">
+                    Archivo elegido: {datos.archivoDnis.name}. Los DNIs se leen al guardar
+                    {dnisGuardados > 0 ? ` y reemplazan a los ${dnisGuardados} que tenía.` : '.'}
+                  </p>
+                )}
+                {!datos.archivoDnis && dnisGuardados > 0 && (
+                  <p className="banner-ayuda">Este banner ya tiene una lista de {dnisGuardados} DNIs. Subí otro archivo para reemplazarla.</p>
+                )}
+                {datos.quitarDnis && (
+                  <p className="banner-aviso">Al guardar se borra la lista: el banner le va a salir a todos los que cumplan lo de arriba.</p>
+                )}
+                {tieneListaDnis && (
+                  <>
+                    <button type="button" className="banner-btn banner-btn-secundario banner-btn-chico" onClick={quitarListaDnis}>
+                      Quitar la lista de DNIs
+                    </button>
+                    <p className="banner-aviso">
+                      Con lista, el banner le sale solo a esos DNIs y además tienen que cumplir el plan, la provincia y la edad
+                      si los cargaste. Lo ven únicamente con la app 7.1.4 o más nueva.
+                    </p>
+                  </>
+                )}
+                <p className="banner-ayuda">
+                  El archivo puede ser una sola columna de DNIs, o una planilla con más columnas si la de los DNIs tiene el
+                  título "DNI" (también sirve "Documento" o "CUIL"): se lee solo esa columna. Al guardar te avisa cuántos DNIs
+                  quedaron. El banner le sale a quien inicia sesión en la app con un DNI de la lista, sea titular o familiar.
+                </p>
               </fieldset>
             </div>
 

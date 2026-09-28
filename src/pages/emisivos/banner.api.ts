@@ -30,6 +30,8 @@ export interface Banner {
   pantalla: string | null;
   tieneImagen: boolean;
   imagenUrl: string | null;
+  /** Cuántos DNIs tiene la lista del banner (0 = no filtra por DNI). La lista en sí nunca sale de emisivos. */
+  cantidadDnis: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,6 +54,9 @@ export interface DatosFormularioBanner {
   pantalla: string;
   imagen: File | null;
   quitarImagen: boolean;
+  /** Excel, CSV o TXT con los DNIs a los que les sale el banner. null = no se cambia la lista. */
+  archivoDnis: File | null;
+  quitarDnis: boolean;
 }
 
 interface RespuestaEmisivos<T> {
@@ -84,7 +89,7 @@ async function pedir<T>(ruta: string, init: RequestInit = {}): Promise<Respuesta
   return data;
 }
 
-/** El alta y la edición van en multipart porque llevan la imagen como archivo. */
+/** El alta y la edición van en multipart porque llevan la imagen y la lista de DNIs como archivos. */
 const armarFormData = (datos: DatosFormularioBanner): FormData => {
   const formData = new FormData();
   formData.append('etiqueta', datos.etiqueta);
@@ -101,6 +106,8 @@ const armarFormData = (datos: DatosFormularioBanner): FormData => {
   formData.append('pantalla', datos.pantalla);
   if (datos.imagen) formData.append('imagen', datos.imagen);
   if (datos.quitarImagen) formData.append('quitarImagen', 'true');
+  if (datos.archivoDnis) formData.append('dnis', datos.archivoDnis);
+  if (datos.quitarDnis) formData.append('quitarDnis', 'true');
   return formData;
 };
 

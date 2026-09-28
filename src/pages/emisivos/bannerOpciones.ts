@@ -151,6 +151,27 @@ export const errorDeImagen = (archivo: File): string | null => {
   return null;
 };
 
+/** Extensiones del archivo de DNIs que lee emisivos (EXTENSIONES_DNIS en banners.helpers.js). */
+export const EXTENSIONES_DNIS = ['.xlsx', '.csv', '.txt'];
+export const ACEPTA_DNIS = EXTENSIONES_DNIS.join(',');
+
+/** Mensaje de error si el archivo de DNIs no sirve, o null si está bien. Los DNIs los lee emisivos al guardar. */
+export const errorDeArchivoDnis = (archivo: File): string | null => {
+  const nombre = archivo.name.toLowerCase();
+  if (nombre.endsWith('.xls')) return 'El Excel viejo (.xls) no se puede leer. Guardalo como .xlsx o como .csv.';
+  if (!EXTENSIONES_DNIS.some((extension) => nombre.endsWith(extension))) {
+    return 'La lista de DNIs tiene que ser un Excel (.xlsx) o un archivo .csv o .txt.';
+  }
+  if (archivo.size > MAX_BYTES_IMAGEN) return 'El archivo de DNIs puede pesar hasta 1 MB.';
+  return null;
+};
+
+/** Texto para el listado cuando el banner tiene lista de DNIs, o null si no tiene. */
+export const resumenDnis = (cantidad: number | undefined): string | null =>
+  cantidad && cantidad > 0
+    ? `Solo para ${cantidad} ${cantidad === 1 ? 'DNI' : 'DNIs'} de la lista (app 7.1.4 o más nueva)`
+    : null;
+
 /** "2026-09-15" → "15/09/2026". */
 const fechaLegible = (fecha: string): string => fecha.split('-').reverse().join('/');
 
