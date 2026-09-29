@@ -461,6 +461,31 @@ const searchByConversacion = async (
     }
 }
 
+/**
+ * Nota privada / mención entre operadoras (HTTP multipart).
+ * POST /mensajes/nota-privada — NO se envía al afiliado.
+ */
+const crearNotaPrivada = async (
+    token: string,
+    params: { chatId: string; texto?: string; mentionedUserIds?: string[]; archivo?: File | null }
+): Promise<any> => {
+    try {
+        const formData = new FormData()
+        formData.append('chatId', params.chatId)
+        if (params.texto && params.texto.trim().length > 0) formData.append('texto', params.texto.trim())
+        formData.append('mentionedUserIds', JSON.stringify(params.mentionedUserIds ?? []))
+        if (params.archivo) formData.append('file', params.archivo)
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await chatsClient.post('/mensajes/nota-privada', formData, { headers })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data
+        }
+        throw error
+    }
+}
+
 const desasignarChat = async (
     token: string,
     chatId: string
@@ -478,4 +503,4 @@ const desasignarChat = async (
 }
 
 
-export { findChatById, findChatTimeline, findChatMessagesLite, getUserData, getChats, getChatCounts, getChatCountsByOperator, setChatReadState, setChatBotState, searchByConversacion, desasignarChat, getAfiliadoIdentificado }
+export { findChatById, findChatTimeline, findChatMessagesLite, getUserData, getChats, getChatCounts, getChatCountsByOperator, setChatReadState, setChatBotState, searchByConversacion, desasignarChat, getAfiliadoIdentificado, crearNotaPrivada }

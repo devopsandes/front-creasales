@@ -1,7 +1,7 @@
 import React, { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatById, findChatMessagesLite, findChatTimeline, getUserData, getAfiliadoIdentificado, setChatBotState } from '../../services/chats/chats.services'
+import { findChatById, findChatMessagesLite, findChatTimeline, getUserData, getAfiliadoIdentificado, setChatBotState, crearNotaPrivada } from '../../services/chats/chats.services'
 import { MessageLiteItem, TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
@@ -89,6 +89,22 @@ const dedupeTagsById = (tags: any): any[] => {
     return Array.from(map.values())
 }
 
+const NOTA_EXTENSIONES_PERMITIDAS = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx']
+const NOTA_MIME_A_EXT: Record<string, string> = {
+    'application/pdf': 'pdf',
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+}
+const resolverExtensionNota = (file: File): string | null => {
+    const nombre = `${file?.name ?? ''}`
+    const desdeNombre = nombre.includes('.') ? (nombre.split('.').pop() ?? '').trim().toLowerCase() : ''
+    if (NOTA_EXTENSIONES_PERMITIDAS.includes(desdeNombre)) return desdeNombre
+    return NOTA_MIME_A_EXT[`${file?.type ?? ''}`.toLowerCase()] ?? null
+}
+
 const Chats = () => {
     const mentionsDisabled = isLightFeatureDisabled('mentions')
     const tagsDisabled = isLightFeatureDisabled('tags')
@@ -135,6 +151,7 @@ const Chats = () => {
     const [newMessagesCount, setNewMessagesCount] = useState(0)
 
     const isSendingRef = useRef(false)
+    const isSendingNotaRef = useRef(false)
     const lastSentMessageRef = useRef<string | null>(null)
     const uploadPreviewUrlsRef = useRef<Record<string, string>>({})
     const pendingChatRefreshRef = useRef<number | null>(null)
@@ -388,6 +405,22 @@ const Chats = () => {
         }
 
         return <span className="chat-text" style={{ whiteSpace: 'pre-wrap' }}>{fallbackText}</span>
+    }
+
+    const renderDocumentoNota = (payload: any) => {
+        const url = payload?.documentUrl
+        if (!url) return null
+        const nombreDoc = `${payload?.documentName ?? 'Documento'}`
+        const esPdf = payload?.documentMimeType === 'application/pdf' || /\.pdf$/i.test(nombreDoc)
+        return (
+            <div className="chat-media-doc" style={{ marginTop: '0.5rem' }}>
+                <span className='mensaje-nota-privada-text'>📄 {nombreDoc}</span>
+                {esPdf && (
+                    <button type="button" className="chat-media-link" onClick={() => setDocPreview({ url, name: nombreDoc })}>Ver documento</button>
+                )}
+                <a href={url} target="_blank" rel="noreferrer" className="chat-media-link">Abrir / Descargar documento</a>
+            </div>
+        )
     }
 
     type DateSeparator = { kind: "date_separator"; id: string; createdAt: string | Date; label: string; }
@@ -852,44 +885,57 @@ const Chats = () => {
     }
 
     const handleNotaPrivada = async () => {
-        const hasTexto = mensaje && mensaje.trim().length > 0
-        const hasImagen = archivos.length > 0 && archivos[0].type.startsWith('image/')
-        if (!hasTexto && !hasImagen) {
-            setErrorModalMessage('Debe escribir una nota o pegar una imagen')
+        if (!id || !token) return
+        if (isSendingNotaRef.current) return
+
+        const texto = mensaje.trim()
+        const archivo = archivos[0] ?? null
+
+        if (!texto && !archivo) {
+            setErrorModalMessage('Debe escribir una nota o adjuntar un archivo')
             setIsErrorModalOpen(true)
             return
         }
-        const socket = getSocket()
-        if (socket && socket.connected) {
-            const mentions = mentionsDisabled ? [] : selectedMentionUsers.map((user) => ({ userId: user.id }))
-            const payload: any = {
-                chatId: id,
-                mensaje: mensaje.trim() || null,
-                token,
-                mentions
+        if (archivos.length > 1) {
+            setErrorModalMessage('La nota privada admite un solo archivo. Quitá los demás e intentá de nuevo.')
+            setIsErrorModalOpen(true)
+            return
+        }
+        if (archivo && !resolverExtensionNota(archivo)) {
+            setErrorModalMessage('Tipo de archivo no permitido. Se aceptan PDF, JPG, PNG, WEBP, DOC y DOCX.')
+            setIsErrorModalOpen(true)
+            return
+        }
+
+        const mentionedUserIds = mentionsDisabled ? [] : selectedMentionUsers.map((user) => user.id)
+
+        isSendingNotaRef.current = true
+        try {
+            const resp: any = await crearNotaPrivada(token, { chatId: id, texto, mentionedUserIds, archivo })
+            if (openAuthSessionIfNeeded(resp)) return
+            if (!resp?.ok) {
+                const errorMsg = Array.isArray(resp?.message) ? resp.message.join(', ') : (resp?.message || resp?.error || 'No se pudo guardar la nota privada')
+                toast.error(errorMsg)
+                return
             }
 
-            // Si hay imagen pegada, convertir a base64
-            if (archivos.length > 0 && archivos[0].type.startsWith('image/')) {
-                const file = archivos[0]
-                const ext = file.name.split('.').pop() || 'png'
-                const base64 = await new Promise<string>((resolve) => {
-                    const reader = new FileReader()
-                    reader.onload = () => {
-                        const result = reader.result as string
-                        resolve(result.split(',')[1])
-                    }
-                    reader.readAsDataURL(file)
-                })
-                payload.image = { base64, ext }
-            }
-
-            setMensaje("")
+            setMensaje('')
             setArchivos([])
             setSelectedMentionUsers([])
-            socket.emit("nota-privada", payload, (ack: any) => {
-                if (debugTimeline) console.log("[nota-privada ACK]", ack)
-            })
+
+            // La nota se agrega con la respuesta HTTP; si además llega por socket, mergeTimeline la deduplica por id.
+            if (resp?.event) {
+                const item = normalizeTimelineItem(resp.event)
+                cacheSocketEvent(id, item)
+                setMensajes((prev) => {
+                    const merged = mergeTimeline(prev, [item], 'append')
+                    return merged.length > 1000 ? merged.slice(-1000) : merged
+                })
+            }
+        } catch (error) {
+            toast.error('No se pudo guardar la nota privada')
+        } finally {
+            isSendingNotaRef.current = false
         }
     }
 
@@ -1933,6 +1979,7 @@ const Chats = () => {
                                                                 onClick={() => setDocPreview({ url: msj.payload.imageUrl, name: 'Imagen nota privada' })}
                                                             />
                                                         )}
+                                                        {renderDocumentoNota(msj?.payload)}
                                                         {msj?.payload?.authorName && <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>}
                                                     </div>
                                                     <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
@@ -1959,6 +2006,7 @@ const Chats = () => {
                                                                 onClick={() => setDocPreview({ url: msj.payload.imageUrl, name: 'Imagen mención' })}
                                                             />
                                                         )}
+                                                        {renderDocumentoNota(msj?.payload)}
                                                         {msj?.payload?.authorName && (
                                                             <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>
                                                         )}
@@ -2141,6 +2189,10 @@ const Chats = () => {
                                                 lineHeight: '1.5rem',
                                             }}
                                         />
+                                        <button type='button' onClick={handleClickFile} title='Adjuntar archivo a la nota privada'>
+                                            <IoIosAttach size={25} className='text-gray-700 cursor-pointer' />
+                                        </button>
+                                        <input type="file" accept="application/pdf, image/jpeg, image/png, image/webp, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document" ref={fileInputRef} style={{ display: "none" }} onChange={handleAddFile} />
                                         <button onClick={() => dispatch(switchModalPlantilla())} className="btn flex gap-2 rounded-xl cursor-pointer bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 shadow transition duration-200">
                                             Enviar plantilla
                                         </button>
