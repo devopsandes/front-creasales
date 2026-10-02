@@ -67,7 +67,11 @@ const authRegister = async (dataRegister: DataRegister): Promise<SuccessResponse
             role: dataRegister.role
         }
 
-        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url, objeto)
+        // El alta de usuarios ahora exige sesión de ADMIN o ROOT en el back.
+        const token = localStorage.getItem('token') || ''
+        const headers = { authorization: `Bearer ${token}` }
+
+        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url, objeto, { headers })
 
         return data
 

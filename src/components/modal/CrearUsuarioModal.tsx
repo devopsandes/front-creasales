@@ -44,6 +44,13 @@ const CrearUsuarioModal = () => {
     const modalUser = useSelector((state: RootState) => state.action.modalUser);
     const token = localStorage.getItem('token') || '';
 
+    // Roles que el usuario logueado puede asignar. El back aplica la misma
+    // regla; esto solo evita ofrecer opciones que después van a ser rechazadas.
+    const rolLogueado = localStorage.getItem('role') || '';
+    const rolesPermitidos = ROLES.filter((r) =>
+        rolLogueado === 'ROOT' || (rolLogueado === 'ADMIN' && r.nombre !== 'ROOT')
+    );
+
     useEffect(() => {
         setNombre('');
     }, []);
@@ -374,7 +381,7 @@ const CrearUsuarioModal = () => {
                                         onChange={(e) => { setRole(e.target.value); limpiarErrorCampo('role'); }}
                                     >
                                         <option value="">Seleccione</option>
-                                        {ROLES.map((r) => (
+                                        {rolesPermitidos.map((r) => (
                                             <option value={r.nombre} key={r.id}>
                                                 {r.nombre}
                                             </option>

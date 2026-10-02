@@ -8,9 +8,9 @@ const RecuperarPass = () => {
         <div className="signin-content">
           {/* Logo con cohete */}
           <div className="signin-logo-container">
-            <img 
-              src="/images/CreaTechRocket.png" 
-              alt="CreaSales - Despega tus ventas" 
+            <img
+              src="/images/CreaTechRocket.png"
+              alt="CreaSales - Despega tus ventas"
               className="signin-logo"
             />
           </div>
@@ -24,8 +24,8 @@ const RecuperarPass = () => {
             <p className="signin-contact-text">
               Contáctanos para potenciar tu proceso comercial con una experiencia ágil y confiable.
             </p>
-            <a 
-              href="mailto:gino.cornejo@andessalud.ar" 
+            <a
+              href="mailto:gino.cornejo@andessalud.ar"
               className="signin-contact-email"
             >
               gino.cornejo@andessalud.ar
@@ -35,8 +35,6 @@ const RecuperarPass = () => {
           {/* Links */}
           <div className="signin-links">
             <Link to="/auth/signin" className="signin-link">Iniciar Sesión</Link>
-            <span className="signin-separator">•</span>
-            <Link to="/auth/signup" className="signin-link">Crear cuenta</Link>
           </div>
 
           {/* Footer */}
