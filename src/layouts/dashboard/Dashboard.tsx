@@ -6,8 +6,8 @@ import Topbar from "../../components/topbar/Topbar";
 import SessionExpiredModal from "../../components/modal/SessionExpiredModal";
 import { usuariosXRole } from "../../services/auth/auth.services";
 import './dashboard.css'
-import { useDispatch, useSelector  } from "react-redux";
-import { connectSocket,  getSocket } from "../../app/slices/socketSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { connectSocket, getSocket } from "../../app/slices/socketSlice";
 import { setUser } from "../../app/slices/authSlice";
 import { openSessionExpired, closeSessionExpired } from "../../app/slices/actionSlice";
 import { RootState } from "../../app/store";
@@ -15,6 +15,8 @@ import { setupAxiosInterceptors } from "../../utils/axiosInterceptor";
 import { useTokenRefresh } from "../../hooks/useTokenRefresh";
 import { useMentionsSync } from "../../hooks/useMentionsSync";
 import { getSocketAuthSessionReason } from "../../utils/authSession";
+import AlertaCuentaWhatsapp from "../../components/alertas/AlertaCuentaWhatsapp";
+import { obtenerAlertaCuentaWhatsapp } from "../../services/meta/alertaCuenta.services";
 
 
 
@@ -27,7 +29,7 @@ const Dashboard = () => {
   const sessionExpiredReason = useSelector((state: RootState) => state.action.sessionExpiredReason)
   const socketConnected = useSelector((state: RootState) => state.socket.isConnected)
   useMentionsSync()
-  
+
   useEffect(() => {
     setupAxiosInterceptors()
   }, [])
@@ -36,7 +38,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     role = role ? localStorage.getItem('role') : null
-  },[])
+  }, [])
 
   useEffect(() => {
     try {
@@ -44,19 +46,19 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error conectando socket:', error);
     }
-  },[dispatch])
+  }, [dispatch])
 
   useEffect(() => {
     const token = localStorage.getItem('token')
     const userId = localStorage.getItem('userId')
-    
-    if(token){
-      if(userId){
+
+    if (token) {
+      if (userId) {
         usuariosXRole('', token)
           .then(data => {
-            if(data.users){
+            if (data.users) {
               const currentUser = data.users.find(u => u.id === userId)
-              if(currentUser){
+              if (currentUser) {
                 const userData = {
                   id: currentUser.id,
                   name: `${currentUser.nombre} ${currentUser.apellido}`,
@@ -71,11 +73,11 @@ const Dashboard = () => {
           })
       }
     }
-  },[])
+  }, [])
 
-  useEffect(()=>{
+  useEffect(() => {
     const socket = getSocket()
-    if(!socket) return
+    if (!socket) return
 
     const handleOperadorAsignado = (payload: string) => {
       toast.success(payload)
@@ -90,16 +92,16 @@ const Dashboard = () => {
       console.warn('Socket error sin expiración explícita de token:', error)
     }
 
-    socket.on('error',handleError)
-    socket.on('operador-asignado',handleOperadorAsignado)
+    socket.on('error', handleError)
+    socket.on('operador-asignado', handleOperadorAsignado)
 
     return () => {
       socket!.off('error', handleError)
       socket!.off('operador-asignado', handleOperadorAsignado)
     }
-  },[socketConnected, dispatch]) 
-  
-  
+  }, [socketConnected, dispatch])
+
+
   const handleSidebarClick = () => {
     setSidebarExpanded(!sidebarExpanded)
   }
@@ -108,27 +110,28 @@ const Dashboard = () => {
     <>
       <Topbar />
       <section className="dash-layout">
-        <div 
+        <div
           className={`dash-sidebar ${sidebarExpanded ? 'expanded' : ''}`}
           onDoubleClick={handleSidebarClick}
         >
-          <DashSidebar role={role!}/>
+          <DashSidebar role={role!} />
         </div>
         <div className="dash-body">
           <Outlet />
         </div>
         <ToastContainer
-          autoClose={3000} 
-          closeButton 
+          autoClose={3000}
+          closeButton
           pauseOnHover
           draggable
           limit={1}
         />
-        <SessionExpiredModal 
+        <SessionExpiredModal
           isOpen={sessionExpired}
           onClose={() => dispatch(closeSessionExpired())}
           reason={sessionExpiredReason}
         />
+        <AlertaCuentaWhatsapp consultar={obtenerAlertaCuentaWhatsapp} />
       </section>
     </>
   )
