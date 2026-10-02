@@ -992,7 +992,8 @@ const Chats = () => {
 
     useEffect(() => {
         const ejecucion = async () => {
-            const resp = await getUserData(telefono!);
+            if (!id || !token) return
+            const resp = await getUserData(token, id);
             dispatch(setUserData(resp));
             dispatch(setViewSide(true))
             if (openAuthSessionIfNeeded(resp)) return

@@ -238,11 +238,17 @@ const findChatMessagesLite = async (
     })
 }
 
-const getUserData = async (telefono: string): Promise<DataUser & ErrorResponse> => {
+/**
+ * Datos del afiliado para el panel lateral. Antes se consultaba
+ * tickets.creasales.com directo desde el navegador y sin autenticación;
+ * ahora se le pide al back conversacional, con la sesión de la operadora,
+ * y es el back quien consulta a tickets.
+ */
+const getUserData = async (token: string, chatId: string): Promise<DataUser & ErrorResponse> => {
     try {
-        const url = `https://tickets.creasales.com/mensajes/getUserData?telefono=${telefono}`
+        const headers = { authorization: `Bearer ${token}` }
 
-        const { data } = await axios.get<DataUser & ErrorResponse>(url)
+        const { data } = await chatsClient.get<DataUser & ErrorResponse>(`/chats/${chatId}/datos-afiliado`, { headers })
 
         return data
     } catch (error) {
