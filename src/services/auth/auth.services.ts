@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { DataLogin, DataRegister, ErrorResponse, LoginResponse, SuccessResponse, UsersResponse, ValidationResponse } from '../../interfaces/auth.interface'
+import { DataLogin, DataRegister, DataVerificarMfa, ErrorResponse, LoginResponse, SuccessResponse, UsersResponse, ValidationResponse } from '../../interfaces/auth.interface'
 import { convClient } from '../apiClient'
 
 type Objeto = {
@@ -28,13 +28,12 @@ const getCachedUsersRole = (key: string): (UsersResponse & ErrorResponse) | null
     return entry.value
 }
 
-const authLogin = async ({ email, password }: DataLogin): Promise<LoginResponse & ErrorResponse> => {
+const authLogin = async ({ email, password, turnstileToken, dispositivoToken }: DataLogin): Promise<LoginResponse & ErrorResponse> => {
     try {
         const url = 'https://sales.andessalud.ar/api/v1/auth/signin'
 
-        const { data } = await axios.post<LoginResponse & ErrorResponse>(url, { email, password })
-
-
+        // Los campos vacíos no viajan (JSON.stringify omite undefined).
+        const { data } = await axios.post<LoginResponse & ErrorResponse>(url, { email, password, turnstileToken, dispositivoToken })
 
         return data
     } catch (error) {
@@ -43,6 +42,38 @@ const authLogin = async ({ email, password }: DataLogin): Promise<LoginResponse 
             return objeto
         }
         throw error; // Lanza el error si no es del tipo esperado
+    }
+}
+
+const authVerificarMfa = async (dataMfa: DataVerificarMfa): Promise<LoginResponse & ErrorResponse> => {
+    try {
+        const url = 'https://sales.andessalud.ar/api/v1/auth/signin/verificar'
+
+        const { data } = await axios.post<LoginResponse & ErrorResponse>(url, dataMfa)
+
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            const objeto: ErrorResponse & LoginResponse = error.response.data
+            return objeto
+        }
+        throw error
+    }
+}
+
+const authReenviarMfa = async (mfaTicket: string): Promise<SuccessResponse & ErrorResponse> => {
+    try {
+        const url = 'https://sales.andessalud.ar/api/v1/auth/signin/reenviar'
+
+        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url, { mfaTicket })
+
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            const objeto: ErrorResponse & SuccessResponse = error.response.data
+            return objeto
+        }
+        throw error
     }
 }
 
@@ -295,6 +326,6 @@ const resyncAdminUser = async (email: string, token: string): Promise<SuccessRes
 
 
 
-export { authLogin, authRegister, tokenValidacion, sendEmailRecuperarPass, cambiarPassword, usuariosXRole, asignarOperador, switchActivo, deleteUser, updateUser, resyncAdminUser }
+export { authLogin, authVerificarMfa, authReenviarMfa, authRegister, tokenValidacion, sendEmailRecuperarPass, cambiarPassword, usuariosXRole, asignarOperador, switchActivo, deleteUser, updateUser, resyncAdminUser }
 
 

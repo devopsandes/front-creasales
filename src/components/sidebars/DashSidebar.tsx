@@ -27,6 +27,7 @@ import './dashsidebar.css'
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { isLightFeatureDisabled } from "../../config/runtimeConfig";
+import { limpiarSesion } from '../../utils/dispositivoConfiable'
 
 type Props = {
   role: string
@@ -47,7 +48,7 @@ const DashSidebar = ({ role }: Props) => {
   }
 
   const handleLogoutConfirm = () => {
-    localStorage.clear();
+    limpiarSesion();
     navigate('/auth/signin');
     setIsLogoutModalOpen(false);
   }

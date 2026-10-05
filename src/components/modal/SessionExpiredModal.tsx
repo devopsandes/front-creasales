@@ -1,6 +1,7 @@
 import { AlertCircle, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import './session-expired-modal.css'
+import { limpiarSesion } from '../../utils/dispositivoConfiable'
 
 interface SessionExpiredModalProps {
   isOpen: boolean
@@ -15,7 +16,7 @@ const SessionExpiredModal = ({ isOpen, onClose, reason = 'expired' }: SessionExp
 
   const handleConfirm = () => {
     if (onClose) onClose()
-    localStorage.clear()
+    limpiarSesion()
     navigate('/auth/signin')
   }
 
@@ -31,7 +32,7 @@ const SessionExpiredModal = ({ isOpen, onClose, reason = 'expired' }: SessionExp
         <button className="session-modal-close" onClick={handleConfirm}>
           <X size={20} />
         </button>
-        
+
         <div className="session-modal-icon">
           <AlertCircle size={32} />
         </div>
@@ -46,7 +47,7 @@ const SessionExpiredModal = ({ isOpen, onClose, reason = 'expired' }: SessionExp
         </p>
 
         <div className="session-modal-actions">
-          <button 
+          <button
             className="session-modal-button session-modal-confirm"
             onClick={handleConfirm}
           >
