@@ -1780,3 +1780,14 @@
     background: #e5e7eb;
     color: #374151;
 }
+
+/* El reproductor de audio tiene su propio ancho: antes lo definía
+   el texto de la transcripción y sin ella quedaba invisible. */
+.chat-media-audio {
+    min-width: 260px;
+}
+
+.chat-media-audio-player {
+    width: 100%;
+    min-width: 260px;
+}
