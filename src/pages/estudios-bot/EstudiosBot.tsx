@@ -12,6 +12,25 @@ export const VEREDICTO_CFG: Record<Veredicto, { label: string; cls: string }> = 
   DERIVAR: { label: 'Deriva', cls: 'eb-badge-amarillo' },
 }
 
+/**
+ * Derivaciones donde el bot leyó bien pero no consiguió el ID de algo en el
+ * catálogo. Se muestran distinto: son los casos "casi listos".
+ */
+export const MOTIVOS_SIN_MATCH = new Set([
+  'DIAGNOSTICO_SIN_MATCH',
+  'PRESTACION_SIN_MATCH',
+  'EFECTOR_AMBIGUO',
+  'SOLICITANTE_SIN_MATCH',
+])
+
+export const badgeBot = (veredicto: Veredicto, motivo?: string | null): { label: string; cls: string; row: string } => {
+  if (veredicto === 'DERIVAR' && motivo && MOTIVOS_SIN_MATCH.has(motivo)) {
+    return { label: 'Deriva (sin match)', cls: 'eb-badge-violeta', row: 'eb-row-sinmatch' }
+  }
+  const cfg = VEREDICTO_CFG[veredicto] ?? { label: veredicto, cls: '' }
+  return { ...cfg, row: `eb-row-${String(veredicto).toLowerCase()}` }
+}
+
 export const formatFecha = (s: string | null | undefined) => {
   if (!s) return '—'
   return new Intl.DateTimeFormat('es-AR', {
@@ -128,11 +147,11 @@ const EstudiosBot = () => {
                 <tr><td colSpan={8} className="eb-empty">No hay estudios para mostrar</td></tr>
               )}
               {items.map((it) => {
-                const cfg = VEREDICTO_CFG[it.bot_veredicto] ?? { label: it.bot_veredicto, cls: '' }
+                const cfg = badgeBot(it.bot_veredicto, it.bot_motivo)
                 return (
                   <tr
                     key={it.id}
-                    className={`eb-row eb-row-${it.bot_veredicto.toLowerCase()}`}
+                    className={`eb-row ${cfg.row}`}
                     onClick={() => navigate(`/dashboard/estudios-bot/${it.id}`)}
                   >
                     <td className="eb-td eb-td-fecha">{formatFecha(it.created_at)}</td>

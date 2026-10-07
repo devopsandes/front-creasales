@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt } from "react-icons/fa"
 import LupaSelector from "./LupaSelector"
-import { VEREDICTO_CFG, formatFecha } from "./EstudiosBot"
+import { VEREDICTO_CFG, badgeBot, formatFecha } from "./EstudiosBot"
 import {
     buscarDiagnosticos, buscarEfectores, buscarPrestaciones, buscarPrestadores, buscarSolicitantes,
     guardarComentarioFinal, guardarRevision, obtenerEstudio, obtenerImagenEstudio, obtenerMotivosRechazo,
@@ -198,7 +198,7 @@ const EstudioBotDetalle = () => {
                     {bot && (
                         <div className="eb-cab-veredicto">
                             <span className="eb-label">Bot</span>
-                            <span className={`eb-badge eb-badge-lg ${VEREDICTO_CFG[bot.veredicto]?.cls ?? ''}`}>{VEREDICTO_CFG[bot.veredicto]?.label ?? bot.veredicto}</span>
+                            <span className={`eb-badge eb-badge-lg ${badgeBot(bot.veredicto, bot.motivo?.texto).cls}`}>{badgeBot(bot.veredicto, bot.motivo?.texto).label}</span>
                             {bot.motivo?.texto && bot.veredicto !== 'CODIFICAR' && <span className="eb-cab-motivo">{bot.motivo.texto}</span>}
                         </div>
                     )}
@@ -445,7 +445,7 @@ const VistaBot = ({ bot, op, mostrarJson, setMostrarJson }: {
     return (
         <div>
             <div className="eb-guardada-head">
-                <span className={`eb-badge ${VEREDICTO_CFG[bot.veredicto]?.cls ?? ''}`}>{VEREDICTO_CFG[bot.veredicto]?.label ?? bot.veredicto}</span>
+                <span className={`eb-badge ${badgeBot(bot.veredicto, bot.motivo?.texto).cls}`}>{badgeBot(bot.veredicto, bot.motivo?.texto).label}</span>
                 {op && <span className={`eb-cmp ${op.veredicto === bot.veredicto ? 'eb-cmp-ok' : 'eb-cmp-no'}`}>{op.veredicto === bot.veredicto ? 'coincide con la operadora' : 'difiere de la operadora'}</span>}
                 <span className="eb-hint">confianza {bot.confianza ?? '—'} · {bot.modelo ?? ''} · {bot.duracionMs ?? '—'} ms</span>
             </div>
