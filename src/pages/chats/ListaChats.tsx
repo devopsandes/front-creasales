@@ -542,6 +542,11 @@ const ListaChats = () => {
         else if (styleBtn === "sinAsignar") filters.assignment = "unassigned"
         else if (styleBtn === "asig") filters.operatorId = id
         else if (styleBtn === "archi") filters.archived = 1
+        // "Asignadas a otros": sin este filtro el back devolvía los 50 chats
+        // más recientes de cualquier estado y el front se quedaba solo con
+        // los asignados a otros. Si eran más viejos que esos 50, la pestaña
+        // quedaba vacía aunque el contador dijera que había chats.
+        else if (styleBtn === "otros") filters.assignment = "others"
         return filters
     }
 
