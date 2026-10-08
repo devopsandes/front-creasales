@@ -63,7 +63,7 @@ const Turnstile = ({ onToken, onError }: Props) => {
                 widgetId = window.turnstile.render(contenedor.current, {
                     sitekey: TURNSTILE_SITE_KEY,
                     language: 'es',
-                    theme: 'dark',
+                    theme: 'light',
                     callback: (token: string) => callbacks.current.onToken(token),
                     'expired-callback': () => callbacks.current.onToken(''),
                     'error-callback': () => {
