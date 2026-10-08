@@ -492,461 +492,461 @@
     font-size: 0.9375rem;
     padding: 0.5rem 0.875rem;
   }
+}
 
-  /* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    Login rediseñado (cs-login-*)
    Las clases signin-* de arriba siguen en uso en Recuperar
    contraseña y Crear cuenta: no borrarlas.
    ═══════════════════════════════════════════════════════════════ */
 
-  .cs-login {
-    position: fixed;
-    inset: 0;
-    overflow-y: auto;
-    background: #F6F7FB;
-    font-family: 'Poppins', system-ui, sans-serif;
-    color: #161838;
+.cs-login {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: #F6F7FB;
+  font-family: 'Poppins', system-ui, sans-serif;
+  color: #161838;
+}
+
+.cs-login-layout {
+  min-height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* ── Panel de marca ─────────────────────────────────────────── */
+
+.cs-login-brand {
+  flex: 1.25 1 560px;
+  position: relative;
+  overflow: hidden;
+  background: #12143A;
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 48px 64px;
+  box-sizing: border-box;
+}
+
+.cs-login-orbits {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cs-login-logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cs-login-logo img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #0B0D2A;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.cs-login-logo span {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.cs-login-brand-copy {
+  position: relative;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cs-login-brand-copy h2 {
+  margin: 0;
+  font-size: 52px;
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #FFFFFF;
+}
+
+.cs-login-brand-copy p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.74);
+  max-width: 440px;
+}
+
+.cs-login-brand-footer {
+  position: relative;
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ── Formulario ─────────────────────────────────────────────── */
+
+.cs-login-main {
+  flex: 1 1 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  box-sizing: border-box;
+}
+
+.cs-login-form {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: cs-login-in 0.45s ease-out both;
+}
+
+.cs-login-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-login-head h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #161838;
+}
+
+.cs-login-head p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #565A7C;
+}
+
+.cs-login-head strong {
+  font-weight: 600;
+  color: #161838;
+}
+
+.cs-login-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cs-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-login-field label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2A2D52;
+}
+
+.cs-login-input {
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  font-family: inherit;
+  font-size: 15px;
+  color: #161838;
+  background: #FFFFFF;
+  border: 1.5px solid #D7DAEA;
+  border-radius: 12px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cs-login-input::placeholder {
+  color: #7A7E9C;
+}
+
+.cs-login-input:hover {
+  border-color: #B9BEDA;
+}
+
+.cs-login-input:focus {
+  outline: none;
+  border-color: #0060D6;
+  box-shadow: 0 0 0 4px rgba(0, 96, 214, 0.14);
+}
+
+.cs-login-password {
+  position: relative;
+}
+
+.cs-login-password .cs-login-input {
+  padding-right: 52px;
+}
+
+.cs-login-eye {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  border-radius: 10px;
+  color: #565A7C;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cs-login-eye:hover {
+  color: #0060D6;
+  background: rgba(0, 96, 214, 0.08);
+}
+
+.cs-login-button {
+  height: 54px;
+  border: none;
+  border-radius: 12px;
+  background: #0060D6;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 24px -10px rgba(0, 96, 214, 0.6);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.cs-login-button:hover:not(:disabled) {
+  background: #0053BA;
+}
+
+.cs-login-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.cs-login-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.cs-login-link {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0060D6;
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cs-login-link:hover:not(:disabled) {
+  color: #004AA6;
+  text-decoration: underline;
+}
+
+.cs-login-link:disabled {
+  color: #7A7E9C;
+  cursor: default;
+}
+
+.cs-login-center {
+  align-self: center;
+}
+
+.cs-login-back {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 4px;
+  margin: -12px 0 -8px -4px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #565A7C;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.cs-login-back:hover {
+  color: #161838;
+}
+
+.cs-login-resend {
+  margin: 0;
+  font-size: 14px;
+  color: #565A7C;
+}
+
+.cs-login-alert {
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cs-login-alert--error {
+  background: #FDECEE;
+  border: 1px solid #F5C2C9;
+  color: #9F1C2E;
+}
+
+.cs-login-alert--info {
+  background: #E8F6EE;
+  border: 1px solid #B8E2C8;
+  color: #17603A;
+}
+
+/* ── Código del MFA (6 casillas sobre un solo input) ────────── */
+
+.cs-login-code-wrap {
+  position: relative;
+}
+
+.cs-login-code {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  font-size: 16px;
+  /* evita el zoom automático en iOS */
+  cursor: text;
+  z-index: 1;
+}
+
+.cs-login-cells {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cs-login-cell {
+  height: 60px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1.5px solid #D7DAEA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 600;
+  color: #161838;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cs-login-cell.is-filled {
+  border-color: #9AA3C9;
+}
+
+.cs-login-code:focus+.cs-login-cells .cs-login-cell.is-active {
+  border-color: #0060D6;
+  box-shadow: 0 0 0 4px rgba(0, 96, 214, 0.14);
+}
+
+.cs-login-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-size: 14px;
+  color: #2A2D52;
+  cursor: pointer;
+}
+
+.cs-login-check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #0060D6;
+  cursor: pointer;
+}
+
+/* ── Foco visible con teclado ───────────────────────────────── */
+
+.cs-login-button:focus-visible,
+.cs-login-eye:focus-visible,
+.cs-login-link:focus-visible,
+.cs-login-back:focus-visible,
+.cs-login-check input:focus-visible {
+  outline: 3px solid rgba(0, 96, 214, 0.45);
+  outline-offset: 2px;
+}
+
+/* ── Animación de entrada ───────────────────────────────────── */
+
+@keyframes cs-login-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
   }
 
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-login-form {
+    animation: none;
+  }
+}
+
+/* ── Celular y tablets angostas ─────────────────────────────── */
+
+@media (max-width: 760px) {
   .cs-login-layout {
-    min-height: 100%;
-    display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    flex-wrap: nowrap;
   }
-
-  /* ── Panel de marca ─────────────────────────────────────────── */
 
   .cs-login-brand {
-    flex: 1.25 1 560px;
-    position: relative;
-    overflow: hidden;
-    background: #12143A;
-    color: #FFFFFF;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 32px;
-    padding: 48px 64px;
-    box-sizing: border-box;
+    flex: none;
+    padding: 24px 20px;
+    gap: 0;
   }
 
-  .cs-login-orbits {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  .cs-login-logo {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .cs-login-logo img {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: #0B0D2A;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
-  }
-
-  .cs-login-logo span {
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
-
-  .cs-login-brand-copy {
-    position: relative;
-    max-width: 520px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .cs-login-brand-copy h2 {
-    margin: 0;
-    font-size: 52px;
-    line-height: 1.08;
-    font-weight: 700;
-    letter-spacing: -0.025em;
-    color: #FFFFFF;
-  }
-
-  .cs-login-brand-copy p {
-    margin: 0;
-    font-size: 18px;
-    line-height: 1.6;
-    color: rgba(255, 255, 255, 0.74);
-    max-width: 440px;
-  }
-
+  .cs-login-brand-copy,
   .cs-login-brand-footer {
-    position: relative;
-    margin: 0;
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
+    display: none;
   }
-
-  /* ── Formulario ─────────────────────────────────────────────── */
 
   .cs-login-main {
-    flex: 1 1 440px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    box-sizing: border-box;
-  }
-
-  .cs-login-form {
-    width: 100%;
-    max-width: 380px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    animation: cs-login-in 0.45s ease-out both;
-  }
-
-  .cs-login-head {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex: 1 0 auto;
+    align-items: flex-start;
+    padding: 32px 20px 40px;
   }
 
   .cs-login-head h1 {
-    margin: 0;
-    font-size: 32px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: #161838;
-  }
-
-  .cs-login-head p {
-    margin: 0;
-    font-size: 15px;
-    line-height: 1.6;
-    color: #565A7C;
-  }
-
-  .cs-login-head strong {
-    font-weight: 600;
-    color: #161838;
-  }
-
-  .cs-login-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .cs-login-field {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .cs-login-field label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #2A2D52;
-  }
-
-  .cs-login-input {
-    width: 100%;
-    height: 52px;
-    padding: 0 16px;
-    font-family: inherit;
-    font-size: 15px;
-    color: #161838;
-    background: #FFFFFF;
-    border: 1.5px solid #D7DAEA;
-    border-radius: 12px;
-    box-sizing: border-box;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  .cs-login-input::placeholder {
-    color: #7A7E9C;
-  }
-
-  .cs-login-input:hover {
-    border-color: #B9BEDA;
-  }
-
-  .cs-login-input:focus {
-    outline: none;
-    border-color: #0060D6;
-    box-shadow: 0 0 0 4px rgba(0, 96, 214, 0.14);
-  }
-
-  .cs-login-password {
-    position: relative;
-  }
-
-  .cs-login-password .cs-login-input {
-    padding-right: 52px;
-  }
-
-  .cs-login-eye {
-    position: absolute;
-    right: 4px;
-    top: 4px;
-    width: 44px;
-    height: 44px;
-    border: none;
-    background: none;
-    border-radius: 10px;
-    color: #565A7C;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .cs-login-eye:hover {
-    color: #0060D6;
-    background: rgba(0, 96, 214, 0.08);
-  }
-
-  .cs-login-button {
-    height: 54px;
-    border: none;
-    border-radius: 12px;
-    background: #0060D6;
-    color: #FFFFFF;
-    font-family: inherit;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 10px 24px -10px rgba(0, 96, 214, 0.6);
-    transition: background 0.15s ease, transform 0.15s ease;
-  }
-
-  .cs-login-button:hover:not(:disabled) {
-    background: #0053BA;
-  }
-
-  .cs-login-button:active:not(:disabled) {
-    transform: translateY(1px);
-  }
-
-  .cs-login-button:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-    box-shadow: none;
-  }
-
-  .cs-login-link {
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    color: #0060D6;
-    text-decoration: none;
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-  }
-
-  .cs-login-link:hover:not(:disabled) {
-    color: #004AA6;
-    text-decoration: underline;
-  }
-
-  .cs-login-link:disabled {
-    color: #7A7E9C;
-    cursor: default;
-  }
-
-  .cs-login-center {
-    align-self: center;
-  }
-
-  .cs-login-back {
-    align-self: flex-start;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    padding: 0 4px;
-    margin: -12px 0 -8px -4px;
-    border: none;
-    background: none;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    color: #565A7C;
-    cursor: pointer;
-    border-radius: 8px;
-  }
-
-  .cs-login-back:hover {
-    color: #161838;
-  }
-
-  .cs-login-resend {
-    margin: 0;
-    font-size: 14px;
-    color: #565A7C;
-  }
-
-  .cs-login-alert {
-    padding: 12px 14px;
-    border-radius: 10px;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-
-  .cs-login-alert--error {
-    background: #FDECEE;
-    border: 1px solid #F5C2C9;
-    color: #9F1C2E;
-  }
-
-  .cs-login-alert--info {
-    background: #E8F6EE;
-    border: 1px solid #B8E2C8;
-    color: #17603A;
-  }
-
-  /* ── Código del MFA (6 casillas sobre un solo input) ────────── */
-
-  .cs-login-code-wrap {
-    position: relative;
-  }
-
-  .cs-login-code {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    border: none;
-    font-size: 16px;
-    /* evita el zoom automático en iOS */
-    cursor: text;
-    z-index: 1;
+    font-size: 28px;
   }
 
   .cs-login-cells {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
   }
 
   .cs-login-cell {
-    height: 60px;
-    border-radius: 12px;
-    background: #FFFFFF;
-    border: 1.5px solid #D7DAEA;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 26px;
-    font-weight: 600;
-    color: #161838;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  .cs-login-cell.is-filled {
-    border-color: #9AA3C9;
-  }
-
-  .cs-login-code:focus+.cs-login-cells .cs-login-cell.is-active {
-    border-color: #0060D6;
-    box-shadow: 0 0 0 4px rgba(0, 96, 214, 0.14);
-  }
-
-  .cs-login-check {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 44px;
-    font-size: 14px;
-    color: #2A2D52;
-    cursor: pointer;
-  }
-
-  .cs-login-check input {
-    width: 18px;
-    height: 18px;
-    margin: 0;
-    accent-color: #0060D6;
-    cursor: pointer;
-  }
-
-  /* ── Foco visible con teclado ───────────────────────────────── */
-
-  .cs-login-button:focus-visible,
-  .cs-login-eye:focus-visible,
-  .cs-login-link:focus-visible,
-  .cs-login-back:focus-visible,
-  .cs-login-check input:focus-visible {
-    outline: 3px solid rgba(0, 96, 214, 0.45);
-    outline-offset: 2px;
-  }
-
-  /* ── Animación de entrada ───────────────────────────────────── */
-
-  @keyframes cs-login-in {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cs-login-form {
-      animation: none;
-    }
-  }
-
-  /* ── Celular y tablets angostas ─────────────────────────────── */
-
-  @media (max-width: 760px) {
-    .cs-login-layout {
-      flex-direction: column;
-      flex-wrap: nowrap;
-    }
-
-    .cs-login-brand {
-      flex: none;
-      padding: 24px 20px;
-      gap: 0;
-    }
-
-    .cs-login-brand-copy,
-    .cs-login-brand-footer {
-      display: none;
-    }
-
-    .cs-login-main {
-      flex: 1 0 auto;
-      align-items: flex-start;
-      padding: 32px 20px 40px;
-    }
-
-    .cs-login-head h1 {
-      font-size: 28px;
-    }
-
-    .cs-login-cells {
-      gap: 8px;
-    }
-
-    .cs-login-cell {
-      height: 54px;
-      font-size: 22px;
-    }
+    height: 54px;
+    font-size: 22px;
   }
 }
