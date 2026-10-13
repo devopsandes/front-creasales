@@ -18,18 +18,31 @@
   background-color: white;
   border-bottom: 1px solid #e5e7eb;
   padding: 0 2rem;
+  /* Con muchas pestañas que no entran en la pantalla, la barra se desplaza en horizontal */
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+/* El indicador vive acá adentro: se desplaza junto con las pestañas. El min-width lo pone el componente
+   (cantidad de pestañas x ancho mínimo de cada una). */
+.emisivos-tabs-scroll {
+  position: relative;
 }
 
 .emisivos-tabs {
   display: flex;
-  justify-content: space-between;
   position: relative;
 }
 
 .emisivos-tab {
   position: relative;
-  flex: 1;
-  padding: 1rem 0;
+  /* Todas del mismo ancho: el indicador calcula su posición con la cantidad de pestañas */
+  flex: 1 1 0;
+  min-width: 0;
+  /* Con el ancho mínimo chico, los títulos largos ("Notificaciones Masivas") pasan a dos renglones en vez de pisar a la vecina */
+  white-space: normal;
+  line-height: 1.2;
+  padding: 0.75rem 0.25rem;
   font-size: 0.9375rem;
   font-weight: 600;
   color: #6b7280;
@@ -54,7 +67,6 @@
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 25%;
   height: 3px;
   background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -79,6 +91,13 @@
   }
 }
 
+/* Con 8 pestañas, en pantallas de ~1280 px la letra de 15 px casi toca a la vecina: un punto menos */
+@media (max-width: 1440px) {
+  .emisivos-tab {
+    font-size: 0.875rem;
+  }
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .emisivos-tabs-container {
@@ -86,7 +105,7 @@
   }
 
   .emisivos-tab {
-    padding: 1rem 1rem;
+    padding: 1rem 0;
     font-size: 0.8125rem;
   }
 }

@@ -9,9 +9,11 @@ interface SelectorPantallaProps {
   /** '' = ninguna elegida */
   valor: string;
   onCambiar: (valor: string) => void;
+  /** Opcional: deshabilita el selector (por ejemplo mientras el resto del formulario está deshabilitado). */
+  deshabilitado?: boolean;
 }
 
-const SelectorPantalla = ({ valor, onCambiar }: SelectorPantallaProps) => {
+const SelectorPantalla = ({ valor, onCambiar, deshabilitado = false }: SelectorPantallaProps) => {
   const [abierta, setAbierta] = useState(false);
   const contenedor = useRef<HTMLDivElement>(null);
   const lista = useRef<HTMLUListElement>(null);
@@ -45,13 +47,14 @@ const SelectorPantalla = ({ valor, onCambiar }: SelectorPantallaProps) => {
         type="button"
         className="banner-input banner-selector-boton"
         aria-haspopup="listbox"
-        aria-expanded={abierta}
+        aria-expanded={abierta && !deshabilitado}
+        disabled={deshabilitado}
         onClick={() => setAbierta((actual) => !actual)}
       >
         <span className={valor ? '' : 'banner-selector-vacio'}>{valor ? nombrePantalla(valor) : 'Elegí una pantalla...'}</span>
         <FaChevronDown aria-hidden="true" />
       </button>
-      {abierta && (
+      {abierta && !deshabilitado && (
         <ul className="banner-selector-lista" role="listbox" ref={lista}>
           {PANTALLAS_APP.map((opcion) => (
             <li key={opcion.valor} role="option" aria-selected={valor === opcion.valor}>

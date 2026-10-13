@@ -67,6 +67,7 @@ export const PANTALLAS_APP = [
   { valor: 'perfil', etiqueta: 'Perfil (pestaña)' },
   { valor: 'misDatos', etiqueta: 'Mis datos' },
   { valor: 'configuracion', etiqueta: 'Configuración' },
+  { valor: 'encuesta', etiqueta: 'Encuesta pendiente (app 7.1.6 en adelante)' },
 ];
 
 export const nombrePantalla = (pantalla: string): string =>

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   FaCheckCircle,
   FaEdit,
+  FaListUl,
   FaPause,
   FaPlay,
   FaPlus,
@@ -14,6 +15,7 @@ import {
   FaTrash,
 } from 'react-icons/fa';
 import BannerForm from './BannerForm';
+import BannerListaDnis from './BannerListaDnis';
 import BannerPreview from './BannerPreview';
 import { borrarBanner, cambiarActivoBanner, listarBanners } from './banner.api';
 import type { Banner as BannerItem } from './banner.api';
@@ -47,6 +49,8 @@ const Banner = () => {
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [formulario, setFormulario] = useState<EstadoFormulario>({ abierto: false, banner: null });
+  /** Banner con la ventana "Lista de DNIs" abierta (null = cerrada). */
+  const [listaDnis, setListaDnis] = useState<BannerItem | null>(null);
   const [filtro, setFiltro] = useState<FiltroBanners>(FILTRO_VACIO);
 
   const [showToast, setShowToast] = useState(false);
@@ -270,6 +274,14 @@ const Banner = () => {
                   </>
                 )}
               </button>
+              <button
+                className="banner-btn banner-btn-secundario banner-btn-chico"
+                onClick={() => setListaDnis(banner)}
+                disabled={ocupado}
+                title="Agregar, quitar o buscar DNIs sin volver a subir el archivo"
+              >
+                <FaListUl /> Lista de DNIs
+              </button>
               <button className="banner-btn banner-btn-peligro banner-btn-chico" onClick={() => borrar(banner)} disabled={ocupado}>
                 <FaTrash /> Borrar
               </button>
@@ -283,6 +295,17 @@ const Banner = () => {
           banner={formulario.banner}
           onCerrar={() => setFormulario({ abierto: false, banner: null })}
           onGuardado={alGuardar}
+        />
+      )}
+
+      {listaDnis && (
+        <BannerListaDnis
+          banner={listaDnis}
+          onCerrar={() => {
+            setListaDnis(null);
+            void cargar();
+          }}
+          onCambiado={(actualizado) => setBanners((prev) => prev.map((b) => (b.id === actualizado.id ? actualizado : b)))}
         />
       )}
 

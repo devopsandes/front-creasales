@@ -56,13 +56,15 @@ export interface DatosFormularioBanner {
   quitarImagen: boolean;
   /** Excel, CSV o TXT con los DNIs a los que les sale el banner. null = no se cambia la lista. */
   archivoDnis: File | null;
+  /** DNIs pegados a mano en vez del archivo (13/10). '' = no se cambia la lista. Archivo y texto juntos: 400. */
+  dnisTexto: string;
   quitarDnis: boolean;
 }
 
-interface RespuestaEmisivos<T> {
+export interface RespuestaEmisivos<T> {
   status: 'success' | 'error';
   data?: T;
-  meta?: { message?: string; total?: number };
+  meta?: { message?: string; total?: number; codigo?: string };
 }
 
 /** Emisivos de producción; para probar en local se puede apuntar a otro con VITE_EMISIVOS_URL. */
@@ -70,7 +72,7 @@ export const URL_EMISIVOS: string =
   (import.meta.env.VITE_EMISIVOS_URL as string | undefined)?.replace(/\/+$/, '') || 'https://emisivos.andessalud.ar';
 
 /** fetch a emisivos con el token de la sesión, como las demás pestañas. Lanza Error con el mensaje del backend. */
-async function pedir<T>(ruta: string, init: RequestInit = {}): Promise<RespuestaEmisivos<T>> {
+export async function pedir<T>(ruta: string, init: RequestInit = {}): Promise<RespuestaEmisivos<T>> {
   const token = localStorage.getItem('token') || '';
   const response = await fetch(`${URL_EMISIVOS}${ruta}`, {
     ...init,
@@ -107,11 +109,12 @@ const armarFormData = (datos: DatosFormularioBanner): FormData => {
   if (datos.imagen) formData.append('imagen', datos.imagen);
   if (datos.quitarImagen) formData.append('quitarImagen', 'true');
   if (datos.archivoDnis) formData.append('dnis', datos.archivoDnis);
+  else if (datos.dnisTexto.trim()) formData.append('dnisTexto', datos.dnisTexto);
   if (datos.quitarDnis) formData.append('quitarDnis', 'true');
   return formData;
 };
 
-const JSON_HEADERS = { 'Content-Type': 'application/json' };
+export const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 export const listarBanners = async (): Promise<Banner[]> => (await pedir<Banner[]>('/banners')).data ?? [];
 
@@ -125,3 +128,23 @@ export const cambiarActivoBanner = (id: number, activo: boolean) =>
   pedir<Banner>(`/banners/${id}/activo`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ activo }) });
 
 export const borrarBanner = (id: number) => pedir<never>(`/banners/${id}`, { method: 'DELETE' });
+
+/**
+ * Agrega y/o quita DNIs pegados de la lista del banner (13/10). La lista nunca viaja: vuelve el banner con cantidadDnis y
+ * un mensaje con lo que cambió. 409 si la lista quedaría vacía (el banner le saldría a todos).
+ */
+export const cambiarDnisBanner = (id: number, cambios: { agregar?: string; quitar?: string; crearLista?: boolean }) =>
+  pedir<Banner>(`/banners/${id}/dnis`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(cambios) });
+
+/**
+ * ¿Está este DNI (o CUIL) en la lista del banner? Solo responde sí o no. El DNI va en el cuerpo, no en la URL: la URL
+ * queda en el log de Sentinel (revisión 13/10).
+ */
+export const buscarDniBanner = async (id: number, dni: string): Promise<boolean> => {
+  const respuesta = await pedir<{ esta: boolean }>(`/banners/${id}/dnis/buscar`, {
+    method: 'POST',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ dni: dni.trim() }),
+  });
+  return Boolean(respuesta.data?.esta);
+};

@@ -66,8 +66,11 @@ const datosIniciales = (banner: Banner | null): DatosFormularioBanner => ({
   imagen: null,
   quitarImagen: false,
   archivoDnis: null,
+  dnisTexto: '',
   quitarDnis: false,
 });
+
+type ModoDnis = 'archivo' | 'texto';
 
 const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
   const [datos, setDatos] = useState<DatosFormularioBanner>(() => datosIniciales(banner));
@@ -170,16 +173,24 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
       return;
     }
     setError(null);
-    setDatos((prev) => ({ ...prev, archivoDnis: archivo, quitarDnis: false }));
+    setDatos((prev) => ({ ...prev, archivoDnis: archivo, dnisTexto: '', quitarDnis: false }));
+  };
+
+  // 13/10: en vez del archivo se pueden pegar los DNIs (una por línea). Uno u otro: al elegir uno se descarta el otro.
+  const [modoDnis, setModoDnis] = useState<ModoDnis>('archivo');
+  const cambiarModoDnis = (modo: ModoDnis) => {
+    setModoDnis(modo);
+    setDatos((prev) => ({ ...prev, archivoDnis: null, dnisTexto: '' }));
   };
 
   const quitarListaDnis = () => {
-    setDatos((prev) => ({ ...prev, archivoDnis: null, quitarDnis: (banner?.cantidadDnis ?? 0) > 0 }));
+    setDatos((prev) => ({ ...prev, archivoDnis: null, dnisTexto: '', quitarDnis: (banner?.cantidadDnis ?? 0) > 0 }));
   };
 
-  // Lo que va a quedar guardado: el archivo recién elegido, o la lista que ya tenía (si no la quitaron).
+  // Lo que va a quedar guardado: el archivo o los DNIs pegados recién, o la lista que ya tenía (si no la quitaron).
   const dnisGuardados = !datos.quitarDnis ? (banner?.cantidadDnis ?? 0) : 0;
-  const tieneListaDnis = Boolean(datos.archivoDnis) || dnisGuardados > 0;
+  const listaNueva = Boolean(datos.archivoDnis) || datos.dnisTexto.trim() !== '';
+  const tieneListaDnis = listaNueva || dnisGuardados > 0;
 
   // La imagen que se va a ver: la recién elegida, o la que ya tenía (si no la quitaron).
   const imagenVista = urlImagenNueva ?? (!datos.quitarImagen && banner?.imagenUrl ? banner.imagenUrl : null);
@@ -496,18 +507,55 @@ const BannerForm = ({ banner, onCerrar, onGuardado }: BannerFormProps) => {
                 </div>
 
                 <span className="banner-sublabel">Solo a una lista de DNIs</span>
-                <label className="banner-label">
-                  Archivo con los DNIs <span className="banner-ayuda">(opcional: Excel .xlsx, .csv o .txt, hasta 20.000 DNIs)</span>
-                  <input className="banner-input" type="file" accept={ACEPTA_DNIS} onChange={elegirArchivoDnis} />
-                </label>
+                <div className="banner-modo" role="group" aria-label="Cómo cargar la lista de DNIs">
+                  {(
+                    [
+                      { valor: 'archivo', etiqueta: 'Subir un archivo' },
+                      { valor: 'texto', etiqueta: 'Pegar DNIs' },
+                    ] as const
+                  ).map((opcion) => (
+                    <button
+                      type="button"
+                      key={opcion.valor}
+                      className={`banner-modo-opcion ${modoDnis === opcion.valor ? 'banner-modo-opcion-activa' : ''}`}
+                      onClick={() => cambiarModoDnis(opcion.valor)}
+                      aria-pressed={modoDnis === opcion.valor}
+                    >
+                      {opcion.etiqueta}
+                    </button>
+                  ))}
+                </div>
+                {modoDnis === 'archivo' ? (
+                  <label className="banner-label">
+                    Archivo con los DNIs <span className="banner-ayuda">(opcional: Excel .xlsx, .csv o .txt, hasta 20.000 DNIs)</span>
+                    <input className="banner-input" type="file" accept={ACEPTA_DNIS} onChange={elegirArchivoDnis} />
+                  </label>
+                ) : (
+                  <label className="banner-label">
+                    DNIs pegados <span className="banner-ayuda">(uno por línea; sirven con puntos o el CUIL)</span>
+                    <textarea
+                      className="banner-input banner-textarea"
+                      rows={4}
+                      placeholder={'30111222\n30.111.223\n20-30111224-5'}
+                      value={datos.dnisTexto}
+                      onChange={(e) => setDatos((prev) => ({ ...prev, dnisTexto: e.target.value, quitarDnis: false }))}
+                    />
+                  </label>
+                )}
                 {datos.archivoDnis && (
                   <p className="banner-ayuda">
                     Archivo elegido: {datos.archivoDnis.name}. Los DNIs se leen al guardar
                     {dnisGuardados > 0 ? ` y reemplazan a los ${dnisGuardados} que tenía.` : '.'}
                   </p>
                 )}
-                {!datos.archivoDnis && dnisGuardados > 0 && (
-                  <p className="banner-ayuda">Este banner ya tiene una lista de {dnisGuardados} DNIs. Subí otro archivo para reemplazarla.</p>
+                {datos.dnisTexto.trim() !== '' && dnisGuardados > 0 && (
+                  <p className="banner-ayuda">Al guardar, los DNIs pegados reemplazan a los {dnisGuardados} que tenía.</p>
+                )}
+                {!listaNueva && dnisGuardados > 0 && (
+                  <p className="banner-ayuda">
+                    Este banner ya tiene una lista de {dnisGuardados} DNIs. Para sumar o sacar algunos sin reemplazarla, usá "Lista de DNIs" en el
+                    listado de banners.
+                  </p>
                 )}
                 {datos.quitarDnis && (
                   <p className="banner-aviso">Al guardar se borra la lista: el banner le va a salir a todos los que cumplan lo de arriba.</p>
