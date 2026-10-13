@@ -412,6 +412,16 @@ const fmtRef = (r: Ref | undefined, conMat = false, conCod = false) => {
     return r.nombre
 }
 
+/** Si el bot no encontró al solicitante, muestra lo que leyó del sello. */
+const solicitanteBot = (bot: DecisionBot): string => {
+    if (bot.solicitante?.id) return fmtRef(bot.solicitante, true)
+    const l = (bot.lectura ?? {}) as Record<string, unknown>
+    const nombre = l.profesional_nombre ? String(l.profesional_nombre) : null
+    const mat = l.profesional_matricula ? String(l.profesional_matricula) : null
+    if (!nombre && !mat) return 'No encontrado'
+    return `No encontrado (leído: ${nombre ?? '—'}${mat ? `, Mat. ${mat}` : ''})`
+}
+
 const RevisionGuardada = ({ op }: { op: RevisionOperadora }) => (
     <div>
         <div className="eb-guardada-head">
@@ -452,7 +462,7 @@ const VistaBot = ({ bot, op, mostrarJson, setMostrarJson }: {
             {bot.motivo?.texto && bot.veredicto !== 'CODIFICAR' && <Campo label="Motivo" valor={bot.motivo.texto} igual={cmp(op?.motivo?.texto, bot.motivo.texto)} />}
             {bot.detalle && <Campo label="Detalle" valor={bot.detalle} />}
             <Campo label="Prestador" valor={fmtRef(bot.prestador)} igual={cmp(op?.prestador?.id, bot.prestador?.id)} />
-            <Campo label="Profesional solicitante" valor={fmtRef(bot.solicitante, true)} igual={cmp(op?.solicitante?.id, bot.solicitante?.id)} />
+            <Campo label="Profesional solicitante" valor={solicitanteBot(bot)} igual={cmp(op?.solicitante?.id, bot.solicitante?.id)} />
             <Campo label="Diagnóstico" valor={fmtRef(bot.diagnostico, false, true)} igual={cmp(op?.diagnostico?.id, bot.diagnostico?.id)} />
             <Campo label="Profesional (efector)" valor={fmtRef(bot.efector)} igual={cmp(op?.efector?.id, bot.efector?.id)} />
 
@@ -468,7 +478,14 @@ const VistaBot = ({ bot, op, mostrarJson, setMostrarJson }: {
                                 <td>{p.texto}{p.codigoEscrito ? <span className="eb-cod"> [{p.codigoEscrito}]</span> : null}</td>
                                 <td>{p.descripcion ? <>{p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></> : <i>sin match</i>}</td>
                                 <td>{p.cantidad}</td>
-                                <td><span className="eb-cod">{p.metodo} {p.score !== undefined ? `· ${p.score}` : ''}</span></td>
+                                <td>
+                                    <span className="eb-cod">
+                                        {p.alcanza === true ? '✅ ' : p.alcanza === false ? '❌ ' : ''}
+                                        {p.metodo}
+                                        {p.score !== undefined ? ` · ${p.score}` : ''}
+                                        {p.cobertura !== undefined ? ` / cob. ${p.cobertura}` : ''}
+                                    </span>
+                                </td>
                             </tr>
                         )
                     })}

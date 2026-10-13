@@ -20,6 +20,8 @@ export interface PrestacionElegida {
     metodo?: string
     score?: number
     segundoScore?: number
+    cobertura?: number
+    alcanza?: boolean
 }
 
 export interface EstudioListaItem {
