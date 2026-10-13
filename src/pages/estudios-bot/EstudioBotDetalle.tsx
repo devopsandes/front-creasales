@@ -15,6 +15,9 @@ import './estudios-bot.css'
 
 const vacio: Ref = { id: null, nombre: null }
 
+/** Los pedidos escaneados llegan como PDF; una etiqueta <img> no los muestra. */
+const esPdf = (url: string) => /\.pdf(\?|#|$)/i.test(url)
+
 const OPINION_CFG: Record<string, { label: string; cls: string; sel: string }> = {
     BIEN: { label: 'El bot lo hubiera hecho bien', cls: 'eb-badge-verde', sel: 'eb-sel-codificar' },
     MAL: { label: 'El bot se equivocó', cls: 'eb-badge-rojo', sel: 'eb-sel-rechazar' },
@@ -213,7 +216,9 @@ const EstudioBotDetalle = () => {
                         {imagenUrl && <a className="eb-btn-link" href={imagenUrl} target="_blank" rel="noreferrer"><FaExternalLinkAlt /> Abrir</a>}
                     </div>
                     {imagenUrl
-                        ? <div className="eb-imagen-scroll"><img src={imagenUrl} alt="Pedido médico" className="eb-imagen" /></div>
+                        ? esPdf(imagenUrl)
+                            ? <iframe src={imagenUrl} title="Pedido médico" style={{ width: '100%', height: '80vh', border: 0 }} />
+                            : <div className="eb-imagen-scroll"><img src={imagenUrl} alt="Pedido médico" className="eb-imagen" /></div>
                         : <div className="eb-modal-info">No se pudo obtener la imagen</div>}
                 </div>
 
