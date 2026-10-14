@@ -42,6 +42,8 @@ export interface EstudioListaItem {
     op_fecha: string | null
     op_usuario_nombre: string | null
     error: string | null
+    reanalisis_de?: string | null
+    modo_reanalisis?: string | null
 }
 
 export interface EstudiosListaResponse {
@@ -100,6 +102,8 @@ export interface EstudioDetalle {
     especialidad_bot: string | null
     prestador: Ref
     error: string | null
+    reanalisis_de?: string | null
+    modo_reanalisis?: string | null
     operadora: RevisionOperadora | null
     bot: DecisionBot | null
     botVisible: boolean

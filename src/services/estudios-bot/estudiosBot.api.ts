@@ -25,6 +25,7 @@ export interface ListarParams {
     veredicto?: string
     revision?: 'pendiente' | 'completa' | ''
     incluirPruebas?: boolean
+    incluirReanalisis?: boolean
 }
 
 export const listarEstudios = (params: ListarParams) =>
@@ -37,6 +38,7 @@ export const listarEstudios = (params: ListarParams) =>
                 ...(params.veredicto ? { veredicto: params.veredicto } : {}),
                 ...(params.revision ? { revision: params.revision } : {}),
                 ...(params.incluirPruebas ? { incluirPruebas: 'true' } : {}),
+                ...(params.incluirReanalisis ? { incluirReanalisis: 'true' } : {}),
             },
         }))
 
@@ -62,6 +64,10 @@ export const buscarPrestaciones = (idConvenio: string, idAfiliado: string, q: st
     items<CatPrestacion>('/estudios-bot/catalogos/prestaciones', { idConvenio, idAfiliado, q })
 export const buscarPrestadores = (q: string) => items<CatPrestador>('/estudios-bot/catalogos/prestadores', { q })
 export const obtenerMotivosRechazo = () => items<CatMotivo>('/estudios-bot/catalogos/motivos-rechazo', {})
+
+export const reanalizarEstudio = (id: string, modo: 'matching' | 'completo', clave: string) =>
+    handle<EstudioDetalle & { message?: string | string[] }>(() =>
+        client.post(`/estudios-bot/${id}/reanalizar`, null, { params: { modo, clave } }))
 
 export const guardarComentarioFinal = (id: string, body: { opinionBot: string; comentario?: string }) =>
     handle<EstudioDetalle & { message?: string | string[] }>(() =>

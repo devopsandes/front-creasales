@@ -51,12 +51,13 @@ const EstudiosBot = () => {
   const [veredicto, setVeredicto] = useState('')
   const [revision, setRevision] = useState<'' | 'pendiente' | 'completa'>('')
   const [incluirPruebas, setIncluirPruebas] = useState(false)
+  const [incluirReanalisis, setIncluirReanalisis] = useState(false)
 
   const cargar = useCallback(async (p = 1) => {
     setCargando(true)
     setError(null)
     try {
-      const r = await listarEstudios({ page: p, limit, q, veredicto, revision, incluirPruebas })
+      const r = await listarEstudios({ page: p, limit, q, veredicto, revision, incluirPruebas, incluirReanalisis })
       if (!Array.isArray(r.items)) throw new Error(r.message ?? 'No se pudo obtener el listado')
       setItems(r.items)
       setTotal(r.total ?? 0)
@@ -66,9 +67,9 @@ const EstudiosBot = () => {
     } finally {
       setCargando(false)
     }
-  }, [q, veredicto, revision, incluirPruebas, limit])
+  }, [q, veredicto, revision, incluirPruebas, incluirReanalisis, limit])
 
-  useEffect(() => { cargar(1) }, [veredicto, revision, incluirPruebas]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { cargar(1) }, [veredicto, revision, incluirPruebas, incluirReanalisis]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
@@ -117,6 +118,12 @@ const EstudiosBot = () => {
               Incluir pruebas
             </label>
           </div>
+          <div className="eb-filter-group eb-filter-sm">
+            <label className="eb-filter-label eb-check">
+              <input type="checkbox" checked={incluirReanalisis} onChange={(e) => setIncluirReanalisis(e.target.checked)} />
+              Incluir reanálisis
+            </label>
+          </div>
           <div className="eb-filter-actions">
             <button className="eb-btn-primary" onClick={() => cargar(page)} disabled={cargando}>
               <FaSync className={cargando ? 'spinning' : ''} /> {cargando ? 'Cargando...' : 'Actualizar'}
@@ -159,6 +166,7 @@ const EstudiosBot = () => {
                     <td className="eb-td">
                       <span className="eb-afiliado">{it.afiliado_nombre ?? '—'}</span>
                       {it.es_prueba && <span className="eb-tag-prueba">PRUEBA</span>}
+                      {it.reanalisis_de && <span className="eb-tag-prueba" title={`modo ${it.modo_reanalisis ?? ''}`}>REANÁLISIS</span>}
                     </td>
                     <td className="eb-td">{it.provincia ?? '—'}</td>
                     <td className="eb-td eb-td-prestador" title={it.bot_prestador_nombre ?? ''}>{it.bot_prestador_nombre ?? '—'}</td>

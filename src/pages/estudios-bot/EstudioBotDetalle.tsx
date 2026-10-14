@@ -1,12 +1,12 @@
 // src/pages/estudios-bot/EstudioBotDetalle.tsx
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt } from "react-icons/fa"
+import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt, FaSync } from "react-icons/fa"
 import LupaSelector from "./LupaSelector"
 import { VEREDICTO_CFG, badgeBot, formatFecha } from "./EstudiosBot"
 import {
     buscarDiagnosticos, buscarEfectores, buscarPrestaciones, buscarPrestadores, buscarSolicitantes,
-    guardarComentarioFinal, guardarRevision, obtenerEstudio, obtenerImagenEstudio, obtenerMotivosRechazo,
+    guardarComentarioFinal, guardarRevision, obtenerEstudio, obtenerImagenEstudio, obtenerMotivosRechazo, reanalizarEstudio,
 } from "../../services/estudios-bot/estudiosBot.api"
 import {
     CatMotivo, CatPrestacion, DecisionBot, EstudioDetalle, PrestacionElegida, Ref, RevisionOperadora, Veredicto,
@@ -89,6 +89,27 @@ const EstudioBotDetalle = () => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id])
+
+    // Reanálisis con el código actual (solo con la clave de supervisión).
+    const [modoRe, setModoRe] = useState<'matching' | 'completo'>('matching')
+    const [reanalizando, setReanalizando] = useState(false)
+    const reanalizar = async () => {
+        if (!id || !clave.trim()) { avisar('err', 'Ingresá la clave de supervisión'); return }
+        setReanalizando(true)
+        try {
+            const r = await reanalizarEstudio(id, modoRe, clave.trim())
+            if (!r.id) {
+                const m = Array.isArray(r.message) ? r.message.join(', ') : r.message
+                throw new Error(m ?? 'No se pudo reanalizar')
+            }
+            avisar('ok', 'Reanálisis listo')
+            navigate(`/dashboard/estudios-bot/${r.id}`)
+        } catch (e) {
+            avisar('err', e instanceof Error ? e.message : 'Error al reanalizar')
+        } finally {
+            setReanalizando(false)
+        }
+    }
 
     const verBot = async () => {
         if (!clave.trim()) return
@@ -197,6 +218,12 @@ const EstudioBotDetalle = () => {
                             Prestador elegido en el bot: <b>{detalle.prestador.nombre ?? '—'}</b>
                             {detalle.especialidad_bot && <> · Especialidad: <b>{detalle.especialidad_bot}</b></>}
                         </div>
+                        {detalle.reanalisis_de && (
+                            <div className="eb-cab-sub">
+                                <span className="eb-tag-prueba">REANÁLISIS</span> modo <b>{detalle.modo_reanalisis}</b> ·{' '}
+                                <button className="eb-btn-link" onClick={() => navigate(`/dashboard/estudios-bot/${detalle.reanalisis_de}`)}>ver análisis original</button>
+                            </div>
+                        )}
                     </div>
                     {bot && (
                         <div className="eb-cab-veredicto">
@@ -340,6 +367,18 @@ const EstudioBotDetalle = () => {
                     {/* Lo del bot */}
                     <div className="eb-card">
                         <div className="eb-card-title">Lo que hubiera hecho el bot</div>
+                        {!detalle.reanalisis_de && (
+                            <div className="eb-clave-row" style={{ marginBottom: '.75rem' }}>
+                                <input type="password" className="eb-input" placeholder="Clave de supervisión" value={clave} onChange={(e) => setClave(e.target.value)} />
+                                <select className="eb-input" value={modoRe} onChange={(e) => setModoRe(e.target.value as any)} style={{ maxWidth: 160 }}>
+                                    <option value="matching">Solo matching</option>
+                                    <option value="completo">Completo (relee la imagen)</option>
+                                </select>
+                                <button className="eb-btn-secondary" onClick={reanalizar} disabled={reanalizando || !clave.trim()}>
+                                    <FaSync /> {reanalizando ? 'Reanalizando...' : 'Reanalizar con el código actual'}
+                                </button>
+                            </div>
+                        )}
                         {bot ? (
                             <>
                                 <VistaBot bot={bot} op={op} mostrarJson={mostrarJson} setMostrarJson={setMostrarJson} />
