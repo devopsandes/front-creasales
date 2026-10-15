@@ -368,13 +368,30 @@ const EstudioBotDetalle = () => {
                     <div className="eb-card">
                         <div className="eb-card-title">Lo que hubiera hecho el bot</div>
                         {!detalle.reanalisis_de && (
-                            <div className="eb-clave-row" style={{ marginBottom: '.75rem' }}>
-                                <input type="password" className="eb-input" placeholder="Clave de supervisión" value={clave} onChange={(e) => setClave(e.target.value)} />
-                                <select className="eb-input" value={modoRe} onChange={(e) => setModoRe(e.target.value as any)} style={{ maxWidth: 160 }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', alignItems: 'center', marginBottom: '.75rem' }}>
+                                <input
+                                    type="password"
+                                    className="eb-input"
+                                    placeholder="Clave de supervisión"
+                                    value={clave}
+                                    onChange={(e) => setClave(e.target.value)}
+                                    style={{ width: 180, flex: '0 0 auto' }}
+                                />
+                                <select
+                                    className="eb-input"
+                                    value={modoRe}
+                                    onChange={(e) => setModoRe(e.target.value as any)}
+                                    style={{ width: 230, flex: '0 0 auto' }}
+                                >
                                     <option value="matching">Solo matching</option>
                                     <option value="completo">Completo (relee la imagen)</option>
                                 </select>
-                                <button className="eb-btn-secondary" onClick={reanalizar} disabled={reanalizando || !clave.trim()}>
+                                <button
+                                    className="eb-btn-secondary"
+                                    onClick={reanalizar}
+                                    disabled={reanalizando || !clave.trim()}
+                                    style={{ flex: '1 1 auto', whiteSpace: 'nowrap' }}
+                                >
                                     <FaSync /> {reanalizando ? 'Reanalizando...' : 'Reanalizar con el código actual'}
                                 </button>
                             </div>
