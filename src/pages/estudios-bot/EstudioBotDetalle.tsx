@@ -525,6 +525,19 @@ const VistaBot = ({ bot, op, mostrarJson, setMostrarJson }: {
             <Campo label="Prestador" valor={fmtRef(bot.prestador)} igual={cmp(op?.prestador?.id, bot.prestador?.id)} />
             <Campo label="Profesional solicitante" valor={solicitanteBot(bot)} igual={cmp(op?.solicitante?.id, bot.solicitante?.id)} />
             <Campo label="Diagnóstico" valor={fmtRef(bot.diagnostico, false, true)} igual={cmp(op?.diagnostico?.id, bot.diagnostico?.id)} />
+            {(() => {
+                const dg = (bot.matchDetalle as any)?.diagnostico
+                if (!dg) return null
+                const partes: string[] = []
+                if (dg.metodo) partes.push(`método ${dg.metodo}`)
+                if (dg.bajado) partes.push(`bajado a ILEGIBLE: ${dg.bajado}`)
+                if (dg.ia) {
+                    if (dg.ia.error) partes.push(`IA: error ${dg.ia.error}`)
+                    else if (dg.ia.elegido) partes.push(`IA eligió "${dg.ia.elegido.descripcion}" (conf. ${dg.ia.confianza}): ${dg.ia.motivo ?? ''}`)
+                    else partes.push(`IA no eligió ninguno${dg.ia.motivo ? `: ${dg.ia.motivo}` : ''}`)
+                }
+                return <span className="eb-hint" style={{ display: 'block', margin: '-.25rem 0 .5rem' }}>{partes.join(' · ')}</span>
+            })()}
             <Campo label="Profesional (efector)" valor={fmtRef(bot.efector)} igual={cmp(op?.efector?.id, bot.efector?.id)} />
 
             <div className="eb-campo-label" style={{ marginTop: '.5rem' }}>Prestaciones (lo que leyó → lo que eligió del catálogo)</div>
