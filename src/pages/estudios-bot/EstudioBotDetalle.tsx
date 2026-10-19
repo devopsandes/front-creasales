@@ -215,7 +215,8 @@ const EstudioBotDetalle = () => {
                             N° {detalle.nro_afiliado ?? '—'} · DNI {detalle.dni ?? '—'} · {detalle.provincia ?? '—'} · {formatFecha(detalle.created_at)}
                         </div>
                         <div className="eb-cab-sub">
-                            Prestador elegido en el bot: <b>{detalle.prestador.nombre ?? '—'}</b>
+                            Prestador elegido en el bot: <b>{(detalle as any).prestadorElegido?.nombre ?? detalle.prestador.nombre ?? '—'}</b>
+                            {(detalle as any).prestadorElegido && <> → el bot lo cambió a <b>{detalle.prestador.nombre}</b> ({String((detalle as any).prestadorElegido.tipo ?? '').toLowerCase()} tercerizado)</>}
                             {detalle.especialidad_bot && <> · Especialidad: <b>{detalle.especialidad_bot}</b></>}
                         </div>
                         {detalle.reanalisis_de && (
