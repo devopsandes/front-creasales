@@ -1,17 +1,24 @@
-// EncuestaForm.tsx — modal para crear o editar una encuesta: título, texto de cierre y constructor de preguntas.
-// La encuesta nace pausada y sin lista: después se le carga la lista de DNIs y se activa.
+// EncuestaForm.tsx — modal para crear o editar una encuesta: título, quién la responde, textos, constructor de preguntas y
+// acción al contestar (mail a la persona en las públicas, aviso por mail a marketing).
+// La encuesta nace pausada: si es de lista, después se le carga la lista de DNIs y se activa.
 
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { FaArrowDown, FaArrowUp, FaPlus, FaSave, FaTimes, FaTrash } from 'react-icons/fa';
-import { crearEncuesta, editarEncuesta } from './encuestas.api';
-import type { DatosFormularioEncuesta, Encuesta, PreguntaFormulario, TipoPregunta } from './encuestas.api';
+import { datosVacios as datosVaciosCampania, nuevaClave as nuevaClaveTarjeta } from '../campanias/campaniasOpciones';
+import EncuestaFormAccion from './EncuestaFormAccion';
+import type { CambioImagenMail } from './EncuestaMailEditor';
+import { armarCuerpo, crearEncuesta, editarEncuesta, quitarImagenMail, subirImagenMail } from './encuestas.api';
+import type { Audiencia, DatosFormularioEncuesta, Encuesta, MailFormulario, PreguntaFormulario, TipoPregunta } from './encuestas.api';
 import {
+  AUDIENCIAS,
   LARGOS,
   MAX_OPCIONES,
   MAX_PREGUNTAS,
   MIN_OPCIONES,
+  TERMINOS_POR_DEFECTO,
   TIPOS_PREGUNTA,
+  audienciaDe,
   errorDeEncuesta,
   nuevaClave,
   opcionVacia,
@@ -25,9 +32,38 @@ interface EncuestaFormProps {
   onGuardado: (mensaje: string) => void;
 }
 
-const datosIniciales = (encuesta: Encuesta | null): DatosFormularioEncuesta => {
-  if (!encuesta) return { titulo: '', textoCierre: '', preguntas: [preguntaVacia()] };
+/** El mail a quien responde, cargado desde lo guardado (o vacío, con la plantilla "beneficio" que es la del descuento). */
+const mailInicial = (encuesta: Encuesta | null): MailFormulario => {
+  const guardado = encuesta?.accion?.mailPersona;
+  if (!guardado) return { ...datosVaciosCampania().mail, plantilla: 'beneficio' };
   return {
+    plantilla: guardado.plantilla,
+    asunto: guardado.asunto,
+    remitente: guardado.remitente,
+    replyTo: guardado.replyTo ?? '',
+    titulo: guardado.contenido.titulo,
+    texto: guardado.contenido.texto,
+    botonTexto: guardado.contenido.botonTexto ?? '',
+    botonLink: guardado.contenido.botonLink ?? '',
+    tarjetas: (guardado.contenido.tarjetas ?? []).map((t) => ({ clave: nuevaClaveTarjeta(), titulo: t.titulo ?? '', texto: t.texto ?? '' })),
+  };
+};
+
+const datosIniciales = (encuesta: Encuesta | null): DatosFormularioEncuesta => {
+  const base = {
+    audiencia: (encuesta ? audienciaDe(encuesta) : 'lista') as Audiencia,
+    descripcion: encuesta?.descripcion ?? '',
+    textoBoton: encuesta?.textoBoton ?? '',
+    condiciones: encuesta?.condiciones ?? '',
+    terminosUrl: encuesta?.terminosUrl ?? '',
+    mailPersonaActivo: Boolean(encuesta?.accion?.mailPersona?.activo),
+    mail: mailInicial(encuesta),
+    avisosActivo: Boolean(encuesta?.accion?.avisos?.activo),
+    avisos: (encuesta?.accion?.avisos?.destinatarios ?? []).join(', '),
+  };
+  if (!encuesta) return { titulo: '', textoCierre: '', preguntas: [preguntaVacia()], ...base };
+  return {
+    ...base,
     titulo: encuesta.titulo,
     textoCierre: encuesta.textoCierre ?? '',
     preguntas: encuesta.preguntas.map((pregunta) => ({
@@ -41,11 +77,30 @@ const datosIniciales = (encuesta: Encuesta | null): DatosFormularioEncuesta => {
   };
 };
 
+/** Todo lo que el usuario puede haber cambiado, en un solo texto: si difiere del guardado, hay cambios sin guardar. */
+const huellaDe = (datos: DatosFormularioEncuesta, imagen: CambioImagenMail): string => {
+  const archivo = imagen.archivo ? `${imagen.archivo.name}:${imagen.archivo.size}:${imagen.archivo.lastModified}` : '';
+  return `${armarCuerpo(datos)}|${archivo}|${imagen.quitar}`;
+};
+
 const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => {
   const [datos, setDatos] = useState<DatosFormularioEncuesta>(() => datosIniciales(encuesta));
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
+  /** La imagen del mail a quien responde: se sube después de guardar la encuesta (con el id que devuelve el alta). */
+  const [imagen, setImagen] = useState<CambioImagenMail>({ archivo: null, quitar: false });
+  /** Id de la encuesta que ya existe en el servidor: la que se abrió o la que se creó recién (si la imagen falla, el reintento edita esa). */
+  const [idGuardada, setIdGuardada] = useState<number | null>(encuesta?.id ?? null);
+  const [versionImagen, setVersionImagen] = useState(() => Date.now());
+  const conRespuestas = (encuesta?.respondieron ?? 0) > 0;
+  const publica = datos.audiencia === 'publica';
+
+  // "Huella" de lo guardado, para saber si hay cambios sin guardar (la prueba de mail usa lo guardado, no lo que está en pantalla).
+  const [huellaGuardada, setHuellaGuardada] = useState<string | null>(() =>
+    encuesta ? huellaDe(datosIniciales(encuesta), { archivo: null, quitar: false }) : null,
+  );
+  const hayCambios = huellaGuardada === null || huellaDe(datos, imagen) !== huellaGuardada;
 
   // El formulario puede ser largo: cuando aparece un error, se lo trae a la vista.
   useEffect(() => {
@@ -106,6 +161,14 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
     }));
   };
 
+  const cambiarCampos = (cambio: Partial<DatosFormularioEncuesta>) => {
+    setDatos((prev) => ({ ...prev, ...cambio }));
+  };
+
+  const cambiarMail = (cambio: Partial<MailFormulario>) => {
+    setDatos((prev) => ({ ...prev, mail: { ...prev.mail, ...cambio } }));
+  };
+
   const guardar = async (e: FormEvent) => {
     e.preventDefault();
     const problema = errorDeEncuesta(datos);
@@ -116,8 +179,29 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
     setGuardando(true);
     setError(null);
     try {
-      const respuesta = encuesta ? await editarEncuesta(encuesta.id, datos) : await crearEncuesta(datos);
-      onGuardado(respuesta.meta?.message || (encuesta ? 'Encuesta actualizada' : 'Encuesta creada'));
+      const respuesta = idGuardada !== null ? await editarEncuesta(idGuardada, datos) : await crearEncuesta(datos);
+      const id = respuesta.data?.id ?? idGuardada;
+      const mensaje = respuesta.meta?.message || (encuesta ? 'Encuesta actualizada' : 'Encuesta creada');
+
+      // La imagen del mail se sube con la encuesta ya guardada. Solo cuenta si hay mail a la persona con la plantilla "beneficio".
+      const lleva = id !== null && publica && datos.mailPersonaActivo && datos.mail.plantilla === 'beneficio';
+      if (lleva && (imagen.archivo || imagen.quitar)) {
+        try {
+          if (imagen.archivo) await subirImagenMail(id, imagen.archivo);
+          else await quitarImagenMail(id);
+        } catch (errImagen) {
+          // La encuesta ya quedó guardada: el próximo "Guardar" la edita (no crea otra) y reintenta la imagen.
+          setIdGuardada(id);
+          setHuellaGuardada(huellaDe(datos, { archivo: null, quitar: false }));
+          setError(
+            `La encuesta se guardó, pero la imagen del mail no se pudo subir: ${errImagen instanceof Error ? errImagen.message : 'error de conexión'}. Volvé a tocar Guardar para reintentar.`,
+          );
+          setGuardando(false);
+          return;
+        }
+        setVersionImagen(Date.now());
+      }
+      onGuardado(mensaje);
     } catch (err) {
       // El backend vuelve a validar: su mensaje (o el 409 "ya tiene respuestas") se muestra acá.
       setError(err instanceof Error ? err.message : 'Error de conexión');
@@ -137,7 +221,7 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
 
         <form className="encuestas-form" onSubmit={guardar}>
           <label className="encuestas-label">
-            Título <span className="encuestas-ayuda">(es lo que ve el afiliado al abrir la encuesta)</span>
+            Título <span className="encuestas-ayuda">(es lo que ve {publica ? 'la persona' : 'el afiliado'} al abrir la encuesta)</span>
             <input
               className="encuestas-input"
               maxLength={LARGOS.titulo}
@@ -149,8 +233,72 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
             />
           </label>
 
+          <div className="encuestas-label">
+            ¿Quién la responde?
+            <div className="encuestas-modo" role="group" aria-label="Quién responde la encuesta">
+              {AUDIENCIAS.map((opcion) => (
+                <button
+                  type="button"
+                  key={opcion.valor}
+                  className={`encuestas-modo-opcion ${datos.audiencia === opcion.valor ? 'encuestas-modo-opcion-activa' : ''}`}
+                  onClick={() => cambiarCampos({ audiencia: opcion.valor })}
+                  aria-pressed={datos.audiencia === opcion.valor}
+                  disabled={guardando}
+                >
+                  {opcion.etiqueta}
+                </button>
+              ))}
+            </div>
+            <p className="encuestas-ayuda">{AUDIENCIAS.find((opcion) => opcion.valor === datos.audiencia)?.explicacion}</p>
+          </div>
+
+          {conRespuestas && (
+            <p className="encuestas-aviso">
+              Ya tiene respuestas: podés corregir textos y el mail, pero no las preguntas ni quién la responde.
+            </p>
+          )}
+
+          {publica && (
+            <>
+              <label className="encuestas-label">
+                Descripción <span className="encuestas-ayuda">(opcional, el texto que va debajo del título en la web)</span>
+                <textarea
+                  className="encuestas-input encuestas-textarea"
+                  rows={3}
+                  maxLength={LARGOS.descripcion}
+                  value={datos.descripcion}
+                  onChange={(e) => cambiarCampos({ descripcion: e.target.value })}
+                />
+              </label>
+              <label className="encuestas-label">
+                Texto del botón <span className="encuestas-ayuda">(opcional, por defecto "Enviar")</span>
+                <input
+                  className="encuestas-input"
+                  maxLength={LARGOS.textoBoton}
+                  placeholder="Enviar"
+                  value={datos.textoBoton}
+                  onChange={(e) => cambiarCampos({ textoBoton: e.target.value })}
+                />
+              </label>
+              <label className="encuestas-label">
+                Condiciones / letra chica <span className="encuestas-ayuda">(opcional, va al pie del formulario)</span>
+                <textarea
+                  className="encuestas-input encuestas-textarea"
+                  rows={2}
+                  maxLength={LARGOS.condiciones}
+                  value={datos.condiciones}
+                  onChange={(e) => cambiarCampos({ condiciones: e.target.value })}
+                />
+              </label>
+            </>
+          )}
+
           <label className="encuestas-label">
-            Texto de cierre <span className="encuestas-ayuda">(opcional, se muestra al terminar de responder)</span>
+            Texto de cierre{' '}
+            <span className="encuestas-ayuda">
+              (opcional, se muestra al terminar de responder
+              {publica ? ': en la pública es el mensaje que ve la persona al enviar' : ''})
+            </span>
             <textarea
               className="encuestas-input encuestas-textarea"
               rows={2}
@@ -162,6 +310,22 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
                 setDatos((prev) => ({ ...prev, textoCierre }));
               }}
             />
+          </label>
+
+          <label className="encuestas-label">
+            Link de términos y condiciones <span className="encuestas-ayuda">(opcional)</span>
+            <input
+              className="encuestas-input"
+              type="url"
+              maxLength={LARGOS.terminosUrl}
+              placeholder={TERMINOS_POR_DEFECTO}
+              value={datos.terminosUrl}
+              onChange={(e) => cambiarCampos({ terminosUrl: e.target.value })}
+            />
+            <span className="encuestas-ayuda">
+              La casilla de términos aparece en la web; si lo dejás vacío se usa la página de formularios y promociones. Tiene que ser https
+              de andessalud.com.ar.
+            </span>
           </label>
 
           <div className="encuestas-preguntas-cabecera">
@@ -320,6 +484,23 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
           >
             <FaPlus /> Agregar pregunta
           </button>
+
+          {/* Mail a quien responde y avisos: solo en las públicas (en las otras no hay email ni quién los mande). */}
+          {datos.audiencia === 'publica' && (
+          <EncuestaFormAccion
+            datos={datos}
+            onCambiar={cambiarCampos}
+            onCambiarMail={cambiarMail}
+            encuesta={encuesta}
+            idGuardada={idGuardada}
+            hayCambios={hayCambios}
+            imagen={imagen}
+            onImagen={setImagen}
+            versionImagen={versionImagen}
+            onError={setError}
+            deshabilitado={guardando}
+          />
+          )}
 
           {error && (
             <p className="encuestas-error" ref={errorRef} role="alert">

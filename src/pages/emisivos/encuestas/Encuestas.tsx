@@ -29,7 +29,7 @@ import {
   obtenerEncuesta,
 } from './encuestas.api';
 import type { Encuesta, ResumenEncuesta } from './encuestas.api';
-import { fechaCorta, linkEncuestaWeb, porcentaje, textoAvance } from './encuestasOpciones';
+import { audienciaDe, fechaCorta, linkEncuestaWeb, nombreAudiencia, porcentaje, textoAvance } from './encuestasOpciones';
 import './Encuestas.css';
 import { useConfirmacion } from '../useConfirmacion';
 
@@ -153,8 +153,9 @@ const Encuestas = () => {
         <div>
           <h1 className="encuestas-title">Encuestas</h1>
           <p className="encuestas-subtitle">
-            Encuestas para los afiliados de Andes Salud. Cada una se muestra solo a los DNIs de su lista: en la app (tarjeta "Tenemos
-            una encuesta para vos") y en la web (andessalud.com.ar/encuesta/). Cada afiliado responde una sola vez.
+            Encuestas para los afiliados de Andes Salud. Cada una la responde la gente de una lista de DNIs, todos los afiliados (en la
+            app, tarjeta "Tenemos una encuesta para vos") o cualquiera con el link (pública, solo en la web: andessalud.com.ar/encuesta/).
+            Cada afiliado responde una sola vez.
           </p>
         </div>
         <div className="encuestas-header-acciones">
@@ -180,32 +181,46 @@ const Encuestas = () => {
       <ul className="encuestas-lista">
         {encuestas.map((encuesta) => {
           const conRespuestas = encuesta.respondieron > 0;
-          // Para activarla hace falta la lista de DNIs (el backend devuelve 409 si no tiene). Pausarla se puede siempre.
-          const sinLista = encuesta.asignados === 0;
+          const audiencia = audienciaDe(encuesta);
+          const esLista = audiencia === 'lista';
+          // Para activar una de lista hace falta la lista de DNIs (el backend devuelve 409 si no tiene). Las de todos los afiliados y las
+          // públicas se activan sin lista. Pausarla se puede siempre.
+          const sinLista = esLista && encuesta.asignados === 0;
           const noSePuedeActivar = !encuesta.activa && sinLista;
           const avance = porcentaje(encuesta.respondieron, encuesta.asignados);
+          // El link de la web sirve para las de lista (el afiliado pone su DNI) y las públicas; las de "todos los afiliados" van por la app.
+          const tieneLink = audiencia !== 'afiliados';
           return (
             <li key={encuesta.id} className={`encuestas-item ${encuesta.activa ? '' : 'encuestas-item-pausada'}`}>
               <div className="encuestas-info">
                 <div className="encuestas-info-titulo">
-                  <a
-                    className="encuestas-info-link"
-                    href={linkEncuestaWeb(encuesta.id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Abrir la encuesta en la web (así la ve el afiliado)"
-                  >
-                    #{encuesta.id} {encuesta.titulo} <FaExternalLinkAlt aria-hidden="true" />
-                  </a>
+                  {tieneLink ? (
+                    <a
+                      className="encuestas-info-link"
+                      href={linkEncuestaWeb(encuesta.id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Abrir la encuesta en la web (así la ve quien la responde)"
+                    >
+                      #{encuesta.id} {encuesta.titulo} <FaExternalLinkAlt aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <span>
+                      #{encuesta.id} {encuesta.titulo}
+                    </span>
+                  )}
                   <span className={`encuestas-badge ${encuesta.activa ? 'encuestas-badge-activa' : 'encuestas-badge-pausada'}`}>
                     {encuesta.activa ? 'Activa' : 'Pausada'}
+                  </span>
+                  <span className={`encuestas-badge encuestas-badge-audiencia encuestas-badge-audiencia-${audiencia}`}>
+                    {nombreAudiencia(audiencia)}
                   </span>
                 </div>
                 <div className="encuestas-info-linea">
                   {encuesta.cantidadPreguntas} {encuesta.cantidadPreguntas === 1 ? 'pregunta' : 'preguntas'}
                   {encuesta.createdAt && fechaCorta(encuesta.createdAt) ? ` · Creada el ${fechaCorta(encuesta.createdAt)}` : ''}
                 </div>
-                {encuesta.asignados > 0 ? (
+                {esLista && encuesta.asignados > 0 ? (
                   <div className="encuestas-avance">
                     <div
                       className="encuestas-barra"
@@ -218,22 +233,24 @@ const Encuestas = () => {
                       <div className="encuestas-barra-relleno" style={{ width: `${avance}%` }} />
                     </div>
                     <span className="encuestas-info-linea">
-                      {textoAvance(encuesta.respondieron, encuesta.asignados)} ({avance}%)
+                      {textoAvance(encuesta.respondieron, encuesta.asignados, audiencia)} ({avance}%)
                     </span>
                   </div>
-                ) : (
+                ) : esLista ? (
                   <div className="encuestas-info-linea encuestas-info-aviso">
                     Sin lista de DNIs: cargala con "Lista de DNIs" para poder activarla.
                   </div>
+                ) : (
+                  <div className="encuestas-info-linea">{textoAvance(encuesta.respondieron, encuesta.asignados, audiencia)}</div>
                 )}
               </div>
 
               <div className="encuestas-acciones">
-                <span title={conRespuestas ? 'Ya tiene respuestas: duplicala' : undefined}>
+                <span title={conRespuestas ? 'Ya tiene respuestas: podés corregir textos y el mail, pero no las preguntas ni quién la responde' : undefined}>
                   <button
                     className="encuestas-btn encuestas-btn-secundario encuestas-btn-chico"
                     onClick={() => void abrirEdicion(encuesta)}
-                    disabled={ocupado || conRespuestas}
+                    disabled={ocupado}
                   >
                     <FaEdit /> Editar
                   </button>
@@ -255,13 +272,15 @@ const Encuestas = () => {
                     )}
                   </button>
                 </span>
-                <button
-                  className="encuestas-btn encuestas-btn-secundario encuestas-btn-chico"
-                  onClick={() => setModal({ tipo: 'lista', encuesta })}
-                  disabled={ocupado}
-                >
-                  <FaListUl /> Lista de DNIs
-                </button>
+                {esLista && (
+                  <button
+                    className="encuestas-btn encuestas-btn-secundario encuestas-btn-chico"
+                    onClick={() => setModal({ tipo: 'lista', encuesta })}
+                    disabled={ocupado}
+                  >
+                    <FaListUl /> Lista de DNIs
+                  </button>
+                )}
                 <button
                   className="encuestas-btn encuestas-btn-secundario encuestas-btn-chico"
                   onClick={() => setModal({ tipo: 'resultados', encuesta })}
@@ -269,13 +288,15 @@ const Encuestas = () => {
                 >
                   <FaChartBar /> Resultados
                 </button>
-                <button
-                  className="encuestas-btn encuestas-btn-secundario encuestas-btn-chico"
-                  onClick={() => void copiarLink(encuesta)}
-                  title={linkEncuestaWeb(encuesta.id)}
-                >
-                  <FaLink /> Copiar link
-                </button>
+                {tieneLink && (
+                  <button
+                    className="encuestas-btn encuestas-btn-secundario encuestas-btn-chico"
+                    onClick={() => void copiarLink(encuesta)}
+                    title={linkEncuestaWeb(encuesta.id)}
+                  >
+                    <FaLink /> Copiar link
+                  </button>
+                )}
                 <button
                   className="encuestas-btn encuestas-btn-secundario encuestas-btn-chico"
                   onClick={() => duplicar(encuesta)}
@@ -302,7 +323,9 @@ const Encuestas = () => {
       {modal.tipo === 'lista' && (
         <EncuestaLista encuesta={modal.encuesta} onCerrar={cerrarModal} onActualizada={() => void cargar()} />
       )}
-      {modal.tipo === 'resultados' && <EncuestaResultados encuesta={modal.encuesta} onCerrar={cerrarModal} />}
+      {modal.tipo === 'resultados' && (
+        <EncuestaResultados encuesta={modal.encuesta} onCerrar={cerrarModal} onAviso={showToastMessage} />
+      )}
 
       {showToast && (
         <div className={`emisivos-toast ${toastType === 'success' ? 'emisivos-toast-success' : 'emisivos-toast-error'}`}>
