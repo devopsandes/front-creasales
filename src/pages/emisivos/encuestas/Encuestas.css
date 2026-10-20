@@ -538,8 +538,11 @@
   grid-template-columns: 2.5rem 1fr 4.5rem;
 }
 
-.encuestas-resumen-excel {
+.encuestas-resumen-descargas {
   margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .encuestas-resultado-pregunta {
@@ -656,8 +659,12 @@
     grid-row: 2;
   }
 
-  .encuestas-resumen-excel {
+  .encuestas-resumen-descargas {
     margin-left: 0;
+  }
+
+  .encuestas-tabla-marco {
+    margin-inline: -0.25rem;
   }
 }
 
@@ -676,4 +683,310 @@
 .encuestas-info-link svg {
   font-size: 0.75em;
   opacity: 0.7;
+}
+
+/* Quién la responde: chip en el listado */
+.encuestas-badge-audiencia {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.encuestas-badge-audiencia-afiliados {
+  background: #cffafe;
+  color: #155e75;
+}
+
+.encuestas-badge-audiencia-publica {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Formulario: secciones, contadores y fila de campos */
+.encuestas-fila-arriba {
+  align-items: flex-start;
+}
+
+.encuestas-fila-arriba > .encuestas-label {
+  min-width: 12rem;
+}
+
+.encuestas-label-linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+}
+
+.encuestas-contador {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.encuestas-contador-pasado {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.encuestas-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.875rem 1rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  min-width: 0;
+}
+
+.encuestas-fieldset legend {
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.encuestas-accion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.encuestas-accion + .encuestas-accion {
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Mail a quien responde */
+.encuestas-mail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.encuestas-plantillas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.625rem;
+}
+
+.encuestas-plantilla {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  background: white;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.encuestas-plantilla strong {
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.encuestas-plantilla:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.encuestas-plantilla-activa {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.encuestas-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #f9fafb;
+}
+
+.encuestas-tarjeta-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.encuestas-imagen-mail {
+  max-width: 100%;
+  max-height: 14rem;
+  align-self: flex-start;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  object-fit: contain;
+}
+
+/* Prueba del mail */
+.encuestas-prueba {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  border: 1px dashed #d1d5db;
+  border-radius: 0.75rem;
+  background: #f9fafb;
+}
+
+.encuestas-prueba-resultado {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.encuestas-prueba-resultado li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.encuestas-prueba-bien {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.encuestas-prueba-mal {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Resultados de una pública: cifras y tabla de registros */
+.encuestas-cifras {
+  flex: 1;
+  min-width: 16rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.75rem 1.25rem;
+}
+
+.encuestas-cifra {
+  display: flex;
+  flex-direction: column;
+}
+
+.encuestas-cifra-aviso .encuestas-resumen-numero {
+  color: #b91c1c;
+}
+
+.encuestas-registros {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.encuestas-registros-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.encuestas-registros-busqueda {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.encuestas-tabla-marco {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.encuestas-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  color: #111827;
+}
+
+.encuestas-tabla th {
+  padding: 0.5rem 0.75rem;
+  background: #f3f4f6;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.encuestas-tabla td {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.encuestas-tabla-fecha {
+  white-space: nowrap;
+  color: #6b7280;
+}
+
+.encuestas-tabla-email {
+  overflow-wrap: anywhere;
+}
+
+.encuestas-tabla-estado {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.encuestas-chip-duplicado {
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.encuestas-mail-estado {
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.encuestas-mail-estado-enviado {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.encuestas-mail-estado-error,
+.encuestas-mail-estado-rebotado {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.encuestas-paginado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.encuestas-paginado-botones {
+  display: flex;
+  gap: 0.5rem;
 }
