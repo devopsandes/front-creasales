@@ -22,6 +22,8 @@ export interface PrestacionElegida {
     segundoScore?: number
     cobertura?: number
     alcanza?: boolean
+    importeConvenido?: number | null
+    coseguro?: number | null
 }
 
 export interface EstudioListaItem {
@@ -100,6 +102,10 @@ export interface EstudioDetalle {
     provincia: string | null
     es_prueba: boolean
     especialidad_bot: string | null
+    afiliadoCategoria?: string | null
+    botTope?: string | null
+    botTotal?: string | null
+    opTotal?: string | null
     prestador: Ref
     error: string | null
     reanalisis_de?: string | null

@@ -219,6 +219,10 @@ const EstudioBotDetalle = () => {
                             {(detalle as any).prestadorElegido && <> → el bot lo cambió a <b>{detalle.prestador.nombre}</b> ({String((detalle as any).prestadorElegido.tipo ?? '').toLowerCase()} tercerizado)</>}
                             {detalle.especialidad_bot && <> · Especialidad: <b>{detalle.especialidad_bot}</b></>}
                         </div>
+                        <div className="eb-cab-sub">
+                            Categoría: <b>{detalle.afiliadoCategoria ?? 'desconocida'}</b>
+                            {detalle.botTope && <> · Tope por estudio: <b>{fmtPesos(detalle.botTope)}</b></>}
+                        </div>
                         {detalle.reanalisis_de && (
                             <div className="eb-cab-sub">
                                 <span className="eb-tag-prueba">REANÁLISIS</span> modo <b>{detalle.modo_reanalisis}</b> ·{' '}
@@ -256,7 +260,7 @@ const EstudioBotDetalle = () => {
                         <div className="eb-card-title">Datos de la orden (operadora)</div>
 
                         {op ? (
-                            <RevisionGuardada op={op} />
+                            <RevisionGuardada op={op} total={detalle.opTotal} />
                         ) : (
                             <>
                                 <LupaSelector
@@ -399,7 +403,7 @@ const EstudioBotDetalle = () => {
                         )}
                         {bot ? (
                             <>
-                                <VistaBot bot={bot} op={op} mostrarJson={mostrarJson} setMostrarJson={setMostrarJson} />
+                                <VistaBot bot={bot} op={op} total={detalle.botTotal} mostrarJson={mostrarJson} setMostrarJson={setMostrarJson} />
 
                                 {op && (
                                     <div className="eb-final">
@@ -467,6 +471,9 @@ const Campo = ({ label, valor, igual }: { label: string; valor: string; igual?: 
     </div>
 )
 
+const fmtPesos = (n: number | string | null | undefined) =>
+    n === null || n === undefined || n === '' ? '—' : `$ ${Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
+
 const fmtRef = (r: Ref | undefined, conMat = false, conCod = false) => {
     if (!r?.nombre) return ''
     if (conMat) return `${r.nombre} (Mat.:${r.matricula ?? ''})`
@@ -484,7 +491,7 @@ const solicitanteBot = (bot: DecisionBot): string => {
     return `No encontrado (leído: ${nombre ?? '—'}${mat ? `, Mat. ${mat}` : ''})`
 }
 
-const RevisionGuardada = ({ op }: { op: RevisionOperadora }) => (
+const RevisionGuardada = ({ op, total }: { op: RevisionOperadora; total?: string | null }) => (
     <div>
         <div className="eb-guardada-head">
             <span className={`eb-badge ${VEREDICTO_CFG[op.veredicto]?.cls ?? ''}`}>{VEREDICTO_CFG[op.veredicto]?.label ?? op.veredicto}</span>
@@ -498,19 +505,22 @@ const RevisionGuardada = ({ op }: { op: RevisionOperadora }) => (
         <Campo label="Profesional (efector)" valor={fmtRef(op.efector)} />
         <div className="eb-campo-label" style={{ marginTop: '.5rem' }}>Prestaciones</div>
         <table className="eb-mini-table">
-            <thead><tr><th>Descripción</th><th>Cant.</th></tr></thead>
+            <thead><tr><th>Descripción</th><th>Cant.</th><th>$ conv.</th></tr></thead>
             <tbody>
-                {op.prestaciones.length === 0 && <tr><td colSpan={2} className="eb-empty-sm">—</td></tr>}
+                {op.prestaciones.length === 0 && <tr><td colSpan={3} className="eb-empty-sm">—</td></tr>}
                 {op.prestaciones.map((p, i) => (
-                    <tr key={i}><td>{p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></td><td>{p.cantidad}</td></tr>
+                    <tr key={i}><td>{p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></td><td>{p.cantidad}</td><td>{fmtPesos(p.importeConvenido)}</td></tr>
                 ))}
+                {op.prestaciones.length > 0 && (
+                    <tr><td colSpan={2} style={{ textAlign: 'right' }}><b>Total convenido</b></td><td><b>{fmtPesos(total)}</b></td></tr>
+                )}
             </tbody>
         </table>
     </div>
 )
 
-const VistaBot = ({ bot, op, mostrarJson, setMostrarJson }: {
-    bot: DecisionBot; op: RevisionOperadora | null; mostrarJson: boolean; setMostrarJson: (v: boolean) => void
+const VistaBot = ({ bot, op, total, mostrarJson, setMostrarJson }: {
+    bot: DecisionBot; op: RevisionOperadora | null; total?: string | null; mostrarJson: boolean; setMostrarJson: (v: boolean) => void
 }) => {
     const cmp = (a?: string | null, b?: string | null): boolean | null => (op ? (a ?? null) === (b ?? null) : null)
     const codigosOp = new Set((op?.prestaciones ?? []).map((p) => p.idCodigo))
@@ -543,9 +553,9 @@ const VistaBot = ({ bot, op, mostrarJson, setMostrarJson }: {
 
             <div className="eb-campo-label" style={{ marginTop: '.5rem' }}>Prestaciones (lo que leyó → lo que eligió del catálogo)</div>
             <table className="eb-mini-table">
-                <thead><tr><th>Leído en el pedido</th><th>Catálogo</th><th>Cant.</th><th>Método</th></tr></thead>
+                <thead><tr><th>Leído en el pedido</th><th>Catálogo</th><th>Cant.</th><th>$ conv.</th><th>Método</th></tr></thead>
                 <tbody>
-                    {bot.prestaciones.length === 0 && <tr><td colSpan={4} className="eb-empty-sm">—</td></tr>}
+                    {bot.prestaciones.length === 0 && <tr><td colSpan={5} className="eb-empty-sm">—</td></tr>}
                     {bot.prestaciones.map((p, i) => {
                         const igual = op ? (p.idCodigo ? codigosOp.has(p.idCodigo) : false) : null
                         return (
@@ -553,6 +563,7 @@ const VistaBot = ({ bot, op, mostrarJson, setMostrarJson }: {
                                 <td>{p.texto}{p.codigoEscrito ? <span className="eb-cod"> [{p.codigoEscrito}]</span> : null}</td>
                                 <td>{p.descripcion ? <>{p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></> : <i>sin match</i>}</td>
                                 <td>{p.cantidad}</td>
+                                <td>{fmtPesos(p.importeConvenido)}</td>
                                 <td>
                                     <span className="eb-cod">
                                         {p.alcanza === true ? '✅ ' : p.alcanza === false ? '❌ ' : ''}
@@ -564,6 +575,9 @@ const VistaBot = ({ bot, op, mostrarJson, setMostrarJson }: {
                             </tr>
                         )
                     })}
+                    {bot.prestaciones.length > 0 && (
+                        <tr><td colSpan={3} style={{ textAlign: 'right' }}><b>Total convenido</b></td><td><b>{fmtPesos(total)}</b></td><td></td></tr>
+                    )}
                 </tbody>
             </table>
 
