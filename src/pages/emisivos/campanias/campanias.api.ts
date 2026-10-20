@@ -361,6 +361,35 @@ export const listarDestinatarios = async (id: number, buscar: string, filtro: Fi
   return { filas: respuesta.data ?? [], total: meta?.total ?? 0, porPagina: meta?.porPagina ?? 50 };
 };
 
+/**
+ * Todas las personas de un filtro (para el informe PDF), pidiendo las páginas de a una y en orden: no se le tira un lote de
+ * pedidos juntos al servidor. Corta con una página vacía, al llegar al total o al `tope` (si el filtro tiene más, `total` dice
+ * cuántas hay de verdad y la diferencia queda sin traer). Con la campaña enviándose la lista se mueve y la paginación por
+ * offset puede repetir personas entre páginas: cada una entra una sola vez, por id. `cancelado` se consulta antes de cada
+ * página: si dice que sí, corta ahí y devuelve lo que tenga (quien llama decide qué hacer).
+ */
+export const traerTodasLasPersonas = async (
+  id: number,
+  filtro: FiltroLista,
+  tope: number,
+  cancelado?: () => boolean,
+): Promise<{ filas: DestinatarioFila[]; total: number }> => {
+  const filas: DestinatarioFila[] = [];
+  const vistos = new Set<number>();
+  let total = 0;
+  for (let pagina = 1; !cancelado?.(); pagina += 1) {
+    const actual = await listarDestinatarios(id, '', filtro, pagina);
+    total = actual.total;
+    for (const fila of actual.filas) {
+      if (vistos.has(fila.id)) continue;
+      vistos.add(fila.id);
+      filas.push(fila);
+    }
+    if (actual.filas.length === 0 || filas.length >= total || filas.length >= tope) break;
+  }
+  return { filas: filas.slice(0, tope), total };
+};
+
 /** Solo con la campaña en LISTA. Quitar no borra: la persona queda "quitada a mano" y se puede volver a poner. */
 export const quitarDestinatario = (id: number, destinatarioId: number) =>
   pedir<DestinatarioFila>(`/campanias/${id}/destinatarios/${destinatarioId}/quitar`, { method: 'POST' });

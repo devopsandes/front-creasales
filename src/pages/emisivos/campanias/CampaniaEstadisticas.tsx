@@ -1,22 +1,26 @@
 // CampaniaEstadisticas.tsx — modal con el estado de una campaña y sus números por canal: lista, app, parentesco, push, mail,
 // banner y los cruces que pidió Gino (09/10/2026). Mientras se envía, se actualiza solo cada 10 segundos.
-// Pausar, reanudar y cancelar se hacen desde acá también. El Excel trae una fila por persona con todas las fechas.
+// Pausar, reanudar y cancelar se hacen desde acá también. El Excel trae una fila por persona con todas las fechas; el informe
+// PDF es el resumen para mostrar (cifras, quién abrió, quién pidió la baja) y se arma en el navegador (informeCampania.ts).
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { FaBan, FaDownload, FaPause, FaPlay, FaSync, FaTimes } from 'react-icons/fa';
+import { FaBan, FaDownload, FaFilePdf, FaPause, FaPlay, FaSync, FaTimes } from 'react-icons/fa';
 import {
   cancelarCampania,
   obtenerCampania,
   obtenerEstadisticas,
   pausarCampania,
   reanudarCampania,
+  traerTodasLasPersonas,
   urlExportarCampania,
 } from './campanias.api';
 import type { Campania, EstadisticasCampania } from './campanias.api';
 import { anchoBarra, canalesActivos, claseEstado, etiquetaEstado, fechaHora, numero, textoPorcentaje } from './campaniasOpciones';
 import { useConfirmacion } from '../useConfirmacion';
 import CampaniaPersonas from './CampaniaPersonas';
+import { armarInforme, listasNecesarias, topeParaFiltro } from './informeCampania';
+import type { ListasInforme } from './informeCampania';
 
 interface EstadisticasProps {
   campania: Campania;
@@ -70,8 +74,19 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
   const [cargando, setCargando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [actualizadoAt, setActualizadoAt] = useState<string | null>(null);
+  /** Mientras se arma el informe PDF: cuántos pasos van (estadísticas y una lista por vez). null si no se está armando. */
+  const [armandoInforme, setArmandoInforme] = useState<{ hechos: number; total: number | null } | null>(null);
 
   const id = inicial.id;
+
+  // ¿Sigue abierta la pantalla? Si se cierra mientras se arma el informe, se corta el armado y no se baja nada ni se avisa.
+  const montado = useRef(true);
+  useEffect(() => {
+    montado.current = true;
+    return () => {
+      montado.current = false;
+    };
+  }, []);
 
   const refrescar = useCallback(
     async (silencioso = false) => {
@@ -124,6 +139,36 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
       textoCancelar: 'Volver',
     });
     if (confirmado) void ejecutar(() => cancelarCampania(campania.id), 'Campaña cancelada');
+  };
+
+  /**
+   * Informe PDF: trae la campaña y las estadísticas frescas (no las del estado, que pueden tener hasta 10 segundos de atraso) y
+   * las listas de personas que hacen falta (de a 50, de a una), arma el modelo y recién ahí carga jspdf (import perezoso). Los
+   * errores salen por el mismo aviso que las demás acciones de la pantalla. Si se cierra la pantalla en el medio, corta.
+   */
+  const descargarInforme = async () => {
+    const cerrado = () => !montado.current;
+    setArmandoInforme({ hechos: 0, total: null });
+    try {
+      const [actual, estadisticas] = await Promise.all([obtenerCampania(id), obtenerEstadisticas(id)]);
+      if (cerrado()) return;
+      const filtros = listasNecesarias(actual, estadisticas);
+      const total = 1 + filtros.length;
+      setArmandoInforme({ hechos: 1, total });
+      const listas: ListasInforme = {};
+      for (const [i, filtro] of filtros.entries()) {
+        listas[filtro] = await traerTodasLasPersonas(id, filtro, topeParaFiltro(filtro), cerrado);
+        if (cerrado()) return;
+        setArmandoInforme({ hechos: i + 2, total });
+      }
+      const informe = armarInforme(actual, estadisticas, listas, new Date());
+      const { descargarInformePdf } = await import('./informeCampania.pdf');
+      if (await descargarInformePdf(informe, cerrado)) onAviso('success', `Informe descargado: ${informe.nombreArchivo}`);
+    } catch (err) {
+      if (!cerrado()) onAviso('error', `No se pudo armar el informe: ${err instanceof Error ? err.message : 'error de conexión'}`);
+    } finally {
+      if (montado.current) setArmandoInforme(null);
+    }
   };
 
   const { canales } = campania;
@@ -378,6 +423,19 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
               >
                 <FaDownload /> Descargar Excel
               </a>
+              <button
+                type="button"
+                className="campanias-btn campanias-btn-primario campanias-btn-chico"
+                onClick={() => void descargarInforme()}
+                disabled={armandoInforme !== null}
+                aria-busy={armandoInforme !== null}
+                title="Resumen en PDF para mostrar: cifras por canal y la lista de quién abrió, quién leyó y quién pidió la baja"
+              >
+                <FaFilePdf />{' '}
+                {armandoInforme
+                  ? `Armando el informe…${armandoInforme.total ? ` ${armandoInforme.hechos} de ${armandoInforme.total}` : ''}`
+                  : 'Descargar informe PDF'}
+              </button>
             </div>
           </div>
 
