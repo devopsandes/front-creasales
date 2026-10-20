@@ -132,11 +132,13 @@ const tokenValidacion = async (token: string): Promise<ValidationResponse & Erro
     }
 }
 
-const sendEmailRecuperarPass = async (email: string): Promise<SuccessResponse & ErrorResponse> => {
+// Paso 1 de la recuperación: POST con mail + Turnstile. Antes era un GET
+// público con el mail en la URL.
+const sendEmailRecuperarPass = async (email: string, turnstileToken?: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
-        const url = `https://sales.andessalud.ar/api/v1/auth/recuperar-pass?email=${email}`
+        const url = `https://sales.andessalud.ar/api/v1/auth/recuperar-pass`
 
-        const { data } = await axios<SuccessResponse & ErrorResponse>(url)
+        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url, { email, turnstileToken })
 
         return data
     } catch (error) {
@@ -148,12 +150,12 @@ const sendEmailRecuperarPass = async (email: string): Promise<SuccessResponse & 
     }
 }
 
+// Paso 2: token del enlace del mail + contraseña nueva.
 const cambiarPassword = async (token: string, password: string): Promise<SuccessResponse & ErrorResponse> => {
     try {
+        const url = `https://sales.andessalud.ar/api/v1/auth/recuperar-pass/confirmar`
 
-        const url = `https://sales.andessalud.ar/api/v1/auth/cambiar-pass?token=${token}`
-
-        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url, { password })
+        const { data } = await axios.post<SuccessResponse & ErrorResponse>(url, { token, password })
 
         return data
     } catch (error) {

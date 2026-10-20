@@ -496,8 +496,9 @@
 
 /* ═══════════════════════════════════════════════════════════════
    Login rediseñado (cs-login-*)
-   Las clases signin-* de arriba siguen en uso en Recuperar
-   contraseña y Crear cuenta: no borrarlas.
+   Las clases signin-* de arriba siguen en uso en Register
+   (ruta /auth/signup, sin enlace desde el login) y en el
+   componente Turnstile (.signin-turnstile): no borrarlas.
    ═══════════════════════════════════════════════════════════════ */
 
 .cs-login {
@@ -948,5 +949,31 @@
   .cs-login-cell {
     height: 54px;
     font-size: 22px;
+  }
+
+  /* ── Enlaces con aspecto de botón (Recuperar / Nueva contraseña) ── */
+
+  a.cs-login-button,
+  a.cs-login-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-sizing: border-box;
+  }
+
+  a.cs-login-button:hover {
+    background: #0053BA;
+    color: #FFFFFF;
+  }
+
+  a.cs-login-back {
+    justify-content: flex-start;
+  }
+
+  a.cs-login-button:focus-visible,
+  a.cs-login-back:focus-visible {
+    outline: 3px solid rgba(0, 96, 214, 0.45);
+    outline-offset: 2px;
   }
 }
