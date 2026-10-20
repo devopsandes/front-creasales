@@ -313,7 +313,7 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
           </label>
 
           <label className="encuestas-label">
-            Link de términos y condiciones <span className="encuestas-ayuda">(opcional)</span>
+            Link de términos y condiciones <span className="encuestas-ayuda">(si lo dejás vacío, se usa la página de formularios y promociones)</span>
             <input
               className="encuestas-input"
               type="url"
@@ -323,8 +323,8 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
               onChange={(e) => cambiarCampos({ terminosUrl: e.target.value })}
             />
             <span className="encuestas-ayuda">
-              La casilla de términos aparece en la web; si lo dejás vacío se usa la página de formularios y promociones. Tiene que ser https
-              de andessalud.com.ar.
+              La casilla de términos aparece siempre en la web. Cargá un link solo si la promo tiene bases propias: tiene que ser una página
+              https de andessalud.com.ar.
             </span>
           </label>
 
