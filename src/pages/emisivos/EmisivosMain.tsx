@@ -4,6 +4,7 @@ import Plantillas from "./Plantillas";
 import Banner from "./Banner";
 import Encuestas from "./encuestas/Encuestas";
 import Campanias from "./campanias/Campanias";
+import Beneficios from "./beneficios/Beneficios";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import CrearNotificaciones from "./CrearNotificaciones";
@@ -26,6 +27,7 @@ const PESTANAS: { id: string; titulo: string; contenido: ReactNode }[] = [
   { id: 'banner', titulo: 'Banner', contenido: <Banner /> },
   { id: 'campanias', titulo: 'Campañas', contenido: <Campanias /> },
   { id: 'encuestas', titulo: 'Encuestas', contenido: <Encuestas /> },
+  { id: 'beneficios', titulo: 'Beneficios', contenido: <Beneficios /> },
 ];
 
 /** Ancho mínimo de cada pestaña (rem): si la barra no entra en la pantalla, se desplaza en horizontal. */
