@@ -210,7 +210,11 @@ const EstudioBotDetalle = () => {
                 <button className="eb-btn-link" onClick={() => navigate('/dashboard/estudios-bot')}><FaArrowLeft /> Volver al listado</button>
                 <div className="eb-cabecera">
                     <div>
-                        <div className="eb-cab-nombre">{detalle.afiliado_nombre ?? '—'} {detalle.es_prueba && <span className="eb-tag-prueba">PRUEBA</span>}</div>
+                        <div className="eb-cab-nombre">
+                            {detalle.afiliado_nombre ?? '—'}{' '}
+                            {detalle.es_prueba && <span className="eb-tag-prueba">PRUEBA</span>}
+                            {bot?.modoSombra === false && <span className="eb-tag-prueba" style={{ background: '#1b7f4b', color: '#fff' }}>REAL</span>}
+                        </div>
                         <div className="eb-cab-sub">
                             N° {detalle.nro_afiliado ?? '—'} · DNI {detalle.dni ?? '—'} · {detalle.provincia ?? '—'} · {formatFecha(detalle.created_at)}
                         </div>

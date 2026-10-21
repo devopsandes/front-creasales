@@ -182,6 +182,7 @@ const EstudiosBot = () => {
                     <td className="eb-td">
                       <span className="eb-afiliado">{it.afiliado_nombre ?? '—'}</span>
                       {it.es_prueba && <span className="eb-tag-prueba">PRUEBA</span>}
+                      {it.modo_sombra === false && <span className="eb-tag-prueba" style={{ background: '#1b7f4b', color: '#fff' }}>REAL</span>}
                       {it.reanalisis_de && <span className="eb-tag-prueba" title={`modo ${it.modo_reanalisis ?? ''}`}>REANÁLISIS</span>}
                     </td>
                     <td className="eb-td">{it.provincia ?? '—'}</td>
