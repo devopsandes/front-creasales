@@ -26,6 +26,7 @@ export interface ListarParams {
     revision?: 'pendiente' | 'completa' | ''
     incluirPruebas?: boolean
     incluirReanalisis?: boolean
+    soloReales?: boolean
 }
 
 export const listarEstudios = (params: ListarParams) =>
@@ -39,6 +40,7 @@ export const listarEstudios = (params: ListarParams) =>
                 ...(params.revision ? { revision: params.revision } : {}),
                 ...(params.incluirPruebas ? { incluirPruebas: 'true' } : {}),
                 ...(params.incluirReanalisis ? { incluirReanalisis: 'true' } : {}),
+                ...(params.soloReales ? { soloReales: 'true' } : {}),
             },
         }))
 

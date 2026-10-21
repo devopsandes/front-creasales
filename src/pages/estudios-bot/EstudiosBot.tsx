@@ -23,7 +23,16 @@ export const MOTIVOS_SIN_MATCH = new Set([
   'SOLICITANTE_SIN_MATCH',
 ])
 
-export const badgeBot = (veredicto: Veredicto, motivo?: string | null): { label: string; cls: string; row: string } => {
+/** Modo real: lo que el bot HIZO, no lo que hubiera hecho. */
+export const ACCION_CFG: Record<string, { label: string; cls: string; row: string }> = {
+  CODIFICADA: { label: 'CODIFICADO', cls: 'eb-badge-verde', row: 'eb-row-codificar' },
+  RECHAZADA: { label: 'RECHAZADO', cls: 'eb-badge-rojo', row: 'eb-row-rechazar' },
+  DERIVADA: { label: 'DERIVADO', cls: 'eb-badge-amarillo', row: 'eb-row-derivar' },
+  ERROR: { label: 'ERROR', cls: 'eb-badge-rojo', row: 'eb-row-rechazar' },
+}
+
+export const badgeBot = (veredicto: Veredicto, motivo?: string | null, real?: boolean, accion?: string | null): { label: string; cls: string; row: string } => {
+  if (real && accion && ACCION_CFG[accion]) return ACCION_CFG[accion]
   if (veredicto === 'DERIVAR' && motivo && MOTIVOS_SIN_MATCH.has(motivo)) {
     return { label: 'Deriva (sin match)', cls: 'eb-badge-violeta', row: 'eb-row-sinmatch' }
   }
@@ -52,12 +61,13 @@ const EstudiosBot = () => {
   const [revision, setRevision] = useState<'' | 'pendiente' | 'completa'>('')
   const [incluirPruebas, setIncluirPruebas] = useState(false)
   const [incluirReanalisis, setIncluirReanalisis] = useState(false)
+  const [soloReales, setSoloReales] = useState(false)
 
   const cargar = useCallback(async (p = 1) => {
     setCargando(true)
     setError(null)
     try {
-      const r = await listarEstudios({ page: p, limit, q, veredicto, revision, incluirPruebas, incluirReanalisis })
+      const r = await listarEstudios({ page: p, limit, q, veredicto, revision, incluirPruebas, incluirReanalisis, soloReales })
       if (!Array.isArray(r.items)) throw new Error(r.message ?? 'No se pudo obtener el listado')
       setItems(r.items)
       setTotal(r.total ?? 0)
@@ -67,9 +77,9 @@ const EstudiosBot = () => {
     } finally {
       setCargando(false)
     }
-  }, [q, veredicto, revision, incluirPruebas, incluirReanalisis, limit])
+  }, [q, veredicto, revision, incluirPruebas, incluirReanalisis, soloReales, limit])
 
-  useEffect(() => { cargar(1) }, [veredicto, revision, incluirPruebas, incluirReanalisis]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { cargar(1) }, [veredicto, revision, incluirPruebas, incluirReanalisis, soloReales]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
@@ -124,6 +134,12 @@ const EstudiosBot = () => {
               Incluir reanálisis
             </label>
           </div>
+          <div className="eb-filter-group eb-filter-sm">
+            <label className="eb-filter-label eb-check">
+              <input type="checkbox" checked={soloReales} onChange={(e) => setSoloReales(e.target.checked)} />
+              Solo reales
+            </label>
+          </div>
           <div className="eb-filter-actions">
             <button className="eb-btn-primary" onClick={() => cargar(page)} disabled={cargando}>
               <FaSync className={cargando ? 'spinning' : ''} /> {cargando ? 'Cargando...' : 'Actualizar'}
@@ -154,7 +170,7 @@ const EstudiosBot = () => {
                 <tr><td colSpan={8} className="eb-empty">No hay estudios para mostrar</td></tr>
               )}
               {items.map((it) => {
-                const cfg = badgeBot(it.bot_veredicto, it.bot_motivo)
+                const cfg = badgeBot(it.bot_veredicto, it.bot_motivo, it.modo_sombra === false, it.accion)
                 return (
                   <tr
                     key={it.id}

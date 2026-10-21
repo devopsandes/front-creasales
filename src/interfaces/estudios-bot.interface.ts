@@ -46,6 +46,8 @@ export interface EstudioListaItem {
     error: string | null
     reanalisis_de?: string | null
     modo_reanalisis?: string | null
+    modo_sombra?: boolean
+    accion?: string | null
 }
 
 export interface EstudiosListaResponse {
@@ -84,6 +86,9 @@ export interface DecisionBot {
     efector: Ref
     prestaciones: PrestacionElegida[]
     matchDetalle: Record<string, unknown> | null
+    modoSombra?: boolean
+    accion?: string | null
+    ejecucion?: Record<string, any> | null
     lectura: Record<string, unknown> | null
     respuestaModelo: Record<string, unknown> | null
     modelo: string | null

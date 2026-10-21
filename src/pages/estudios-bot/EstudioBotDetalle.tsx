@@ -233,7 +233,7 @@ const EstudioBotDetalle = () => {
                     {bot && (
                         <div className="eb-cab-veredicto">
                             <span className="eb-label">Bot</span>
-                            <span className={`eb-badge eb-badge-lg ${badgeBot(bot.veredicto, bot.motivo?.texto).cls}`}>{badgeBot(bot.veredicto, bot.motivo?.texto).label}</span>
+                            <span className={`eb-badge eb-badge-lg ${badgeBot(bot.veredicto, bot.motivo?.texto, bot.modoSombra === false, bot.accion).cls}`}>{badgeBot(bot.veredicto, bot.motivo?.texto, bot.modoSombra === false, bot.accion).label}</span>
                             {bot.motivo?.texto && bot.veredicto !== 'CODIFICAR' && <span className="eb-cab-motivo">{bot.motivo.texto}</span>}
                         </div>
                     )}
@@ -371,7 +371,7 @@ const EstudioBotDetalle = () => {
 
                     {/* Lo del bot */}
                     <div className="eb-card">
-                        <div className="eb-card-title">Lo que hubiera hecho el bot</div>
+                        <div className="eb-card-title">{bot?.modoSombra === false ? 'Lo que hizo el bot' : 'Lo que hubiera hecho el bot'}</div>
                         {!detalle.reanalisis_de && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', alignItems: 'center', marginBottom: '.75rem' }}>
                                 <input
@@ -527,10 +527,22 @@ const VistaBot = ({ bot, op, total, mostrarJson, setMostrarJson }: {
     return (
         <div>
             <div className="eb-guardada-head">
-                <span className={`eb-badge ${badgeBot(bot.veredicto, bot.motivo?.texto).cls}`}>{badgeBot(bot.veredicto, bot.motivo?.texto).label}</span>
+                <span className={`eb-badge ${badgeBot(bot.veredicto, bot.motivo?.texto, bot.modoSombra === false, bot.accion).cls}`}>{badgeBot(bot.veredicto, bot.motivo?.texto, bot.modoSombra === false, bot.accion).label}</span>
+                {bot.modoSombra === false && bot.ejecucion?.dryRun && <span className="eb-tag-prueba">SIMULADO (dryRun)</span>}
                 {op && <span className={`eb-cmp ${op.veredicto === bot.veredicto ? 'eb-cmp-ok' : 'eb-cmp-no'}`}>{op.veredicto === bot.veredicto ? 'coincide con la operadora' : 'difiere de la operadora'}</span>}
                 <span className="eb-hint">confianza {bot.confianza ?? '—'} · {bot.modelo ?? ''} · {bot.duracionMs ?? '—'} ms</span>
             </div>
+            {bot.ejecucion && (() => {
+                const ej = bot.ejecucion as any
+                const partes: string[] = []
+                if (ej.toma) partes.push(ej.toma.tomada ? 'tomado en Expendio' : `NO tomado: ${ej.toma.mensaje}`)
+                if (bot.modoSombra === false) partes.push(`acción ${bot.accion ?? '—'}${ej.dryRun ? ' (simulada, no se mandó)' : ''}`)
+                if (ej.motivoNoEjecuta) partes.push(ej.motivoNoEjecuta)
+                if (ej.respuesta?.mensaje) partes.push(`Andes: ${ej.respuesta.mensaje}`)
+                if (ej.auditoria) partes.push('pasó a auditoría')
+                if (ej.error) partes.push(`error: ${ej.error}`)
+                return <Campo label="Ejecución" valor={partes.join(' · ')} />
+            })()}
             {bot.motivo?.texto && bot.veredicto !== 'CODIFICAR' && <Campo label="Motivo" valor={bot.motivo.texto} igual={cmp(op?.motivo?.texto, bot.motivo.texto)} />}
             {bot.detalle && <Campo label="Detalle" valor={bot.detalle} />}
             <Campo label="Prestador" valor={fmtRef(bot.prestador)} igual={cmp(op?.prestador?.id, bot.prestador?.id)} />
