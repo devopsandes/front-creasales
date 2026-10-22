@@ -62,12 +62,14 @@ const EstudiosBot = () => {
   const [incluirPruebas, setIncluirPruebas] = useState(false)
   const [incluirReanalisis, setIncluirReanalisis] = useState(false)
   const [soloReales, setSoloReales] = useState(false)
+  // Las operadoras arrancan viendo lo que tienen que resolver.
+  const [estado, setEstado] = useState('PENDIENTE')
 
   const cargar = useCallback(async (p = 1) => {
     setCargando(true)
     setError(null)
     try {
-      const r = await listarEstudios({ page: p, limit, q, veredicto, revision, incluirPruebas, incluirReanalisis, soloReales })
+      const r = await listarEstudios({ page: p, limit, q, veredicto, revision, incluirPruebas, incluirReanalisis, soloReales, estado })
       if (!Array.isArray(r.items)) throw new Error(r.message ?? 'No se pudo obtener el listado')
       setItems(r.items)
       setTotal(r.total ?? 0)
@@ -77,9 +79,9 @@ const EstudiosBot = () => {
     } finally {
       setCargando(false)
     }
-  }, [q, veredicto, revision, incluirPruebas, incluirReanalisis, soloReales, limit])
+  }, [q, veredicto, revision, incluirPruebas, incluirReanalisis, soloReales, estado, limit])
 
-  useEffect(() => { cargar(1) }, [veredicto, revision, incluirPruebas, incluirReanalisis, soloReales]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { cargar(1) }, [veredicto, revision, incluirPruebas, incluirReanalisis, soloReales, estado]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
@@ -104,6 +106,15 @@ const EstudiosBot = () => {
               onKeyDown={(e) => e.key === 'Enter' && cargar(1)}
               placeholder="Buscar..."
             />
+          </div>
+          <div className="eb-filter-group eb-filter-sm">
+            <label className="eb-filter-label">Estado</label>
+            <select className="eb-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
+              <option value="PENDIENTE">Pendientes de resolver</option>
+              <option value="RESUELTO">Resueltos</option>
+              <option value="SOMBRA">Sombra (histórico)</option>
+              <option value="">Todos</option>
+            </select>
           </div>
           <div className="eb-filter-group eb-filter-sm">
             <label className="eb-filter-label">Bot</label>
@@ -162,7 +173,7 @@ const EstudiosBot = () => {
                 <th className="eb-th">Prestador</th>
                 <th className="eb-th">Bot</th>
                 <th className="eb-th">Motivo</th>
-                <th className="eb-th eb-th-center">Revisión</th>
+                <th className="eb-th eb-th-center">Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -190,9 +201,18 @@ const EstudiosBot = () => {
                     <td className="eb-td"><span className={`eb-badge ${cfg.cls}`}>{cfg.label}</span></td>
                     <td className="eb-td eb-td-motivo">{it.bot_veredicto === 'CODIFICAR' ? '' : (it.bot_motivo ?? '—')}</td>
                     <td className="eb-td eb-td-center">
-                      {it.op_fecha
+                      {it.estado === 'PENDIENTE' && <span className="eb-badge eb-badge-violeta">Pendiente</span>}
+                      {it.estado === 'RECIBIDO' && <span className="eb-pendiente">Analizando...</span>}
+                      {it.estado === 'RESUELTO' && it.resuelto_por === 'OPERADORA' && (
+                        <span className="eb-revisada" title={`${it.op_usuario_nombre ?? ''} · ${formatFecha(it.op_fecha)}${it.campos_modificados?.length ? ` · corrigió ${it.campos_modificados.join(', ')}` : ''}`}>
+                          <FaCheck /> {it.op_usuario_nombre?.split(' ')[0] ?? 'Operadora'}{it.campos_modificados?.length ? ' ✎' : ''}
+                        </span>
+                      )}
+                      {it.estado === 'RESUELTO' && it.resuelto_por === 'BOT' && <span className="eb-hint" style={{ margin: 0 }}>Bot solo</span>}
+                      {it.estado === 'RESUELTO' && it.resuelto_por === 'EXPENDIO' && <span className="eb-hint" style={{ margin: 0 }}>En Expendio</span>}
+                      {(!it.estado || it.estado === 'SOMBRA') && (it.op_fecha
                         ? <span className="eb-revisada" title={`${it.op_usuario_nombre ?? ''} · ${formatFecha(it.op_fecha)}`}><FaCheck /> {it.op_usuario_nombre?.split(' ')[0] ?? 'Sí'}</span>
-                        : <span className="eb-pendiente">Pendiente</span>}
+                        : <span className="eb-pendiente">Sin revisar</span>)}
                     </td>
                   </tr>
                 )

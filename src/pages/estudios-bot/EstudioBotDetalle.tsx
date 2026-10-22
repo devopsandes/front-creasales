@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt, FaSync } from "react-icons/fa"
 import LupaSelector from "./LupaSelector"
-import { VEREDICTO_CFG, badgeBot, formatFecha } from "./EstudiosBot"
+import TrabajoPendiente from "./TrabajoPendiente"
+import { ACCION_CFG, VEREDICTO_CFG, badgeBot, formatFecha } from "./EstudiosBot"
 import {
     buscarDiagnosticos, buscarEfectores, buscarPrestaciones, buscarPrestadores, buscarSolicitantes,
     guardarComentarioFinal, guardarRevision, obtenerEstudio, obtenerImagenEstudio, obtenerMotivosRechazo, reanalizarEstudio,
@@ -68,7 +69,8 @@ const EstudioBotDetalle = () => {
         setCargando(true)
         setError(null)
         try {
-            const d = await obtenerEstudio(id, claveOpcional)
+            // trabajar=true: si está pendiente, lo vuelve a tomar en Expendio.
+            const d = await obtenerEstudio(id, claveOpcional, true)
             if (!d.id) throw new Error(d.message ?? 'No se pudo cargar el estudio')
             setDetalle(d)
             if (!d.operadora) {
@@ -236,7 +238,12 @@ const EstudioBotDetalle = () => {
                     </div>
                     {bot && (
                         <div className="eb-cab-veredicto">
-                            <span className="eb-label">Bot</span>
+                            {detalle.estado === 'PENDIENTE' && <span className="eb-badge eb-badge-violeta">PENDIENTE DE RESOLVER</span>}
+                            {detalle.resueltoPor === 'OPERADORA' && op && (
+                                <span className={`eb-badge eb-badge-lg ${ACCION_CFG[bot.accion ?? '']?.cls ?? ''}`}>{ACCION_CFG[bot.accion ?? '']?.label ?? bot.accion} por {op.usuario.nombre ?? '—'}</span>
+                            )}
+                            {detalle.resueltoPor === 'EXPENDIO' && <span className="eb-badge eb-badge-amarillo">RESUELTO EN EXPENDIO</span>}
+                            <span className="eb-label">{detalle.estado === 'PENDIENTE' ? 'Propuesta del bot' : 'Bot'}</span>
                             <span className={`eb-badge eb-badge-lg ${badgeBot(bot.veredicto, bot.motivo?.texto, bot.modoSombra === false, bot.accion).cls}`}>{badgeBot(bot.veredicto, bot.motivo?.texto, bot.modoSombra === false, bot.accion).label}</span>
                             {bot.motivo?.texto && bot.veredicto !== 'CODIFICAR' && <span className="eb-cab-motivo">{bot.motivo.texto}</span>}
                         </div>
@@ -261,10 +268,23 @@ const EstudioBotDetalle = () => {
                 <div className="eb-col-derecha">
                     {/* Formulario de la operadora */}
                     <div className="eb-card">
-                        <div className="eb-card-title">Datos de la orden (operadora)</div>
+                        <div className="eb-card-title">
+                            {detalle.estado === 'PENDIENTE' ? 'Resolver este pedido' : detalle.resueltoPor === 'OPERADORA' ? `Resuelto por ${op?.usuario.nombre ?? 'operadora'}` : 'Datos de la orden (operadora)'}
+                        </div>
 
-                        {op ? (
-                            <RevisionGuardada op={op} total={detalle.opTotal} />
+                        {detalle.estado === 'PENDIENTE' && bot ? (
+                            <TrabajoPendiente detalle={detalle} motivos={motivos} avisar={avisar} onResuelto={(d) => setDetalle(d)} />
+                        ) : op ? (
+                            <>
+                                <RevisionGuardada op={op} total={detalle.opTotal} accion={detalle.resueltoPor === 'OPERADORA' ? bot?.accion : null} />
+                                {detalle.resueltoPor === 'OPERADORA' && (
+                                    <span className="eb-hint" style={{ marginTop: '.5rem' }}>
+                                        {(detalle.camposModificados ?? []).length
+                                            ? <span style={{ color: '#991b1b', fontWeight: 600 }}>Corrigió al bot en: {detalle.camposModificados!.join(', ')}</span>
+                                            : 'Confirmó la propuesta del bot sin cambios'}
+                                    </span>
+                                )}
+                            </>
                         ) : (
                             <>
                                 <LupaSelector
@@ -375,7 +395,7 @@ const EstudioBotDetalle = () => {
 
                     {/* Lo del bot */}
                     <div className="eb-card">
-                        <div className="eb-card-title">{bot?.modoSombra === false ? 'Lo que hizo el bot' : 'Lo que hubiera hecho el bot'}</div>
+                        <div className="eb-card-title">{detalle.estado === 'PENDIENTE' ? 'Propuesta del bot (detalle)' : detalle.resueltoPor === 'OPERADORA' ? 'Lo que había propuesto el bot' : bot?.modoSombra === false ? 'Lo que hizo el bot' : 'Lo que hubiera hecho el bot'}</div>
                         {!detalle.reanalisis_de && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', alignItems: 'center', marginBottom: '.75rem' }}>
                                 <input
@@ -409,7 +429,7 @@ const EstudioBotDetalle = () => {
                             <>
                                 <VistaBot bot={bot} op={op} total={detalle.botTotal} mostrarJson={mostrarJson} setMostrarJson={setMostrarJson} />
 
-                                {op && (
+                                {op && detalle.resueltoPor !== 'OPERADORA' && (
                                     <div className="eb-final">
                                         <div className="eb-subtitle">Ahora que viste lo del bot, ¿qué opinás?</div>
                                         {op.comentarioFinalFecha ? (
@@ -495,10 +515,12 @@ const solicitanteBot = (bot: DecisionBot): string => {
     return `No encontrado (leído: ${nombre ?? '—'}${mat ? `, Mat. ${mat}` : ''})`
 }
 
-const RevisionGuardada = ({ op, total }: { op: RevisionOperadora; total?: string | null }) => (
+const RevisionGuardada = ({ op, total, accion }: { op: RevisionOperadora; total?: string | null; accion?: string | null }) => (
     <div>
         <div className="eb-guardada-head">
-            <span className={`eb-badge ${VEREDICTO_CFG[op.veredicto]?.cls ?? ''}`}>{VEREDICTO_CFG[op.veredicto]?.label ?? op.veredicto}</span>
+            {accion && ACCION_CFG[accion]
+                ? <span className={`eb-badge ${ACCION_CFG[accion].cls}`}>{ACCION_CFG[accion].label}</span>
+                : <span className={`eb-badge ${VEREDICTO_CFG[op.veredicto]?.cls ?? ''}`}>{VEREDICTO_CFG[op.veredicto]?.label ?? op.veredicto}</span>}
             <span className="eb-hint">Guardado por {op.usuario.nombre ?? '—'} · {formatFecha(op.fecha)}{op.vioBotAntes ? ' · vio lo del bot antes' : ''}</span>
         </div>
         {op.motivo?.texto && <Campo label="Motivo" valor={op.motivo.texto} />}

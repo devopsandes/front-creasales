@@ -48,6 +48,9 @@ export interface EstudioListaItem {
     modo_reanalisis?: string | null
     modo_sombra?: boolean
     accion?: string | null
+    estado?: 'RECIBIDO' | 'PENDIENTE' | 'RESUELTO' | 'SOMBRA'
+    resuelto_por?: 'BOT' | 'OPERADORA' | 'EXPENDIO' | null
+    campos_modificados?: string[] | null
 }
 
 export interface EstudiosListaResponse {
@@ -118,6 +121,15 @@ export interface EstudioDetalle {
     operadora: RevisionOperadora | null
     bot: DecisionBot | null
     botVisible: boolean
+    estado?: 'RECIBIDO' | 'PENDIENTE' | 'RESUELTO' | 'SOMBRA'
+    resueltoPor?: 'BOT' | 'OPERADORA' | 'EXPENDIO' | null
+    camposModificados?: string[]
+    /** Al abrir un pendiente: si se pudo volver a tomar en Expendio. */
+    bloqueo?: { tomada: boolean; mensaje: string } | null
+}
+
+export interface ResolverBody extends GuardarRevisionBody {
+    accion: Veredicto
 }
 
 export interface GuardarRevisionBody {

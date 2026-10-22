@@ -3,7 +3,7 @@ import axios from "axios"
 import { resolveClient } from "../apiClient"
 import {
     CatDiagnostico, CatEfector, CatMotivo, CatPrestacion, CatPrestador, CatSolicitante,
-    EstudioDetalle, EstudiosListaResponse, GuardarRevisionBody,
+    EstudioDetalle, EstudiosListaResponse, GuardarRevisionBody, ResolverBody,
 } from "../../interfaces/estudios-bot.interface"
 
 const client = resolveClient("bot")
@@ -27,6 +27,7 @@ export interface ListarParams {
     incluirPruebas?: boolean
     incluirReanalisis?: boolean
     soloReales?: boolean
+    estado?: string
 }
 
 export const listarEstudios = (params: ListarParams) =>
@@ -41,12 +42,22 @@ export const listarEstudios = (params: ListarParams) =>
                 ...(params.incluirPruebas ? { incluirPruebas: 'true' } : {}),
                 ...(params.incluirReanalisis ? { incluirReanalisis: 'true' } : {}),
                 ...(params.soloReales ? { soloReales: 'true' } : {}),
+                ...(params.estado ? { estado: params.estado } : {}),
             },
         }))
 
-export const obtenerEstudio = (id: string, clave?: string) =>
+/** `trabajar`: en un pendiente, vuelve a tomar el pedido en Expendio antes de mostrarlo. */
+export const obtenerEstudio = (id: string, clave?: string, trabajar = false) =>
     handle<EstudioDetalle & { message?: string }>(() =>
-        client.get(`/estudios-bot/${id}`, { params: clave ? { clave } : {} }))
+        client.get(`/estudios-bot/${id}`, { params: { ...(clave ? { clave } : {}), ...(trabajar ? { trabajar: 'true' } : {}) } }))
+
+export const resolverEstudio = (id: string, body: ResolverBody) =>
+    handle<EstudioDetalle & { message?: string | string[] }>(() =>
+        client.post(`/estudios-bot/${id}/resolver`, body))
+
+export const precioPrestacion = (idConvenio: string, idCodigo: string, idAfiliado: string, idProfesional: string) =>
+    handle<{ importeConvenido?: number | null; coseguro?: number | null; message?: string }>(() =>
+        client.get('/estudios-bot/catalogos/prestaciones/precio', { params: { idConvenio, idCodigo, idAfiliado, idProfesional } }))
 
 export const obtenerImagenEstudio = (id: string) =>
     handle<{ statusCode: number; url?: string; message?: string }>(() =>
