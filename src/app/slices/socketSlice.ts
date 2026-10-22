@@ -96,6 +96,11 @@ const socketSlice = createSlice({
         socket.on("connect", handleConnect);
         socket.on("disconnect", handleDisconnect);
         socket.on("connect_error", handleConnectError);
+        // Diagnóstico: el back manda socket.pulse cada 30 s; contestamos para que
+        // el servidor sepa si este navegador está recibiendo eventos. Sin efecto visible.
+        socket.on("socket.pulse", (p: any) => {
+          try { socket?.emit("socket.pulse.ack", { at: p?.at ?? null, clientAt: Date.now() }); } catch { /* noop */ }
+        });
         listenersAttached = true;
       }
 
