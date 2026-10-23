@@ -242,7 +242,7 @@ const EstudioBotDetalle = () => {
                             {detalle.resueltoPor === 'OPERADORA' && op && (
                                 <span className={`eb-badge eb-badge-lg ${ACCION_CFG[bot.accion ?? '']?.cls ?? ''}`}>{ACCION_CFG[bot.accion ?? '']?.label ?? bot.accion} por {op.usuario.nombre ?? '—'}</span>
                             )}
-                            {detalle.resueltoPor === 'EXPENDIO' && <span className="eb-badge eb-badge-amarillo">RESUELTO EN EXPENDIO</span>}
+                            {detalle.resueltoPor === 'EXPENDIO' && <span className="eb-badge eb-badge-amarillo">{detalle.expendio?.estado === 'CODIFICADA' ? 'CODIFICADO' : detalle.expendio?.estado === 'RECHAZADA' ? 'RECHAZADO' : 'RESUELTO'} EN EXPENDIO</span>}
                             <span className="eb-label">{detalle.estado === 'PENDIENTE' ? 'Propuesta del bot' : 'Bot'}</span>
                             <span className={`eb-badge eb-badge-lg ${badgeBot(bot.veredicto, bot.motivo?.texto, bot.modoSombra === false, bot.accion).cls}`}>{badgeBot(bot.veredicto, bot.motivo?.texto, bot.modoSombra === false, bot.accion).label}</span>
                             {bot.motivo?.texto && bot.veredicto !== 'CODIFICAR' && <span className="eb-cab-motivo">{bot.motivo.texto}</span>}
@@ -274,6 +274,13 @@ const EstudioBotDetalle = () => {
 
                         {detalle.estado === 'PENDIENTE' && bot ? (
                             <TrabajoPendiente detalle={detalle} motivos={motivos} avisar={avisar} onResuelto={(d) => setDetalle(d)} />
+                        ) : detalle.resueltoPor === 'EXPENDIO' ? (
+                            <div>
+                                <div className="eb-error-banner" style={{ background: '#fffbeb', borderColor: '#fcd34d', color: '#92400e', margin: 0 }}>
+                                    <span>Este pedido se resolvió desde Expendio{detalle.expendio?.mensaje ? `: ${detalle.expendio.mensaje}` : ''}. No hay nada que hacer acá.</span>
+                                </div>
+                                <span className="eb-hint" style={{ marginTop: '.75rem' }}>Abajo queda lo que había propuesto el bot, para comparar.</span>
+                            </div>
                         ) : op ? (
                             <>
                                 <RevisionGuardada op={op} total={detalle.opTotal} accion={detalle.resueltoPor === 'OPERADORA' ? bot?.accion : null} />

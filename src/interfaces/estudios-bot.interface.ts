@@ -125,7 +125,9 @@ export interface EstudioDetalle {
     resueltoPor?: 'BOT' | 'OPERADORA' | 'EXPENDIO' | null
     camposModificados?: string[]
     /** Al abrir un pendiente: si se pudo volver a tomar en Expendio. */
-    bloqueo?: { tomada: boolean; mensaje: string } | null
+    bloqueo?: { tomada: boolean; estado?: string; mensaje: string } | null
+    /** Si se resolvió desde Expendio: qué dijo Andes (quién y cuándo). */
+    expendio?: { estado: string; mensaje: string; visto: string } | null
 }
 
 export interface ResolverBody extends GuardarRevisionBody {

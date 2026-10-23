@@ -209,7 +209,7 @@ const EstudiosBot = () => {
                         </span>
                       )}
                       {it.estado === 'RESUELTO' && it.resuelto_por === 'BOT' && <span className="eb-hint" style={{ margin: 0 }}>Bot solo</span>}
-                      {it.estado === 'RESUELTO' && it.resuelto_por === 'EXPENDIO' && <span className="eb-hint" style={{ margin: 0 }}>En Expendio</span>}
+                      {it.estado === 'RESUELTO' && it.resuelto_por === 'EXPENDIO' && <span className="eb-hint" style={{ margin: 0 }}>{it.accion === 'CODIFICADA' ? 'Codificado' : it.accion === 'RECHAZADA' ? 'Rechazado' : 'Resuelto'} en Expendio</span>}
                       {(!it.estado || it.estado === 'SOMBRA') && (it.op_fecha
                         ? <span className="eb-revisada" title={`${it.op_usuario_nombre ?? ''} · ${formatFecha(it.op_fecha)}`}><FaCheck /> {it.op_usuario_nombre?.split(' ')[0] ?? 'Sí'}</span>
                         : <span className="eb-pendiente">Sin revisar</span>)}
