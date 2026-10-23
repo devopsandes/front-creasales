@@ -90,8 +90,8 @@ const EstudiosBot = () => {
       <div className="eb-header">
         <h2 className="eb-header-title">Estudios médicos analizados por el bot</h2>
         <p className="eb-header-description">
-          Cada pedido que el bot analizó en sombra. Abrí uno, completá el formulario como en Expendio y guardá:
-          recién ahí se muestra lo que hubiera hecho el bot.
+          Los pedidos que entran por WhatsApp. El bot los lee y propone qué hacer; abrí uno, corregí lo que haga falta y confirmá.
+          Lo que confirmás se manda a Andes y el pedido sale de la lista de Expendio.
         </p>
       </div>
 
