@@ -205,6 +205,8 @@ const EstudioBotDetalle = () => {
     const bot = detalle.bot
     const idConvenioOp = prestador.id ?? detalle.prestador.id ?? ''
     const idAfiliado = detalle.id_afiliado ?? ''
+    const exp = detalle.afiliadoExpendio ?? null
+    const colorAfiliado = exp?.colorFondo && exp.colorFondo.toUpperCase() !== '#FFFFFF' ? exp.colorFondo : null
 
     return (
         <div className="eb-wrapper">
@@ -212,7 +214,7 @@ const EstudioBotDetalle = () => {
                 <button className="eb-btn-link" onClick={() => navigate('/dashboard/estudios-bot')}><FaArrowLeft /> Volver al listado</button>
                 <div className="eb-cabecera">
                     <div>
-                        <div className="eb-cab-nombre">
+                        <div className="eb-cab-nombre" style={colorAfiliado ? { background: colorAfiliado, padding: '2px 10px', borderRadius: 6, display: 'inline-block' } : undefined}>
                             {detalle.afiliado_nombre ?? '—'}{' '}
                             {detalle.es_prueba && <span className="eb-tag-prueba">PRUEBA</span>}
                             {bot?.modoSombra === false && <span className="eb-tag-prueba" style={{ background: '#1b7f4b', color: '#fff' }}>REAL</span>}
@@ -229,6 +231,36 @@ const EstudioBotDetalle = () => {
                             Categoría: <b>{detalle.afiliadoCategoria ?? 'desconocida'}</b>
                             {detalle.botTope && <> · Tope por estudio: <b>{fmtPesos(detalle.botTope)}</b></>}
                         </div>
+
+                        {exp && (
+                            <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, border: '1px solid #e5e7eb', background: colorAfiliado ? `${colorAfiliado}55` : '#fafafa', borderLeft: colorAfiliado ? `6px solid ${colorAfiliado}` : undefined }}>
+                                <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, color: '#6b7280', marginBottom: 6 }}>
+                                    Afiliado en Expendio{colorAfiliado && <> · color <b style={{ color: '#111' }}>{colorAfiliado}</b></>}
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 24, rowGap: 2, fontSize: 13 }}>
+                                    {[
+                                        ['Apellido y nombre', exp.afiliado], ['Nº Afiliado', exp.numAfiliado],
+                                        ['Fec. Nac.', exp.fecNac], ['Est. civil', exp.estadoCivil],
+                                        ['Vig. Opción', exp.vigOpcion], ['Est. afiliación', exp.estadoAfiliacion],
+                                        ['Parentesco', exp.parentesco], ['Edad', exp.edad],
+                                        ['Nacionalidad', exp.nacionalidad], ['Per. Baja', exp.periodoBaja],
+                                        ['Plan prestacional', exp.planPrestacional], ['Obra social', exp.obraSocial],
+                                        ['Prestador', exp.prestador], ['Leído', formatFecha(exp.leidoEn)],
+                                    ].map(([k, v]) => (
+                                        <div key={k}><span style={{ color: '#6b7280' }}>{k}:</span> <b>{v || '—'}</b></div>
+                                    ))}
+                                </div>
+                                {exp.viasClinicas?.length > 0 && (
+                                    <div style={{ marginTop: 8, fontSize: 13 }}>
+                                        <span style={{ color: '#6b7280' }}>Vías clínicas:</span>
+                                        <ul style={{ margin: '2px 0 0 18px', padding: 0 }}>
+                                            {exp.viasClinicas.map((v, i) => <li key={i}>{v}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {detalle.reanalisis_de && (
                             <div className="eb-cab-sub">
                                 <span className="eb-tag-prueba">REANÁLISIS</span> modo <b>{detalle.modo_reanalisis}</b> ·{' '}

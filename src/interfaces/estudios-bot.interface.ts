@@ -1,5 +1,27 @@
 // src/interfaces/estudios-bot.interface.ts
 
+/** Lo que Expendio muestra del afiliado (pestañas General y Vías clínicas), leído al tomar la orden. */
+export interface AfiliadoExpendio {
+    afiliado: string
+    numAfiliado: string
+    fecNac: string
+    estadoCivil: string
+    vigOpcion: string
+    estadoAfiliacion: string
+    parentesco: string
+    edad: string
+    nacionalidad: string
+    periodoBaja: string
+    planPrestacional: string
+    obraSocial: string
+    prestador: string
+    /** "#FFFFFF" = sin color. */
+    colorFondo: string
+    viasClinicas: string[]
+    imagenes: string[]
+    leidoEn: string
+}
+
 export type Veredicto = 'CODIFICAR' | 'RECHAZAR' | 'DERIVAR'
 
 export interface Ref {
@@ -111,6 +133,7 @@ export interface EstudioDetalle {
     es_prueba: boolean
     especialidad_bot: string | null
     afiliadoCategoria?: string | null
+    afiliadoExpendio?: AfiliadoExpendio | null
     botTope?: string | null
     botTotal?: string | null
     opTotal?: string | null
