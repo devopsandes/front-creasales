@@ -1,7 +1,7 @@
 // encuestas.api.ts — llamadas a emisivos para la pestaña Encuestas (encuestas para afiliados de Andes Salud).
 // Contrato del backend: docs/encuestas.md en el repo de Emisivos (secciones "ABM" y "Encuestas públicas").
 
-import { JSON_HEADERS, URL_EMISIVOS, pedir } from '../banner.api';
+import { JSON_HEADERS, URL_EMISIVOS, pedir, pedirArchivo } from '../banner.api';
 import type { DatosFormularioCampania, MailCampania } from '../campanias/campanias.api';
 
 /** Quién la responde: los DNI de una lista, todos los afiliados vigentes (en la app) o cualquiera con el link (solo web). */
@@ -376,5 +376,9 @@ export const mandarPruebaMail = async (id: number, mails: string[]): Promise<Res
   return respuesta.data ?? [];
 };
 
-/** Excel con dos hojas: "Respuestas" y "No respondieron" (en una pública, una sola: "Registros"). Se descarga abriendo el link. */
-export const urlExportarEncuesta = (id: number): string => `${URL_EMISIVOS}/encuestas/${id}/exportar`;
+/**
+ * Excel con dos hojas: "Respuestas" y "No respondieron" (en una pública, una sola: "Registros"). Lo baja con el token
+ * (pide sesión); devuelve el nombre del archivo.
+ */
+export const exportarEncuesta = (id: number): Promise<string> =>
+  pedirArchivo(`/encuestas/${id}/exportar`, `encuesta-${id}.xlsx`);

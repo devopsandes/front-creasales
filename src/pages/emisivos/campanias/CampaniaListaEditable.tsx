@@ -7,7 +7,7 @@ import type { FormEvent } from 'react';
 import { FaPlus, FaUndo, FaUserMinus } from 'react-icons/fa';
 import { agregarDestinatarios, obtenerCampania, quitarDestinatario, restaurarDestinatario } from './campanias.api';
 import type { Campania, DestinatarioFila } from './campanias.api';
-import { FILTROS_LISTA, MAX_AGREGAR, numero } from './campaniasOpciones';
+import { FILTROS_LISTA, MAX_AGREGAR, cruzaConPadron, numero } from './campaniasOpciones';
 import { useListaPersonas } from './useListaPersonas';
 import { BuscadorPersonas, PaginadoPersonas } from './ListaPersonasControles';
 
@@ -30,6 +30,8 @@ const CampaniaListaEditable = ({ campania, onCampania, onAviso }: ListaEditableP
   const [agregando, setAgregando] = useState(false);
 
   const esAfiliados = campania.tipoDestinatario === 'afiliados';
+  // Ex afiliados: se cruzan con el padrón como afiliados (no encontrados = descartados), pero sin la columna de la app.
+  const conPadron = cruzaConPadron(campania.tipoDestinatario);
 
   const cambiar = async (fila: DestinatarioFila, accion: 'quitar' | 'restaurar') => {
     setOcupadoId(fila.id);
@@ -77,7 +79,7 @@ const CampaniaListaEditable = ({ campania, onCampania, onAviso }: ListaEditableP
       <BuscadorPersonas
         valor={lista.buscarEscrito}
         onCambiar={lista.setBuscarEscrito}
-        filtros={FILTROS_LISTA.filter((f) => esAfiliados || f.valor !== 'descartados')}
+        filtros={FILTROS_LISTA.filter((f) => conPadron || f.valor !== 'descartados')}
         filtro={filtro}
         onFiltro={lista.setFiltro}
       />
@@ -144,7 +146,7 @@ const CampaniaListaEditable = ({ campania, onCampania, onAviso }: ListaEditableP
           Agregar personas{' '}
           <span className="campanias-ayuda">
             (una por línea: DNI, CUIL o mail; hasta {numero(MAX_AGREGAR)}.{' '}
-            {esAfiliados
+            {conPadron
               ? 'Se cruzan con el padrón igual que la lista. Si alguien ya estaba de baja, no encontrado o quitado, se lo vuelve a cruzar.'
               : 'A prestadores, cada una necesita su mail. Si ya está en la lista (por CUIT o por mail), no se repite.'}
             )

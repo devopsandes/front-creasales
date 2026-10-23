@@ -1,11 +1,13 @@
-// campanias.api.ts — llamadas a emisivos para la pestaña Campañas (push, mail y banner a afiliados o prestadores).
+// campanias.api.ts — llamadas a emisivos para la pestaña Campañas (push, mail y banner a afiliados; mail a prestadores
+// y ex afiliados).
 // Contrato del backend: docs/campanias.md en el repo de Emisivos.
 
-import { JSON_HEADERS, URL_EMISIVOS, pedir } from '../banner.api';
+import { JSON_HEADERS, URL_EMISIVOS, pedir, pedirArchivo } from '../banner.api';
 import type { PlantillaBanner } from '../banner.api';
 
 export type EstadoCampania = 'BORRADOR' | 'PROCESANDO_LISTA' | 'LISTA' | 'ENVIANDO' | 'PAUSADA' | 'TERMINADA' | 'CANCELADA';
-export type TipoDestinatario = 'afiliados' | 'prestadores';
+/** exafiliados (23/10/2026): dados de baja del padrón, solo mail. */
+export type TipoDestinatario = 'afiliados' | 'prestadores' | 'exafiliados';
 export type PlantillaMail = 'aviso' | 'beneficio' | 'informativo' | 'simple';
 export type CanalCampania = 'push' | 'mail' | 'banner';
 
@@ -452,5 +454,6 @@ export const obtenerEstadisticas = async (id: number): Promise<EstadisticasCampa
   return respuesta.data;
 };
 
-/** Excel con una fila por persona y todas las fechas. Se descarga abriendo el link. */
-export const urlExportarCampania = (id: number): string => `${URL_EMISIVOS}/campanias/${id}/exportar`;
+/** Excel con una fila por persona y todas las fechas. Lo baja con el token (pide sesión); devuelve el nombre del archivo. */
+export const exportarCampania = (id: number): Promise<string> =>
+  pedirArchivo(`/campanias/${id}/exportar`, `campania-${id}.xlsx`);

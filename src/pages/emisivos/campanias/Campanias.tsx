@@ -28,6 +28,7 @@ import {
   claseEstado,
   esEditable,
   etiquetaEstado,
+  etiquetaTipo,
   fechaCorta,
   fechaHora,
   numero,
@@ -163,7 +164,7 @@ const Campanias = () => {
         <div>
           <h1 className="campanias-title">Campañas</h1>
           <p className="campanias-subtitle">
-            Mandá push, mail y banner a afiliados (o mail a prestadores) con una lista de DNIs, CUILs o mails. Antes de enviar a todos hay
+            Mandá push, mail y banner a afiliados (o mail a prestadores y ex afiliados) con una lista de DNIs, CUILs o mails. Antes de enviar a todos hay
             que mandar una prueba del mismo contenido. Después ves cuántos lo recibieron, lo leyeron y lo abrieron.
           </p>
         </div>
@@ -212,7 +213,7 @@ const Campanias = () => {
                   ))}
                 </div>
                 <div className="campanias-info-linea">
-                  {campania.tipoDestinatario === 'afiliados' ? 'Afiliados' : 'Prestadores'}
+                  {etiquetaTipo(campania.tipoDestinatario)}
                   {campania.resumen?.personas !== undefined
                     ? ` · ${numero(campania.resumen.personas)} ${campania.resumen.personas === 1 ? 'persona' : 'personas'}`
                     : ' · Sin lista todavía'}

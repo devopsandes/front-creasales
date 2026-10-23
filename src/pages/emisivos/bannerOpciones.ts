@@ -68,6 +68,8 @@ export const PANTALLAS_APP = [
   { valor: 'misDatos', etiqueta: 'Mis datos' },
   { valor: 'configuracion', etiqueta: 'Configuración' },
   { valor: 'encuesta', etiqueta: 'Encuesta pendiente (app 7.1.6 en adelante)' },
+  // 23/10/2026: misma clave que la app (pantallasBanner.ts) y emisivos (PANTALLAS). Receta en emisivos/docs/banners.md.
+  { valor: 'beneficios', etiqueta: 'Club de beneficios (app 7.1.8 en adelante)' },
 ];
 
 export const nombrePantalla = (pantalla: string): string =>

@@ -1,7 +1,7 @@
 // CampaniaPasoDatos.tsx — paso 1 del asistente: nombre, a quién va y por qué canales.
 
 import type { CanalCampania, DatosFormularioCampania, TipoDestinatario } from './campanias.api';
-import { CANALES, LARGOS, TIPOS_DESTINATARIO } from './campaniasOpciones';
+import { CANALES, LARGOS, TIPOS_DESTINATARIO, esSoloMail, etiquetaTipo } from './campaniasOpciones';
 
 interface PasoDatosProps {
   datos: DatosFormularioCampania;
@@ -13,7 +13,7 @@ interface PasoDatosProps {
 
 const AYUDA_CANAL: Record<CanalCampania, string> = {
   push: 'Notificación al celular (y al buzón de la app). Solo afiliados con la app.',
-  mail: 'Mail con una plantilla de Andes. Sirve para afiliados y prestadores.',
+  mail: 'Mail con una plantilla de Andes. Sirve para afiliados, prestadores y ex afiliados.',
   banner: 'Banner en el Home de la app, solo para los DNIs de la lista.',
 };
 
@@ -22,8 +22,8 @@ const CampaniaPasoDatos = ({ datos, onCambiar, bloqueado, deshabilitado }: PasoD
     onCambiar((prev) => ({
       ...prev,
       tipoDestinatario: tipo,
-      // Los prestadores no tienen la app: queda solo el mail.
-      canales: tipo === 'prestadores' ? { push: false, mail: true, banner: false } : prev.canales,
+      // Los prestadores y los ex afiliados no tienen la app: queda solo el mail.
+      canales: esSoloMail(tipo) ? { push: false, mail: true, banner: false } : prev.canales,
     }));
   };
 
@@ -31,7 +31,7 @@ const CampaniaPasoDatos = ({ datos, onCambiar, bloqueado, deshabilitado }: PasoD
     onCambiar((prev) => ({ ...prev, canales: { ...prev.canales, [canal]: !prev.canales[canal] } }));
   };
 
-  const soloMail = datos.tipoDestinatario === 'prestadores';
+  const soloMail = esSoloMail(datos.tipoDestinatario);
 
   return (
     <div className="campanias-paso">
@@ -84,7 +84,7 @@ const CampaniaPasoDatos = ({ datos, onCambiar, bloqueado, deshabilitado }: PasoD
                 />
                 <span>
                   <strong>{canal.etiqueta}</strong>
-                  <span className="campanias-ayuda">{noDisponible ? 'No disponible para prestadores.' : AYUDA_CANAL[canal.valor]}</span>
+                  <span className="campanias-ayuda">{noDisponible ? `No disponible para ${etiquetaTipo(datos.tipoDestinatario).toLowerCase()}.` : AYUDA_CANAL[canal.valor]}</span>
                 </span>
               </label>
             );

@@ -3,7 +3,7 @@
 import carita from '../carita-andes.png';
 import CampaniaContador from './CampaniaContador';
 import type { DatosFormularioCampania } from './campanias.api';
-import { LARGOS, esLinkDeCampania } from './campaniasOpciones';
+import { LARGOS, esLinkDePush } from './campaniasOpciones';
 
 interface ContenidoPushProps {
   push: DatosFormularioCampania['push'];
@@ -13,7 +13,7 @@ interface ContenidoPushProps {
 
 const CampaniaContenidoPush = ({ push, onCambiar, deshabilitado }: ContenidoPushProps) => {
   const link = push.link.trim();
-  const linkInvalido = link !== '' && !esLinkDeCampania(link);
+  const linkInvalido = link !== '' && !esLinkDePush(link);
 
   return (
     <div className="campanias-seccion-columnas">
@@ -56,8 +56,8 @@ const CampaniaContenidoPush = ({ push, onCambiar, deshabilitado }: ContenidoPush
         </label>
         {linkInvalido && (
           <p className="campanias-aviso">
-            El link tiene que ser https de andessalud.com.ar o andessalud.ar, o un WhatsApp de Argentina (https://wa.me/54...). Si no, no se
-            va a poder guardar.
+            El link tiene que ser https de andessalud.com.ar o andessalud.ar (la app no abre WhatsApp desde una push). Si no, no se va a
+            poder guardar.
           </p>
         )}
       </div>

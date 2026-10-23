@@ -91,6 +91,37 @@ export async function pedir<T>(ruta: string, init: RequestInit = {}): Promise<Re
   return data;
 }
 
+/**
+ * Baja un archivo de emisivos (los Excel) con el token de la sesión: un <a href> no puede mandar Authorization y desde el
+ * 23/10/2026 el ABM la pide. El nombre sale de Content-Disposition si CORS deja leerlo; si no, el que se pasa.
+ * Devuelve el nombre con el que se bajó. Lanza Error con el mensaje del backend.
+ */
+export async function pedirArchivo(ruta: string, nombrePorDefecto: string): Promise<string> {
+  const token = localStorage.getItem('token') || '';
+  const response = await fetch(`${URL_EMISIVOS}${ruta}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!response.ok) {
+    let mensaje = `Error ${response.status}`;
+    try {
+      mensaje = ((await response.json()) as RespuestaEmisivos<never>).meta?.message || mensaje;
+    } catch {
+      // sin cuerpo JSON: queda el código
+    }
+    throw new Error(mensaje);
+  }
+  const blob = await response.blob();
+  const nombre = /filename="?([^";]+)"?/i.exec(response.headers.get('Content-Disposition') ?? '')?.[1] || nombrePorDefecto;
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nombre;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // Se libera después: algunos navegadores todavía están leyendo el blob cuando vuelve el click.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  return nombre;
+}
+
 /** El alta y la edición van en multipart porque llevan la imagen y la lista de DNIs como archivos. */
 const armarFormData = (datos: DatosFormularioBanner): FormData => {
   const formData = new FormData();

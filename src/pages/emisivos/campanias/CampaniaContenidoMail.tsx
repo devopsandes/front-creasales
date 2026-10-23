@@ -7,7 +7,16 @@ import { FaEye, FaPlus, FaTrash } from 'react-icons/fa';
 import CampaniaContador from './CampaniaContador';
 import { urlImagenCampania } from './campanias.api';
 import type { Campania, DatosFormularioCampania, PlantillaMail } from './campanias.api';
-import { LARGOS, MAX_TARJETAS, PLANTILLAS_MAIL, REMITENTES_POR_DEFECTO, esLinkDeCampania, errorDeImagenMail, tarjetaVacia } from './campaniasOpciones';
+import {
+  LARGOS,
+  MAX_TARJETAS,
+  PLANTILLAS_MAIL,
+  REMITENTES_POR_DEFECTO,
+  esLinkDeCampania,
+  esLinkInstagram,
+  errorDeImagenMail,
+  tarjetaVacia,
+} from './campaniasOpciones';
 
 /** La imagen que se va a guardar con la campaña: una recién elegida, o quitar la que ya tenía. */
 export interface CambioImagen {
@@ -75,7 +84,7 @@ const CampaniaContenidoMail = ({
   const botonObligatorio = mail.plantilla === 'aviso' || mail.plantilla === 'beneficio';
   const opcionesRemitente = remitentes.length > 0 ? remitentes : REMITENTES_POR_DEFECTO;
   const botonLink = mail.botonLink.trim();
-  const linkInvalido = botonLink !== '' && !esLinkDeCampania(botonLink);
+  const linkInvalido = botonLink !== '' && !esLinkDeCampania(botonLink) && !esLinkInstagram(botonLink);
 
   const cambiarTarjeta = (clave: number, campo: 'titulo' | 'texto', valor: string) => {
     onCambiar({ tarjetas: mail.tarjetas.map((t) => (t.clave === clave ? { ...t, [campo]: valor } : t)) });
@@ -202,7 +211,8 @@ const CampaniaContenidoMail = ({
           </div>
           {linkInvalido && (
             <p className="campanias-aviso">
-              El link tiene que ser https de andessalud.com.ar o andessalud.ar, o un WhatsApp de Argentina (https://wa.me/54...).
+              El link tiene que ser https de andessalud.com.ar o andessalud.ar, un WhatsApp de Argentina (https://wa.me/54...) o
+              Instagram (https://www.instagram.com/...).
             </p>
           )}
         </fieldset>

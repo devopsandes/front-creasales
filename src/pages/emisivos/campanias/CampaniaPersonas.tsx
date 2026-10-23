@@ -2,7 +2,7 @@
 // tocó el botón, leyó la push o no tiene la app, sin tener que bajar el Excel. Mismos datos que el Excel, de a 50.
 
 import type { Campania, DestinatarioFila } from './campanias.api';
-import { FILTROS_PERSONAS, fechaHora } from './campaniasOpciones';
+import { FILTROS_PERSONAS, cruzaConPadron, fechaHora } from './campaniasOpciones';
 import { useListaPersonas } from './useListaPersonas';
 import { BuscadorPersonas, PaginadoPersonas } from './ListaPersonasControles';
 
@@ -54,7 +54,10 @@ const CampaniaPersonas = ({ campania, actualizadoAt }: PersonasProps) => {
   const { filas, buscar, filtro, cargando, error } = lista;
   const { canales } = campania;
   const esAfiliados = campania.tipoDestinatario === 'afiliados';
-  const filtros = FILTROS_PERSONAS.filter((f) => (!f.canal || canales[f.canal]) && (!f.soloAfiliados || esAfiliados));
+  const conPadron = cruzaConPadron(campania.tipoDestinatario);
+  const filtros = FILTROS_PERSONAS.filter(
+    (f) => (!f.canal || canales[f.canal]) && (!f.soloAfiliados || esAfiliados) && (!f.conPadron || conPadron),
+  );
   const columnas = 4 + (esAfiliados ? 1 : 0) + (canales.push ? 1 : 0) + (canales.mail ? 1 : 0) + (canales.banner ? 1 : 0);
 
   return (

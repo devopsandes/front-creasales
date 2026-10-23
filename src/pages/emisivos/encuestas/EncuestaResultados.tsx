@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FaDownload, FaFilePdf, FaTimes } from 'react-icons/fa';
 import EncuestaRegistros from './EncuestaRegistros';
-import { obtenerResultados, traerRegistrosPublicos, urlExportarEncuesta } from './encuestas.api';
+import { exportarEncuesta, obtenerResultados, traerRegistrosPublicos } from './encuestas.api';
 import type { PreguntaResultado, ResumenEncuesta, ResultadosEncuesta } from './encuestas.api';
 import { audienciaDe, nombreTipo, porcentaje } from './encuestasOpciones';
 import { MAX_REGISTROS_INFORME, armarInformeEncuesta } from './informeEncuesta';
@@ -92,6 +92,7 @@ const EncuestaResultados = ({ encuesta, onCerrar, onAviso }: EncuestaResultadosP
   const [resultados, setResultados] = useState<ResultadosEncuesta | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [armandoInforme, setArmandoInforme] = useState(false);
+  const [bajandoExcel, setBajandoExcel] = useState(false);
 
   // ¿Sigue abierta la pantalla? Si se cierra mientras se arma el informe, se corta el armado y no se baja nada ni se avisa.
   const montado = useRef(true);
@@ -149,6 +150,19 @@ const EncuestaResultados = ({ encuesta, onCerrar, onAviso }: EncuestaResultadosP
       if (!cerrado()) onAviso('error', `No se pudo armar el informe: ${err instanceof Error ? err.message : 'error de conexión'}`);
     } finally {
       if (montado.current) setArmandoInforme(false);
+    }
+  };
+
+  /** Excel con el token de la sesión (un link común no lo manda). Los errores salen por el mismo aviso. */
+  const descargarExcel = async () => {
+    setBajandoExcel(true);
+    try {
+      const nombre = await exportarEncuesta(encuesta.id);
+      if (montado.current) onAviso('success', `Excel descargado: ${nombre}`);
+    } catch (err) {
+      if (montado.current) onAviso('error', `No se pudo bajar el Excel: ${err instanceof Error ? err.message : 'error de conexión'}`);
+    } finally {
+      if (montado.current) setBajandoExcel(false);
     }
   };
 
@@ -212,9 +226,15 @@ const EncuestaResultados = ({ encuesta, onCerrar, onAviso }: EncuestaResultadosP
                   </>
                 )}
                 <div className="encuestas-resumen-descargas">
-                  <a className="encuestas-btn encuestas-btn-primario" href={urlExportarEncuesta(encuesta.id)} rel="noopener noreferrer" download>
-                    <FaDownload /> Descargar Excel
-                  </a>
+                  <button
+                    type="button"
+                    className="encuestas-btn encuestas-btn-primario"
+                    onClick={() => void descargarExcel()}
+                    disabled={bajandoExcel}
+                    aria-busy={bajandoExcel}
+                  >
+                    <FaDownload /> {bajandoExcel ? 'Bajando el Excel…' : 'Descargar Excel'}
+                  </button>
                   <button
                     type="button"
                     className="encuestas-btn encuestas-btn-primario"

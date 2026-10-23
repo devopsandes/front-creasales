@@ -4,7 +4,14 @@
 // párrafos, tabla del envío y listas de personas (las muy largas van a dos columnas).
 
 import type { Campania, DestinatarioFila, EstadisticasCampania, FiltroLista } from './campanias.api';
-import { etiquetaEstado, numero, textoPorcentaje } from './campaniasOpciones';
+import { cruzaConPadron, etiquetaEstado, numero, textoPorcentaje } from './campaniasOpciones';
+
+/** Cómo se nombra a la gente de la lista en el informe, según el tipo de campaña. */
+const NOMBRE_PERSONA = {
+  afiliados: { plural: 'afiliados', singular: 'Afiliado' },
+  prestadores: { plural: 'prestadores', singular: 'Prestador' },
+  exafiliados: { plural: 'ex afiliados', singular: 'Ex afiliado' },
+} as const;
 
 /** Tope de filas por lista de personas: más que eso engorda el PDF sin que nadie lo lea. El detalle completo está en el Excel. */
 export const MAX_FILAS_POR_LISTA = 1000;
@@ -267,8 +274,9 @@ const lista = (partes: string[]): string => (partes.length > 1 ? `${partes.slice
  */
 export const armarInforme = (campania: Campania, stats: EstadisticasCampania, listas: ListasInforme, ahora: Date): InformeCampania => {
   const { canales } = campania;
-  const esAfiliados = campania.tipoDestinatario === 'afiliados';
-  const personaPlural = esAfiliados ? 'afiliados' : 'prestadores';
+  const conPadron = cruzaConPadron(campania.tipoDestinatario);
+  const nombrePersona = NOMBRE_PERSONA[campania.tipoDestinatario] ?? NOMBRE_PERSONA.afiliados;
+  const personaPlural = nombrePersona.plural;
   const vigentes = stats.lista.OK ?? 0;
   const descartadas = Math.max(0, stats.total - vigentes);
   const pushRecibida = stats.push.recibieron + stats.push.enBuzon;
@@ -303,7 +311,7 @@ export const armarInforme = (campania: Campania, stats: EstadisticasCampania, li
   parrafos.push(`Campaña a **${personaPlural}** por ${lista(nombresCanales) || 'ningún canal'}.`);
 
   const motivos: string[] = [];
-  if (esAfiliados) {
+  if (conPadron) {
     if ((stats.lista.BAJA_PADRON ?? 0) > 0) motivos.push(`${numero(stats.lista.BAJA_PADRON ?? 0)} de baja en el padrón`);
     if ((stats.lista.NO_ENCONTRADO ?? 0) > 0) motivos.push(`${numero(stats.lista.NO_ENCONTRADO ?? 0)} no encontrados`);
     if ((stats.lista.SIN_DNI ?? 0) > 0) motivos.push(`${numero(stats.lista.SIN_DNI ?? 0)} sin DNI ni CUIL`);
@@ -393,7 +401,7 @@ export const armarInforme = (campania: Campania, stats: EstadisticasCampania, li
   if (canales.banner) notas.push(NOTA_BANNER);
 
   // --- Listas de personas (solo las que aplican y tienen gente).
-  const persona = esAfiliados ? 'Afiliado' : 'Prestador';
+  const persona = nombrePersona.singular;
   const secciones: SeccionInforme[] = [];
   const agregar = (seccion: SeccionInforme | null) => {
     if (seccion) secciones.push(seccion);
@@ -406,7 +414,7 @@ export const armarInforme = (campania: Campania, stats: EstadisticasCampania, li
       seccionSimple(
         { titulo: 'Pidieron no recibir más mails', lista: listas.mail_baja, filtro: 'mail_baja' },
         {
-          columnas: ['Nombre', esAfiliados ? 'Mail / DNI' : 'Mail', 'Cuándo'],
+          columnas: ['Nombre', conPadron ? 'Mail / DNI' : 'Mail', 'Cuándo'],
           dato: mailODni,
           cuando: (f) => f.mailBajaAt,
           nota: 'Usaron el enlace de baja del pie del mail. Quedan excluidos de los próximos envíos masivos. Si hace falta que sigan recibiendo avisos operativos, hay que contactarlos por otro canal.',

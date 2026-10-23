@@ -6,9 +6,18 @@ import type { ChangeEvent, FormEvent } from 'react';
 import { FaUpload } from 'react-icons/fa';
 import { cargarListaArchivo, cargarListaTexto } from './campanias.api';
 import type { Campania } from './campanias.api';
-import { ACEPTA_LISTA, anchoBarra, errorDeArchivoLista, lineasResumen, numero } from './campaniasOpciones';
+import { ACEPTA_LISTA, anchoBarra, cruzaConPadron, errorDeArchivoLista, lineasResumen, numero } from './campaniasOpciones';
 import { useConfirmacion } from '../useConfirmacion';
 import CampaniaListaEditable from './CampaniaListaEditable';
+
+/** Qué pasa con la lista según a quién va la campaña. */
+const AYUDA_CRUCE = {
+  afiliados:
+    'Cada persona se cruza con el padrón de Andes: los que están de baja o no figuran no reciben nada, y de ahí salen el CUIL, el mail (si la lista no lo trae), el nombre del saludo y si es titular o familiar.',
+  exafiliados:
+    'Cada persona se cruza con el padrón de Andes: reciben los que están de baja (y los vigentes); los que no figuran no reciben nada. Del padrón salen el CUIL, el mail (si la lista no lo trae) y el nombre del saludo. Alcanza con una columna de CUILs.',
+  prestadores: 'A los prestadores la lista se les usa tal cual, así que cada fila necesita su mail.',
+} as const;
 
 interface PasoListaProps {
   campania: Campania;
@@ -28,7 +37,7 @@ const CampaniaPasoLista = ({ campania, onCampania, onAviso }: PasoListaProps) =>
   const [cargando, setCargando] = useState(false);
 
   const procesando = campania.estado === 'PROCESANDO_LISTA';
-  const esAfiliados = campania.tipoDestinatario === 'afiliados';
+  const conPadron = cruzaConPadron(campania.tipoDestinatario);
   const tieneLista = campania.resumen !== null && campania.resumen !== undefined;
   const puedeCargar = !procesando && (modo === 'archivo' ? archivo !== null : texto.trim() !== '');
 
@@ -93,7 +102,7 @@ const CampaniaPasoLista = ({ campania, onCampania, onAviso }: PasoListaProps) =>
             <div className="campanias-barra-relleno" style={{ width: `${anchoBarra(hechos, total)}%` }} />
           </div>
           <span className="campanias-ayuda">
-            {numero(hechos)} de {numero(total)} {esAfiliados ? '(se cruza cada persona con el padrón de Andes, puede tardar unos minutos)' : ''}
+            {numero(hechos)} de {numero(total)} {conPadron ? '(se cruza cada persona con el padrón de Andes, puede tardar unos minutos)' : ''}
           </span>
         </div>
       )}
@@ -128,9 +137,7 @@ const CampaniaPasoLista = ({ campania, onCampania, onAviso }: PasoListaProps) =>
           <strong>CUIL</strong> (o CUIT), <strong>Mail</strong> (o Correo) y <strong>Nombre</strong> (o Apellido). Si no tiene títulos, tiene
           que ser una sola columna que puede mezclar DNIs, CUILs y mails. Se descartan las filas inválidas y los repetidos, y los mails mal
           escritos (dominio mal tipeado, con ñ, de relleno) se descartan y quedan contados en el resumen.{' '}
-          {esAfiliados
-            ? 'Cada persona se cruza con el padrón de Andes: los que están de baja o no figuran no reciben nada, y de ahí salen el CUIL, el mail (si la lista no lo trae), el nombre del saludo y si es titular o familiar.'
-            : 'A los prestadores la lista se les usa tal cual, así que cada fila necesita su mail.'}
+          {AYUDA_CRUCE[campania.tipoDestinatario] ?? AYUDA_CRUCE.afiliados}
         </p>
 
         <div className="campanias-modo" role="group" aria-label="Cómo cargar la lista">

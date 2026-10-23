@@ -8,6 +8,13 @@ import type { Campania } from './campanias.api';
 import { numero } from './campaniasOpciones';
 import { useConfirmacion } from '../useConfirmacion';
 
+/** Quiénes cuentan como vigentes, según a quién va la campaña. */
+const ACLARACION_VIGENTES = {
+  afiliados: ' (afiliados que están en el padrón)',
+  exafiliados: ' (de baja o vigentes en el padrón)',
+  prestadores: ' (prestadores de la lista)',
+} as const;
+
 interface PasoEnviarProps {
   campania: Campania;
   /** Se llama cuando emisivos aceptó el envío (la campaña ya está en ENVIANDO). */
@@ -65,7 +72,7 @@ const CampaniaPasoEnviar = ({ campania, onEnviada }: PasoEnviarProps) => {
             <span className="campanias-llegada-numero">{numero(vigentes)}</span>
             <span>
               {vigentes === 1 ? 'persona vigente' : 'personas vigentes'}
-              {campania.tipoDestinatario === 'afiliados' ? ' (afiliados que están en el padrón)' : ' (prestadores de la lista)'}
+              {ACLARACION_VIGENTES[campania.tipoDestinatario] ?? ACLARACION_VIGENTES.afiliados}
             </span>
           </li>
           {push && (

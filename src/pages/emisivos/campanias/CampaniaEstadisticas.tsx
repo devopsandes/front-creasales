@@ -13,10 +13,20 @@ import {
   pausarCampania,
   reanudarCampania,
   traerTodasLasPersonas,
-  urlExportarCampania,
+  exportarCampania,
 } from './campanias.api';
 import type { Campania, EstadisticasCampania } from './campanias.api';
-import { anchoBarra, canalesActivos, claseEstado, etiquetaEstado, fechaHora, numero, textoPorcentaje } from './campaniasOpciones';
+import {
+  anchoBarra,
+  canalesActivos,
+  claseEstado,
+  cruzaConPadron,
+  etiquetaEstado,
+  etiquetaTipo,
+  fechaHora,
+  numero,
+  textoPorcentaje,
+} from './campaniasOpciones';
 import { useConfirmacion } from '../useConfirmacion';
 import CampaniaPersonas from './CampaniaPersonas';
 import { armarInforme, listasNecesarias, topeParaFiltro } from './informeCampania';
@@ -76,6 +86,7 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
   const [actualizadoAt, setActualizadoAt] = useState<string | null>(null);
   /** Mientras se arma el informe PDF: cuántos pasos van (estadísticas y una lista por vez). null si no se está armando. */
   const [armandoInforme, setArmandoInforme] = useState<{ hechos: number; total: number | null } | null>(null);
+  const [bajandoExcel, setBajandoExcel] = useState(false);
 
   const id = inicial.id;
 
@@ -171,6 +182,19 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
     }
   };
 
+  /** Excel con el token de la sesión (un link común no lo manda). Los errores salen por el mismo aviso. */
+  const descargarExcel = async () => {
+    setBajandoExcel(true);
+    try {
+      const nombre = await exportarCampania(id);
+      if (montado.current) onAviso('success', `Excel descargado: ${nombre}`);
+    } catch (err) {
+      if (montado.current) onAviso('error', `No se pudo bajar el Excel: ${err instanceof Error ? err.message : 'error de conexión'}`);
+    } finally {
+      if (montado.current) setBajandoExcel(false);
+    }
+  };
+
   const { canales } = campania;
   const esAfiliados = campania.tipoDestinatario === 'afiliados';
 
@@ -187,9 +211,10 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
           <Tarjeta titulo="Lista" subtitulo="Sobre todas las personas de la lista.">
             <Destacado valor={numero(s.total)} texto={s.total === 1 ? 'persona en la lista' : 'personas en la lista'} />
             <Fila etiqueta="Vigentes" cantidad={vigentes} base={s.total} ayuda="Les corresponde recibir la campaña" />
-            {esAfiliados && (
+            {cruzaConPadron(campania.tipoDestinatario) && (
               <>
-                <Fila etiqueta="De baja en el padrón" cantidad={s.lista.BAJA_PADRON ?? 0} base={s.total} />
+                {/* A los ex afiliados la baja les cuenta como vigente: esa fila no va. */}
+                {esAfiliados && <Fila etiqueta="De baja en el padrón" cantidad={s.lista.BAJA_PADRON ?? 0} base={s.total} />}
                 <Fila etiqueta="No encontrados" cantidad={s.lista.NO_ENCONTRADO ?? 0} base={s.total} />
                 {(s.lista.SIN_DNI ?? 0) > 0 && (
                   <Fila
@@ -383,7 +408,7 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
                 ))}
               </span>
               <span className="campanias-info-linea">
-                {campania.tipoDestinatario === 'afiliados' ? 'Afiliados' : 'Prestadores'}
+                {etiquetaTipo(campania.tipoDestinatario)}
                 {campania.enviadaAt ? ` · Enviada el ${fechaHora(campania.enviadaAt)}` : ''}
                 {campania.terminadaAt ? ` · ${campania.estado === 'CANCELADA' ? 'Cancelada' : 'Terminó'} el ${fechaHora(campania.terminadaAt)}` : ''}
               </span>
@@ -415,14 +440,15 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
               <button className="campanias-btn campanias-btn-secundario campanias-btn-chico" onClick={() => void refrescar()} disabled={cargando || ocupado}>
                 <FaSync /> Actualizar
               </button>
-              <a
+              <button
+                type="button"
                 className="campanias-btn campanias-btn-primario campanias-btn-chico"
-                href={urlExportarCampania(campania.id)}
-                rel="noopener noreferrer"
-                download
+                onClick={() => void descargarExcel()}
+                disabled={bajandoExcel}
+                aria-busy={bajandoExcel}
               >
-                <FaDownload /> Descargar Excel
-              </a>
+                <FaDownload /> {bajandoExcel ? 'Bajando el Excel…' : 'Descargar Excel'}
+              </button>
               <button
                 type="button"
                 className="campanias-btn campanias-btn-primario campanias-btn-chico"

@@ -44,18 +44,37 @@ export const CANALES: { valor: CanalCampania; etiqueta: string }[] = [
   { valor: 'banner', etiqueta: 'Banner' },
 ];
 
-export const TIPOS_DESTINATARIO: { valor: TipoDestinatario; etiqueta: string; ayuda: string }[] = [
+export const TIPOS_DESTINATARIO: { valor: TipoDestinatario; etiqueta: string; corta: string; ayuda: string }[] = [
   {
     valor: 'afiliados',
     etiqueta: 'Afiliados',
+    corta: 'Afiliados',
     ayuda: 'Cada persona se cruza con el padrón de Andes: los que están de baja o no figuran no reciben nada. Pueden ir push, mail y banner.',
   },
   {
     valor: 'prestadores',
     etiqueta: 'Prestadores',
+    corta: 'Prestadores',
     ayuda: 'La lista se usa tal cual (sin cruzar con el padrón). Los prestadores no tienen la app: solo se les manda mail.',
   },
+  {
+    // 23/10/2026, pedido de Karen: mandarle a los dados de baja el link de una encuesta pública.
+    valor: 'exafiliados',
+    etiqueta: 'Ex afiliados (dados de baja)',
+    corta: 'Ex afiliados',
+    ayuda:
+      'Para escribirle a quien ya no es afiliado (por ejemplo, con el link de una encuesta pública). Se cruza con el padrón y reciben los que están de baja (y los vigentes); se usa el mail del padrón si la lista no lo trae. Solo mail.',
+  },
 ];
+
+/** Prestadores y ex afiliados: solo mail (no tienen la app de afiliado). */
+export const esSoloMail = (tipo: TipoDestinatario): boolean => tipo === 'prestadores' || tipo === 'exafiliados';
+
+/** Afiliados y ex afiliados se cruzan con el padrón (no encontrados, sin DNI); los prestadores van tal cual. */
+export const cruzaConPadron = (tipo: TipoDestinatario): boolean => tipo === 'afiliados' || tipo === 'exafiliados';
+
+/** "Afiliados", "Prestadores" o "Ex afiliados", para la tabla y los encabezados. */
+export const etiquetaTipo = (tipo: TipoDestinatario): string => TIPOS_DESTINATARIO.find((t) => t.valor === tipo)?.corta ?? tipo;
 
 export const ESTADOS: Record<EstadoCampania, { etiqueta: string; clase: string }> = {
   BORRADOR: { etiqueta: 'Borrador', clase: 'borrador' },
@@ -185,6 +204,25 @@ export const esLinkDeCampania = (link: string): boolean => linkLoAbreLaApp(link)
 
 const MENSAJE_LINK = 'tiene que ser https de andessalud.com.ar o andessalud.ar, o un WhatsApp de Argentina (https://wa.me/54...)';
 
+/**
+ * Link de la push (revisión 23/10/2026): solo de Andes, como esLinkDePush() de emisivos. La app no abre WhatsApp desde
+ * una push (solo desde un banner): con WhatsApp el afiliado veía "No pudimos abrir el link".
+ */
+export const esLinkDePush = (link: string): boolean => linkLoAbreLaApp(link);
+
+export const MENSAJE_LINK_PUSH = 'tiene que ser https de andessalud.com.ar o andessalud.ar (la app no abre WhatsApp desde una push)';
+
+/**
+ * Instagram, solo en el botón del mail (23/10/2026): mismo criterio que esLinkInstagram() de emisivos (instagram.com o
+ * www.instagram.com; l.instagram.com no, redirige a cualquier sitio). En la push y el banner no, hasta que la app lo
+ * deje abrir (7.1.8).
+ */
+const REGEX_INSTAGRAM = /^https:\/\/(www\.)?instagram\.com([/?#][^\s]*)?$/i;
+export const esLinkInstagram = (link: string): boolean => REGEX_INSTAGRAM.test(link);
+
+const MENSAJE_LINK_BOTON =
+  'tiene que ser https de andessalud.com.ar o andessalud.ar, un WhatsApp de Argentina (https://wa.me/54...) o Instagram (https://www.instagram.com/...)';
+
 const REGEX_MAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
@@ -200,6 +238,9 @@ export const errorDeCampania = (datos: DatosFormularioCampania): string | null =
   if (datos.tipoDestinatario === 'prestadores' && (canales.push || canales.banner)) {
     return 'A los prestadores solo se les manda mail: no tienen la app (ni push ni banner).';
   }
+  if (datos.tipoDestinatario === 'exafiliados' && (canales.push || canales.banner)) {
+    return 'A los ex afiliados solo se les manda mail: la app es para afiliados vigentes (ni push ni banner).';
+  }
 
   if (canales.push) {
     const titulo = limpiar(datos.push.titulo);
@@ -209,7 +250,7 @@ export const errorDeCampania = (datos: DatosFormularioCampania): string | null =
     if (titulo.length > LARGOS.pushTitulo) return `El título de la push puede tener hasta ${LARGOS.pushTitulo} caracteres.`;
     if (!cuerpo) return 'La push necesita un texto.';
     if (cuerpo.length > LARGOS.pushCuerpo) return `El texto de la push puede tener hasta ${LARGOS.pushCuerpo} caracteres.`;
-    if (link && !esLinkDeCampania(link)) return `El link de la push ${MENSAJE_LINK}.`;
+    if (link && !esLinkDePush(link)) return `El link de la push ${MENSAJE_LINK_PUSH}.`;
   }
 
   if (canales.mail) {
@@ -231,7 +272,7 @@ export const errorDeCampania = (datos: DatosFormularioCampania): string | null =
     if (mail.plantilla !== 'simple') {
       if (Boolean(botonTexto) !== Boolean(botonLink)) return 'El botón necesita texto y link (o ninguno de los dos).';
       if (botonTexto.length > LARGOS.botonTexto) return `El texto del botón puede tener hasta ${LARGOS.botonTexto} caracteres.`;
-      if (botonLink && !esLinkDeCampania(botonLink)) return `El link del botón ${MENSAJE_LINK}.`;
+      if (botonLink && !esLinkDeCampania(botonLink) && !esLinkInstagram(botonLink)) return `El link del botón ${MENSAJE_LINK_BOTON}.`;
       if ((mail.plantilla === 'aviso' || mail.plantilla === 'beneficio') && !botonLink) {
         return `La plantilla "${mail.plantilla}" lleva un botón con texto y link.`;
       }
@@ -316,7 +357,8 @@ export const canalesActivos = (campania: Pick<Campania, 'canales'>): { valor: Ca
 
 /**
  * El resumen de la lista como una sola frase corta por dato: "1.215 cargados", "39 sin mail", "12 de baja en el padrón"...
- * Lo del padrón solo se muestra a afiliados (los prestadores no se cruzan). Lo que vale cero y es un descarte
+ * Lo del padrón solo se muestra a afiliados (los prestadores no se cruzan; a los ex afiliados, solo los que no figuran o no
+ * tienen DNI: la baja les cuenta). Lo que vale cero y es un descarte
  * (inválidos, repetidos, mails mal escritos) no se muestra.
  */
 export const lineasResumen = (resumen: ResumenLista, tipo: TipoDestinatario): string[] => {
@@ -337,6 +379,10 @@ export const lineasResumen = (resumen: ResumenLista, tipo: TipoDestinatario): st
     sumar(resumen.conApp, (n) => `${numero(n)} con la app`);
     sumar(resumen.titulares, (n) => `${numero(n)} ${n === 1 ? 'titular' : 'titulares'}`);
     sumar(resumen.familiares, (n) => `${numero(n)} ${n === 1 ? 'familiar' : 'familiares'}`);
+  }
+  if (tipo === 'exafiliados') {
+    sumar(resumen.noEncontrados, (n) => `${numero(n)} no encontrados en el padrón`);
+    sumar(resumen.sinDni, (n) => `${numero(n)} sin DNI ni CUIL (no se pudieron cruzar con el padrón)`, true);
   }
   if (resumen.invalidas) {
     const filas = resumen.filasInvalidas ?? [];
@@ -361,8 +407,17 @@ export const FILTROS_LISTA: { valor: FiltroLista; etiqueta: string }[] = [
   { valor: 'descartados', etiqueta: 'Descartados por el padrón' },
 ];
 
-/** Filtros de la tabla de personas de Estadísticas; `canal` = solo se muestra si la campaña lleva ese canal. */
-export const FILTROS_PERSONAS: { valor: FiltroLista; etiqueta: string; canal?: CanalCampania; soloAfiliados?: boolean }[] = [
+/**
+ * Filtros de la tabla de personas de Estadísticas; `canal` = solo se muestra si la campaña lleva ese canal; `soloAfiliados`
+ * = solo a afiliados (la app); `conPadron` = a afiliados y ex afiliados (los que se cruzan con el padrón).
+ */
+export const FILTROS_PERSONAS: {
+  valor: FiltroLista;
+  etiqueta: string;
+  canal?: CanalCampania;
+  soloAfiliados?: boolean;
+  conPadron?: boolean;
+}[] = [
   { valor: 'todos', etiqueta: 'Todos' },
   // Incluye a los que tocaron el botón sin que se registre la apertura (imágenes bloqueadas): por eso puede dar más que el
   // número "Abrieron" de arriba, que cuenta solo aperturas (revisión 13/10).
@@ -375,7 +430,7 @@ export const FILTROS_PERSONAS: { valor: FiltroLista; etiqueta: string; canal?: C
   { valor: 'push_no_leyeron', etiqueta: 'No leyeron la push', canal: 'push' },
   { valor: 'sin_app', etiqueta: 'Sin la app', soloAfiliados: true },
   { valor: 'quitados', etiqueta: 'Quitados a mano' },
-  { valor: 'descartados', etiqueta: 'Descartados por el padrón', soloAfiliados: true },
+  { valor: 'descartados', etiqueta: 'Descartados por el padrón', conPadron: true },
 ];
 
 /** Las opciones de la ventana "¿A quiénes se lo reenviás?", en el orden en que se muestran. */

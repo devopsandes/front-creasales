@@ -7,7 +7,15 @@ import type { ChangeEvent } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import { errorDeImagen } from '../bannerOpciones';
 import type { PlantillaMail } from '../campanias/campanias.api';
-import { LARGOS, MAX_TARJETAS, PLANTILLAS_MAIL, REMITENTES_POR_DEFECTO, esLinkDeCampania, tarjetaVacia } from '../campanias/campaniasOpciones';
+import {
+  LARGOS,
+  MAX_TARJETAS,
+  PLANTILLAS_MAIL,
+  REMITENTES_POR_DEFECTO,
+  esLinkDeCampania,
+  esLinkInstagram,
+  tarjetaVacia,
+} from '../campanias/campaniasOpciones';
 import type { MailFormulario } from './encuestas.api';
 
 /** La imagen que se va a subir al guardar la encuesta: una recién elegida, o quitar la que ya tenía. */
@@ -66,7 +74,7 @@ const EncuestaMailEditor = ({
   const botonObligatorio = mail.plantilla === 'aviso' || mail.plantilla === 'beneficio';
   const opcionesRemitente = remitentes.length > 0 ? remitentes : REMITENTES_POR_DEFECTO;
   const botonLink = mail.botonLink.trim();
-  const linkInvalido = botonLink !== '' && !esLinkDeCampania(botonLink);
+  const linkInvalido = botonLink !== '' && !esLinkDeCampania(botonLink) && !esLinkInstagram(botonLink);
 
   const cambiarTarjeta = (clave: number, campo: 'titulo' | 'texto', valor: string) => {
     onCambiar({ tarjetas: mail.tarjetas.map((t) => (t.clave === clave ? { ...t, [campo]: valor } : t)) });
@@ -178,7 +186,8 @@ const EncuestaMailEditor = ({
           </div>
           {linkInvalido && (
             <p className="encuestas-aviso">
-              El link tiene que ser https de andessalud.com.ar o andessalud.ar, o un WhatsApp de Argentina (https://wa.me/54...).
+              El link tiene que ser https de andessalud.com.ar o andessalud.ar, un WhatsApp de Argentina (https://wa.me/54...) o
+              Instagram (https://www.instagram.com/...).
             </p>
           )}
         </fieldset>
