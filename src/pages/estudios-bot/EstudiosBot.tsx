@@ -6,10 +6,11 @@ import { listarEstudios } from "../../services/estudios-bot/estudiosBot.api"
 import { EstudioListaItem, Veredicto } from "../../interfaces/estudios-bot.interface"
 import './estudios-bot.css'
 
+/** En condicional: es lo que el bot haría, no lo que pasó. */
 export const VEREDICTO_CFG: Record<Veredicto, { label: string; cls: string }> = {
-  CODIFICAR: { label: 'Codifica', cls: 'eb-badge-verde' },
-  RECHAZAR: { label: 'Rechaza', cls: 'eb-badge-rojo' },
-  DERIVAR: { label: 'Deriva', cls: 'eb-badge-amarillo' },
+  CODIFICAR: { label: 'Codificaría', cls: 'eb-badge-verde' },
+  RECHAZAR: { label: 'Rechazaría', cls: 'eb-badge-rojo' },
+  DERIVAR: { label: 'Derivaría', cls: 'eb-badge-amarillo' },
 }
 
 /**
@@ -31,10 +32,17 @@ export const ACCION_CFG: Record<string, { label: string; cls: string; row: strin
   ERROR: { label: 'ERROR', cls: 'eb-badge-rojo', row: 'eb-row-rechazar' },
 }
 
+/** Columna Estado: lo que hizo la operadora. */
+const RESULTADO_CFG: Record<string, { label: string; color: string }> = {
+  CODIFICADA: { label: 'Codificado', color: '#065f46' },
+  RECHAZADA: { label: 'Rechazado', color: '#991b1b' },
+  DERIVADA: { label: 'Derivado', color: '#92400e' },
+}
+
 export const badgeBot = (veredicto: Veredicto, motivo?: string | null, real?: boolean, accion?: string | null): { label: string; cls: string; row: string } => {
   if (real && accion && ACCION_CFG[accion]) return ACCION_CFG[accion]
   if (veredicto === 'DERIVAR' && motivo && MOTIVOS_SIN_MATCH.has(motivo)) {
-    return { label: 'Deriva (sin match)', cls: 'eb-badge-violeta', row: 'eb-row-sinmatch' }
+    return { label: 'Derivaría (sin match)', cls: 'eb-badge-violeta', row: 'eb-row-sinmatch' }
   }
   const cfg = VEREDICTO_CFG[veredicto] ?? { label: veredicto, cls: '' }
   return { ...cfg, row: `eb-row-${String(veredicto).toLowerCase()}` }
@@ -117,12 +125,12 @@ const EstudiosBot = () => {
             </select>
           </div>
           <div className="eb-filter-group eb-filter-sm">
-            <label className="eb-filter-label">Bot</label>
+            <label className="eb-filter-label">Propuesta del bot</label>
             <select className="eb-input" value={veredicto} onChange={(e) => setVeredicto(e.target.value)}>
-              <option value="">Todos</option>
-              <option value="CODIFICAR">Codifica</option>
-              <option value="RECHAZAR">Rechaza</option>
-              <option value="DERIVAR">Deriva</option>
+              <option value="">Todas</option>
+              <option value="CODIFICAR">Codificaría</option>
+              <option value="RECHAZAR">Rechazaría</option>
+              <option value="DERIVAR">Derivaría</option>
             </select>
           </div>
           <div className="eb-filter-group eb-filter-sm">
@@ -171,7 +179,7 @@ const EstudiosBot = () => {
                 <th className="eb-th">Afiliado</th>
                 <th className="eb-th">Provincia</th>
                 <th className="eb-th">Prestador</th>
-                <th className="eb-th">Bot</th>
+                <th className="eb-th">Propuesta del bot</th>
                 <th className="eb-th">Motivo</th>
                 <th className="eb-th eb-th-center">Estado</th>
               </tr>
@@ -184,10 +192,12 @@ const EstudiosBot = () => {
                 // La acción final la pisa la operadora o Expendio: en la columna "Bot" va solo lo del bot.
                 const accionBot = it.resuelto_por === 'OPERADORA' || it.resuelto_por === 'EXPENDIO' ? null : it.accion
                 const cfg = badgeBot(it.bot_veredicto, it.bot_motivo, it.modo_sombra === false, accionBot)
+                // El color de la fila dice lo que pasó; sin resultado todavía, la propuesta del bot.
+                const rowCls = it.estado === 'RESUELTO' && it.accion && ACCION_CFG[it.accion] ? ACCION_CFG[it.accion].row : cfg.row
                 return (
                   <tr
                     key={it.id}
-                    className={`eb-row ${cfg.row}`}
+                    className={`eb-row ${rowCls}`}
                     onClick={() => navigate(`/dashboard/estudios-bot/${it.id}`)}
                   >
                     <td className="eb-td eb-td-fecha">{formatFecha(it.created_at)}</td>
@@ -206,8 +216,8 @@ const EstudiosBot = () => {
                       {it.estado === 'PENDIENTE' && <span className="eb-badge eb-badge-violeta">Pendiente</span>}
                       {it.estado === 'RECIBIDO' && <span className="eb-pendiente">Analizando...</span>}
                       {it.estado === 'RESUELTO' && it.resuelto_por === 'OPERADORA' && (
-                        <span className="eb-revisada" title={`${it.op_usuario_nombre ?? ''} · ${formatFecha(it.op_fecha)}${it.campos_modificados?.length ? ` · corrigió ${it.campos_modificados.join(', ')}` : ''}`}>
-                          <FaCheck /> {it.op_usuario_nombre?.split(' ')[0] ?? 'Operadora'}{it.campos_modificados?.length ? ' ✎' : ''}
+                        <span className="eb-revisada" style={{ color: RESULTADO_CFG[it.accion ?? '']?.color ?? '#374151' }} title={`${it.op_usuario_nombre ?? ''} · ${formatFecha(it.op_fecha)}${it.campos_modificados?.length ? ` · corrigió ${it.campos_modificados.join(', ')}` : ''}`}>
+                          {RESULTADO_CFG[it.accion ?? '']?.label ?? 'Resuelto'} por {it.op_usuario_nombre?.split(' ')[0] ?? 'operadora'}{it.campos_modificados?.length ? ' ✎' : ''}
                         </span>
                       )}
                       {it.estado === 'RESUELTO' && it.resuelto_por === 'BOT' && <span className="eb-hint" style={{ margin: 0 }}>Bot solo</span>}

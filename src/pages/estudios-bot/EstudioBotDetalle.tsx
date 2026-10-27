@@ -275,7 +275,7 @@ const EstudioBotDetalle = () => {
                                 <span className={`eb-badge eb-badge-lg ${ACCION_CFG[detalle.accion ?? '']?.cls ?? ''}`}>{ACCION_CFG[detalle.accion ?? '']?.label ?? detalle.accion} por {op.usuario.nombre ?? '—'}</span>
                             )}
                             {detalle.resueltoPor === 'EXPENDIO' && <span className="eb-badge eb-badge-amarillo">{detalle.expendio?.estado === 'CODIFICADA' ? 'CODIFICADO' : detalle.expendio?.estado === 'RECHAZADA' ? 'RECHAZADO' : 'RESUELTO'} EN EXPENDIO</span>}
-                            <span className="eb-label">{detalle.estado === 'PENDIENTE' ? 'Propuesta del bot' : 'Bot'}</span>
+                            <span className="eb-label">{detalle.resueltoPor === 'BOT' ? 'Bot' : 'Propuesta del bot'}</span>
                             <span className={`eb-badge eb-badge-lg ${badgeBot(bot.veredicto, bot.motivo?.texto, bot.modoSombra === false, bot.accion).cls}`}>{badgeBot(bot.veredicto, bot.motivo?.texto, bot.modoSombra === false, bot.accion).label}</span>
                             {bot.motivo?.texto && bot.veredicto !== 'CODIFICAR' && <span className="eb-cab-motivo">{bot.motivo.texto}</span>}
                         </div>
