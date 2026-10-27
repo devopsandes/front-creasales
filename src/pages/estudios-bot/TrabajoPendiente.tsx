@@ -166,6 +166,13 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
     const botPrestaciones = bot.prestaciones.filter((p) => p.idCodigo).map((p) => `${p.descripcion} x${p.cantidad ?? 1}`).join(' · ')
     const rojo = (campo: string) => cambios.includes(campo) ? { borderLeft: '3px solid #dc2626', paddingLeft: '.5rem' } : {}
     const sesionesKine = ((bot.matchDetalle as any)?.sesionesKine ?? []) as { texto: string; pedidas: number | null; autorizadas: number }[]
+    // Mismo código cargado más de una vez. Solo aviso, no bloquea.
+    const duplicadas = Object.values(prestaciones.reduce((acc, p) => {
+        if (!p.idCodigo) return acc
+        const previa = acc[p.idCodigo]
+        acc[p.idCodigo] = previa ? { ...previa, veces: previa.veces + 1 } : { nombre: p.descripcion ?? p.codigo ?? '', veces: 1 }
+        return acc
+    }, {} as Record<string, { nombre: string; veces: number }>)).filter((d) => d.veces > 1)
 
     return (
         <div>
@@ -253,7 +260,7 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                                 {prestaciones.length === 0 && <tr><td colSpan={5} className="eb-empty-sm">Sin prestaciones</td></tr>}
                                 {prestaciones.map((p, i) => (
                                     <tr key={`${p.idCodigo}-${i}`}>
-                                        <td>{p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></td>
+                                        <td><span style={{ color: '#6b7280', fontWeight: 600 }}>{i + 1} -</span> {p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></td>
                                         <td className="eb-cod">{p.texto ?? ''}</td>
                                         <td>
                                             <input type="number" min={1} className="eb-input" style={{ padding: '.3rem .4rem', width: 60 }} value={p.cantidad || ''}
@@ -273,6 +280,11 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                         {sesionesKine.map((s, i) => (
                             <span key={i} className="eb-hint">
                                 Kinesiología: {s.pedidas ? `el pedido dice ${s.pedidas} sesiones` : 'el pedido no dice cantidad'}; se proponen {s.autorizadas}. Las restantes se autorizan después con el mismo pedido.
+                            </span>
+                        ))}
+                        {duplicadas.map((d, i) => (
+                            <span key={`dup-${i}`} className="eb-hint" style={{ color: '#b45309' }}>
+                                {d.nombre} está cargada {d.veces} veces.
                             </span>
                         ))}
                         {superaTope && (

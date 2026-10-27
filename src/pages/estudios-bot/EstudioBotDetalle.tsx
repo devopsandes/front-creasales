@@ -384,7 +384,7 @@ const EstudioBotDetalle = () => {
                                         {prestaciones.length === 0 && <tr><td colSpan={3} className="eb-empty-sm">Sin prestaciones cargadas</td></tr>}
                                         {prestaciones.map((p, i) => (
                                             <tr key={`${p.idCodigo}-${i}`}>
-                                                <td>{p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></td>
+                                                <td><span style={{ color: '#6b7280', fontWeight: 600 }}>{i + 1} -</span> {p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></td>
                                                 <td>{p.cantidad}</td>
                                                 <td><button type="button" className="eb-btn-icon-del" onClick={() => setPrestaciones((prev) => prev.filter((_, j) => j !== i))}><FaTrash /></button></td>
                                             </tr>
@@ -574,7 +574,7 @@ const RevisionGuardada = ({ op, total, accion }: { op: RevisionOperadora; total?
             <tbody>
                 {op.prestaciones.length === 0 && <tr><td colSpan={3} className="eb-empty-sm">—</td></tr>}
                 {op.prestaciones.map((p, i) => (
-                    <tr key={i}><td>{p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></td><td>{p.cantidad}</td><td>{fmtPesos(p.importeConvenido)}</td></tr>
+                    <tr key={i}><td><span style={{ color: '#6b7280', fontWeight: 600 }}>{i + 1} -</span> {p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></td><td>{p.cantidad}</td><td>{fmtPesos(p.importeConvenido)}</td></tr>
                 ))}
                 {op.prestaciones.length > 0 && (
                     <tr><td colSpan={2} style={{ textAlign: 'right' }}><b>Total convenido</b></td><td><b>{fmtPesos(total)}</b></td></tr>
@@ -638,7 +638,7 @@ const VistaBot = ({ bot, op, total, mostrarJson, setMostrarJson }: {
                         const igual = op ? (p.idCodigo ? codigosOp.has(p.idCodigo) : false) : null
                         return (
                             <tr key={i} className={igual === true ? 'eb-tr-igual' : igual === false ? 'eb-tr-distinto' : ''}>
-                                <td>{p.texto}{p.codigoEscrito ? <span className="eb-cod"> [{p.codigoEscrito}]</span> : null}</td>
+                                <td><span style={{ color: '#6b7280', fontWeight: 600 }}>{i + 1} -</span> {p.texto}{p.codigoEscrito ? <span className="eb-cod"> [{p.codigoEscrito}]</span> : null}</td>
                                 <td>{p.descripcion ? <>{p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></> : <i>sin match</i>}</td>
                                 <td>{p.cantidad}</td>
                                 <td>{fmtPesos(p.importeConvenido)}</td>
