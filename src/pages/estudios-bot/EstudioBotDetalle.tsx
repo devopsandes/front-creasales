@@ -272,7 +272,7 @@ const EstudioBotDetalle = () => {
                         <div className="eb-cab-veredicto">
                             {detalle.estado === 'PENDIENTE' && <span className="eb-badge eb-badge-violeta">PENDIENTE DE RESOLVER</span>}
                             {detalle.resueltoPor === 'OPERADORA' && op && (
-                                <span className={`eb-badge eb-badge-lg ${ACCION_CFG[bot.accion ?? '']?.cls ?? ''}`}>{ACCION_CFG[bot.accion ?? '']?.label ?? bot.accion} por {op.usuario.nombre ?? '—'}</span>
+                                <span className={`eb-badge eb-badge-lg ${ACCION_CFG[detalle.accion ?? '']?.cls ?? ''}`}>{ACCION_CFG[detalle.accion ?? '']?.label ?? detalle.accion} por {op.usuario.nombre ?? '—'}</span>
                             )}
                             {detalle.resueltoPor === 'EXPENDIO' && <span className="eb-badge eb-badge-amarillo">{detalle.expendio?.estado === 'CODIFICADA' ? 'CODIFICADO' : detalle.expendio?.estado === 'RECHAZADA' ? 'RECHAZADO' : 'RESUELTO'} EN EXPENDIO</span>}
                             <span className="eb-label">{detalle.estado === 'PENDIENTE' ? 'Propuesta del bot' : 'Bot'}</span>
@@ -315,7 +315,7 @@ const EstudioBotDetalle = () => {
                             </div>
                         ) : op ? (
                             <>
-                                <RevisionGuardada op={op} total={detalle.opTotal} accion={detalle.resueltoPor === 'OPERADORA' ? bot?.accion : null} />
+                                <RevisionGuardada op={op} total={detalle.opTotal} accion={detalle.resueltoPor === 'OPERADORA' ? detalle.accion : null} />
                                 {detalle.resueltoPor === 'OPERADORA' && (
                                     <span className="eb-hint" style={{ marginTop: '.5rem' }}>
                                         {(detalle.camposModificados ?? []).length
@@ -374,7 +374,7 @@ const EstudioBotDetalle = () => {
                                     </div>
                                     <div className="eb-prest-add-cant">
                                         <label className="eb-label">Cantidad</label>
-                                        <input type="number" min={1} className="eb-input" value={cantidadTemp} onChange={(e) => setCantidadTemp(Number(e.target.value) || 1)} />
+                                        <input type="number" min={1} className="eb-input" value={cantidadTemp || ''} onChange={(e) => setCantidadTemp(Math.max(0, Math.floor(Number(e.target.value)) || 0))} />
                                     </div>
                                     <button type="button" className="eb-btn-plus" onClick={agregarPrestacion} disabled={!prestacionTemp} title="Agregar"><FaPlus /></button>
                                 </div>
@@ -601,7 +601,8 @@ const VistaBot = ({ bot, op, total, mostrarJson, setMostrarJson }: {
                 const ej = bot.ejecucion as any
                 const partes: string[] = []
                 if (ej.toma) partes.push(ej.toma.tomada ? 'tomado en Expendio' : `NO tomado: ${ej.toma.mensaje}`)
-                if (bot.modoSombra === false) partes.push(`acción ${bot.accion ?? '—'}${ej.dryRun ? ' (simulada, no se mandó)' : ''}`)
+                if (bot.modoSombra === false && bot.accion) partes.push(`acción ${bot.accion}${ej.dryRun ? ' (simulada, no se mandó)' : ''}`)
+                if (ej.resueltoPor) partes.push(`resolvió ${ej.resueltoPor}`)
                 if (ej.motivoNoEjecuta) partes.push(ej.motivoNoEjecuta)
                 if (ej.respuesta?.mensaje) partes.push(`Andes: ${ej.respuesta.mensaje}`)
                 if (ej.auditoria) partes.push('pasó a auditoría')

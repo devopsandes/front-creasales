@@ -127,6 +127,7 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
             if (!diagnostico.id) return 'Falta el diagnóstico'
             if (!efector.id) return 'Falta el profesional efector'
             if (!prestaciones.length) return 'Agregá al menos una prestación'
+            if (prestaciones.some((p) => !p.cantidad || p.cantidad < 1)) return 'Falta la cantidad en alguna prestación'
         }
         if (cambios.length && comentario.trim().length < 5) return `Cambiaste ${cambios.join(', ')}: explicá por qué en el comentario`
         return null
@@ -164,6 +165,7 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
     const etiqueta = accion === 'CODIFICAR' ? 'Codificar' : accion === 'RECHAZAR' ? 'Rechazar' : 'Derivar'
     const botPrestaciones = bot.prestaciones.filter((p) => p.idCodigo).map((p) => `${p.descripcion} x${p.cantidad ?? 1}`).join(' · ')
     const rojo = (campo: string) => cambios.includes(campo) ? { borderLeft: '3px solid #dc2626', paddingLeft: '.5rem' } : {}
+    const sesionesKine = ((bot.matchDetalle as any)?.sesionesKine ?? []) as { texto: string; pedidas: number | null; autorizadas: number }[]
 
     return (
         <div>
@@ -241,7 +243,7 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                             </div>
                             <div className="eb-prest-add-cant">
                                 <label className="eb-label">Cantidad</label>
-                                <input type="number" min={1} className="eb-input" value={cantidadTemp} onChange={(e) => setCantidadTemp(Number(e.target.value) || 1)} />
+                                <input type="number" min={1} className="eb-input" value={cantidadTemp || ''} onChange={(e) => setCantidadTemp(Math.max(0, Math.floor(Number(e.target.value)) || 0))} />
                             </div>
                             <button type="button" className="eb-btn-plus" onClick={agregar} disabled={!prestacionTemp} title="Agregar"><FaPlus /></button>
                         </div>
@@ -254,8 +256,9 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                                         <td>{p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></td>
                                         <td className="eb-cod">{p.texto ?? ''}</td>
                                         <td>
-                                            <input type="number" min={1} className="eb-input" style={{ padding: '.3rem .4rem', width: 60 }} value={p.cantidad}
-                                                onChange={(e) => setPrestaciones((prev) => prev.map((x, j) => j === i ? { ...x, cantidad: Math.max(1, Number(e.target.value) || 1) } : x))} />
+                                            <input type="number" min={1} className="eb-input" style={{ padding: '.3rem .4rem', width: 60 }} value={p.cantidad || ''}
+                                                onChange={(e) => setPrestaciones((prev) => prev.map((x, j) => j === i ? { ...x, cantidad: Math.max(0, Math.floor(Number(e.target.value)) || 0) } : x))}
+                                                onBlur={() => setPrestaciones((prev) => prev.map((x, j) => j === i && !x.cantidad ? { ...x, cantidad: 1 } : x))} />
                                         </td>
                                         <td>{fmtPesos(p.importeConvenido)}</td>
                                         <td><button type="button" className="eb-btn-icon-del" onClick={() => setPrestaciones((prev) => prev.filter((_, j) => j !== i))} title="Quitar"><FaTrash /></button></td>
@@ -267,6 +270,11 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                             </tbody>
                         </table>
                         <Propuesta actual={cambios.includes('prestaciones') ? 'cambiado' : 'igual'} bot={cambios.includes('prestaciones') ? botPrestaciones : 'igual'} />
+                        {sesionesKine.map((s, i) => (
+                            <span key={i} className="eb-hint">
+                                Kinesiología: {s.pedidas ? `el pedido dice ${s.pedidas} sesiones` : 'el pedido no dice cantidad'}; se proponen {s.autorizadas}. Las restantes se autorizan después con el mismo pedido.
+                            </span>
+                        ))}
                         {superaTope && (
                             <div className="eb-error-banner" style={{ background: '#fffbeb', borderColor: '#fcd34d', color: '#92400e' }}>
                                 <FaExclamationTriangle /> <span>El total {fmtPesos(total)} supera el tope {fmtPesos(tope)} ({detalle.afiliadoCategoria}). Podés codificar igual.</span>

@@ -181,7 +181,9 @@ const EstudiosBot = () => {
                 <tr><td colSpan={8} className="eb-empty">No hay estudios para mostrar</td></tr>
               )}
               {items.map((it) => {
-                const cfg = badgeBot(it.bot_veredicto, it.bot_motivo, it.modo_sombra === false, it.accion)
+                // La acción final la pisa la operadora o Expendio: en la columna "Bot" va solo lo del bot.
+                const accionBot = it.resuelto_por === 'OPERADORA' || it.resuelto_por === 'EXPENDIO' ? null : it.accion
+                const cfg = badgeBot(it.bot_veredicto, it.bot_motivo, it.modo_sombra === false, accionBot)
                 return (
                   <tr
                     key={it.id}

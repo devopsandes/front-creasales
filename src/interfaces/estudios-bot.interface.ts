@@ -146,6 +146,8 @@ export interface EstudioDetalle {
     botVisible: boolean
     estado?: 'RECIBIDO' | 'PENDIENTE' | 'RESUELTO' | 'SOMBRA'
     resueltoPor?: 'BOT' | 'OPERADORA' | 'EXPENDIO' | null
+    /** Lo que terminó pasando con el pedido, lo haya hecho el bot, la operadora o Expendio. */
+    accion?: string | null
     camposModificados?: string[]
     /** Al abrir un pendiente: si se pudo volver a tomar en Expendio. */
     bloqueo?: { tomada: boolean; estado?: string; mensaje: string } | null
