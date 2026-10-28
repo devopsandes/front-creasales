@@ -157,6 +157,8 @@ export interface EstudioDetalle {
 
 export interface ResolverBody extends GuardarRevisionBody {
     accion: Veredicto
+    /** Rechazo: comentario para el afiliado, editado a partir de la plantilla. */
+    textoAfiliado?: string
 }
 
 export interface GuardarRevisionBody {

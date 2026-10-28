@@ -2,7 +2,7 @@
 // Modo MANUAL: el formulario viene cargado con la propuesta del bot; la
 // operadora corrige lo que haga falta y confirma. Lo que cambia se marca en
 // rojo con lo que había puesto el bot.
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { FaCheck, FaPlus, FaTrash, FaExclamationTriangle, FaLock } from "react-icons/fa"
 import LupaSelector from "./LupaSelector"
 import {
@@ -54,6 +54,10 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
     const [enviando, setEnviando] = useState(false)
 
     const motivoSel = useMemo(() => motivos.find((m) => m.idMensaje === motivoId) ?? null, [motivos, motivoId])
+
+    // Comentario para el afiliado: arranca con la plantilla del motivo y la operadora lo edita, como en Expendio.
+    const [textoAfiliado, setTextoAfiliado] = useState('')
+    useEffect(() => { setTextoAfiliado(motivoSel?.texto ?? '') }, [motivoSel?.idMensaje]) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Misma regla que el back para saber qué se corrigió.
     const cambios = useMemo(() => {
@@ -144,6 +148,7 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                 accion,
                 veredicto: accion,
                 motivo: motivoSel ? { id: motivoSel.idMensaje, texto: motivoSel.tema } : undefined,
+                textoAfiliado: accion === 'RECHAZAR' ? (textoAfiliado.trim() || undefined) : undefined,
                 comentario: comentario.trim() || undefined,
                 prestador: { id: prestador.id, nombre: prestador.nombre },
                 solicitante: { id: solicitante.id, nombre: solicitante.nombre, matricula: solicitante.matricula },
@@ -202,7 +207,14 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                         {motivos.map((m) => <option key={m.idMensaje} value={m.idMensaje}>{m.tema}</option>)}
                     </select>
                     <Propuesta actual={motivoSel?.tema ?? ''} bot={bot.motivo?.texto ?? ''} />
-                    {motivoSel?.texto && <span className="eb-hint">Al afiliado le llega: "{motivoSel.texto}"</span>}
+                    {motivoSel && (
+                        <div className="eb-field">
+                            <label className="eb-label">Comentario para el afiliado (es lo que le llega a la app)</label>
+                            <textarea className="eb-input eb-textarea" rows={5} maxLength={1000} value={textoAfiliado}
+                                onChange={(e) => setTextoAfiliado(e.target.value)} />
+                            <span className="eb-hint">Editalo como en Expendio: completá el número de trámite, el correo o lo que haga falta.</span>
+                        </div>
+                    )}
                 </div>
             )}
 

@@ -320,7 +320,8 @@ const EstudioBotDetalle = () => {
                             </div>
                         ) : op ? (
                             <>
-                                <RevisionGuardada op={op} total={detalle.opTotal} accion={detalle.resueltoPor === 'OPERADORA' ? detalle.accion : null} />
+                                <RevisionGuardada op={op} total={detalle.opTotal} accion={detalle.resueltoPor === 'OPERADORA' ? detalle.accion : null}
+                                    textoAfiliado={detalle.resueltoPor === 'OPERADORA' ? (bot?.ejecucion as any)?.rechazo?.comentario ?? null : null} />
                                 {detalle.resueltoPor === 'OPERADORA' && (
                                     <span className="eb-hint" style={{ marginTop: '.5rem' }}>
                                         {(detalle.camposModificados ?? []).length
@@ -559,7 +560,7 @@ const solicitanteBot = (bot: DecisionBot): string => {
     return `No encontrado (leído: ${nombre ?? '—'}${mat ? `, Mat. ${mat}` : ''})`
 }
 
-const RevisionGuardada = ({ op, total, accion }: { op: RevisionOperadora; total?: string | null; accion?: string | null }) => (
+const RevisionGuardada = ({ op, total, accion, textoAfiliado }: { op: RevisionOperadora; total?: string | null; accion?: string | null; textoAfiliado?: string | null }) => (
     <div>
         <div className="eb-guardada-head">
             {accion && ACCION_CFG[accion]
@@ -568,6 +569,7 @@ const RevisionGuardada = ({ op, total, accion }: { op: RevisionOperadora; total?
             <span className="eb-hint">Guardado por {op.usuario.nombre ?? '—'} · {formatFecha(op.fecha)}{op.vioBotAntes ? ' · vio lo del bot antes' : ''}</span>
         </div>
         {op.motivo?.texto && <Campo label="Motivo" valor={op.motivo.texto} />}
+        {textoAfiliado && <Campo label="Le llegó al afiliado" valor={textoAfiliado} />}
         {op.comentario && <Campo label="Comentario" valor={op.comentario} />}
         <Campo label="Prestador" valor={fmtRef(op.prestador)} />
         <Campo label="Profesional solicitante" valor={fmtRef(op.solicitante, true)} />
