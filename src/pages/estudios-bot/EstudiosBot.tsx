@@ -55,6 +55,19 @@ export const formatFecha = (s: string | null | undefined) => {
   }).format(new Date(s))
 }
 
+/**
+ * Todas las prestaciones con código son de laboratorio (capítulo 66). Sin
+ * tope de monto. Misma regla que el back. Fede, 28/10/2026.
+ */
+export const esTodoLaboratorio = (prestaciones: { idCodigo?: string | null; codigo?: string | null }[]): boolean => {
+  const conId = prestaciones.filter((p) => p.idCodigo)
+  const capitulo = (codigo?: string | null) => {
+    const grupos = String(codigo ?? '').match(/\d{4,}/g)
+    return grupos?.length ? grupos[grupos.length - 1] : String(codigo ?? '').replace(/\D/g, '')
+  }
+  return conId.length > 0 && conId.every((p) => capitulo(p.codigo).startsWith('66'))
+}
+
 const EstudiosBot = () => {
   const navigate = useNavigate()
   const [items, setItems] = useState<EstudioListaItem[]>([])

@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt, FaSync } from "react-icons/fa"
 import LupaSelector from "./LupaSelector"
 import TrabajoPendiente from "./TrabajoPendiente"
-import { ACCION_CFG, VEREDICTO_CFG, badgeBot, formatFecha } from "./EstudiosBot"
+import { ACCION_CFG, VEREDICTO_CFG, badgeBot, esTodoLaboratorio, formatFecha } from "./EstudiosBot"
 import {
     buscarDiagnosticos, buscarEfectores, buscarPrestaciones, buscarPrestadores, buscarSolicitantes,
     guardarComentarioFinal, guardarRevision, obtenerEstudio, obtenerImagenEstudio, obtenerMotivosRechazo, reanalizarEstudio,
@@ -207,6 +207,9 @@ const EstudioBotDetalle = () => {
     const idAfiliado = detalle.id_afiliado ?? ''
     const exp = detalle.afiliadoExpendio ?? null
     const colorAfiliado = exp?.colorFondo && exp.colorFondo.toUpperCase() !== '#FFFFFF' ? exp.colorFondo : null
+    // Para la cabecera: lo que cargó la operadora si ya resolvió; si no, la propuesta del bot.
+    const prestacionesCab = op?.prestaciones?.length ? op.prestaciones : (bot?.prestaciones ?? [])
+    const sinTope = esTodoLaboratorio(prestacionesCab)
 
     return (
         <div className="eb-wrapper">
@@ -229,7 +232,9 @@ const EstudioBotDetalle = () => {
                         </div>
                         <div className="eb-cab-sub">
                             Categoría: <b>{detalle.afiliadoCategoria ?? 'desconocida'}</b>
-                            {detalle.botTope && <> · Tope por estudio: <b>{fmtPesos(detalle.botTope)}</b></>}
+                            {sinTope
+                                ? <> · Tope por estudio: <b>no aplica (laboratorio)</b></>
+                                : detalle.botTope && <> · Tope por estudio: <b>{fmtPesos(detalle.botTope)}</b></>}
                         </div>
 
                         {exp && (

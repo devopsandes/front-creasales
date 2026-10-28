@@ -10,6 +10,7 @@ import {
     precioPrestacion, resolverEstudio,
 } from "../../services/estudios-bot/estudiosBot.api"
 import { CatMotivo, CatPrestacion, EstudioDetalle, PrestacionElegida, Ref, Veredicto } from "../../interfaces/estudios-bot.interface"
+import { esTodoLaboratorio } from "./EstudiosBot"
 
 const vacio: Ref = { id: null, nombre: null }
 const fmtPesos = (n: number | string | null | undefined) =>
@@ -74,7 +75,8 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
     const total = prestaciones.reduce((s, p) => s + (p.importeConvenido ?? 0) * (p.cantidad ?? 1), 0)
     const sinPrecio = prestaciones.some((p) => p.importeConvenido === null || p.importeConvenido === undefined)
     const tope = detalle.botTope ? Number(detalle.botTope) : null
-    const superaTope = tope !== null && !sinPrecio && total > tope
+    // Todo laboratorio no tiene tope.
+    const superaTope = tope !== null && !sinPrecio && total > tope && !esTodoLaboratorio(prestaciones)
 
     const conPrecio = async (p: PrestacionElegida): Promise<PrestacionElegida> => {
         if (!prestador.id || !efector.id || !p.idCodigo || !idAfiliado) return { ...p, importeConvenido: null }
