@@ -136,6 +136,7 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
             if (prestaciones.some((p) => !p.cantidad || p.cantidad < 1)) return 'Falta la cantidad en alguna prestación'
         }
         if (cambios.length && comentario.trim().length < 5) return `Cambiaste ${cambios.join(', ')}: explicá por qué en el comentario`
+        if (accion === 'DERIVAR' && comentario.trim().length < 5) return 'Al derivar explicá por qué en el comentario'
         return null
     }
 
@@ -311,9 +312,15 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
             )}
 
             <div className="eb-field">
-                <label className="eb-label">Comentario {cambios.length ? '(obligatorio: cambiaste ' + cambios.join(', ') + ')' : '(opcional)'}</label>
+                <label className="eb-label">
+                    Comentario {cambios.length
+                        ? '(obligatorio: cambiaste ' + cambios.join(', ') + ')'
+                        : accion === 'DERIVAR' ? '(obligatorio: al derivar explicá por qué)' : '(opcional)'}
+                </label>
                 <textarea className="eb-input eb-textarea" rows={2} value={comentario} onChange={(e) => setComentario(e.target.value)}
-                    placeholder={cambios.length ? 'Por qué corregiste lo del bot...' : 'Si confirmás tal cual, no hace falta'} />
+                    placeholder={cambios.length
+                        ? 'Por qué corregiste lo del bot...'
+                        : accion === 'DERIVAR' ? 'Por qué lo derivás...' : 'Si confirmás tal cual, no hace falta'} />
             </div>
 
             <div className="eb-actions">
