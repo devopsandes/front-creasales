@@ -17,7 +17,8 @@ import {
   MailCheckIcon,
   CalendarClock,
   History,
-  Stethoscope
+  Stethoscope,
+  LifeBuoy
 } from "lucide-react";
 import { FaMeta } from "react-icons/fa6";
 import QuickReplies from "../icons/QuickReplies";
@@ -80,6 +81,7 @@ const DashSidebar = ({ role }: Props) => {
           <DashItem icon={CalendarClock} path='/dashboard/dias-especiales' titulo="Días especiales" />
           <DashItem icon={Settings} path='/dashboard/configuracion' titulo="Configuración" />
           <DashItem icon={Plug2} path='/dashboard/integraciones' titulo="Integraciones" />
+          <DashItem icon={LifeBuoy} path='/dashboard/soporte' titulo="Mesa de ayuda" />
 
           <div className="dashsidebar-logout" onClick={handleLogoutClick}>
             <LogOut size={25} strokeWidth={1.5} />
@@ -94,6 +96,7 @@ const DashSidebar = ({ role }: Props) => {
           <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes" />
           <DashItem icon={Stethoscope} path='/dashboard/estudios-bot' titulo="Estudios (bot)" />
           {!quickResponsesDisabled && <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas" />}
+          <DashItem icon={LifeBuoy} path='/dashboard/soporte' titulo="Mesa de ayuda" />
 
           <div className="dashsidebar-logout" onClick={handleLogoutClick}>
             <LogOut size={25} strokeWidth={1.5} />

@@ -13,6 +13,7 @@ type EndpointKey =
   | "messages"
   | "whatsapp"
   | "bot"
+  | "soporte"
   | "default"
 
 const API_PREFIX = "/api/v1"
@@ -95,7 +96,7 @@ export const convClient = axios.create({ baseURL: convBase, withCredentials: tru
 attachSharedInterceptors(adminClient)
 attachSharedInterceptors(convClient)
 
-const adminEndpoints = new Set<EndpointKey>(["tickets", "tags", "mentions", "quickResponses", "backoffice"])
+const adminEndpoints = new Set<EndpointKey>(["tickets", "tags", "mentions", "quickResponses", "backoffice", "soporte"])
 
 export const resolveClient = (endpointKey: EndpointKey): AxiosInstance => {
   if (adminEndpoints.has(endpointKey)) return adminClient

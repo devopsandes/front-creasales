@@ -23,7 +23,7 @@ import BotIA from '../pages/bot/BotIA'
 import BotConfig from '../pages/bot-config/BotConfig'
 import DashboardHome from '../pages/dashboard-home/DashboardHome'
 import Chats from '../pages/chats/Chats'
-import { navCategorias, navChats, navConversaciones, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas, navEmisivos, navSpecialDayMessages, navEstudiosBot } from '../utils/navegacion'
+import { navCategorias, navChats, navConversaciones, navEmpresa, navEstados, navMeta, navModulos, navUsuarios, navTickets, navTags, navAcciones, navClientes, navIntegraciones, navRespuestasRapidas, navEmisivos, navSpecialDayMessages, navEstudiosBot, navSoporte } from '../utils/navegacion'
 import ListaChats from '../pages/chats/ListaChats'
 import ListaConversaciones from '../pages/conversaciones/ListaConversaciones'
 import ConversacionDetalle from '../pages/conversaciones/ConversacionDetalle'
@@ -44,6 +44,9 @@ import { isLightFeatureDisabled } from '../config/runtimeConfig'
 import SpecialDayMessagesPage from '../pages/special-day-messages/SpecialDayMessagesPage'
 import EstudiosBot from '../pages/estudios-bot/EstudiosBot'
 import EstudioBotDetalle from '../pages/estudios-bot/EstudioBotDetalle'
+import MesaAyuda from '../pages/soporte/MesaAyuda'
+import NuevoTicketSoporte from '../pages/soporte/NuevoTicketSoporte'
+import TicketSoporte from '../pages/soporte/TicketSoporte'
 
 const AppRouter = () => {
   const message = useSelector((state: RootState) => state.auth.message);
@@ -201,6 +204,12 @@ const AppRouter = () => {
         <Route path='estudios-bot' element={<NavTag tags={navEstudiosBot} />}>
           <Route index element={<EstudiosBot />} />
           <Route path=':id' element={<EstudioBotDetalle />} />
+        </Route>
+
+        <Route path='soporte' element={<NavTag tags={navSoporte} />}>
+          <Route index element={<MesaAyuda />} />
+          <Route path='nuevo' element={<NuevoTicketSoporte />} />
+          <Route path=':id' element={<TicketSoporte />} />
         </Route>
 
         <Route path='respuestas-rapidas' element={<NavTag tags={navRespuestasRapidas} />}>

@@ -182,6 +182,14 @@ const navEstudiosBot: Tag[] = [
   },
 ]
 
+const navSoporte: Tag[] = [
+  {
+    id: 1,
+    name: "Mesa de ayuda",
+    path: "/dashboard/soporte"
+  },
+]
+
 
 export {
   navCategorias,
@@ -201,5 +209,6 @@ export {
   navIntegraciones,
   navRespuestasRapidas,
   navSpecialDayMessages,
-  navEstudiosBot
+  navEstudiosBot,
+  navSoporte
 }

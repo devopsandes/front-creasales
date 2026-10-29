@@ -1,0 +1,218 @@
+/* src/pages/soporte/soporte.css — complementa estudios-bot.css (clases eb-*) */
+
+.sp-badge-azul {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.sp-badge-gris {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.sp-row-esperando {
+    background: #fffbeb;
+}
+
+.sp-row-cerrado {
+    color: #9ca3af;
+}
+
+.sp-row-cerrado .eb-td {
+    color: #9ca3af;
+}
+
+.sp-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.sp-banner {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .9rem 1.25rem;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: .75rem;
+    color: #92400e;
+    font-size: .875rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.sp-form {
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sp-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.sp-gravedad-ayuda {
+    font-size: .75rem;
+    color: #6b7280;
+    margin-top: .3rem;
+}
+
+.sp-archivos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: .5rem;
+}
+
+.sp-archivo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    border-radius: 9999px;
+    padding: .3rem .75rem;
+    font-size: .8125rem;
+}
+
+.sp-archivo-chip button {
+    border: none;
+    background: none;
+    color: #1e40af;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+}
+
+.sp-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: .75rem 1.5rem;
+}
+
+.sp-info-item .eb-label {
+    margin-bottom: .1rem;
+}
+
+.sp-info-valor {
+    font-size: .875rem;
+    color: #111827;
+}
+
+.sp-descripcion {
+    white-space: pre-wrap;
+    font-size: .875rem;
+    color: #111827;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.sp-conversacion {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+
+.sp-msg {
+    max-width: 80%;
+    padding: .7rem .95rem;
+    border-radius: .85rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.sp-msg-usuario {
+    align-self: flex-end;
+    background: #dbeafe;
+    color: #1e3a8a;
+    border-bottom-right-radius: .25rem;
+}
+
+.sp-msg-soporte {
+    align-self: flex-start;
+    background: #f3f4f6;
+    color: #111827;
+    border-bottom-left-radius: .25rem;
+}
+
+.sp-msg-meta {
+    display: block;
+    font-size: .7rem;
+    opacity: .75;
+    margin-bottom: .25rem;
+    font-weight: 600;
+}
+
+.sp-comentar {
+    display: flex;
+    gap: .5rem;
+    align-items: flex-end;
+}
+
+.sp-comentar textarea {
+    flex: 1;
+    min-height: 70px;
+}
+
+.sp-adjuntos-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+}
+
+.sp-adjunto {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    font-size: .875rem;
+}
+
+.sp-adjunto a {
+    color: #2563eb;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.sp-adjunto a:hover {
+    text-decoration: underline;
+}
+
+.sp-adjunto-meta {
+    color: #6b7280;
+    font-size: .75rem;
+}
+
+.sp-detalle-grid {
+    display: grid;
+    grid-template-columns: minmax(360px, 7fr) minmax(280px, 4fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.sp-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+@media (max-width: 1000px) {
+    .sp-detalle-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sp-form-row {
+        grid-template-columns: 1fr;
+    }
+}
