@@ -116,7 +116,14 @@ export const PLANTILLAS_MAIL: { valor: PlantillaMail; etiqueta: string; descripc
 ];
 
 /** Los mismos que devuelve GET /campanias/opciones; se usan hasta que llegue esa respuesta. */
-export const REMITENTES_POR_DEFECTO = ['novedades@andessalud.ar', 'notificaciones@andessalud.ar', 'comercial@andessalud.ar'];
+export const REMITENTES_POR_DEFECTO = ['notificaciones@andessalud.ar'];
+
+/** Casillas que se dan de baja en WorkMail (29/10/2026), igual que en Emisivos (campanias.helpers.js). */
+const CASILLAS_DADAS_DE_BAJA = ['novedades@andessalud.ar', 'comercial@andessalud.ar', 'envios@andessalud.ar'];
+
+/** Lo guardado con una casilla dada de baja se muestra con el remitente vigente (el back lo remapea igual al guardar). */
+export const remitenteVigente = (remitente: string): string =>
+  CASILLAS_DADAS_DE_BAJA.includes(remitente.trim().toLowerCase()) ? REMITENTES_POR_DEFECTO[0] : remitente;
 
 /** Contador para las claves de React de las tarjetas (no viajan al backend). */
 let ultimaClave = 0;
@@ -170,7 +177,7 @@ export const datosDesdeCampania = (campania: Campania): DatosFormularioCampania 
       ? {
           plantilla: mail.plantilla,
           asunto: mail.asunto,
-          remitente: mail.remitente,
+          remitente: remitenteVigente(mail.remitente),
           replyTo: mail.replyTo ?? '',
           titulo: mail.contenido.titulo,
           texto: mail.contenido.texto,

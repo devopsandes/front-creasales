@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { FaArrowDown, FaArrowUp, FaPlus, FaSave, FaTimes, FaTrash } from 'react-icons/fa';
-import { datosVacios as datosVaciosCampania, nuevaClave as nuevaClaveTarjeta } from '../campanias/campaniasOpciones';
+import { datosVacios as datosVaciosCampania, nuevaClave as nuevaClaveTarjeta, remitenteVigente } from '../campanias/campaniasOpciones';
 import EncuestaFormAccion from './EncuestaFormAccion';
 import type { CambioImagenMail } from './EncuestaMailEditor';
 import { armarCuerpo, crearEncuesta, editarEncuesta, quitarImagenMail, subirImagenMail } from './encuestas.api';
@@ -39,7 +39,7 @@ const mailInicial = (encuesta: Encuesta | null): MailFormulario => {
   return {
     plantilla: guardado.plantilla,
     asunto: guardado.asunto,
-    remitente: guardado.remitente,
+    remitente: remitenteVigente(guardado.remitente),
     replyTo: guardado.replyTo ?? '',
     titulo: guardado.contenido.titulo,
     texto: guardado.contenido.texto,

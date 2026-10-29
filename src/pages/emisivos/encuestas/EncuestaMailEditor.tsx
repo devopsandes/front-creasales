@@ -132,7 +132,7 @@ const EncuestaMailEditor = ({
           <input
             className="encuestas-input"
             type="email"
-            placeholder="comercial@andessalud.ar"
+            placeholder="Vacío = responden a notificaciones@andessalud.ar"
             value={mail.replyTo}
             disabled={deshabilitado}
             onChange={(e) => onCambiar({ replyTo: e.target.value })}
