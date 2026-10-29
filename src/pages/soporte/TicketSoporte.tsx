@@ -221,7 +221,6 @@ const TicketSoporte = () => {
                                         ))}
                                     </tbody>
                                 </table>
-                                <span className="eb-hint">Solo lo ven ROOT y ADMIN. "pendiente" con 0 intentos es normal hasta que haya credenciales de Createch.</span>
                             </div>
                         )}
                     </div>
