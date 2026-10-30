@@ -280,6 +280,8 @@ const Chats = () => {
             msg_salida: resolvedText,
             type: item.type,
             leido: Boolean(item.read),
+            origen: (item as any)?.origen ?? null,
+            authorName: (item as any)?.authorName ?? null,
         } as any
     }
 
@@ -329,6 +331,14 @@ const Chats = () => {
             default:
                 return evt?.type ? `${evt.type}` : "Evento"
         }
+    }
+
+    // Quién mandó un mensaje saliente: la operadora si quedó guardada, nada para
+    // mensajes viejos de operadoras (sin autor), y "Sistema" para el bot y los avisos.
+    const autorMensajeSaliente = (msj: any): string => {
+        if (msj?.authorName) return formatAuthorName(msj.authorName)
+        if (msj?.origen === 'USUARIO') return ''
+        return 'Sistema'
     }
 
     const formatAuthorName = (value: any) => {
@@ -2060,10 +2070,10 @@ const Chats = () => {
                                             <div className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
                                                 <MessageContent msg={msj} />
                                             </div>
-                                            {!msj.msg_entrada && msj?.authorName && (
-                                                <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.authorName)}</span>
-                                            )}
-                                            <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
+                                            <span className='timestamp'>
+                                                {formatCreatedAt(`${msj.createdAt}`)}
+                                                {!msj.msg_entrada && autorMensajeSaliente(msj) ? ` · ${autorMensajeSaliente(msj)}` : ''}
+                                            </span>
                                         </div>
                                     )
                                 })}
