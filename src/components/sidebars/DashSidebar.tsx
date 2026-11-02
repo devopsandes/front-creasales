@@ -67,7 +67,7 @@ const DashSidebar = ({ role }: Props) => {
           <DashItem icon={History} path='/dashboard/conversaciones' titulo="Conversaciones" />
           <DashItem icon={MailCheckIcon} path='/dashboard/emisivos' titulo="Emisivos" />
           {!ticketsDisabled && <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets" />}
-          <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes" />
+          {role === 'ROOT' && <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes" />}
           <DashItem icon={Stethoscope} path='/dashboard/estudios-bot' titulo="Estudios (bot)" />
           {!quickResponsesDisabled && <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas" />}
           {role === 'ROOT' && <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta" />}
@@ -102,7 +102,6 @@ const DashSidebar = ({ role }: Props) => {
           <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats" />
           <DashItem icon={History} path='/dashboard/conversaciones' titulo="Conversaciones" />
           {!ticketsDisabled && <DashItem icon={TicketCheck} path='/dashboard/tickets' titulo="Tickets" />}
-          <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes" />
           <DashItem icon={Stethoscope} path='/dashboard/estudios-bot' titulo="Estudios (bot)" />
           {!quickResponsesDisabled && <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas" />}
           <DashItem icon={LifeBuoy} path='/dashboard/soporte' titulo="Mesa de ayuda" />

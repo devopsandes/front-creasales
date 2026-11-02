@@ -197,9 +197,11 @@ const AppRouter = () => {
           <Route index element={<EmisivosMain />} />
         </Route>
 
-        <Route path='clientes' element={<NavTag tags={navClientes} />}>
-          <Route index element={<TableClientes />} />
-        </Route>
+        {role === 'ROOT' && (
+          <Route path='clientes' element={<NavTag tags={navClientes} />}>
+            <Route index element={<TableClientes />} />
+          </Route>
+        )}
 
         <Route path='estudios-bot' element={<NavTag tags={navEstudiosBot} />}>
           <Route index element={<EstudiosBot />} />
