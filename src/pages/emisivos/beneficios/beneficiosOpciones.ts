@@ -2,7 +2,7 @@
 // emisivos; acá se chequean antes de mandar para avisar rápido.
 
 import type { SegmentacionBanner } from '../banner.api';
-import { esLinkWhatsApp, linkLoAbreLaApp } from '../bannerOpciones';
+import { esLinkInstagram, esLinkWhatsApp, linkLoAbreLaApp } from '../bannerOpciones';
 import type { FiltroBanners } from '../bannerOpciones';
 import type { Beneficio, DatosFormularioBeneficio, SegmentacionBeneficio } from './beneficios.api';
 
@@ -36,10 +36,10 @@ export const beneficioAplicaA = (beneficio: Beneficio, filtro: FiltroBanners): b
   return true;
 };
 
-/** ¿La app va a abrir este link al tocar "Más info"? Solo links de Andes o WhatsApp (wa.me/54...). */
+/** ¿La app va a abrir este link al tocar "Más info"? Links de Andes, WhatsApp (wa.me/54...) o Instagram (este, desde la 7.1.8). */
 export const linkLoAbreLaAppBeneficio = (link: string | null | undefined): boolean => {
   const limpio = (link ?? '').trim();
-  return limpio !== '' && (linkLoAbreLaApp(limpio) || esLinkWhatsApp(limpio));
+  return limpio !== '' && (linkLoAbreLaApp(limpio) || esLinkWhatsApp(limpio) || esLinkInstagram(limpio));
 };
 
 /** Mensaje de error si el link no sirve, o null si está bien (vacío también está bien: es opcional). */
@@ -51,7 +51,7 @@ export const errorDeLink = (link: string): string | null => {
   if (/[\s\u0000-\u001f\u007f]/.test(limpio)) return 'El link no puede tener espacios';
   if (limpio.length > LARGOS.linkUrl) return `El link puede tener hasta ${LARGOS.linkUrl} caracteres.`;
   if (!linkLoAbreLaAppBeneficio(limpio)) {
-    return 'El link tiene que ser de andessalud.com.ar o andessalud.ar (con https://), o un WhatsApp de Argentina (https://wa.me/54...). La app no abre otros sitios.';
+    return 'El link tiene que ser de andessalud.com.ar o andessalud.ar (con https://), un WhatsApp de Argentina (https://wa.me/54...) o Instagram (https://www.instagram.com/...). La app no abre otros sitios.';
   }
   return null;
 };

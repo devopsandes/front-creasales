@@ -126,6 +126,14 @@ const REGEX_WHATSAPP = /^https:\/\/wa\.me\/54\d{8,11}(\?text=[A-Za-z0-9%\-_.!~*'
 
 export const esLinkWhatsApp = (link: string): boolean => REGEX_WHATSAPP.test(link || '');
 
+/**
+ * Instagram: mismo criterio que esLinkInstagram() de emisivos (instagram.com o www.instagram.com; l.instagram.com no, redirige
+ * a cualquier sitio). Vale en el botón del mail y en "Más info" de los beneficios (la app lo abre desde la 7.1.8). En la push
+ * y el banner no, hasta que la 7.1.8 tenga adopción.
+ */
+const REGEX_INSTAGRAM = /^https:\/\/(www\.)?instagram\.com([/?#][^\s]*)?$/i;
+export const esLinkInstagram = (link: string): boolean => REGEX_INSTAGRAM.test(link || '');
+
 /** El mensaje inicial se limita para que el link codificado no pase los 500 caracteres que acepta emisivos. */
 export const LARGO_MENSAJE_WHATSAPP = 120;
 

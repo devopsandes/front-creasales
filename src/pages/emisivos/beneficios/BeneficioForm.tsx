@@ -21,7 +21,7 @@ import {
   segmentacionCompleta,
   urlVerEnMaps,
 } from './beneficiosOpciones';
-import { ACEPTA_DNIS, FAMILIAS_PLAN, PROVINCIAS, errorDeArchivoDnis, errorDeImagen } from '../bannerOpciones';
+import { ACEPTA_DNIS, FAMILIAS_PLAN, PROVINCIAS, errorDeArchivoDnis, errorDeImagen, esLinkInstagram } from '../bannerOpciones';
 
 interface BeneficioFormProps {
   /** null = beneficio nuevo */
@@ -263,7 +263,7 @@ const BeneficioForm = ({ beneficio, onCerrar, onGuardado }: BeneficioFormProps) 
               <label className="beneficio-label">
                 Link de "Más info"{' '}
                 <span className="beneficio-ayuda">
-                  (opcional: andessalud.com.ar, andessalud.ar o un WhatsApp https://wa.me/54...)
+                  (opcional: andessalud.com.ar, andessalud.ar, un WhatsApp https://wa.me/54... o Instagram)
                 </span>
                 <input
                   className="beneficio-input"
@@ -275,7 +275,10 @@ const BeneficioForm = ({ beneficio, onCerrar, onGuardado }: BeneficioFormProps) 
               </label>
               {problemaLink && <p className="beneficio-aviso">{problemaLink} No se va a poder guardar así.</p>}
               {datos.linkUrl.trim() !== '' && !problemaLink && linkLoAbreLaAppBeneficio(datos.linkUrl) && (
-                <p className="beneficio-ayuda">La tarjeta va a mostrar el botón "Más info".</p>
+                <p className="beneficio-ayuda">
+                  La tarjeta va a mostrar el botón "Más info".
+                  {esLinkInstagram(datos.linkUrl.trim()) && ' Con Instagram, el botón aparece desde la app 7.1.8.'}
+                </p>
               )}
 
               <fieldset className="beneficio-fieldset">

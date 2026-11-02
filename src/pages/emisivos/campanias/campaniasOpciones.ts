@@ -1,7 +1,7 @@
 // campaniasOpciones.ts — constantes, textos y validaciones de la pestaña Campañas.
 // Los límites son los mismos que valida emisivos (LARGOS en campanias.helpers.js y banners.helpers.js): si cambian allá, acá también.
 
-import { LARGOS as LARGOS_BANNER, esLinkWhatsApp, linkLoAbreLaApp } from '../bannerOpciones';
+import { LARGOS as LARGOS_BANNER, esLinkInstagram, esLinkWhatsApp, linkLoAbreLaApp } from '../bannerOpciones';
 import type {
   Campania,
   CanalCampania,
@@ -222,13 +222,7 @@ export const esLinkDePush = (link: string): boolean => linkLoAbreLaApp(link);
 
 export const MENSAJE_LINK_PUSH = 'tiene que ser https de andessalud.com.ar o andessalud.ar (la app no abre WhatsApp desde una push)';
 
-/**
- * Instagram, solo en el botón del mail (23/10/2026): mismo criterio que esLinkInstagram() de emisivos (instagram.com o
- * www.instagram.com; l.instagram.com no, redirige a cualquier sitio). En la push y el banner no, hasta que la app lo
- * deje abrir (7.1.8).
- */
-const REGEX_INSTAGRAM = /^https:\/\/(www\.)?instagram\.com([/?#][^\s]*)?$/i;
-export const esLinkInstagram = (link: string): boolean => REGEX_INSTAGRAM.test(link);
+export { esLinkInstagram };
 
 const MENSAJE_LINK_BOTON =
   'tiene que ser https de andessalud.com.ar o andessalud.ar, un WhatsApp de Argentina (https://wa.me/54...) o Instagram (https://www.instagram.com/...)';
