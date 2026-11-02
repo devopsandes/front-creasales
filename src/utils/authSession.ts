@@ -1,7 +1,7 @@
 export type AuthSessionReason = 'expired' | 'invalid'
 
 const TOKEN_EXPIRED_CODES = new Set(['TOKEN_EXPIRED'])
-const TOKEN_INVALID_CODES = new Set(['TOKEN_INVALID', 'TOKEN_USER_NOT_FOUND'])
+const TOKEN_INVALID_CODES = new Set(['TOKEN_INVALID', 'TOKEN_USER_NOT_FOUND', 'USUARIO_INACTIVO'])
 
 const normalizeCode = (value: unknown): string => {
   if (typeof value !== 'string') return ''
