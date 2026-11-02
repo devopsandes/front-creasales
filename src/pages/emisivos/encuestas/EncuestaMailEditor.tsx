@@ -249,6 +249,19 @@ const EncuestaMailEditor = ({
               <FaPlus /> Agregar tarjeta
             </button>
           )}
+          <label className="encuestas-label">
+            <span className="encuestas-label-linea">
+              Texto final <span className="encuestas-ayuda">(opcional, va debajo de las tarjetas)</span>{' '}
+              <Contador valor={mail.textoFinal} maximo={LARGOS.mailTextoFinal} />
+            </span>
+            <textarea
+              className="encuestas-input encuestas-textarea"
+              rows={5}
+              value={mail.textoFinal}
+              onChange={(e) => onCambiar({ textoFinal: e.target.value })}
+            />
+            <span className="encuestas-ayuda">**negrita** · una línea en blanco = párrafo nuevo · {'{{NOMBRE}}'} = primer nombre de quien respondió</span>
+          </label>
         </fieldset>
       )}
 

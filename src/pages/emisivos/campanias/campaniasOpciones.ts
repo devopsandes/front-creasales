@@ -22,13 +22,14 @@ export const LARGOS = {
   asunto: 150,
   mailTitulo: 100,
   mailTexto: 3000,
+  mailTextoFinal: 3000,
   botonTexto: 30,
   tarjetaTitulo: 60,
   tarjetaTexto: 300,
   mailsPrueba: 5,
   destinosPrueba: 10,
 };
-export const MAX_TARJETAS = 4;
+export const MAX_TARJETAS = 8;
 
 /** Mismas cifras que el backend (MAX_BYTES_LISTA = 5 MB). */
 export const MAX_BYTES_LISTA = 5 * 1024 * 1024;
@@ -101,12 +102,12 @@ export const PLANTILLAS_MAIL: { valor: PlantillaMail; etiqueta: string; descripc
   {
     valor: 'beneficio',
     etiqueta: 'Beneficio',
-    descripcion: 'Imagen arriba, texto, tarjetas con los descuentos y un botón con link (obligatorio).',
+    descripcion: 'Imagen arriba, texto, tarjetas con los descuentos, texto final opcional y un botón con link (obligatorio).',
   },
   {
     valor: 'informativo',
     etiqueta: 'Informativo',
-    descripcion: 'Texto y tarjetas lilas con los datos. El botón es opcional.',
+    descripcion: 'Texto, tarjetas lilas con los datos y texto final opcional. El botón es opcional.',
   },
   {
     valor: 'simple',
@@ -149,6 +150,7 @@ export const datosVacios = (): DatosFormularioCampania => ({
     botonTexto: '',
     botonLink: '',
     tarjetas: [],
+    textoFinal: '',
   },
   banner: {
     etiqueta: '',
@@ -184,6 +186,7 @@ export const datosDesdeCampania = (campania: Campania): DatosFormularioCampania 
           botonTexto: mail.contenido.botonTexto ?? '',
           botonLink: mail.contenido.botonLink ?? '',
           tarjetas: (mail.contenido.tarjetas ?? []).map((t) => ({ clave: nuevaClave(), titulo: t.titulo ?? '', texto: t.texto ?? '' })),
+          textoFinal: mail.contenido.textoFinal ?? '',
         }
       : base.mail,
     banner: banner
@@ -290,6 +293,9 @@ export const errorDeCampania = (datos: DatosFormularioCampania): string | null =
       if (tarjetas.length > MAX_TARJETAS) return `El mail puede tener hasta ${MAX_TARJETAS} tarjetas.`;
       if (tarjetas.some((t) => limpiar(t.titulo).length > LARGOS.tarjetaTitulo || t.texto.trim().length > LARGOS.tarjetaTexto)) {
         return `Cada tarjeta puede tener un título de hasta ${LARGOS.tarjetaTitulo} y un texto de hasta ${LARGOS.tarjetaTexto} caracteres.`;
+      }
+      if (mail.textoFinal.trim().length > LARGOS.mailTextoFinal) {
+        return `El texto final del mail puede tener hasta ${LARGOS.mailTextoFinal} caracteres.`;
       }
     }
   }

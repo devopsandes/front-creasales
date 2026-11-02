@@ -46,6 +46,7 @@ const mailInicial = (encuesta: Encuesta | null): MailFormulario => {
     botonTexto: guardado.contenido.botonTexto ?? '',
     botonLink: guardado.contenido.botonLink ?? '',
     tarjetas: (guardado.contenido.tarjetas ?? []).map((t) => ({ clave: nuevaClaveTarjeta(), titulo: t.titulo ?? '', texto: t.texto ?? '' })),
+    textoFinal: guardado.contenido.textoFinal ?? '',
   };
 };
 

@@ -274,6 +274,19 @@ const CampaniaContenidoMail = ({
               <FaPlus /> Agregar tarjeta
             </button>
           )}
+          <label className="campanias-label">
+            <span className="campanias-label-linea">
+              Texto final <span className="campanias-ayuda">(opcional, va debajo de las tarjetas)</span>{' '}
+              <CampaniaContador valor={mail.textoFinal} maximo={LARGOS.mailTextoFinal} />
+            </span>
+            <textarea
+              className="campanias-input campanias-textarea"
+              rows={5}
+              value={mail.textoFinal}
+              onChange={(e) => onCambiar({ textoFinal: e.target.value })}
+            />
+            <span className="campanias-ayuda">**negrita** · una línea en blanco = párrafo nuevo · {'{{NOMBRE}}'} = primer nombre de la persona</span>
+          </label>
         </fieldset>
       )}
 
