@@ -202,6 +202,25 @@ const EncuestaMailEditor = ({
             {mail.plantilla === 'beneficio' ? 'Una por cada beneficio o descuento.' : 'Para destacar datos puntuales.'} Las que queden vacías
             no se envían.
           </p>
+          <div className="encuestas-label">
+            Dónde van las tarjetas
+            <div className="encuestas-modo" role="group" aria-label="Dónde van las tarjetas">
+              {[
+                { primero: false, etiqueta: 'Después del texto' },
+                { primero: true, etiqueta: 'Antes del texto' },
+              ].map((opcion) => (
+                <button
+                  type="button"
+                  key={opcion.etiqueta}
+                  className={`encuestas-modo-opcion ${mail.tarjetasPrimero === opcion.primero ? 'encuestas-modo-opcion-activa' : ''}`}
+                  onClick={() => onCambiar({ tarjetasPrimero: opcion.primero })}
+                  aria-pressed={mail.tarjetasPrimero === opcion.primero}
+                >
+                  {opcion.etiqueta}
+                </button>
+              ))}
+            </div>
+          </div>
           {mail.tarjetas.map((tarjeta, indice) => (
             <div className="encuestas-tarjeta" key={tarjeta.clave}>
               <div className="encuestas-tarjeta-cabecera">
@@ -251,7 +270,7 @@ const EncuestaMailEditor = ({
           )}
           <label className="encuestas-label">
             <span className="encuestas-label-linea">
-              Texto final <span className="encuestas-ayuda">(opcional, va debajo de las tarjetas)</span>{' '}
+              Texto final <span className="encuestas-ayuda">(opcional, va al final, arriba del botón)</span>{' '}
               <Contador valor={mail.textoFinal} maximo={LARGOS.mailTextoFinal} />
             </span>
             <textarea

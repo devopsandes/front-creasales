@@ -39,8 +39,10 @@ export interface MailCampania {
     botonTexto: string | null;
     botonLink: string | null;
     tarjetas: TarjetaMail[];
-    /** Texto debajo de las tarjetas (beneficio e informativo). */
+    /** Texto al final, arriba del botón (beneficio e informativo). */
     textoFinal?: string | null;
+    /** true: las tarjetas van antes del texto (beneficio e informativo). Sin la clave, después. */
+    tarjetasPrimero?: boolean;
   };
 }
 
@@ -196,6 +198,7 @@ export interface DatosFormularioCampania {
     /** `clave` es solo del front, para que React no mezcle filas al quitar una tarjeta. */
     tarjetas: { clave: number; titulo: string; texto: string }[];
     textoFinal: string;
+    tarjetasPrimero: boolean;
   };
   banner: {
     etiqueta: string;
@@ -279,6 +282,7 @@ const armarCuerpo = (datos: DatosFormularioCampania): string => {
             botonLink: llevaBoton ? datos.mail.botonLink : '',
             tarjetas: llevaTarjetas ? datos.mail.tarjetas.map(({ titulo, texto }) => ({ titulo, texto })) : [],
             textoFinal: llevaTarjetas ? datos.mail.textoFinal : '',
+            tarjetasPrimero: llevaTarjetas && datos.mail.tarjetasPrimero,
           },
         }
       : undefined,

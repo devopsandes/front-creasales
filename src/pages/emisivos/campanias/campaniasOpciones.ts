@@ -151,6 +151,7 @@ export const datosVacios = (): DatosFormularioCampania => ({
     botonLink: '',
     tarjetas: [],
     textoFinal: '',
+    tarjetasPrimero: false,
   },
   banner: {
     etiqueta: '',
@@ -187,6 +188,7 @@ export const datosDesdeCampania = (campania: Campania): DatosFormularioCampania 
           botonLink: mail.contenido.botonLink ?? '',
           tarjetas: (mail.contenido.tarjetas ?? []).map((t) => ({ clave: nuevaClave(), titulo: t.titulo ?? '', texto: t.texto ?? '' })),
           textoFinal: mail.contenido.textoFinal ?? '',
+          tarjetasPrimero: mail.contenido.tarjetasPrimero === true,
         }
       : base.mail,
     banner: banner

@@ -207,6 +207,7 @@ interface AccionParaEnviar {
       botonLink: string;
       tarjetas: { titulo: string; texto: string }[];
       textoFinal: string;
+      tarjetasPrimero: boolean;
     };
   } | null;
   avisos: { activo: true; destinatarios: string[] } | null;
@@ -232,6 +233,7 @@ const armarAccion = (datos: DatosFormularioEncuesta): AccionParaEnviar | null =>
             botonLink: llevaBoton ? mail.botonLink : '',
             tarjetas: llevaTarjetas ? mail.tarjetas.map(({ titulo, texto }) => ({ titulo, texto })) : [],
             textoFinal: llevaTarjetas ? mail.textoFinal : '',
+            tarjetasPrimero: llevaTarjetas && mail.tarjetasPrimero,
           },
         }
       : null;

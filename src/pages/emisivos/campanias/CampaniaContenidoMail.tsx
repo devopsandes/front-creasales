@@ -227,6 +227,25 @@ const CampaniaContenidoMail = ({
             {mail.plantilla === 'beneficio' ? 'Una por cada beneficio o descuento.' : 'Para destacar datos puntuales.'} Las que queden
             vacías no se envían.
           </p>
+          <div className="campanias-label">
+            Dónde van las tarjetas
+            <div className="campanias-modo" role="group" aria-label="Dónde van las tarjetas">
+              {[
+                { primero: false, etiqueta: 'Después del texto' },
+                { primero: true, etiqueta: 'Antes del texto' },
+              ].map((opcion) => (
+                <button
+                  type="button"
+                  key={opcion.etiqueta}
+                  className={`campanias-modo-opcion ${mail.tarjetasPrimero === opcion.primero ? 'campanias-modo-opcion-activa' : ''}`}
+                  onClick={() => onCambiar({ tarjetasPrimero: opcion.primero })}
+                  aria-pressed={mail.tarjetasPrimero === opcion.primero}
+                >
+                  {opcion.etiqueta}
+                </button>
+              ))}
+            </div>
+          </div>
           {mail.tarjetas.map((tarjeta, indice) => (
             <div className="campanias-tarjeta" key={tarjeta.clave}>
               <div className="campanias-tarjeta-cabecera">
@@ -276,7 +295,7 @@ const CampaniaContenidoMail = ({
           )}
           <label className="campanias-label">
             <span className="campanias-label-linea">
-              Texto final <span className="campanias-ayuda">(opcional, va debajo de las tarjetas)</span>{' '}
+              Texto final <span className="campanias-ayuda">(opcional, va al final, arriba del botón)</span>{' '}
               <CampaniaContador valor={mail.textoFinal} maximo={LARGOS.mailTextoFinal} />
             </span>
             <textarea
