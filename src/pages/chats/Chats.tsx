@@ -1916,7 +1916,7 @@ const Chats = () => {
                                             <span>Marcar como leído</span>
                                         </button>
                                     )}
-                                    {role !== 'USER' && (
+                                    {role === 'ROOT' && (
                                         <button onClick={handleDeleteClick} className="chat-action-button chat-button-delete">
                                             <Trash2 size={16} />
                                             <span>Eliminar</span>

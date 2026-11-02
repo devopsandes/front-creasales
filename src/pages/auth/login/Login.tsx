@@ -60,7 +60,7 @@ const Login = () => {
       localStorage.setItem('userId', userId)
     }
 
-    if (role === 'ROOT' || role === 'ADMIN') {
+    if (role === 'ROOT') {
       navigate('/dashboard/empresa')
     } else {
       navigate('/dashboard/chats')

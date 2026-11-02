@@ -105,40 +105,40 @@ const AppRouter = () => {
       >
         <Route index element={<DashboardHome />} />
 
-        {(role === 'ROOT' || role === 'ADMIN') && (
+        {role === 'ROOT' && (
           <Route path='configuracion' element={<Configuracion />} />
         )}
 
-        {(role === 'ROOT' || role === 'ADMIN') && (
+        {role === 'ROOT' && (
           <Route path='bot' element={<BotIA />} />
         )}
 
-        {(role === 'ROOT' || role === 'ADMIN') && (
+        {role === 'ROOT' && (
           <Route path='pixi' element={<BotConfig />} />
         )}
 
-        {(role === 'ROOT' || role === 'ADMIN') && (
+        {role === 'ROOT' && (
           <Route path='empresa' element={<NavTag tags={navEmpresa} />}>
             <Route index element={<DatosEmpresa />} />
             <Route path='form' element={<FormEmpresa />} />
           </Route>
         )}
 
-        {(role === 'ROOT' || role === 'ADMIN') && (
+        {role === 'ROOT' && (
           <Route path='modulos' element={<NavTag tags={navModulos} />}>
             <Route index element={<FormModulos />} />
             <Route path='datos' element={<DatosEmpresa />} />
           </Route>
         )}
 
-        {(role === 'ROOT' || role === 'ADMIN') && (
+        {role === 'ROOT' && (
           <Route path='estados' element={<NavTag tags={navEstados} />}>
             <Route index element={<FormEstados />} />
             <Route path='datos' element={<DatosEmpresa />} />
           </Route>
         )}
 
-        {(role === 'ROOT' || role === 'ADMIN') && (
+        {role === 'ROOT' && (
           <Route path='meta' element={<NavTag tags={navMeta} />}>
             <Route index element={<FormMeta />} />
             <Route path='datos' element={<DatosMeta />} />
@@ -153,14 +153,14 @@ const AppRouter = () => {
           </Route>
         )}
 
-        {(role === 'ROOT' || role === 'ADMIN') && (
+        {role === 'ROOT' && (
           <Route path='categorias' element={<NavTag tags={navCategorias} />}>
             <Route index element={<FormCategorias />} />
             <Route path='datos' element={<DatosEmpresa />} />
           </Route>
         )}
 
-        {(role === 'ROOT' || role === 'ADMIN') && (
+        {role === 'ROOT' && (
           <Route path='acciones' element={<NavTag tags={navAcciones} />}>
             <Route index element={<TableAcciones />} />
           </Route>
@@ -220,9 +220,11 @@ const AppRouter = () => {
           <Route index element={tagsDisabled ? <FeatureDisabledNotice /> : <TableTags />} />
         </Route>
 
-        <Route path='integraciones' element={<NavTag tags={navIntegraciones} />}>
-          <Route index element={<TableIntegraciones />} />
-        </Route>
+        {role === 'ROOT' && (
+          <Route path='integraciones' element={<NavTag tags={navIntegraciones} />}>
+            <Route index element={<TableIntegraciones />} />
+          </Route>
+        )}
 
         {/* Fallback dentro del dashboard para evitar pantalla en blanco en subrutas inexistentes */}
         <Route path='*' element={<DashboardHome />} />

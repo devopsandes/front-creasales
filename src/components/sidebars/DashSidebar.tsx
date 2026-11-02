@@ -61,7 +61,8 @@ const DashSidebar = ({ role }: Props) => {
     <div className='dashsidebar-container'>
       {(role === 'ROOT' || role === 'ADMIN') && (
         <>
-          <DashItem icon={Building2} path='/dashboard/empresa' titulo="Empresa" />
+          {/* Configuración del sistema: solo ROOT */}
+          {role === 'ROOT' && <DashItem icon={Building2} path='/dashboard/empresa' titulo="Empresa" />}
           <DashItem icon={MessageCircle} path='/dashboard/chats' titulo="Chats" />
           <DashItem icon={History} path='/dashboard/conversaciones' titulo="Conversaciones" />
           <DashItem icon={MailCheckIcon} path='/dashboard/emisivos' titulo="Emisivos" />
@@ -69,18 +70,26 @@ const DashSidebar = ({ role }: Props) => {
           <DashItem icon={UserCircle2} path='/dashboard/clientes' titulo="Clientes" />
           <DashItem icon={Stethoscope} path='/dashboard/estudios-bot' titulo="Estudios (bot)" />
           {!quickResponsesDisabled && <DashItem icon={QuickReplies} path='/dashboard/respuestas-rapidas' titulo="Respuestas rápidas" />}
-          <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta" />
+          {role === 'ROOT' && <DashItem icon={FaMeta} path='/dashboard/meta' titulo="Meta" />}
           <DashItem icon={UsersRound} path='/dashboard/usuarios' titulo="Usuarios" />
-          <DashItem icon={Bot} path='/dashboard/bot' titulo="BOT/IA" />
-          <DashItem icon={BotMessageSquare} path='/dashboard/pixi' titulo="Config. Pixi" />
-          <DashItem icon={ListChecks} path='/dashboard/estados' titulo="Estados" />
-          <DashItem icon={Boxes} path='/dashboard/modulos' titulo="Modulos" />
-          <DashItem icon={Grid3x3} path='/dashboard/categorias' titulo="Categorias" />
-          <DashItem icon={CheckSquare} path='/dashboard/acciones' titulo="Acciones" />
+          {role === 'ROOT' && (
+            <>
+              <DashItem icon={Bot} path='/dashboard/bot' titulo="BOT/IA" />
+              <DashItem icon={BotMessageSquare} path='/dashboard/pixi' titulo="Config. Pixi" />
+              <DashItem icon={ListChecks} path='/dashboard/estados' titulo="Estados" />
+              <DashItem icon={Boxes} path='/dashboard/modulos' titulo="Modulos" />
+              <DashItem icon={Grid3x3} path='/dashboard/categorias' titulo="Categorias" />
+              <DashItem icon={CheckSquare} path='/dashboard/acciones' titulo="Acciones" />
+            </>
+          )}
           {!tagsDisabled && <DashItem icon={Tag} path='/dashboard/tags' titulo="Etiquetas" />}
           <DashItem icon={CalendarClock} path='/dashboard/dias-especiales' titulo="Días especiales" />
-          <DashItem icon={Settings} path='/dashboard/configuracion' titulo="Configuración" />
-          <DashItem icon={Plug2} path='/dashboard/integraciones' titulo="Integraciones" />
+          {role === 'ROOT' && (
+            <>
+              <DashItem icon={Settings} path='/dashboard/configuracion' titulo="Configuración" />
+              <DashItem icon={Plug2} path='/dashboard/integraciones' titulo="Integraciones" />
+            </>
+          )}
           <DashItem icon={LifeBuoy} path='/dashboard/soporte' titulo="Mesa de ayuda" />
 
           <div className="dashsidebar-logout" onClick={handleLogoutClick}>

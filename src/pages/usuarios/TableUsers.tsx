@@ -34,7 +34,8 @@ const TableUsers = () => {
   const role = localStorage.getItem('role') || '';
   const navigate = useNavigate();
   const dispatch = useDispatch()
-  const canResyncUsers = role === 'ROOT' || role === 'ADMIN';
+  // Eliminar y Sincronizar: solo ROOT.
+  const canResyncUsers = role === 'ROOT';
 
   const handleAuthSession = (payload: any): boolean => {
     const authReason = getAuthSessionReason(payload);
@@ -309,12 +310,14 @@ const TableUsers = () => {
                       >
                         Editar
                       </button>
-                      <button
-                        className="usuarios-button-delete"
-                        onClick={() => handleDeleteUser(user)}
-                      >
-                        Eliminar
-                      </button>
+                      {canResyncUsers && (
+                        <button
+                          className="usuarios-button-delete"
+                          onClick={() => handleDeleteUser(user)}
+                        >
+                          Eliminar
+                        </button>
+                      )}
                       {canResyncUsers && (
                         <button
                           className="usuarios-button-resync"
