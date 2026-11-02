@@ -81,7 +81,9 @@ const UserSearchModal = () => {
     }
   }, [modalView]);
 
+  // Solo usuarios activos: a los inactivos el back les rechaza la asignación.
   const filteredUsers = users.filter(user => {
+    if (user.activo !== true) return false;
     const completo = user.nombre + ' ' + user.apellido;
     return completo.toLocaleLowerCase().includes(search.toLowerCase())
   });
