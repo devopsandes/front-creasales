@@ -388,6 +388,14 @@ export const crearPdfInforme = async (informe: InformeCampania, logo?: string): 
 
   encabezado('Resumen', 60);
   dibujarCifras(informe.resumen);
+  for (const bloque of informe.bloques ?? []) {
+    // Se reserva lugar para el título y una fila de tarjetas: que el título no quede solo al pie de la hoja.
+    asegurar(pt(90));
+    fuente('bold', 10.5, AZUL);
+    doc.text(paraPdf(bloque.titulo), MARGEN_X, y, TEXTO_ARRIBA);
+    y += pt(15);
+    dibujarCifras(bloque.cifras);
+  }
   for (const texto of informe.parrafos) parrafo(texto, 10, pt(14.5), TEXTO, pt(4));
 
   if (informe.tablaEnvio) dibujarTablaEnvio(informe.tablaEnvio);

@@ -13,6 +13,16 @@ const NOMBRE_PERSONA = {
   exafiliados: { plural: 'ex afiliados', singular: 'Ex afiliado' },
 } as const;
 
+/**
+ * Por qué alguien de la lista no recibe la campaña, según el tipo (Karen, 30/10/2026: "descartadas" parecía que las había
+ * sacado ella). A ex afiliados la baja les cuenta y a prestadores no se los cruza con el padrón.
+ */
+const MOTIVO_NO_CORRESPONDE = {
+  afiliados: '(de baja, no están en el padrón o quitadas a mano)',
+  exafiliados: '(no están en el padrón o quitadas a mano)',
+  prestadores: '(quitadas a mano)',
+} as const;
+
 /** Tope de filas por lista de personas: más que eso engorda el PDF sin que nadie lo lea. El detalle completo está en el Excel. */
 export const MAX_FILAS_POR_LISTA = 1000;
 
@@ -24,6 +34,12 @@ const ZONA = 'America/Argentina/Mendoza';
 export interface CifraInforme {
   numero: string;
   rotulo: string;
+}
+
+/** Cifras del resumen de un tema, con su título (Lista, Push, Mail, Banner). */
+export interface BloqueResumen {
+  titulo: string;
+  cifras: CifraInforme[];
 }
 
 export interface TablaInforme {
@@ -52,7 +68,10 @@ export interface InformeCampania {
   titulo: string;
   subtitulo: string;
   pie: string;
+  /** Una sola franja de cifras, sin títulos (encuestas). */
   resumen: CifraInforme[];
+  /** Resumen separado por tema (campañas; pedido de Karen, 30/10/2026). */
+  bloques?: BloqueResumen[];
   parrafos: string[];
   tablaEnvio?: TablaInforme;
   notas: string[];
@@ -284,25 +303,55 @@ export const armarInforme = (campania: Campania, stats: EstadisticasCampania, li
   const nombre = limpiar(campania.nombre) || `Campaña #${campania.id}`;
   const enviada = fechaValida(campania.enviadaAt);
 
-  // --- Resumen: tarjetas de cifras, solo de los canales que la campaña usó.
-  const resumen: CifraInforme[] = [
-    { numero: numero(stats.total), rotulo: plural(stats.total, 'persona en la lista', 'personas en la lista') },
-    { numero: numero(descartadas), rotulo: plural(descartadas, 'descartada de la lista', 'descartadas de la lista') },
+  // --- Resumen: un bloque con título por tema, solo de los canales que la campaña usó (pedido de Karen, 30/10/2026: al
+  // exponer los números no encontraba cuántos recibieron la push). Lo mismo que los párrafos de abajo, pero a la vista.
+  const bloques: BloqueResumen[] = [
+    {
+      titulo: 'Lista',
+      cifras: [
+        { numero: numero(stats.total), rotulo: plural(stats.total, 'persona en la lista', 'personas en la lista') },
+        {
+          numero: numero(vigentes),
+          rotulo: campania.tipoDestinatario === 'afiliados' ? 'vigentes en el padrón (les correspondía recibir la campaña)' : 'les correspondía recibir la campaña',
+        },
+        { numero: numero(descartadas), rotulo: `${plural(descartadas, 'no le correspondía', 'no les correspondía')} ${MOTIVO_NO_CORRESPONDE[campania.tipoDestinatario] ?? MOTIVO_NO_CORRESPONDE.afiliados}` },
+      ],
+    },
   ];
-  if (canales.mail) {
-    resumen.push({ numero: numero(stats.mail.enviados), rotulo: 'recibieron el mail' });
-    resumen.push({ numero: numero(stats.mail.abiertos), rotulo: `abrieron el mail (${textoPorcentaje(stats.mail.abiertos, stats.mail.enviados)})` });
-    if (conBoton) resumen.push({ numero: numero(stats.mail.clicks), rotulo: 'hicieron click en el botón' });
-    resumen.push({ numero: numero(stats.mail.bajas), rotulo: 'pidieron la baja' });
-  }
   if (canales.push) {
-    resumen.push({ numero: numero(pushRecibida), rotulo: 'recibieron la notificación' });
-    resumen.push({ numero: numero(stats.push.leidas), rotulo: `leyeron la notificación (${textoPorcentaje(stats.push.leidas, pushRecibida)})` });
-    resumen.push({ numero: numero(stats.push.sinCuenta + stats.push.apagadas), rotulo: 'sin la app o con la push apagada' });
+    const cifras: CifraInforme[] = [
+      { numero: numero(pushRecibida), rotulo: 'recibieron la notificación (celu o buzón)' },
+      { numero: numero(stats.push.recibieron), rotulo: 'se envió al celu' },
+      { numero: numero(stats.push.enBuzon), rotulo: 'quedó en el buzón de la app (sin celular registrado)' },
+      {
+        numero: numero(stats.push.sinCuenta + stats.push.apagadas + stats.push.sinCuil + stats.push.errores),
+        rotulo: 'no la recibieron (sin la app, push apagada o error)',
+      },
+      { numero: numero(stats.push.leidas), rotulo: `leyeron la notificación (${textoPorcentaje(stats.push.leidas, pushRecibida)})` },
+    ];
+    if (stats.push.pendientes > 0) cifras.push({ numero: numero(stats.push.pendientes), rotulo: 'todavía sin mandar' });
+    bloques.push({ titulo: 'Push', cifras });
+  }
+  if (canales.mail) {
+    const cifras: CifraInforme[] = [
+      { numero: numero(stats.mail.enviados), rotulo: 'recibieron el mail' },
+      { numero: numero(stats.mail.omitidos + stats.mail.errores), rotulo: 'no lo recibieron (sin mail, de baja o rebote)' },
+      { numero: numero(stats.mail.abiertos), rotulo: `abrieron el mail (${textoPorcentaje(stats.mail.abiertos, stats.mail.enviados)})` },
+    ];
+    if (conBoton) cifras.push({ numero: numero(stats.mail.clicks), rotulo: 'hicieron click en el botón' });
+    cifras.push({ numero: numero(stats.mail.bajas), rotulo: 'pidieron la baja' });
+    if (stats.mail.pendientes > 0) cifras.push({ numero: numero(stats.mail.pendientes), rotulo: 'todavía sin mandar' });
+    bloques.push({ titulo: 'Mail', cifras });
   }
   if (canales.banner) {
-    resumen.push({ numero: numero(stats.banner.vieron), rotulo: 'vieron el banner' });
-    resumen.push({ numero: numero(stats.banner.tocaron), rotulo: 'tocaron el banner' });
+    bloques.push({
+      titulo: 'Banner',
+      cifras: [
+        { numero: numero(vigentes), rotulo: 'lo tenían disponible' },
+        { numero: numero(stats.banner.vieron), rotulo: `lo vieron (${textoPorcentaje(stats.banner.vieron, vigentes)})` },
+        { numero: numero(stats.banner.tocaron), rotulo: `lo tocaron (${textoPorcentaje(stats.banner.tocaron, stats.banner.vieron)})` },
+      ],
+    });
   }
 
   // --- Párrafos.
@@ -353,7 +402,7 @@ export const armarInforme = (campania: Campania, stats: EstadisticasCampania, li
     if (stats.push.pendientes > 0) sinLlegar.push(`${numero(stats.push.pendientes)} todavía sin mandar`);
     if ((stats.push.inciertas ?? 0) > 0) sinLlegar.push(`${numero(stats.push.inciertas ?? 0)} ${plural(stats.push.inciertas ?? 0, 'incierta', 'inciertas')} (se cortó el servidor en medio de una tanda, no se sabe si salieron)`);
     parrafos.push(
-      `Push: le llegó al celu a **${numero(stats.push.recibieron)}** y quedó en el buzón de la app de ${numero(stats.push.enBuzon)} (tienen cuenta pero no un celular registrado). ` +
+      `Push: se envió al celu de **${numero(stats.push.recibieron)}** y quedó en el buzón de la app de ${numero(stats.push.enBuzon)} (tienen cuenta pero no un celular registrado). ` +
         `La leyeron **${numero(stats.push.leidas)} de ${numero(pushRecibida)}** (${textoPorcentaje(stats.push.leidas, pushRecibida)}).` +
         (sinLlegar.length ? ` No llegó: ${lista(sinLlegar)}.` : ''),
     );
@@ -470,7 +519,8 @@ export const armarInforme = (campania: Campania, stats: EstadisticasCampania, li
     subtitulo: `${enviada ? `Envío del ${diaMendoza(enviada)}` : 'Campaña sin enviar todavía'} · Datos al ${diaMendoza(ahora)} ${horaMendoza(ahora)} (hora Mendoza)`,
     // El nombre va al final porque el dibujo recorta el pie por ancho (informeCampania.pdf.ts) y lo que se pierde es el nombre.
     pie: `Andes Salud · Informe del ${diaMendoza(ahora)} · ${nombre}`,
-    resumen,
+    resumen: [],
+    bloques,
     parrafos,
     tablaEnvio,
     notas,

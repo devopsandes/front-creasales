@@ -249,7 +249,7 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
           {canales.push && (
             <Tarjeta titulo="Push" subtitulo="Sobre los vigentes.">
               <Destacado valor={textoPorcentaje(s.push.leidas, pushRecibida)} texto={`de lectura: ${numero(s.push.leidas)} leyeron de ${numero(pushRecibida)} que la recibieron (en el celu o en el buzón)`} />
-              <Fila etiqueta="Les llegó al celu" cantidad={s.push.recibieron} base={vigentes} />
+              <Fila etiqueta="Se envió al celu"cantidad={s.push.recibieron} base={vigentes} />
               <Fila etiqueta="Quedó en el buzón de la app" cantidad={s.push.enBuzon} base={vigentes} ayuda="Tienen cuenta pero no un celular registrado" />
               <Fila etiqueta="Push apagada" cantidad={s.push.apagadas} base={vigentes} ayuda="Tienen las notificaciones apagadas: no les llegó" />
               <Fila etiqueta="Sin cuenta en la app" cantidad={s.push.sinCuenta} base={vigentes} />

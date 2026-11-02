@@ -1,6 +1,10 @@
 /* Plantillas.css */
 
 .plantillas-wrapper {
+  /* Scroll propio, como las demás pestañas: .emisivos-tab-content corta lo que sobra (overflow: hidden). */
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
   padding: 24px 24px 60px 24px;
 }
 
