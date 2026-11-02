@@ -53,6 +53,16 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
     const [cantidadTemp, setCantidadTemp] = useState(1)
     const [enviando, setEnviando] = useState(false)
 
+    // Aviso de Andes: prestación ya registrada en los últimos 60 días. Informativo.
+    // Al abrir, si la propuesta del bot trae alguna; después, cada vez que se agrega una.
+    const [modalAlerta, setModalAlerta] = useState<{ nombres: string[]; frase: string } | null>(() => {
+        const conAviso = bot.prestaciones.filter((p) => p.idCodigo && p.alertaDuplicacion)
+        return conAviso.length
+            ? { nombres: conAviso.map((p) => p.descripcion ?? p.codigo ?? ''), frase: conAviso[0].alertaDuplicacion as string }
+            : null
+    })
+    const [entendido, setEntendido] = useState(false)
+
     const motivoSel = useMemo(() => motivos.find((m) => m.idMensaje === motivoId) ?? null, [motivos, motivoId])
 
     // Comentario para el afiliado: arranca con la plantilla del motivo y la operadora lo edita, como en Expendio.
@@ -86,7 +96,7 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
         if (!prestador.id || !efector.id || !p.idCodigo || !idAfiliado) return { ...p, importeConvenido: null }
         try {
             const r = await precioPrestacion(prestador.id, p.idCodigo, idAfiliado, efector.id)
-            return { ...p, importeConvenido: r.importeConvenido ?? null, coseguro: r.coseguro ?? null }
+            return { ...p, importeConvenido: r.importeConvenido ?? null, coseguro: r.coseguro ?? null, alertaDuplicacion: r.alertaDuplicacion ?? null }
         } catch {
             return { ...p, importeConvenido: null }
         }
@@ -99,6 +109,10 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
             cantidad: Math.max(1, cantidadTemp), texto: '(agregada por la operadora)',
         })
         setPrestaciones((prev) => [...prev, nueva])
+        if (nueva.alertaDuplicacion) {
+            setEntendido(false)
+            setModalAlerta({ nombres: [nueva.descripcion ?? nueva.codigo ?? ''], frase: nueva.alertaDuplicacion })
+        }
         setPrestacionTemp(null)
         setCantidadTemp(1)
     }
@@ -117,7 +131,7 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                 if (!p.idCodigo) return p
                 try {
                     const r = await precioPrestacion(prestador.id!, p.idCodigo, idAfiliado, e.idProfesional)
-                    return { ...p, importeConvenido: r.importeConvenido ?? null, coseguro: r.coseguro ?? null }
+                    return { ...p, importeConvenido: r.importeConvenido ?? null, coseguro: r.coseguro ?? null, alertaDuplicacion: r.alertaDuplicacion ?? null }
                 } catch { return { ...p, importeConvenido: null } }
             }))
             setPrestaciones(conPrecios)
@@ -275,7 +289,11 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                                 {prestaciones.length === 0 && <tr><td colSpan={5} className="eb-empty-sm">Sin prestaciones</td></tr>}
                                 {prestaciones.map((p, i) => (
                                     <tr key={`${p.idCodigo}-${i}`}>
-                                        <td><span style={{ color: '#6b7280', fontWeight: 600 }}>{i + 1} -</span> {p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span></td>
+                                        <td>
+                                            <span style={{ color: '#6b7280', fontWeight: 600 }}>{i + 1} -</span>{' '}
+                                            {p.alertaDuplicacion && <span title={p.alertaDuplicacion} style={{ color: '#b45309' }}>⚠ </span>}
+                                            {p.descripcion} <span className="eb-cod">(Cod.:{p.codigo})</span>
+                                        </td>
                                         <td className="eb-cod">{p.texto ?? ''}</td>
                                         <td>
                                             <input type="number" min={1} className="eb-input" style={{ padding: '.3rem .4rem', width: 60 }} value={p.cantidad || ''}
@@ -328,6 +346,34 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                     <FaCheck /> {enviando ? 'Enviando...' : `${etiqueta}${cambios.length ? ' (corregido)' : ' tal como propuso el bot'}`}
                 </button>
             </div>
+
+            {modalAlerta && (
+                <div className="eb-modal-overlay">
+                    <div className="eb-modal" style={{ maxWidth: 560 }}>
+                        <div className="eb-modal-header" style={{ background: '#b45309' }}>
+                            <h3 className="eb-modal-title"><FaExclamationTriangle /> Prestación ya registrada</h3>
+                        </div>
+                        <div className="eb-modal-body" style={{ padding: '1.25rem' }}>
+                            <p style={{ margin: '0 0 .75rem', fontSize: '.875rem', color: '#111827' }}>{modalAlerta.frase}</p>
+                            <ul style={{ margin: '0 0 1rem 1.1rem', padding: 0, fontSize: '.875rem' }}>
+                                {modalAlerta.nombres.map((n, i) => <li key={i}><b>{n}</b></li>)}
+                            </ul>
+                            <label style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-start', fontSize: '.875rem', cursor: 'pointer' }}>
+                                <input type="checkbox" checked={entendido} onChange={(e) => setEntendido(e.target.checked)} style={{ marginTop: 3 }} />
+                                <span>
+                                    Entiendo que {modalAlerta.nombres.length > 1 ? 'las prestaciones' : 'la prestación'} <b>{modalAlerta.nombres.join(', ')}</b>{' '}
+                                    {modalAlerta.nombres.length > 1 ? 'ya fueron cargadas' : 'ya fue cargada'} en un lapso menor a 60 días para este mismo afiliado.
+                                </span>
+                            </label>
+                            <div className="eb-actions">
+                                <button className="eb-btn-primary" disabled={!entendido} onClick={() => { setModalAlerta(null); setEntendido(false) }}>
+                                    Continuar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

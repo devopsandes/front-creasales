@@ -56,7 +56,7 @@ export const resolverEstudio = (id: string, body: ResolverBody) =>
         client.post(`/estudios-bot/${id}/resolver`, body))
 
 export const precioPrestacion = (idConvenio: string, idCodigo: string, idAfiliado: string, idProfesional: string) =>
-    handle<{ importeConvenido?: number | null; coseguro?: number | null; message?: string }>(() =>
+    handle<{ importeConvenido?: number | null; coseguro?: number | null; alertaDuplicacion?: string | null; message?: string }>(() =>
         client.get('/estudios-bot/catalogos/prestaciones/precio', { params: { idConvenio, idCodigo, idAfiliado, idProfesional } }))
 
 export const obtenerImagenEstudio = (id: string) =>

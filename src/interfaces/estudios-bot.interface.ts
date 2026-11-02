@@ -46,6 +46,8 @@ export interface PrestacionElegida {
     alcanza?: boolean
     importeConvenido?: number | null
     coseguro?: number | null
+    /** Frase de Andes si ya se registró para el afiliado en los últimos 60 días. */
+    alertaDuplicacion?: string | null
 }
 
 export interface EstudioListaItem {
