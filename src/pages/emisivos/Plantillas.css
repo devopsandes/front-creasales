@@ -210,3 +210,132 @@
   border: none;
   display: block;
 }
+
+/* Textos editables de Bienvenida y Pre-Alta */
+.plantillas-card-modificada {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.plantillas-card-btn:disabled,
+.plantillas-textos-btn-sec:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.plantillas-textos-btn-sec {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ffffff;
+  color: #0b2a4a;
+  border: 1px solid #0b2a4a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.plantillas-textos-btn-sec:hover:not(:disabled) {
+  background: #eef2f6;
+}
+
+.plantillas-textos-modal {
+  max-width: 760px;
+}
+
+.plantillas-textos-form {
+  flex: 1;
+  overflow: auto;
+  padding: 18px 22px;
+}
+
+.plantillas-textos-aviso {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0b2a4a;
+}
+
+.plantillas-textos-ayuda {
+  margin: 0 0 18px 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.plantillas-textos-campo {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.plantillas-textos-campo label {
+  margin-bottom: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.plantillas-textos-campo input,
+.plantillas-textos-campo textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: #111827;
+  background: #ffffff;
+}
+
+.plantillas-textos-campo textarea {
+  resize: vertical;
+}
+
+.plantillas-textos-contador {
+  align-self: flex-end;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.plantillas-textos-asunto {
+  margin: 0;
+  padding: 10px 22px;
+  font-size: 0.88rem;
+  color: #111827;
+  background: #ffffff;
+}
+
+.plantillas-textos-error,
+.plantillas-textos-ok {
+  margin: 0;
+  padding: 10px 22px;
+  font-size: 0.88rem;
+}
+
+.plantillas-textos-error {
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.plantillas-textos-ok {
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.plantillas-textos-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px;
+  border-top: 1px solid #e5e7eb;
+}
