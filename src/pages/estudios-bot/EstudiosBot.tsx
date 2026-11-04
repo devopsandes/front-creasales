@@ -39,6 +39,18 @@ const RESULTADO_CFG: Record<string, { label: string; color: string }> = {
   DERIVADA: { label: 'Derivado', color: '#92400e' },
 }
 
+/** Etiqueta del canal por el que entró el pedido. Sin origen guardado es del chat. */
+export const ORIGEN_CFG: Record<string, { label: string; cls: string }> = {
+  'WSP-CREASALES': { label: 'CHAT', cls: 'eb-tag-origen-chat' },
+  APPANDROID: { label: 'APP ANDROID', cls: 'eb-tag-origen-android' },
+  APPIOS: { label: 'APP IOS', cls: 'eb-tag-origen-ios' },
+}
+export const TagOrigen = ({ origen }: { origen?: string | null }) => {
+  const key = String(origen ?? 'WSP-CREASALES').toUpperCase()
+  const cfg = ORIGEN_CFG[key] ?? { label: key, cls: 'eb-tag-origen-otro' }
+  return <span className={`eb-tag-prueba eb-tag-origen ${cfg.cls}`} title={`Origen: ${key}`}>{cfg.label}</span>
+}
+
 export const badgeBot = (veredicto: Veredicto, motivo?: string | null, real?: boolean, accion?: string | null): { label: string; cls: string; row: string } => {
   if (real && accion && ACCION_CFG[accion]) return ACCION_CFG[accion]
   if (veredicto === 'DERIVAR' && motivo && MOTIVOS_SIN_MATCH.has(motivo)) {
@@ -220,6 +232,8 @@ const EstudiosBot = () => {
                       {it.es_prueba && <span className="eb-tag-prueba">PRUEBA</span>}
                       {it.modo_sombra === false && <span className="eb-tag-prueba" style={{ background: '#1b7f4b', color: '#fff' }}>REAL</span>}
                       {it.reanalisis_de && <span className="eb-tag-prueba" title={`modo ${it.modo_reanalisis ?? ''}`}>REANÁLISIS</span>}
+                      <TagOrigen origen={it.origen} />
+                      {(it.cantidadImagenes ?? 1) > 1 && <span className="eb-tag-prueba eb-tag-imagenes" title="El pedido tiene varias fotos">{it.cantidadImagenes} FOTOS</span>}
                     </td>
                     <td className="eb-td">{it.provincia ?? '—'}</td>
                     <td className="eb-td eb-td-prestador" title={it.bot_prestador_nombre ?? ''}>{it.bot_prestador_nombre ?? '—'}</td>

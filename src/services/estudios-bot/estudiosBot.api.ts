@@ -59,9 +59,10 @@ export const precioPrestacion = (idConvenio: string, idCodigo: string, idAfiliad
     handle<{ importeConvenido?: number | null; coseguro?: number | null; alertaDuplicacion?: string | null; message?: string }>(() =>
         client.get('/estudios-bot/catalogos/prestaciones/precio', { params: { idConvenio, idCodigo, idAfiliado, idProfesional } }))
 
-export const obtenerImagenEstudio = (id: string) =>
-    handle<{ statusCode: number; url?: string; message?: string }>(() =>
-        client.get(`/estudios-bot/${id}/imagen`))
+/** `n` (desde 1): cuál de las imágenes de un pedido con varias fotos. Sin `n`, la principal. */
+export const obtenerImagenEstudio = (id: string, n?: number) =>
+    handle<{ statusCode: number; url?: string; total?: number; message?: string }>(() =>
+        client.get(`/estudios-bot/${id}/imagen`, { params: n && n > 1 ? { n } : {} }))
 
 export const guardarRevision = (id: string, body: GuardarRevisionBody) =>
     handle<EstudioDetalle & { message?: string | string[] }>(() =>

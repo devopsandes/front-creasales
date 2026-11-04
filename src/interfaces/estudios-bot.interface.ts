@@ -75,6 +75,9 @@ export interface EstudioListaItem {
     estado?: 'RECIBIDO' | 'PENDIENTE' | 'RESUELTO' | 'SOMBRA'
     resuelto_por?: 'BOT' | 'OPERADORA' | 'EXPENDIO' | null
     campos_modificados?: string[] | null
+    /** WSP-CREASALES (chat), APPANDROID o APPIOS (pantalla de estudios de la app). */
+    origen?: string
+    cantidadImagenes?: number
 }
 
 export interface EstudiosListaResponse {
@@ -155,6 +158,10 @@ export interface EstudioDetalle {
     bloqueo?: { tomada: boolean; estado?: string; mensaje: string } | null
     /** Si se resolvió desde Expendio: qué dijo Andes (quién y cuándo). */
     expendio?: { estado: string; mensaje: string; visto: string } | null
+    /** WSP-CREASALES (chat), APPANDROID o APPIOS (pantalla de estudios de la app). */
+    origen?: string
+    /** Todas las imágenes del pedido (la principal primero). Más de una solo en pedidos de la app. */
+    imagenes?: string[]
 }
 
 export interface ResolverBody extends GuardarRevisionBody {

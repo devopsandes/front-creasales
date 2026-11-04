@@ -1,10 +1,10 @@
 // src/pages/estudios-bot/EstudioBotDetalle.tsx
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt, FaSync } from "react-icons/fa"
+import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt, FaSync, FaCopy } from "react-icons/fa"
 import LupaSelector from "./LupaSelector"
 import TrabajoPendiente from "./TrabajoPendiente"
-import { ACCION_CFG, VEREDICTO_CFG, badgeBot, esTodoLaboratorio, formatFecha } from "./EstudiosBot"
+import { ACCION_CFG, VEREDICTO_CFG, TagOrigen, badgeBot, esTodoLaboratorio, formatFecha } from "./EstudiosBot"
 import {
     buscarDiagnosticos, buscarEfectores, buscarPrestaciones, buscarPrestadores, buscarSolicitantes,
     guardarComentarioFinal, guardarRevision, obtenerEstudio, obtenerImagenEstudio, obtenerMotivosRechazo, reanalizarEstudio,
@@ -31,6 +31,8 @@ const EstudioBotDetalle = () => {
 
     const [detalle, setDetalle] = useState<EstudioDetalle | null>(null)
     const [imagenUrl, setImagenUrl] = useState<string | null>(null)
+    /** Pedidos de la app con varias fotos: cuál se está mostrando (desde 1). */
+    const [imagenN, setImagenN] = useState(1)
     const [cargando, setCargando] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [toast, setToast] = useState<{ tipo: 'ok' | 'err'; msg: string } | null>(null)
@@ -84,9 +86,14 @@ const EstudioBotDetalle = () => {
     }
 
     useEffect(() => {
+        if (!id) return
+        setImagenUrl(null)
+        obtenerImagenEstudio(id, imagenN).then((r) => setImagenUrl(r.url ?? null)).catch(() => setImagenUrl(null))
+    }, [id, imagenN])
+
+    useEffect(() => {
         cargar()
         if (id) {
-            obtenerImagenEstudio(id).then((r) => setImagenUrl(r.url ?? null)).catch(() => setImagenUrl(null))
             obtenerMotivosRechazo().then(setMotivos).catch(() => setMotivos([]))
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -221,6 +228,7 @@ const EstudioBotDetalle = () => {
                             {detalle.afiliado_nombre ?? '—'}{' '}
                             {detalle.es_prueba && <span className="eb-tag-prueba">PRUEBA</span>}
                             {bot?.modoSombra === false && <span className="eb-tag-prueba" style={{ background: '#1b7f4b', color: '#fff' }}>REAL</span>}
+                            <TagOrigen origen={detalle.origen} />
                         </div>
                         <div className="eb-cab-sub">
                             N° {detalle.nro_afiliado ?? '—'} · DNI {detalle.dni ?? '—'} · {detalle.provincia ?? '—'} · {formatFecha(detalle.created_at)}
@@ -293,6 +301,20 @@ const EstudioBotDetalle = () => {
                 <div className="eb-card eb-card-imagen">
                     <div className="eb-card-title">
                         Pedido médico
+                        {(detalle.imagenes?.length ?? 1) > 1 && (
+                            <span className="eb-imagen-tabs" title="El pedido tiene varias fotos">
+                                {detalle.imagenes!.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        className={`eb-imagen-tab ${imagenN === i + 1 ? 'eb-imagen-tab-activa' : ''}`}
+                                        onClick={() => setImagenN(i + 1)}
+                                    >
+                                        Foto {i + 1}
+                                    </button>
+                                ))}
+                            </span>
+                        )}
                         {imagenUrl && <a className="eb-btn-link" href={imagenUrl} target="_blank" rel="noreferrer"><FaExternalLinkAlt /> Abrir</a>}
                     </div>
                     {imagenUrl
@@ -670,9 +692,31 @@ const VistaBot = ({ bot, op, total, mostrarJson, setMostrarJson }: {
                 {mostrarJson ? 'Ocultar' : 'Ver'} lo que el bot interpretó de la imagen (JSON)
             </button>
             {mostrarJson && (
-                <pre className="eb-json">{JSON.stringify({ lectura: bot.lectura, matching: bot.matchDetalle }, null, 2)}</pre>
+                <div className="eb-json-wrap">
+                    <BotonCopiar texto={JSON.stringify({ lectura: bot.lectura, matching: bot.matchDetalle }, null, 2)} />
+                    <pre className="eb-json">{JSON.stringify({ lectura: bot.lectura, matching: bot.matchDetalle }, null, 2)}</pre>
+                </div>
             )}
         </div>
+    )
+}
+
+/** Copia el texto al portapapeles y avisa dos segundos. */
+const BotonCopiar = ({ texto }: { texto: string }) => {
+    const [copiado, setCopiado] = useState(false)
+    const copiar = async () => {
+        try {
+            await navigator.clipboard.writeText(texto)
+            setCopiado(true)
+            setTimeout(() => setCopiado(false), 2000)
+        } catch {
+            window.prompt('Copiá el texto:', texto)
+        }
+    }
+    return (
+        <button type="button" className="eb-json-copiar" onClick={copiar} title="Copiar el JSON">
+            <FaCopy /> {copiado ? 'Copiado' : 'Copiar'}
+        </button>
     )
 }
 
