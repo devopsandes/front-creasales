@@ -922,10 +922,15 @@
     }
 }
 
-/* Origen del pedido y cantidad de fotos */
+/* Origen del pedido y cantidad de fotos. Los de chat van sin borde; los de la
+   pantalla de estudios de la app, con borde. Verde = Android, gris = iPhone. */
 .eb-tag-origen-chat { background: #d1fae5; color: #065f46; }
+.eb-tag-origen-web { background: #dbeafe; color: #1e40af; }
+.eb-tag-origen-chat-android { background: #dcfce7; color: #166534; }
+.eb-tag-origen-chat-ios { background: #e5e7eb; color: #111827; }
 .eb-tag-origen-android { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
 .eb-tag-origen-ios { background: #f3f4f6; color: #111827; border: 1px solid #9ca3af; }
+.eb-tag-origen-app-vieja { background: #fef3c7; color: #92400e; border: 1px dashed #f59e0b; }
 .eb-tag-origen-otro { background: #fef3c7; color: #92400e; }
 .eb-tag-imagenes { background: #fee2e2; color: #991b1b; }
 

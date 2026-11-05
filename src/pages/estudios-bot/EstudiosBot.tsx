@@ -39,11 +39,20 @@ const RESULTADO_CFG: Record<string, { label: string; color: string }> = {
   DERIVADA: { label: 'Derivado', color: '#92400e' },
 }
 
-/** Etiqueta del canal por el que entró el pedido. Sin origen guardado es del chat. */
+/**
+ * Etiqueta del origen con el que el pedido entró a Expendio. Por chat según el
+ * canal (WhatsApp, web, app Android, app iPhone); por la pantalla de estudios
+ * de la app (Android, iPhone, o versión vieja sin canal). Sin origen guardado
+ * es un pedido viejo del chat de WhatsApp. Fede, 05/11/2026.
+ */
 export const ORIGEN_CFG: Record<string, { label: string; cls: string }> = {
-  'WSP-CREASALES': { label: 'CHAT', cls: 'eb-tag-origen-chat' },
+  'WSP-CREASALES': { label: 'CHAT WHATSAPP', cls: 'eb-tag-origen-chat' },
+  'WEB-ANDES': { label: 'CHAT WEB', cls: 'eb-tag-origen-web' },
+  'CHAT-ANDROID': { label: 'CHAT ANDROID', cls: 'eb-tag-origen-chat-android' },
+  'CHAT-IOS': { label: 'CHAT IOS', cls: 'eb-tag-origen-chat-ios' },
   APPANDROID: { label: 'APP ANDROID', cls: 'eb-tag-origen-android' },
   APPIOS: { label: 'APP IOS', cls: 'eb-tag-origen-ios' },
+  APP: { label: 'APP (VERSIÓN VIEJA)', cls: 'eb-tag-origen-app-vieja' },
 }
 export const TagOrigen = ({ origen }: { origen?: string | null }) => {
   const key = String(origen ?? 'WSP-CREASALES').toUpperCase()
