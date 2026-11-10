@@ -2331,9 +2331,9 @@ const Chats = () => {
                                                     <ChevronLeft size={16} />
                                                 </button>
                                                 <div className='chat-info-panel-nav-title'>
-                                                    <h3>Información de la conversación{convActual?.numeroConversacion ? ` N° ${convActual.numeroConversacion}` : ''}</h3>
+                                                    <h3>{convActual?.numeroConversacion ? `Conversación N° ${convActual.numeroConversacion}` : 'Conversación'}</h3>
                                                     <span className='chat-info-panel-nav-sub'>
-                                                        {convBase + convIdx + 1} de {Math.max(convTotal, convBase + convCards.length)}{convActual?.estado === 'ABIERTA' ? ' · en curso' : ''}{convLoadingMore ? ' · cargando...' : ''}
+                                                        Información · {convBase + convIdx + 1} de {Math.max(convTotal, convBase + convCards.length)}{convActual?.estado === 'ABIERTA' ? ' · en curso' : ''}{convLoadingMore ? ' · cargando...' : ''}
                                                     </span>
                                                 </div>
                                                 <button

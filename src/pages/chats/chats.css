@@ -1332,9 +1332,9 @@
 }
 
 .chat-info-panel-nav-title h3 {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
 }
 
 .chat-info-panel-nav-sub {
