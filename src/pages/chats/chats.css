@@ -1318,6 +1318,94 @@
     letter-spacing: 0.3px;
 }
 
+/* Navegación entre conversaciones del chat (una tarjeta por conversación) */
+.chat-info-panel-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chat-info-panel-nav-title {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+}
+
+.chat-info-panel-nav-title h3 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-info-panel-nav-sub {
+    display: block;
+    font-size: 0.6875rem;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.chat-info-panel-nav-btn {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #c7d2fe;
+    border-radius: 6px;
+    background: #fff;
+    color: #1e3a8a;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.chat-info-panel-nav-btn:hover:not(:disabled) {
+    background: #e0e7ff;
+}
+
+.chat-info-panel-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* De dónde salen los datos de la tarjeta */
+.chat-info-panel-origen {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    text-transform: none;
+}
+
+.chat-info-panel-origen--andes {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.chat-info-panel-origen--celular {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+/* Aviso: datos por celular (pueden no ser de quien escribió) o error de Andes */
+.chat-info-panel-aviso {
+    margin: 0 0 0.625rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: 6px;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+
+.chat-info-panel-aviso--error {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+
 /* Body del panel con scroll */
 .chat-info-panel-body {
     flex: 1;

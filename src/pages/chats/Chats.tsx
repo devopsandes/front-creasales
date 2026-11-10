@@ -1,7 +1,7 @@
 import React, { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
-import { findChatById, findChatMessagesLite, findChatTimeline, getUserData, getAfiliadoIdentificado, setChatBotState, crearNotaPrivada } from '../../services/chats/chats.services'
+import { findChatById, findChatMessagesLite, findChatTimeline, getUserData, setChatBotState, crearNotaPrivada, getConversacionesAfiliado, getAfiliadoConversacion, ConversacionAfiliadoItem, AfiliadoConversacionResponse } from '../../services/chats/chats.services'
 import { MessageLiteItem, TimelineItem } from '../../interfaces/chats.interface'
 import { formatCreatedAt, menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
@@ -146,7 +146,20 @@ const Chats = () => {
     const [isMentionModalOpen, setIsMentionModalOpen] = useState(false)
     const [detailChatTags, setDetailChatTags] = useState<ChatTag[]>([])
     const [detailTagsFetched, setDetailTagsFetched] = useState(false)
-    const [afiliadoIdentificado, setAfiliadoIdentificado] = useState<any | null>(null)
+    // Panel derecho: una tarjeta por conversación del chat. convCards va de la
+    // más nueva a la más vieja; convIdx es la que se está mirando. Los datos
+    // de la tarjeta se piden recién cuando se la mira (no todas de golpe).
+    const [convCards, setConvCards] = useState<ConversacionAfiliadoItem[]>([])
+    const [convTotal, setConvTotal] = useState(0)
+    // Posición global (0 = la más nueva) de la primera tarjeta cargada. Es 0
+    // salvo que se haya abierto desde el buscador por N° de conversación, que
+    // arranca en el bloque donde cae esa conversación y carga hacia los dos lados.
+    const [convBase, setConvBase] = useState(0)
+    const [convLoadingMore, setConvLoadingMore] = useState(false)
+    const [convIdx, setConvIdx] = useState(0)
+    const [convAfiliado, setConvAfiliado] = useState<AfiliadoConversacionResponse | null>(null)
+    const [convAfiliadoLoading, setConvAfiliadoLoading] = useState(false)
+    const [convRefreshNonce, setConvRefreshNonce] = useState(0)
     const [showScrollBtn, setShowScrollBtn] = useState(false)
     const [newMessagesCount, setNewMessagesCount] = useState(0)
 
@@ -200,7 +213,6 @@ const Chats = () => {
         token,
         onAuthExpired: openAuthSessionIfNeeded,
     })
-    const dataUser = useSelector((state: RootState) => state.action.dataUser)
     const mentionsMode = useSelector((state: RootState) => state.action.mentionsMode)
     const selectedMentionChatIds = useSelector((state: RootState) => state.action.selectedMentionChatIds)
     const selectedBulkReadChatIds = useSelector((state: RootState) => state.action.selectedBulkReadChatIds)
@@ -1119,6 +1131,7 @@ const Chats = () => {
             setMensajes(prev => { const merged = mergeTimeline(prev, [normalized], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
             if ((normalized as any)?.type === 'NEW_CONVERSATION_STARTED' && (normalized as any)?.payload?.numeroConversacion) {
                 setConversacionNumero((normalized as any).payload.numeroConversacion)
+                setConvIdx(0); setConvRefreshNonce(n => n + 1)
             }
             const evtType = (normalized as any)?.type
             if (!tagsDisabled && (evtType === 'TAGS_UPDATED' || evtType === 'TAGS_REPLACED' || evtType === 'TAG_ASSIGNED' || evtType === 'TAG_REMOVED' || evtType === 'TAG_UNASSIGNED')) {
@@ -1167,7 +1180,9 @@ const Chats = () => {
             })
         }
         const handleAfiliadoIdentificado = (payload: any) => {
-            if (payload?.afiliado) setAfiliadoIdentificado(payload.afiliado)
+            // El bot acaba de identificar al afiliado: la conversación abierta ya
+            // tiene su DNI, así que se vuelve a la última tarjeta y se recarga.
+            if (payload?.afiliado) { setConvIdx(0); setConvRefreshNonce(n => n + 1) }
         }
         const handleError = (error: any) => {
             const authReason = getSocketAuthSessionReason(error)
@@ -1687,21 +1702,90 @@ const Chats = () => {
         }
     }, [])
 
+    // Lista de conversaciones del chat (solo identidad, liviano), en bloques
+    // de 50: hay chats con cientos. Al cambiar de chat se arranca por la última.
+    const CONV_PAGE = 50
     useEffect(() => {
-        if (!id || !token) return
+        if (!id || !token) { setConvCards([]); setConvTotal(0); setConvBase(0); setConvAfiliado(null); return }
         const controller = new AbortController()
-        getAfiliadoIdentificado(token, id, { signal: controller.signal })
+        // Si se abrió desde el buscador por N° de conversación, se arranca en el
+        // bloque de esa conversación y el panel queda alineado con ella.
+        // Un refresco por socket (DNI identificado, conversación nueva) vuelve a la última.
+        const numeroBuscado = convRefreshNonce === 0 && scrollToConversacion ? scrollToConversacion : undefined
+        getConversacionesAfiliado(token, id, { signal: controller.signal, page: 1, limit: CONV_PAGE, numero: numeroBuscado })
             .then((resp: any) => {
                 if (openAuthSessionIfNeeded(resp)) return
-                if (resp?.afiliado) setAfiliadoIdentificado(resp.afiliado)
+                const items: ConversacionAfiliadoItem[] = Array.isArray(resp?.items) ? resp.items : []
+                const page = Math.max(1, Number(resp?.page ?? 1) || 1)
+                const base = (page - 1) * CONV_PAGE
+                setConvCards(items)
+                setConvTotal(Number(resp?.total ?? items.length) || items.length)
+                setConvBase(base)
+                const idxBuscado = numeroBuscado ? items.findIndex(c => c.numeroConversacion === numeroBuscado) : -1
+                setConvIdx(idxBuscado >= 0 ? idxBuscado : 0)
+            })
+            .catch(() => { setConvCards([]); setConvTotal(0); setConvBase(0) })
+        return () => controller.abort()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, token, convRefreshNonce])
+
+    // Bloque siguiente (más viejas) o anterior (más nuevas) cuando la operadora
+    // se acerca a un extremo de lo cargado.
+    useEffect(() => {
+        if (!id || !token || convLoadingMore || convCards.length === 0) return
+        const faltanViejas = convBase + convCards.length < convTotal
+        const faltanNuevas = convBase > 0
+        const pedirViejas = faltanViejas && convIdx >= convCards.length - 2
+        const pedirNuevas = faltanNuevas && convIdx <= 1
+        if (!pedirViejas && !pedirNuevas) return
+        const page = pedirViejas
+            ? Math.floor((convBase + convCards.length) / CONV_PAGE) + 1
+            : Math.floor(convBase / CONV_PAGE)
+        setConvLoadingMore(true)
+        getConversacionesAfiliado(token, id, { page, limit: CONV_PAGE })
+            .then((resp: any) => {
+                if (openAuthSessionIfNeeded(resp)) return
+                const items: ConversacionAfiliadoItem[] = Array.isArray(resp?.items) ? resp.items : []
+                if (typeof resp?.total === 'number') setConvTotal(resp.total)
+                const vistos = new Set(convCards.map(c => c.id))
+                const nuevos = items.filter(c => !vistos.has(c.id))
+                if (!nuevos.length) return
+                if (pedirViejas) {
+                    setConvCards([...convCards, ...nuevos])
+                } else {
+                    // Se anteponen: la tarjeta que se mira conserva su posición.
+                    setConvCards([...nuevos, ...convCards])
+                    setConvBase(b => Math.max(0, b - nuevos.length))
+                    setConvIdx(i => i + nuevos.length)
+                }
             })
             .catch(() => { })
-        return () => controller.abort()
-    }, [id, token])
+            .finally(() => setConvLoadingMore(false))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, token, convIdx, convCards.length, convTotal, convBase])
 
     useEffect(() => {
-        setAfiliadoIdentificado(null)
+        setConvIdx(0)
+        setConvAfiliado(null)
     }, [id])
+
+    // Datos de la tarjeta que se está mirando, en vivo. Se piden por tarjeta,
+    // así pasar con las flechas no trae todas las conversaciones de golpe.
+    const convActual = convCards[convIdx] ?? null
+    useEffect(() => {
+        if (!id || !token || !convActual) { setConvAfiliado(null); return }
+        const controller = new AbortController()
+        setConvAfiliadoLoading(true)
+        getAfiliadoConversacion(token, id, convActual.id, { signal: controller.signal })
+            .then((resp: any) => {
+                if (openAuthSessionIfNeeded(resp)) return
+                setConvAfiliado(resp ?? null)
+            })
+            .catch(() => { setConvAfiliado(null) })
+            .finally(() => setConvAfiliadoLoading(false))
+        return () => controller.abort()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, token, convActual?.id, convRefreshNonce])
 
     const handleArchivarCancel = () => { setIsArchiveModalOpen(false); }
     const handleDeleteClick = () => { setIsDeleteModalOpen(true); }
@@ -1842,8 +1926,15 @@ const Chats = () => {
         }
     }
 
-    const mappedIdentificado = useMemo(() => mapAfiliadoIdentificado(afiliadoIdentificado), [afiliadoIdentificado])
-    const panelData: any = { ...(dataUser ?? {}), ...(mappedIdentificado ?? {}) }
+    // Lo que se muestra en la tarjeta: con DNI, lo de Andes (mapeado a los
+    // nombres del panel); sin DNI, lo del servicio por celular tal cual llega.
+    // `dataUser` (servicio por celular, nivel chat) se sigue cargando aparte
+    // porque las plantillas lo usan; el panel ya no lo mezcla.
+    const panelData: any = useMemo(() => {
+        if (!convAfiliado?.afiliado) return {}
+        return convAfiliado.origen === 'ANDES' ? (mapAfiliadoIdentificado(convAfiliado.afiliado) ?? {}) : convAfiliado.afiliado
+    }, [convAfiliado])
+    const panelSinDatos = !convAfiliadoLoading && Object.values(panelData).every((v) => v === null || v === undefined || v === '')
 
     return (
         <div className='chats-container'>
@@ -2226,7 +2317,36 @@ const Chats = () => {
                             {infoPanelOpen && (
                                 <div className='chat-info-panel-content'>
                                     <div className='chat-info-panel-header'>
-                                        <h3>Información del Chat</h3>
+                                        {convCards.length === 0 ? (
+                                            <h3>Información del Chat</h3>
+                                        ) : (
+                                            <div className='chat-info-panel-nav'>
+                                                <button
+                                                    type='button'
+                                                    className='chat-info-panel-nav-btn'
+                                                    onClick={() => setConvIdx(i => Math.max(0, i - 1))}
+                                                    disabled={convIdx <= 0 || convBase + convIdx <= 0}
+                                                    title='Conversación siguiente (más nueva)'
+                                                >
+                                                    <ChevronLeft size={16} />
+                                                </button>
+                                                <div className='chat-info-panel-nav-title'>
+                                                    <h3>Información de la conversación{convActual?.numeroConversacion ? ` N° ${convActual.numeroConversacion}` : ''}</h3>
+                                                    <span className='chat-info-panel-nav-sub'>
+                                                        {convBase + convIdx + 1} de {Math.max(convTotal, convBase + convCards.length)}{convActual?.estado === 'ABIERTA' ? ' · en curso' : ''}{convLoadingMore ? ' · cargando...' : ''}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type='button'
+                                                    className='chat-info-panel-nav-btn'
+                                                    onClick={() => setConvIdx(i => Math.min(convCards.length - 1, i + 1))}
+                                                    disabled={convIdx >= convCards.length - 1 || convBase + convIdx >= Math.max(convTotal, convBase + convCards.length) - 1}
+                                                    title='Conversación anterior (más vieja)'
+                                                >
+                                                    <ChevronRight size={16} />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className='chat-info-panel-body'>
@@ -2262,7 +2382,24 @@ const Chats = () => {
 
                                         {/* Datos del afiliado */}
                                         <div className='chat-info-panel-section'>
-                                            <div className='chat-info-panel-section-title'>Datos del Afiliado</div>
+                                            <div className='chat-info-panel-section-title'>
+                                                <span>Datos del Afiliado</span>
+                                                {convAfiliado?.origen === 'ANDES' && convAfiliado.afiliado && <span className='chat-info-panel-origen chat-info-panel-origen--andes'>Andes · DNI {convAfiliado.afiliadoDni ?? ''}</span>}
+                                                {convAfiliado?.origen === 'CELULAR' && convAfiliado.afiliado && <span className='chat-info-panel-origen chat-info-panel-origen--celular'>Por celular</span>}
+                                            </div>
+                                            {convAfiliadoLoading && <span className='chat-info-empty'>Cargando...</span>}
+                                            {!convAfiliadoLoading && convAfiliado?.error && (
+                                                <div className='chat-info-panel-aviso chat-info-panel-aviso--error'>{convAfiliado.error}</div>
+                                            )}
+                                            {!convAfiliadoLoading && convAfiliado?.aviso && (
+                                                <div className='chat-info-panel-aviso'>{convAfiliado.aviso}</div>
+                                            )}
+                                            {!convAfiliadoLoading && !convAfiliado?.error && !convAfiliado?.aviso && convCards.length > 0 && panelSinDatos && (
+                                                <span className='chat-info-empty'>Sin datos para esta conversación</span>
+                                            )}
+                                            {!convAfiliadoLoading && convCards.length === 0 && (
+                                                <span className='chat-info-empty'>Este chat no tiene conversaciones</span>
+                                            )}
                                             <div className='chat-info-panel-rows'>
                                                 {panelData?.apellidoNombre && (
                                                     <div className='chat-info-panel-row'>

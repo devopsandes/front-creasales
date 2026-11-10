@@ -261,6 +261,69 @@ const getUserData = async (token: string, chatId: string): Promise<DataUser & Er
 }
 
 
+/**
+ * Panel "Información de la conversación": conversaciones del chat (de la más
+ * nueva a la más vieja) con el DNI que se identificó en cada una, y después
+ * los datos de la tarjeta que se mira, en vivo desde Andes (o del servicio
+ * por celular si en esa conversación no hubo DNI).
+ */
+export interface ConversacionAfiliadoItem {
+    id: string
+    numeroConversacion: number | null
+    estado: string
+    openedAt: string | null
+    closedAt: string | null
+    afiliadoDni: string | null
+    afiliadoIdAndes: string | null
+}
+
+export interface AfiliadoConversacionResponse {
+    statusCode: number
+    conversacionId: string
+    numeroConversacion: number | null
+    afiliadoDni: string | null
+    afiliadoIdAndes: string | null
+    origen: 'ANDES' | 'CELULAR'
+    afiliado: any | null
+    aviso?: string | null
+    error?: string | null
+    cache?: boolean
+}
+
+const getConversacionesAfiliado = async (
+    token: string,
+    chatId: string,
+    options?: { signal?: AbortSignal; page?: number; limit?: number; numero?: number }
+): Promise<{ statusCode?: number; page?: number; limit?: number; total?: number; items?: ConversacionAfiliadoItem[] } & ErrorResponse> => {
+    try {
+        const headers = { authorization: `Bearer ${token}` }
+        const params: Record<string, number> = { page: options?.page ?? 1, limit: options?.limit ?? 50 }
+        if (options?.numero) params.numero = options.numero
+        const { data } = await chatsClient.get(`/chats/${chatId}/conversaciones`, { headers, params, signal: options?.signal })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) return error.response.data
+        throw error
+    }
+}
+
+const getAfiliadoConversacion = async (
+    token: string,
+    chatId: string,
+    conversacionId: string,
+    options?: { signal?: AbortSignal }
+): Promise<AfiliadoConversacionResponse & ErrorResponse> => {
+    try {
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await chatsClient.get(`/chats/${chatId}/conversaciones/${conversacionId}/afiliado`, { headers, signal: options?.signal })
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) return error.response.data
+        throw error
+    }
+}
+
+
 type GetChatsFilters = {
     q?: string
     operatorId?: string
@@ -509,4 +572,4 @@ const desasignarChat = async (
 }
 
 
-export { findChatById, findChatTimeline, findChatMessagesLite, getUserData, getChats, getChatCounts, getChatCountsByOperator, setChatReadState, setChatBotState, searchByConversacion, desasignarChat, getAfiliadoIdentificado, crearNotaPrivada }
+export { findChatById, findChatTimeline, findChatMessagesLite, getUserData, getChats, getChatCounts, getChatCountsByOperator, setChatReadState, setChatBotState, searchByConversacion, desasignarChat, getAfiliadoIdentificado, crearNotaPrivada, getConversacionesAfiliado, getAfiliadoConversacion }
