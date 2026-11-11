@@ -8,7 +8,7 @@
 //
 // No tiene estado ni efectos: recibe el ítem y una función para abrir la vista
 // previa de documentos (cada pantalla maneja su propio overlay).
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { formatCreatedAt } from "../../utils/functions"
 
 /** Lo que se abre en el modal de vista previa: un documento (PDF) o una imagen. */
@@ -19,16 +19,34 @@ export type DocPreview = { url: string; name: string; kind?: 'document' | 'image
  * Las imágenes se muestran enteras y centradas; los documentos, en un marco.
  */
 export const DocPreviewModal = ({ preview, onClose }: { preview: DocPreview | null; onClose: () => void }) => {
+    // Imágenes: un clic alterna entre "ajustada a la pantalla" y "al doble, con
+    // scroll", para leer letra chica (pedidos médicos sacados con el celular).
+    const [zoom, setZoom] = useState(false)
+    useEffect(() => { setZoom(false) }, [preview?.url])
+
     if (!preview) return null
+    const esImagen = preview.kind === 'image'
     return (
         <div className='doc-preview-overlay' onClick={onClose}>
             <div className='doc-preview-modal' onClick={(e) => e.stopPropagation()}>
                 <div className='doc-preview-header'>
-                    <span className='doc-preview-title'>{preview.name}</span>
-                    <button className='doc-preview-close' onClick={onClose}>Cerrar</button>
+                    <span className='doc-preview-title'>{preview.name}{esImagen ? (zoom ? ' · clic para ajustar' : ' · clic para ampliar') : ''}</span>
+                    <div className='doc-preview-actions'>
+                        <a href={preview.url} target='_blank' rel='noreferrer' className='doc-preview-open' title='Abrir el archivo original en una pestaña nueva'>Abrir original</a>
+                        <button className='doc-preview-close' onClick={onClose}>Cerrar</button>
+                    </div>
                 </div>
-                {preview.kind === 'image'
-                    ? <div className='doc-preview-body--image'><img src={preview.url} alt={preview.name} className='doc-preview-image' /></div>
+                {esImagen
+                    ? (
+                        <div className={`doc-preview-body--image ${zoom ? 'doc-preview-body--zoom' : ''}`}>
+                            <img
+                                src={preview.url}
+                                alt={preview.name}
+                                className={`doc-preview-image ${zoom ? 'doc-preview-image--zoom' : ''}`}
+                                onClick={() => setZoom((z) => !z)}
+                            />
+                        </div>
+                    )
                     : <iframe src={preview.url} title={preview.name} className='doc-preview-iframe' />}
             </div>
         </div>
