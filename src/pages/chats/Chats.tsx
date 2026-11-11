@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { FaCircleUser } from "react-icons/fa6"
 import { findChatById, findChatMessagesLite, findChatTimeline, getUserData, setChatBotState, crearNotaPrivada, getConversacionesAfiliado, getAfiliadoConversacion, ConversacionAfiliadoItem, AfiliadoConversacionResponse } from '../../services/chats/chats.services'
 import { MessageLiteItem, TimelineItem } from '../../interfaces/chats.interface'
-import { formatCreatedAt, menos24hs } from '../../utils/functions'
+import { menos24hs } from '../../utils/functions'
 import { getSocket, connectSocket } from '../../app/slices/socketSlice'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '../../app/store'
@@ -18,6 +18,7 @@ import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionE
 import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
 import PlantillaModal from '../../components/modal/PlantillaModal'
+import TimelineItemView, { getTicketNumberFromPayload, isTimelineEvent } from '../../components/chat/TimelineItemView'
 import './chats.css'
 import { toast } from 'react-toastify'
 import { Usuario } from '../../interfaces/auth.interface'
@@ -322,130 +323,6 @@ const Chats = () => {
         return mode === 'prepend' ? [...filtered, ...prev] : [...prev, ...filtered]
     }
 
-    const resolveEventText = (evt: any): string => {
-        const text = `${evt?.text ?? ""}`.trim()
-        if (text) return text
-        switch (evt?.type) {
-            case "TICKET_CREATED": {
-                const ticketNro = getTicketNumberFromPayload(evt?.payload)
-                return ticketNro ? `Se creó el ticket #${ticketNro}` : "Se creó un ticket"
-            }
-            case "CHAT_ASSIGNED": {
-                const toName = evt?.payload?.toName ?? null
-                const byName = evt?.payload?.byName ?? null
-                if (toName && byName) return `Esta conversación fue asignada a ${toName} por ${byName}`
-                if (toName) return `Esta conversación fue asignada a ${toName}`
-                return "Esta conversación fue asignada"
-            }
-            case "TAG_ASSIGNED": {
-                const tagName = evt?.payload?.tag?.nombre ?? evt?.payload?.tagName ?? evt?.payload?.nombreTag
-                return tagName ? `Se asignó la etiqueta ${tagName}` : "Se asignó una etiqueta"
-            }
-            default:
-                return evt?.type ? `${evt.type}` : "Evento"
-        }
-    }
-
-    // Quién mandó un mensaje saliente: la operadora si quedó guardada, nada para
-    // mensajes viejos de operadoras (sin autor), y "Sistema" para el bot y los avisos.
-    const autorMensajeSaliente = (msj: any): string => {
-        if (msj?.authorName) return formatAuthorName(msj.authorName)
-        if (msj?.origen === 'USUARIO') return ''
-        return 'Sistema'
-    }
-
-    const formatAuthorName = (value: any) => {
-        if (!value || typeof value !== 'string') return ''
-        return value.toLowerCase().split(' ').filter(Boolean).map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
-    }
-
-    const linkifyText = (text: string): React.ReactNode[] => {
-        const urlRegex = /https?:\/\/\S+/gi
-        const parts: React.ReactNode[] = []
-        let lastIndex = 0
-        let match: RegExpExecArray | null
-        let key = 0
-
-        while ((match = urlRegex.exec(text)) !== null) {
-            const url = match[0]
-            if (match.index > lastIndex) {
-                parts.push(<span key={key++}>{text.slice(lastIndex, match.index)}</span>)
-            }
-            parts.push(
-                <a key={key++} href={url} target="_blank" rel="noreferrer" className="chat-media-link">{url}</a>
-            )
-            lastIndex = match.index + url.length
-        }
-        if (lastIndex < text.length) {
-            parts.push(<span key={key++}>{text.slice(lastIndex)}</span>)
-        }
-        return parts
-    }
-
-    const getMediaUrl = (value: any): string | null => {
-        if (!value) return null
-        if (typeof value === "string") return value
-        if (typeof value === "object" && typeof value.url === "string") return value.url
-        return null
-    }
-
-    const MessageContent = ({ msg }: { msg: any }) => {
-        const fallbackText = (msg?.msg_entrada ?? msg?.msg_salida ?? "") as string
-        if (msg?.type === "image") {
-            const url = getMediaUrl(msg?.imageUrl)
-            if (!url) return <span className="chat-text">{fallbackText}</span>
-            return <img src={url} alt="imagen" className="chat-media-img" loading="lazy" />
-        }
-        if (msg?.type === "document") {
-            const url = getMediaUrl(msg?.documentUrl)
-            if (!url) return <span className="chat-text">{fallbackText}</span>
-            const fileName = `${msg?.msg_entrada ?? msg?.msg_salida ?? "documento"}`
-            return (
-                <div className="chat-media-doc">
-                    <button type="button" className="chat-media-link" onClick={() => setDocPreview({ url, name: fileName })}>Ver documento</button>
-                    <a href={url} target="_blank" rel="noreferrer" className="chat-media-link">Abrir / Descargar documento</a>
-                </div>
-            )
-        }
-        if (msg?.type === "audio") {
-            const url = getMediaUrl(msg?.audioUrl)
-            if (!url) return <span className="chat-text">{fallbackText}</span>
-            return (
-                <div className="chat-media-audio">
-                    <audio controls src={url} className="chat-media-audio-player" />
-                    {!!msg?.traduccion && <div className="chat-media-transcripcion">{msg.traduccion}</div>}
-                </div>
-            )
-        }
-
-        const hasUrl = /https?:\/\/\S+/i.test(fallbackText)
-        if (hasUrl) {
-            return (
-                <span className="chat-text" style={{ whiteSpace: 'pre-wrap' }}>
-                    {linkifyText(fallbackText)}
-                </span>
-            )
-        }
-
-        return <span className="chat-text" style={{ whiteSpace: 'pre-wrap' }}>{fallbackText}</span>
-    }
-
-    const renderDocumentoNota = (payload: any) => {
-        const url = payload?.documentUrl
-        if (!url) return null
-        const nombreDoc = `${payload?.documentName ?? 'Documento'}`
-        const esPdf = payload?.documentMimeType === 'application/pdf' || /\.pdf$/i.test(nombreDoc)
-        return (
-            <div className="chat-media-doc" style={{ marginTop: '0.5rem' }}>
-                <span className='mensaje-nota-privada-text'>📄 {nombreDoc}</span>
-                {esPdf && (
-                    <button type="button" className="chat-media-link" onClick={() => setDocPreview({ url, name: nombreDoc })}>Ver documento</button>
-                )}
-                <a href={url} target="_blank" rel="noreferrer" className="chat-media-link">Abrir / Descargar documento</a>
-            </div>
-        )
-    }
-
     type DateSeparator = { kind: "date_separator"; id: string; createdAt: string | Date; label: string; }
     type ConversationSeparator = { kind: "conversation_separator"; id: string; createdAt: string | Date; numero: number; }
     type RenderItem = TimelineItem | DateSeparator | ConversationSeparator
@@ -526,12 +403,6 @@ const Chats = () => {
             timestamp: new Date().toISOString(),
             ...(payload || {}),
         })
-    }
-
-    const getTicketNumberFromPayload = (payload: any): string => {
-        const direct = payload?.nro ?? payload?.ticketNro ?? payload?.ticket?.nro ?? payload?.ticket?.ticketNro
-        if (direct === undefined || direct === null) return ''
-        return `${direct}`.trim()
     }
 
     const getEventCacheKey = (evt: any, chatId: string): string => {
@@ -2076,10 +1947,9 @@ const Chats = () => {
                                             </div>
                                         )
                                     }
-                                    const isEvent = msj?.kind === "event" || (msj?.type && (msj?.text !== undefined || msj?.payload !== undefined) && msj?.msg_entrada === undefined && msj?.msg_salida === undefined)
-                                    if (isEvent) {
+                                    if (isTimelineEvent(msj) && debugTimeline) {
                                         const eventRenderKey = getTimelineKey(msj)
-                                        if (debugTimeline && !renderedEventKeysRef.current.has(eventRenderKey)) {
+                                        if (!renderedEventKeysRef.current.has(eventRenderKey)) {
                                             renderedEventKeysRef.current.add(eventRenderKey)
                                             debugSocketLog('timeline.event.rendered', {
                                                 eventType: msj?.type ?? null,
@@ -2087,107 +1957,9 @@ const Chats = () => {
                                                 eventKey: eventRenderKey,
                                             })
                                         }
-                                        if (msj?.type === "PRIVATE_NOTE_CREATED") {
-                                            return (
-                                                <div className='contenedor-nota-privada' key={key} id={msj?.id ? `event-${msj.id}` : undefined}>
-                                                    <div className='mensaje-nota-privada'>
-                                                        <span className='mensaje-nota-privada-text'>{resolveEventText(msj)}</span>
-                                                        {msj?.payload?.imageUrl && (
-                                                            <img
-                                                                src={msj.payload.imageUrl}
-                                                                alt="imagen nota privada"
-                                                                className="chat-media-img"
-                                                                style={{ maxWidth: '300px', borderRadius: '0.5rem', marginTop: '0.5rem', cursor: 'pointer' }}
-                                                                loading="lazy"
-                                                                onClick={() => setDocPreview({ url: msj.payload.imageUrl, name: 'Imagen nota privada' })}
-                                                            />
-                                                        )}
-                                                        {renderDocumentoNota(msj?.payload)}
-                                                        {msj?.payload?.authorName && <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>}
-                                                    </div>
-                                                    <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
-                                                </div>
-                                            )
-                                        }
-                                        if (msj?.type === "MENTION_CREATED") {
-                                            return (
-                                                <div className='contenedor-nota-privada' key={key} id={msj?.id ? `event-${msj.id}` : undefined}>
-                                                    <div className='mensaje-nota-privada'>
-                                                        <span className='mensaje-nota-privada-text'>{resolveEventText(msj)}</span>
-                                                        {msj?.payload?.text && (
-                                                            <span className='mensaje-nota-privada-text' style={{ display: 'block', marginTop: '4px', fontStyle: 'italic' }}>
-                                                                "{msj.payload.text}"
-                                                            </span>
-                                                        )}
-                                                        {msj?.payload?.imageUrl && (
-                                                            <img
-                                                                src={msj.payload.imageUrl}
-                                                                alt="imagen mención"
-                                                                className="chat-media-img"
-                                                                style={{ maxWidth: '300px', borderRadius: '0.5rem', marginTop: '0.5rem', cursor: 'pointer' }}
-                                                                loading="lazy"
-                                                                onClick={() => setDocPreview({ url: msj.payload.imageUrl, name: 'Imagen mención' })}
-                                                            />
-                                                        )}
-                                                        {renderDocumentoNota(msj?.payload)}
-                                                        {msj?.payload?.authorName && (
-                                                            <span className='mensaje-nota-privada-author'>{formatAuthorName(msj.payload.authorName)}</span>
-                                                        )}
-                                                    </div>
-                                                    <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
-                                                </div>
-                                            )
-                                        }
-                                        if (msj?.type === "NEW_CONVERSATION_STARTED") {
-                                            return (
-                                                <div className='contenedor-nueva-conversacion' key={key}>
-                                                    <p className='mensaje-nueva-conversacion'>{resolveEventText(msj)}</p>
-                                                    <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
-                                                </div>
-                                            )
-                                        }
-                                        return (
-                                            <div
-                                                className='contenedor-archivado'
-                                                key={key}
-                                                id={msj?.id ? `event-${msj.id}` : undefined}
-                                            >
-                                                <p className='mensaje-archivado'>{resolveEventText(msj)}</p>
-                                                <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
-                                            </div>
-                                        )
                                     }
-                                    if (msj?.msg_salida === '%archivado%') {
-                                        return (
-                                            <div className='contenedor-archivado' key={key}>
-                                                <p className='mensaje-archivado'>Archivado</p>
-                                                <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
-                                            </div>
-                                        )
-                                    }
-
-                                    if (msj?.esNota && msj?.msg_salida) {
-                                        return (
-                                            <div className='contenedor-nota-privada' key={key}>
-                                                <div className='mensaje-nota-privada'>
-                                                    <span className='mensaje-nota-privada-text'>{msj.msg_salida}</span>
-                                                </div>
-                                                <span className='timestamp'>{formatCreatedAt(`${msj.createdAt}`)}</span>
-                                            </div>
-                                        )
-                                    }
-
-                                    return (
-                                        <div key={key} className={`${msj.msg_entrada ? 'contenedor-entrada' : 'contenedor-salida'}`}>
-                                            <div className={`${msj.msg_entrada ? 'mensaje-entrada' : 'mensaje-salida'}`}>
-                                                <MessageContent msg={msj} />
-                                            </div>
-                                            <span className='timestamp'>
-                                                {formatCreatedAt(`${msj.createdAt}`)}
-                                                {!msj.msg_entrada && autorMensajeSaliente(msj) ? ` · ${autorMensajeSaliente(msj)}` : ''}
-                                            </span>
-                                        </div>
-                                    )
+                                    // El pintado de mensajes y eventos es compartido con Conversaciones archivadas.
+                                    return <TimelineItemView key={key} item={msj} onPreview={setDocPreview} />
                                 })}
                                 {!condChat && (
                                     <div className='contenedor-archivado contenedor-aviso-24h'>

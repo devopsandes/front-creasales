@@ -5,10 +5,9 @@ import { useDispatch } from "react-redux"
 import {
     getConversacionDetalle,
     ConversacionDetalleResponse,
-    ConversacionTimelineItem,
 } from "../../services/conversaciones/conversaciones.services"
-import { formatCreatedAt } from "../../utils/functions"
 import { getAuthSessionReason } from "../../utils/authSession"
+import TimelineItemView, { DocPreview } from "../../components/chat/TimelineItemView"
 import { openSessionExpired } from "../../app/slices/actionSlice"
 import AfiliadoConversacionCard from "../../components/afiliado/AfiliadoConversacionCard"
 import "../chats/chats.css"
@@ -16,48 +15,6 @@ import "../chats/chats.css"
 const capitalizeText = (text: string | undefined | null): string => {
     if (!text || typeof text !== "string") return ""
     return text.toLowerCase().split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")
-}
-
-const getMediaUrl = (value: any): string | null => {
-    if (!value) return null
-    if (typeof value === "string") return value
-    if (typeof value === "object" && typeof value.url === "string") return value.url
-    return null
-}
-
-const resolveEventText = (evt: ConversacionTimelineItem): string => {
-    const text = `${evt?.text ?? ""}`.trim()
-    if (text) return text
-    return evt?.type ? `${evt.type}` : "Evento"
-}
-
-const MessageContent = ({ msg }: { msg: ConversacionTimelineItem }) => {
-    const fallbackText = (msg?.msg_entrada ?? msg?.msg_salida ?? "") as string
-    if (msg?.type === "image") {
-        const url = getMediaUrl(msg?.imageUrl)
-        if (!url) return <span className="chat-text">{fallbackText}</span>
-        return <img src={url} alt="imagen" className="chat-media-img" loading="lazy" />
-    }
-    if (msg?.type === "document") {
-        const url = getMediaUrl(msg?.documentUrl)
-        if (!url) return <span className="chat-text">{fallbackText}</span>
-        return (
-            <div className="chat-media-doc">
-                <a href={url} target="_blank" rel="noreferrer" className="chat-media-link">Abrir / Descargar documento</a>
-            </div>
-        )
-    }
-    if (msg?.type === "audio") {
-        const url = getMediaUrl(msg?.audioUrl)
-        if (!url) return <span className="chat-text">{fallbackText}</span>
-        return (
-            <div className="chat-media-audio">
-                <audio controls src={url} className="chat-media-audio-player" />
-                {!!msg?.traduccion && <div className="chat-media-transcripcion">{msg.traduccion}</div>}
-            </div>
-        )
-    }
-    return <span className="chat-text" style={{ whiteSpace: "pre-wrap" }}>{fallbackText}</span>
 }
 
 const ConversacionDetalle = () => {
@@ -68,6 +25,7 @@ const ConversacionDetalle = () => {
     const [loading, setLoading] = useState<boolean>(true)
     const [data, setData] = useState<ConversacionDetalleResponse | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [docPreview, setDocPreview] = useState<DocPreview | null>(null)
 
     useEffect(() => {
         if (!id || !token) return
@@ -149,26 +107,23 @@ const ConversacionDetalle = () => {
                             <p className="chat-filter-empty-title">Esta conversación no tiene mensajes.</p>
                         </div>
                     )}
-                    {items.map((msj) => {
-                        const key = msj.id ?? `${msj.createdAt}`
-                        if (msj.kind === "event") {
-                            return (
-                                <div className="contenedor-archivado" key={key}>
-                                    <p className="mensaje-archivado">{resolveEventText(msj)}</p>
-                                    <span className="timestamp">{formatCreatedAt(`${msj.createdAt}`)}</span>
-                                </div>
-                            )
-                        }
-                        return (
-                            <div key={key} className={`${msj.msg_entrada ? "contenedor-entrada" : "contenedor-salida"}`}>
-                                <div className={`${msj.msg_entrada ? "mensaje-entrada" : "mensaje-salida"}`}>
-                                    <MessageContent msg={msj} />
-                                </div>
-                                <span className="timestamp">{formatCreatedAt(`${msj.createdAt}`)}</span>
-                            </div>
-                        )
-                    })}
+                    {/* Mismo pintado que la pantalla de Chats (notas, menciones, autor, adjuntos). */}
+                    {items.map((msj, index) => (
+                        <TimelineItemView key={msj.id ?? `${msj.createdAt}-${index}`} item={msj} onPreview={setDocPreview} />
+                    ))}
                 </div>
+
+                {docPreview && (
+                    <div className='doc-preview-overlay' onClick={() => setDocPreview(null)}>
+                        <div className='doc-preview-modal' onClick={(e) => e.stopPropagation()}>
+                            <div className='doc-preview-header'>
+                                <span className='doc-preview-title'>{docPreview.name}</span>
+                                <button className='doc-preview-close' onClick={() => setDocPreview(null)}>Cerrar</button>
+                            </div>
+                            <iframe src={docPreview.url} title={docPreview.name} className='doc-preview-iframe' />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Panel derecho: la conversación y quién habló en ella (en vivo desde Andes). */}
