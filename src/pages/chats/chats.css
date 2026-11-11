@@ -2075,11 +2075,12 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin: 0 0 0.5rem;
-    padding: 0.5rem 0.75rem;
+    /* Pegado arriba y a los costados: compensa el padding de 1rem de .body-chat. */
+    margin: -1rem -1rem 0.75rem;
+    padding: 0.5rem 1rem;
     background: #fffbeb;
-    border: 1px solid #fcd34d;
-    border-radius: 0.5rem;
+    border: 0;
+    border-bottom: 1px solid #fcd34d;
     color: #92400e;
     font-size: 0.8125rem;
 }

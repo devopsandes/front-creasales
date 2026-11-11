@@ -201,7 +201,9 @@ const Chats = () => {
     // Modo "ver una conversación": cuando la tarjeta del panel no es la actual
     // (flechas o buscador por N°), el chat muestra solo esa conversación, cargada
     // entera de una. La carga normal por páginas queda intacta para la actual.
-    const [convViewItems, setConvViewItems] = useState<TimelineItem[]>([])
+    // Las conversaciones visitadas se acumulan (id -> mensajes): al pasar con
+    // "Siguiente" la anterior sigue cargada más arriba, como en el chat normal.
+    const [convViewCargadas, setConvViewCargadas] = useState<Record<string, TimelineItem[]>>({})
     const [convViewLoading, setConvViewLoading] = useState(false)
     const [convViewNuevos, setConvViewNuevos] = useState(0)
     const viendoConvViejaRef = useRef(false)
@@ -384,6 +386,11 @@ const Chats = () => {
     }
 
     const viendoConvVieja = convBase + convIdx > 0 && Boolean(convCards[convIdx])
+    const convViewItems = useMemo(() => {
+        if (!viendoConvVieja) return [] as TimelineItem[]
+        // convCards va de la más nueva a la más vieja; el chat se lee al revés.
+        return [...convCards].reverse().flatMap((c) => convViewCargadas[c.id] ?? [])
+    }, [viendoConvVieja, convCards, convViewCargadas])
     const renderItems = useMemo(
         () => withDateSeparators(viendoConvVieja ? convViewItems : mensajes),
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1321,27 +1328,42 @@ const Chats = () => {
     useEffect(() => {
         viendoConvViejaRef.current = viendoConvVieja
         if (!viendoConvVieja) {
-            setConvViewItems([])
+            setConvViewCargadas({})
             setConvViewNuevos(0)
             requestAnimationFrame(() => scrollToBottom())
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [viendoConvVieja])
 
+    // Lleva la vista al separador de la conversación elegida (ya cargada o recién cargada).
+    const irASeparadorConv = (numero: number | null | undefined) => {
+        requestAnimationFrame(() => {
+            const el = numero ? document.getElementById(`conv-sep-${numero}`) : null
+            if (el) el.scrollIntoView({ block: 'start' })
+            else if (mensajesContainerRef.current) mensajesContainerRef.current.scrollTop = 0
+        })
+    }
+
     useEffect(() => {
         if (!token || !convVistaId) return
+        const card = convCards.find((c) => c.id === convVistaId)
+        if (convViewCargadas[convVistaId]) { irASeparadorConv(card?.numeroConversacion); return }
         const controller = new AbortController()
         setConvViewLoading(true)
         getConversacionDetalle(token, convVistaId, { signal: controller.signal })
             .then((resp: any) => {
                 if (openAuthSessionIfNeeded(resp)) return
                 const items = Array.isArray(resp?.items) ? resp.items : []
-                setConvViewItems(items.map(normalizeTimelineItem).filter(Boolean) as TimelineItem[])
-                requestAnimationFrame(() => { if (mensajesContainerRef.current) mensajesContainerRef.current.scrollTop = 0 })
+                const numero = card?.numeroConversacion ?? resp?.conversacion?.numeroConversacion ?? null
+                // Cada mensaje sabe de qué conversación es: así los separadores
+                // "Conversación Número X" del chat aparecen solos entre una y otra.
+                const normalizados = (items.map(normalizeTimelineItem).filter(Boolean) as TimelineItem[])
+                    .map((it: any) => (it?.kind === 'message' && numero ? { ...it, numeroConversacion: numero } : it))
+                setConvViewCargadas((prev) => ({ ...prev, [convVistaId]: normalizados }))
+                irASeparadorConv(numero)
             })
             .catch((err: any) => {
                 if (err?.name === 'AbortError' || err?.code === 'ERR_CANCELED') return
-                setConvViewItems([])
                 toast.error('No se pudo cargar la conversación')
             })
             .finally(() => setConvViewLoading(false))
