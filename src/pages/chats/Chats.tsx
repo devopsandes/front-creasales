@@ -1939,6 +1939,19 @@ const Chats = () => {
                                 </div>
                             </div>
 
+                            {viendoConvVieja && (
+                                <div className='conv-view-banner'>
+                                    <span className='conv-view-banner-text'>
+                                        Estás viendo la conversación N° {convCards[convIdx]?.numeroConversacion ?? '—'}
+                                        {convCards[convIdx]?.closedAt ? ` · archivada el ${new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(convCards[convIdx].closedAt as string))}` : ''}
+                                    </span>
+                                    <span className='conv-view-banner-actions'>
+                                        <button type='button' className='conv-chip' onClick={() => setConvIdx(i => Math.min(convCards.length - 1, i + 1))} disabled={convIdx >= convCards.length - 1 || convBase + convIdx >= Math.max(convTotal, convBase + convCards.length) - 1}>‹ Anterior</button>
+                                        <button type='button' className='conv-chip' onClick={() => setConvIdx(i => Math.max(0, i - 1))}>Siguiente ›</button>
+                                        <button type='button' className='conv-chip conv-chip--on' onClick={volverAConversacionActual}>Volver a la actual</button>
+                                    </span>
+                                </div>
+                            )}
                             <div className='body-chat' ref={mensajesContainerRef}>
                                 {timelineError && (
                                     <div className='contenedor-archivado contenedor-aviso-24h'>
@@ -1950,19 +1963,6 @@ const Chats = () => {
                                 {timelineLoadingMore && (
                                     <div className='timeline-loader'>
                                         <div className='loader2'></div>
-                                    </div>
-                                )}
-                                {viendoConvVieja && (
-                                    <div className='conv-view-banner'>
-                                        <span className='conv-view-banner-text'>
-                                            Estás viendo la conversación N° {convCards[convIdx]?.numeroConversacion ?? '—'}
-                                            {convCards[convIdx]?.closedAt ? ` · archivada el ${new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(convCards[convIdx].closedAt as string))}` : ''}
-                                        </span>
-                                        <span className='conv-view-banner-actions'>
-                                            <button type='button' className='conv-chip' onClick={() => setConvIdx(i => Math.min(convCards.length - 1, i + 1))} disabled={convIdx >= convCards.length - 1 || convBase + convIdx >= Math.max(convTotal, convBase + convCards.length) - 1}>‹ Anterior</button>
-                                            <button type='button' className='conv-chip' onClick={() => setConvIdx(i => Math.max(0, i - 1))}>Siguiente ›</button>
-                                            <button type='button' className='conv-chip conv-chip--on' onClick={volverAConversacionActual}>Volver a la actual</button>
-                                        </span>
                                     </div>
                                 )}
                                 {convViewLoading && (

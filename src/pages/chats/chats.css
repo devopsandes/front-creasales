@@ -2067,16 +2067,14 @@
 
 /* ── Modo "ver una conversación" dentro del chat ── */
 .conv-view-banner {
-    position: sticky;
-    top: 0;
-    z-index: 5;
+    /* Franja fija entre la cabecera y los mensajes: siempre visible, sin depender del scroll. */
+    flex-shrink: 0;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    /* Pegado arriba y a los costados: compensa el padding de 1rem de .body-chat. */
-    margin: -1rem -1rem 0.75rem;
+    margin: 0;
     padding: 0.5rem 1rem;
     background: #fffbeb;
     border: 0;
