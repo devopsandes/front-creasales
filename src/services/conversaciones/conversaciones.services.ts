@@ -9,6 +9,9 @@ export interface ConversacionListItem {
     numeroConversacion: number | null
     createdAt: string
     closedAt: string | null
+    canal?: string | null
+    chatId?: string | null
+    afiliadoDni?: string | null
     cliente: {
         id: string
         nombre: string | null
@@ -71,6 +74,20 @@ export interface ConversacionDetalleResponse {
 type GetConversacionesFilters = {
     operatorId?: string
     sistema?: boolean
+    /** Rango por fecha de cierre, formato AAAA-MM-DD. */
+    desde?: string
+    hasta?: string
+    /** Nombre, teléfono o N° de conversación. */
+    q?: string
+    canal?: string
+}
+
+export interface ConversacionesTotalesResponse {
+    statusCode: number
+    total: number
+    sistema: number
+    items: { operatorId: string | null; nombre: string | null; apellido: string | null; total: number }[]
+    cache?: boolean
 }
 
 const getConversaciones = async (
@@ -88,6 +105,10 @@ const getConversaciones = async (
         }
         if (filters?.operatorId) params.operatorId = filters.operatorId
         if (filters?.sistema) params.sistema = "true"
+        if (filters?.desde) params.desde = filters.desde
+        if (filters?.hasta) params.hasta = filters.hasta
+        if (filters?.q) params.q = filters.q
+        if (filters?.canal) params.canal = filters.canal
 
         const { data } = await convClient.get<ConversacionesListResponse & ErrorResponse>(
             "/conversaciones",
@@ -128,4 +149,32 @@ const getConversacionDetalle = async (
     }
 }
 
-export { getConversaciones, getConversacionDetalle }
+const getConversacionesTotales = async (
+    token: string,
+    filters?: Pick<GetConversacionesFilters, "desde" | "hasta" | "q" | "canal">,
+    options?: { signal?: AbortSignal }
+): Promise<ConversacionesTotalesResponse & ErrorResponse> => {
+    try {
+        const headers = { authorization: `Bearer ${token}` }
+        const params: Record<string, string> = {}
+        if (filters?.desde) params.desde = filters.desde
+        if (filters?.hasta) params.hasta = filters.hasta
+        if (filters?.q) params.q = filters.q
+        if (filters?.canal) params.canal = filters.canal
+        const { data } = await convClient.get<ConversacionesTotalesResponse & ErrorResponse>(
+            "/conversaciones/totales",
+            { headers, params, signal: options?.signal }
+        )
+        return data
+    } catch (error) {
+        if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
+            throw error
+        }
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data as any
+        }
+        throw error
+    }
+}
+
+export { getConversaciones, getConversacionDetalle, getConversacionesTotales }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, Outlet, useParams } from "react-router-dom"
-import { User } from "lucide-react"
-import { getConversaciones, ConversacionListItem } from "../../services/conversaciones/conversaciones.services"
+import { Calendar, Search, User, Radio } from "lucide-react"
+import { getConversaciones, getConversacionesTotales, ConversacionListItem, ConversacionesTotalesResponse } from "../../services/conversaciones/conversaciones.services"
 import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
 import { getAuthSessionReason } from "../../utils/authSession"
@@ -37,6 +37,17 @@ const formatFecha = (value: string | null): string => {
 const PAGE_LIMIT = 30
 const SCROLL_BOTTOM_THRESHOLD_PX = 260
 
+const CANAL_LABELS: Record<string, string> = { WHATSAPP: 'WhatsApp', WEB: 'Web', ANDROID: 'App Android', IOS: 'App iOS' }
+const canalLabel = (canal?: string | null) => CANAL_LABELS[String(canal ?? 'WHATSAPP').toUpperCase()] ?? String(canal)
+
+/** AAAA-MM-DD en hora local, para los inputs de fecha. */
+const toInputDate = (d: Date) => {
+    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+}
+const hoy = () => toInputDate(new Date())
+const haceDias = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return toInputDate(d) }
+
 const ListaConversaciones = () => {
     const { id: activeConversacionId } = useParams()
     const dispatch = useDispatch()
@@ -50,6 +61,14 @@ const ListaConversaciones = () => {
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
     const [selectedFilter, setSelectedFilter] = useState<string>("") // "" | "SISTEMA" | operatorId
     const [operadores, setOperadores] = useState<Usuario[]>([])
+    // Rango por fecha de cierre: arranca en los últimos 7 días para no recorrer
+    // todo el histórico sin querer. Búsqueda y canal, opcionales.
+    const [desde, setDesde] = useState<string>(haceDias(7))
+    const [hasta, setHasta] = useState<string>(hoy())
+    const [busqueda, setBusqueda] = useState<string>("")
+    const [q, setQ] = useState<string>("")
+    const [canal, setCanal] = useState<string>("")
+    const [totales, setTotales] = useState<ConversacionesTotalesResponse | null>(null)
 
     const listRef = useRef<HTMLDivElement>(null)
     const loadControllerRef = useRef<AbortController | null>(null)
@@ -82,10 +101,26 @@ const ListaConversaciones = () => {
     }, [token])
 
     const buildFilters = () => {
-        if (selectedFilter === "SISTEMA") return { sistema: true }
-        if (selectedFilter) return { operatorId: selectedFilter }
-        return {}
+        const base = { desde: desde || undefined, hasta: hasta || undefined, q: q || undefined, canal: canal || undefined }
+        if (selectedFilter === "SISTEMA") return { ...base, sistema: true }
+        if (selectedFilter) return { ...base, operatorId: selectedFilter }
+        return base
     }
+
+    // Totales por operadora para el rango, la búsqueda y el canal (sin el filtro
+    // de operadora: así se ven todas y se puede tocar una para filtrar).
+    useEffect(() => {
+        if (!token) return
+        const controller = new AbortController()
+        getConversacionesTotales(token, { desde: desde || undefined, hasta: hasta || undefined, q: q || undefined, canal: canal || undefined }, { signal: controller.signal })
+            .then((resp: any) => {
+                if (openAuthSessionIfNeeded(resp)) return
+                setTotales(Array.isArray(resp?.items) ? resp : null)
+            })
+            .catch(() => { })
+        return () => controller.abort()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token, desde, hasta, q, canal])
 
     // Carga inicial / al cambiar filtro
     useEffect(() => {
@@ -116,7 +151,7 @@ const ListaConversaciones = () => {
 
         return () => { controller.abort() }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token, selectedFilter])
+    }, [token, selectedFilter, desde, hasta, q, canal])
 
     const loadMore = async () => {
         if (!token) return
@@ -167,7 +202,33 @@ const ListaConversaciones = () => {
                 </div>
                 <div className="lista-main">
                     <div className="col-lista" ref={listRef} onScroll={handleListScroll}>
-                        <div className="w-full px-2 mb-2 mt-2">
+                        <div className="w-full px-2 mb-2 mt-2 conv-filtros">
+                            <div className="filter-input-row">
+                                <Search className="filter-input-icon" size={18} />
+                                <input
+                                    className="filter-select"
+                                    placeholder="Nombre, teléfono o N° de conversación"
+                                    value={busqueda}
+                                    onChange={(e) => setBusqueda(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') setQ(busqueda.trim()) }}
+                                    onBlur={() => setQ(busqueda.trim())}
+                                />
+                            </div>
+                            <div className="conv-filtros-fechas">
+                                <div className="filter-input-row">
+                                    <Calendar className="filter-input-icon" size={16} />
+                                    <input type="date" className="filter-select" value={desde} max={hasta || undefined} onChange={(e) => setDesde(e.target.value)} title="Desde" />
+                                </div>
+                                <div className="filter-input-row">
+                                    <Calendar className="filter-input-icon" size={16} />
+                                    <input type="date" className="filter-select" value={hasta} min={desde || undefined} onChange={(e) => setHasta(e.target.value)} title="Hasta" />
+                                </div>
+                            </div>
+                            <div className="conv-filtros-rapidos">
+                                <button type="button" className={`conv-chip ${desde === hoy() && hasta === hoy() ? 'conv-chip--on' : ''}`} onClick={() => { setDesde(hoy()); setHasta(hoy()) }}>Hoy</button>
+                                <button type="button" className={`conv-chip ${desde === haceDias(7) && hasta === hoy() ? 'conv-chip--on' : ''}`} onClick={() => { setDesde(haceDias(7)); setHasta(hoy()) }}>7 días</button>
+                                <button type="button" className={`conv-chip ${desde === haceDias(30) && hasta === hoy() ? 'conv-chip--on' : ''}`} onClick={() => { setDesde(haceDias(30)); setHasta(hoy()) }}>30 días</button>
+                            </div>
                             <div className="filter-input-row">
                                 <User className="filter-input-icon" size={18} />
                                 <select
@@ -182,6 +243,33 @@ const ListaConversaciones = () => {
                                     ))}
                                 </select>
                             </div>
+                            <div className="filter-input-row">
+                                <Radio className="filter-input-icon" size={18} />
+                                <select className={`filter-select ${canal === "" ? "filter-select--placeholder" : ""}`} value={canal} onChange={(e) => setCanal(e.target.value)}>
+                                    <option value="">Todos los canales</option>
+                                    <option value="WHATSAPP">WhatsApp</option>
+                                    <option value="WEB">Web</option>
+                                    <option value="ANDROID">App Android</option>
+                                    <option value="IOS">App iOS</option>
+                                </select>
+                            </div>
+
+                            {totales && (
+                                <div className="conv-totales" title="Conversaciones archivadas en el rango, por quién las archivó">
+                                    <button type="button" className={`conv-total ${selectedFilter === '' ? 'conv-total--on' : ''}`} onClick={() => setSelectedFilter('')}>
+                                        <span className="conv-total-n">{totales.total}</span><span className="conv-total-l">Total</span>
+                                    </button>
+                                    {totales.items.map((t) => {
+                                        const key = t.operatorId ?? 'SISTEMA'
+                                        const label = t.operatorId ? [capitalizeText(t.nombre), capitalizeText(t.apellido)].filter(Boolean).join(' ') || 'Operador' : 'Sistema'
+                                        return (
+                                            <button type="button" key={key} className={`conv-total ${selectedFilter === key ? 'conv-total--on' : ''} ${!t.operatorId ? 'conv-total--sistema' : ''}`} onClick={() => setSelectedFilter(selectedFilter === key ? '' : key)} title={label}>
+                                                <span className="conv-total-n">{t.total}</span><span className="conv-total-l">{label}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            )}
                         </div>
 
                         {loading && (
@@ -191,7 +279,7 @@ const ListaConversaciones = () => {
                         )}
                         {!loading && conversaciones.length === 0 && (
                             <div className="chat-filter-empty-state">
-                                <p className="chat-filter-empty-title">No hay conversaciones archivadas</p>
+                                <p className="chat-filter-empty-title">No hay conversaciones archivadas para estos filtros</p>
                             </div>
                         )}
                         {!loading && conversaciones.map((conv) => {
@@ -208,8 +296,12 @@ const ListaConversaciones = () => {
                                             <div className="chat-item-name-row">
                                                 <span className="chat-item-name">{nombre}</span>
                                             </div>
-                                            <div className="chat-item-phone">{telefono}</div>
-                                            <div className="chat-item-phone">Archivó: {formatArchivadoPor(conv)}</div>
+                                            <div className="chat-item-phone">
+                                                {telefono}
+                                                <span className={`conv-canal conv-canal--${String(conv.canal ?? 'WHATSAPP').toLowerCase()}`}>{canalLabel(conv.canal)}</span>
+                                                {conv.numeroConversacion ? <span className="conv-nro">N° {conv.numeroConversacion}</span> : null}
+                                            </div>
+                                            <div className="chat-item-phone">Archivó: <b>{formatArchivadoPor(conv)}</b></div>
                                             <div className="chat-item-phone">{formatFecha(conv.closedAt)}</div>
                                         </div>
                                     </div>

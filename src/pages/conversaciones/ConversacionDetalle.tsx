@@ -10,6 +10,7 @@ import {
 import { formatCreatedAt } from "../../utils/functions"
 import { getAuthSessionReason } from "../../utils/authSession"
 import { openSessionExpired } from "../../app/slices/actionSlice"
+import AfiliadoConversacionCard from "../../components/afiliado/AfiliadoConversacionCard"
 import "../chats/chats.css"
 
 const capitalizeText = (text: string | undefined | null): string => {
@@ -117,6 +118,13 @@ const ConversacionDetalle = () => {
     const archivadoPorLabel = conversacion.archivadoPor
         ? [capitalizeText(conversacion.archivadoPor.nombre), capitalizeText(conversacion.archivadoPor.apellido)].filter(Boolean).join(" ")
         : "Sistema"
+    const onAuthExpired = (resp: any): boolean => {
+        const reason = getAuthSessionReason(resp)
+        if (!reason) return false
+        dispatch(openSessionExpired(reason))
+        return true
+    }
+    const fmt = (v: string | null | undefined) => v ? new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(v)) : "—"
 
     return (
         <div className="chat-with-panel">
@@ -160,6 +168,26 @@ const ConversacionDetalle = () => {
                             </div>
                         )
                     })}
+                </div>
+            </div>
+
+            {/* Panel derecho: la conversación y quién habló en ella (en vivo desde Andes). */}
+            <div className="chat-info-panel chat-info-panel--open conv-detalle-panel">
+                <div className="chat-info-panel-content">
+                    <div className="chat-info-panel-header">
+                        <h3>Conversación{conversacion.numeroConversacion ? ` N° ${conversacion.numeroConversacion}` : ''}</h3>
+                    </div>
+                    <div className="chat-info-panel-body">
+                        <div className="chat-info-panel-section">
+                            <div className="chat-info-panel-section-title">Datos de la Conversación</div>
+                            <div className="chat-info-panel-rows">
+                                <div className="chat-info-panel-row"><span className="chat-info-panel-label">Responsable (archivó)</span><span className="chat-info-panel-value">{archivadoPorLabel}</span></div>
+                                <div className="chat-info-panel-row"><span className="chat-info-panel-label">Abierta</span><span className="chat-info-panel-value">{fmt(conversacion.openedAt)}</span></div>
+                                <div className="chat-info-panel-row"><span className="chat-info-panel-label">Archivada</span><span className="chat-info-panel-value">{fmt(conversacion.closedAt)}</span></div>
+                            </div>
+                        </div>
+                        <AfiliadoConversacionCard token={token} chatId={conversacion.chat?.id} conversacionId={conversacion.id} onAuthExpired={onAuthExpired} />
+                    </div>
                 </div>
             </div>
         </div>

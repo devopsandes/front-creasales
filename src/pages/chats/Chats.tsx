@@ -239,8 +239,9 @@ const Chats = () => {
     }, [token])
 
     const canToggleBot = useMemo(() => {
-        if (role === 'USER') return true
-        if (role !== 'USER') return true
+        // Solo ROOT: conectar/desconectar el bot mueve el chat de pestaña y las
+        // operadoras no lo usan. Fede, 11/11/2026.
+        if (role !== 'ROOT') return false
         if (!currentChat || !userIdFromToken) return false
         const assignment = (() => {
             const a = (currentChat as any)?.assignment
@@ -1616,7 +1617,18 @@ const Chats = () => {
         } catch (error) { console.log(error); isSendingRef.current = false }
     }
 
-    const handleArchivarClick = () => { setIsArchiveModalOpen(true); }
+    // Regla de auditoría acordada con Karen: quien archiva pasa a ser responsable
+    // de la conversación, así que solo se archiva lo propio o lo sin asignar.
+    // Vale para todos los roles. El back lo vuelve a verificar.
+    const asignadoAOtro = Boolean(operador?.id && userIdFromToken && operador.id !== userIdFromToken)
+    const nombreAsignado = operador ? `${operador.nombre ?? ''} ${operador.apellido ?? ''}`.trim() : ''
+    const mensajeNoArchivable = (quien: string) =>
+        `Esta conversación está asignada a ${quien || 'otro operador'}. Solo podés archivar conversaciones asignadas a vos o que no tengan operador asignado. Si necesitás cerrarla, pedile al operador que la archive o asignátela primero. Tené en cuenta que el operador que archiva una conversación pasa a ser responsable de la misma en la auditoría.`
+    const [noArchivableMsg, setNoArchivableMsg] = useState<string | null>(null)
+    const handleArchivarClick = () => {
+        if (asignadoAOtro) { setNoArchivableMsg(mensajeNoArchivable(nombreAsignado)); return }
+        setIsArchiveModalOpen(true)
+    }
 
     const handleToggleBot = async () => {
         if (!token || !id) return
@@ -1669,7 +1681,12 @@ const Chats = () => {
                 const objMsj = { mensaje, chatId: id, telefono, token }
                 socket.emit("archivar", objMsj, (ack: any) => {
                     if (!ack?.ok) {
-                        toast.error(ack?.error || 'No se pudo archivar el chat')
+                        const texto = String(ack?.error ?? '')
+                        if (ack?.code === 'CHAT_ASIGNADO_A_OTRO' || /asignada a /i.test(texto)) {
+                            setNoArchivableMsg(texto || mensajeNoArchivable(nombreAsignado))
+                            return
+                        }
+                        toast.error(texto || 'No se pudo archivar el chat')
                         return
                     }
                     setMensajes((prev) => {
@@ -1985,7 +2002,11 @@ const Chats = () => {
                                             <span>@ Mencionar</span>
                                         </button>
                                     )}
-                                    <button onClick={handleArchivarClick} className="chat-action-button chat-button-archive">
+                                    <button
+                                        onClick={handleArchivarClick}
+                                        className={`chat-action-button chat-button-archive ${asignadoAOtro ? 'chat-button-archive--bloqueado' : ''}`}
+                                        title={asignadoAOtro ? `Asignada a ${nombreAsignado}: solo podés archivar conversaciones asignadas a vos o sin asignar` : 'Archivar'}
+                                    >
                                         <FaFileArrowDown />
                                         <span>Archivar</span>
                                     </button>
@@ -2537,6 +2558,7 @@ const Chats = () => {
                     <ArchiveModal isOpen={isArchiveModalOpen} onClose={handleArchivarCancel} onConfirm={handleArchivarConfirm} />
                     <DeleteModal isOpen={isDeleteModalOpen} onClose={handleDeleteCancel} onConfirm={handleDeleteConfirm} />
                     <ErrorModal isOpen={isErrorModalOpen} onClose={() => { setIsErrorModalOpen(false); setErrorModalMessage('') }} title="Atención" message={errorModalMessage || 'Debe escribir un mensaje'} />
+                    <ErrorModal isOpen={Boolean(noArchivableMsg)} onClose={() => setNoArchivableMsg(null)} title="No es posible archivar esta conversación" message={noArchivableMsg ?? ''} />
                     <SuccessModal isOpen={showMentionReadSuccess} onClose={() => setShowMentionReadSuccess(false)} title="Listo" message={mentionReadSuccessMsg} />
                     {!mentionsDisabled && (
                         <MentionModal
