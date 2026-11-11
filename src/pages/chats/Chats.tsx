@@ -18,7 +18,7 @@ import { openModal, setUserData, setViewSide, switchModalPlantilla, openSessionE
 import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
 import PlantillaModal from '../../components/modal/PlantillaModal'
-import TimelineItemView, { getTicketNumberFromPayload, isTimelineEvent } from '../../components/chat/TimelineItemView'
+import TimelineItemView, { DocPreview, DocPreviewModal, getTicketNumberFromPayload, isTimelineEvent } from '../../components/chat/TimelineItemView'
 import './chats.css'
 import { toast } from 'react-toastify'
 import { Usuario } from '../../interfaces/auth.interface'
@@ -119,7 +119,7 @@ const Chats = () => {
     const [timelineLoadingMore, setTimelineLoadingMore] = useState<boolean>(false)
     const [timelineSource, setTimelineSource] = useState<'timeline' | 'messages-lite'>('timeline')
     const [timelineError, setTimelineError] = useState<string | null>(null)
-    const [docPreview, setDocPreview] = useState<{ url: string; name: string } | null>(null)
+    const [docPreview, setDocPreview] = useState<DocPreview | null>(null)
     const [mensaje, setMensaje] = useState<string>('')
     const [condChat, setCondChat] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
@@ -1983,17 +1983,7 @@ const Chats = () => {
                                 )}
                             </div>
 
-                            {docPreview && (
-                                <div className='doc-preview-overlay' onClick={() => setDocPreview(null)}>
-                                    <div className='doc-preview-modal' onClick={(e) => e.stopPropagation()}>
-                                        <div className='doc-preview-header'>
-                                            <span className='doc-preview-title'>{docPreview.name}</span>
-                                            <button className='doc-preview-close' onClick={() => setDocPreview(null)}>Cerrar</button>
-                                        </div>
-                                        <iframe src={docPreview.url} title={docPreview.name} className='doc-preview-iframe' />
-                                    </div>
-                                </div>
-                            )}
+                            <DocPreviewModal preview={docPreview} onClose={() => setDocPreview(null)} />
 
                             <div className='footer-chat'>
                                 {archivos.length > 0 && (

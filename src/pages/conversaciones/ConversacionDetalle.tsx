@@ -7,7 +7,7 @@ import {
     ConversacionDetalleResponse,
 } from "../../services/conversaciones/conversaciones.services"
 import { getAuthSessionReason } from "../../utils/authSession"
-import TimelineItemView, { DocPreview } from "../../components/chat/TimelineItemView"
+import TimelineItemView, { DocPreview, DocPreviewModal } from "../../components/chat/TimelineItemView"
 import { openSessionExpired } from "../../app/slices/actionSlice"
 import AfiliadoConversacionCard from "../../components/afiliado/AfiliadoConversacionCard"
 import "../chats/chats.css"
@@ -113,17 +113,7 @@ const ConversacionDetalle = () => {
                     ))}
                 </div>
 
-                {docPreview && (
-                    <div className='doc-preview-overlay' onClick={() => setDocPreview(null)}>
-                        <div className='doc-preview-modal' onClick={(e) => e.stopPropagation()}>
-                            <div className='doc-preview-header'>
-                                <span className='doc-preview-title'>{docPreview.name}</span>
-                                <button className='doc-preview-close' onClick={() => setDocPreview(null)}>Cerrar</button>
-                            </div>
-                            <iframe src={docPreview.url} title={docPreview.name} className='doc-preview-iframe' />
-                        </div>
-                    </div>
-                )}
+                <DocPreviewModal preview={docPreview} onClose={() => setDocPreview(null)} />
             </div>
 
             {/* Panel derecho: la conversación y quién habló en ella (en vivo desde Andes). */}

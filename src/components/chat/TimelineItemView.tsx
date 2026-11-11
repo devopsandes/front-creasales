@@ -11,7 +11,29 @@
 import React from "react"
 import { formatCreatedAt } from "../../utils/functions"
 
-export type DocPreview = { url: string; name: string }
+/** Lo que se abre en el modal de vista previa: un documento (PDF) o una imagen. */
+export type DocPreview = { url: string; name: string; kind?: 'document' | 'image' }
+
+/**
+ * Modal de vista previa, compartido por Chats y Conversaciones archivadas.
+ * Las imágenes se muestran enteras y centradas; los documentos, en un marco.
+ */
+export const DocPreviewModal = ({ preview, onClose }: { preview: DocPreview | null; onClose: () => void }) => {
+    if (!preview) return null
+    return (
+        <div className='doc-preview-overlay' onClick={onClose}>
+            <div className='doc-preview-modal' onClick={(e) => e.stopPropagation()}>
+                <div className='doc-preview-header'>
+                    <span className='doc-preview-title'>{preview.name}</span>
+                    <button className='doc-preview-close' onClick={onClose}>Cerrar</button>
+                </div>
+                {preview.kind === 'image'
+                    ? <div className='doc-preview-body--image'><img src={preview.url} alt={preview.name} className='doc-preview-image' /></div>
+                    : <iframe src={preview.url} title={preview.name} className='doc-preview-iframe' />}
+            </div>
+        </div>
+    )
+}
 
 export const getTicketNumberFromPayload = (payload: any): string => {
     const direct = payload?.nro ?? payload?.ticketNro ?? payload?.ticket?.nro ?? payload?.ticket?.ticketNro
@@ -95,7 +117,8 @@ export const MessageContent = ({ msg, onPreview }: { msg: any; onPreview: (doc: 
     if (msg?.type === "image") {
         const url = getMediaUrl(msg?.imageUrl)
         if (!url) return <span className="chat-text">{fallbackText}</span>
-        return <img src={url} alt="imagen" className="chat-media-img" loading="lazy" />
+        // Miniatura: se lee el chat y se ve de qué es la foto; al tocarla se abre grande.
+        return <img src={url} alt="imagen" className="chat-media-img chat-media-img--mini" loading="lazy" title="Ver imagen" onClick={() => onPreview({ url, name: 'Imagen', kind: 'image' })} />
     }
     if (msg?.type === "document") {
         const url = getMediaUrl(msg?.documentUrl)
@@ -164,10 +187,11 @@ const TimelineItemView = ({ item: msj, onPreview }: Props) => {
                             <img
                                 src={msj.payload.imageUrl}
                                 alt="imagen nota privada"
-                                className="chat-media-img"
-                                style={{ maxWidth: '300px', borderRadius: '0.5rem', marginTop: '0.5rem', cursor: 'pointer' }}
+                                className="chat-media-img chat-media-img--mini"
+                                style={{ marginTop: '0.5rem' }}
                                 loading="lazy"
-                                onClick={() => onPreview({ url: msj.payload.imageUrl, name: 'Imagen nota privada' })}
+                                title="Ver imagen"
+                                onClick={() => onPreview({ url: msj.payload.imageUrl, name: 'Imagen nota privada', kind: 'image' })}
                             />
                         )}
                         {renderDocumentoNota(msj?.payload, onPreview)}
@@ -191,10 +215,11 @@ const TimelineItemView = ({ item: msj, onPreview }: Props) => {
                             <img
                                 src={msj.payload.imageUrl}
                                 alt="imagen mención"
-                                className="chat-media-img"
-                                style={{ maxWidth: '300px', borderRadius: '0.5rem', marginTop: '0.5rem', cursor: 'pointer' }}
+                                className="chat-media-img chat-media-img--mini"
+                                style={{ marginTop: '0.5rem' }}
                                 loading="lazy"
-                                onClick={() => onPreview({ url: msj.payload.imageUrl, name: 'Imagen mención' })}
+                                title="Ver imagen"
+                                onClick={() => onPreview({ url: msj.payload.imageUrl, name: 'Imagen mención', kind: 'image' })}
                             />
                         )}
                         {renderDocumentoNota(msj?.payload, onPreview)}
