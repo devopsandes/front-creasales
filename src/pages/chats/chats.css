@@ -2063,3 +2063,59 @@
     opacity: 0.55;
     cursor: not-allowed;
 }
+
+
+/* ── Modo "ver una conversación" dentro del chat ── */
+.conv-view-banner {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 0.5rem;
+    color: #92400e;
+    font-size: 0.8125rem;
+}
+
+.conv-view-banner-text {
+    font-weight: 600;
+}
+
+.conv-view-banner-actions {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.conv-view-banner .conv-chip:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.scroll-to-bottom-btn--volver {
+    width: auto;
+    padding: 0 0.9rem;
+    gap: 0.4rem;
+    border-radius: 999px;
+    flex-direction: row;
+    /* El botón redondo se corre 150% de su ancho; este es más ancho, se pega al borde derecho. */
+    transform: translateX(calc(-100% - 16px));
+}
+
+.scroll-to-bottom-btn--volver .scroll-to-bottom-count {
+    font-size: 0.8125rem;
+    margin-bottom: 0;
+}
+
+.scroll-to-bottom-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+}

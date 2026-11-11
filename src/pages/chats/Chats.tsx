@@ -19,6 +19,7 @@ import { ChatTag } from '../../interfaces/chats.interface'
 import { IoIosAttach } from "react-icons/io";
 import PlantillaModal from '../../components/modal/PlantillaModal'
 import TimelineItemView, { DocPreview, DocPreviewModal, getTicketNumberFromPayload, isTimelineEvent } from '../../components/chat/TimelineItemView'
+import { getConversacionDetalle } from '../../services/conversaciones/conversaciones.services'
 import './chats.css'
 import { toast } from 'react-toastify'
 import { Usuario } from '../../interfaces/auth.interface'
@@ -197,8 +198,13 @@ const Chats = () => {
     const nombre = queryParams.get('nombre');
     const eventoId = queryParams.get('eventoId');
     const scrollToConversacion = queryParams.get('scrollToConversacion') ? Number(queryParams.get('scrollToConversacion')) : null
-    const [searchingConversacion, setSearchingConversacion] = useState(false)
-    const conversacionFoundRef = useRef(false)
+    // Modo "ver una conversación": cuando la tarjeta del panel no es la actual
+    // (flechas o buscador por N°), el chat muestra solo esa conversación, cargada
+    // entera de una. La carga normal por páginas queda intacta para la actual.
+    const [convViewItems, setConvViewItems] = useState<TimelineItem[]>([])
+    const [convViewLoading, setConvViewLoading] = useState(false)
+    const [convViewNuevos, setConvViewNuevos] = useState(0)
+    const viendoConvViejaRef = useRef(false)
 
     const mensajesContainerRef = useRef<HTMLDivElement>(null)
     const scrollRestoreRef = useRef<{ height: number; top: number } | null>(null)
@@ -377,7 +383,12 @@ const Chats = () => {
         return out
     }
 
-    const renderItems = useMemo(() => withDateSeparators(mensajes), [mensajes])
+    const viendoConvVieja = convBase + convIdx > 0 && Boolean(convCards[convIdx])
+    const renderItems = useMemo(
+        () => withDateSeparators(viendoConvVieja ? convViewItems : mensajes),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [mensajes, convViewItems, viendoConvVieja]
+    )
     const debugTimeline = typeof window !== 'undefined' && window.localStorage?.getItem("debugTimeline") === "1"
     const timelineEventsSource = getTimelineEventsSource()
     const SOCKET_EVENTS_CACHE_PREFIX = 'timeline_socket_events_v1'
@@ -966,7 +977,10 @@ const Chats = () => {
             setCondChat(menos24hs(new Date(mensaje.createdAt)))
             setMensajes(prev => { const merged = mergeTimeline(prev, [item], 'append'); return merged.length > 1000 ? merged.slice(-1000) : merged })
             scheduleRefreshChatTagsFromAdmin()
-            if (!isNearBottom()) {
+            if (viendoConvViejaRef.current) {
+                // Se está leyendo una conversación vieja: el aviso naranja ofrece volver a la actual.
+                setConvViewNuevos(prev => prev + 1)
+            } else if (!isNearBottom()) {
                 setShowScrollBtn(true)
                 setNewMessagesCount(prev => prev + 1)
             }
@@ -1269,10 +1283,11 @@ const Chats = () => {
     useEffect(() => {
         const container = mensajesContainerRef.current
         if (!container) return
+        if (viendoConvVieja) return
         const onScroll = () => { if (container.scrollTop <= 120) { loadOlderTimeline() } }
         container.addEventListener('scroll', onScroll)
         return () => { container.removeEventListener('scroll', onScroll) }
-    }, [timelineHasMore, timelineCursor, timelineLoadingMore, id, token, timelineSource])
+    }, [timelineHasMore, timelineCursor, timelineLoadingMore, id, token, timelineSource, viendoConvVieja])
 
     const isInitialLoadRef = useRef(true)
 
@@ -1300,50 +1315,44 @@ const Chats = () => {
         return () => window.clearTimeout(timer)
     }, [eventoId, loading, mensajes])
 
+    // Carga la conversación elegida en el panel (flechas o buscador por N°).
+    // Volver a la tarjeta 1 vuelve al modo normal y baja al final del chat.
+    const convVistaId = viendoConvVieja ? convCards[convIdx]?.id ?? null : null
     useEffect(() => {
-        if (!scrollToConversacion || loading) return
-        conversacionFoundRef.current = false
-
-        const tryScrollToConversacion = () => {
-            const el = document.getElementById(`conv-sep-${scrollToConversacion}`)
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                el.classList.add('mention-highlight')
-                window.setTimeout(() => el.classList.remove('mention-highlight'), 2000)
-                conversacionFoundRef.current = true
-                setSearchingConversacion(false)
-                return true
-            }
-            return false
+        viendoConvViejaRef.current = viendoConvVieja
+        if (!viendoConvVieja) {
+            setConvViewItems([])
+            setConvViewNuevos(0)
+            requestAnimationFrame(() => scrollToBottom())
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viendoConvVieja])
 
-        // Intentar scroll inmediato
-        const timer = window.setTimeout(() => {
-            if (tryScrollToConversacion()) return
+    useEffect(() => {
+        if (!token || !convVistaId) return
+        const controller = new AbortController()
+        setConvViewLoading(true)
+        getConversacionDetalle(token, convVistaId, { signal: controller.signal })
+            .then((resp: any) => {
+                if (openAuthSessionIfNeeded(resp)) return
+                const items = Array.isArray(resp?.items) ? resp.items : []
+                setConvViewItems(items.map(normalizeTimelineItem).filter(Boolean) as TimelineItem[])
+                requestAnimationFrame(() => { if (mensajesContainerRef.current) mensajesContainerRef.current.scrollTop = 0 })
+            })
+            .catch((err: any) => {
+                if (err?.name === 'AbortError' || err?.code === 'ERR_CANCELED') return
+                setConvViewItems([])
+                toast.error('No se pudo cargar la conversación')
+            })
+            .finally(() => setConvViewLoading(false))
+        return () => controller.abort()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token, convVistaId])
 
-            // Si no está en el DOM, cargar páginas anteriores hasta encontrarla
-            setSearchingConversacion(true)
-            const loadUntilFound = async () => {
-                let attempts = 0
-                const MAX_ATTEMPTS = 10
-                // ─── CAMBIO 2: usar refs en lugar del estado del closure ───
-                while (attempts < MAX_ATTEMPTS && !conversacionFoundRef.current) {
-                    if (!timelineHasMoreRef.current || !timelineCursorRef.current) break
-                    await loadOlderTimeline()
-                    await new Promise(resolve => window.setTimeout(resolve, 600))
-                    if (tryScrollToConversacion()) return
-                    attempts++
-                }
-                setSearchingConversacion(false)
-                if (!conversacionFoundRef.current) {
-                    toast.info(`No se encontró la conversación ${scrollToConversacion} en el historial cargado`)
-                }
-            }
-            loadUntilFound()
-        }, 400)
-
-        return () => window.clearTimeout(timer)
-    }, [scrollToConversacion, loading])
+    const volverAConversacionActual = () => {
+        if (convBase > 0) setConvRefreshNonce(n => n + 1)
+        else setConvIdx(0)
+    }
 
     useEffect(() => {
         mensajesLenRef.current = Array.isArray(mensajes) ? mensajes.length : 0
@@ -1921,14 +1930,21 @@ const Chats = () => {
                                         <div className='loader2'></div>
                                     </div>
                                 )}
-                                {/* ─── CAMBIO 3: loader de búsqueda solo cuando no está el loader normal ─── */}
-                                {searchingConversacion && !timelineLoadingMore && (
-                                    <div className='timeline-loader'>
-                                        <div className='loader2'></div>
-                                        <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '8px' }}>
-                                            Buscando conversación {scrollToConversacion}...
+                                {viendoConvVieja && (
+                                    <div className='conv-view-banner'>
+                                        <span className='conv-view-banner-text'>
+                                            Estás viendo la conversación N° {convCards[convIdx]?.numeroConversacion ?? '—'}
+                                            {convCards[convIdx]?.closedAt ? ` · archivada el ${new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(convCards[convIdx].closedAt as string))}` : ''}
+                                        </span>
+                                        <span className='conv-view-banner-actions'>
+                                            <button type='button' className='conv-chip' onClick={() => setConvIdx(i => Math.min(convCards.length - 1, i + 1))} disabled={convIdx >= convCards.length - 1 || convBase + convIdx >= Math.max(convTotal, convBase + convCards.length) - 1}>‹ Anterior</button>
+                                            <button type='button' className='conv-chip' onClick={() => setConvIdx(i => Math.max(0, i - 1))}>Siguiente ›</button>
+                                            <button type='button' className='conv-chip conv-chip--on' onClick={volverAConversacionActual}>Volver a la actual</button>
                                         </span>
                                     </div>
+                                )}
+                                {convViewLoading && (
+                                    <div className='timeline-loader'><div className='loader2'></div></div>
                                 )}
                                 {renderItems.map((msj: any, index) => {
                                     const key = msj?.id ?? `${msj?.createdAt ?? "no-date"}-${index}`
@@ -1968,7 +1984,13 @@ const Chats = () => {
                                         </p>
                                     </div>
                                 )}
-                                {showScrollBtn && (
+                                {viendoConvVieja && convViewNuevos > 0 && (
+                                    <button className='scroll-to-bottom-btn scroll-to-bottom-btn--active scroll-to-bottom-btn--volver' onClick={volverAConversacionActual} title='Volver a la conversación actual'>
+                                        <span className='scroll-to-bottom-count'>{convViewNuevos}</span>
+                                        <span className='scroll-to-bottom-label'>{convViewNuevos === 1 ? 'nuevo' : 'nuevos'} · Volver a la actual</span>
+                                    </button>
+                                )}
+                                {!viendoConvVieja && showScrollBtn && (
                                     <button
                                         className={`scroll-to-bottom-btn ${newMessagesCount > 0 ? 'scroll-to-bottom-btn--active' : ''}`}
                                         onClick={scrollToBottom}
