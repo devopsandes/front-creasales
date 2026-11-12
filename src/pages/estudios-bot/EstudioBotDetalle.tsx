@@ -4,6 +4,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt, FaSync, FaCopy } from "react-icons/fa"
 import LupaSelector from "./LupaSelector"
 import TrabajoPendiente from "./TrabajoPendiente"
+import ResumenGrupo from "./ResumenGrupo"
 import { ACCION_CFG, VEREDICTO_CFG, TagOrigen, badgeBot, esTodoLaboratorio, formatFecha } from "./EstudiosBot"
 import {
     buscarDiagnosticos, buscarEfectores, buscarPrestaciones, buscarPrestadores, buscarSolicitantes,
@@ -132,6 +133,14 @@ const EstudioBotDetalle = () => {
         setImagenN(n)
     }
 
+    // Etapa 2: resumen antes de confirmar la solicitud completa.
+    const [resumenAbierto, setResumenAbierto] = useState(false)
+    const alConfirmarGrupo = (d: EstudioDetalle) => {
+        setResumenAbierto(false)
+        if (d.id === id) setDetalle(d)
+        else navigate(`/dashboard/estudios-bot/${d.id}`)
+    }
+
     // "¿Desea procesarla?": la operadora pide analizar una foto que el bot descartó.
     const [fotoAProcesar, setFotoAProcesar] = useState<MultiFoto | null>(null)
     const [procesando, setProcesando] = useState(false)
@@ -203,6 +212,8 @@ const EstudioBotDetalle = () => {
     /** Varias fotos: la foto que se está mirando, si la solicitud tiene mapa de fotos. */
     const fotoActual = detalle?.multi?.fotos.find((f) => f.n === imagenN) ?? null
     const lecturaFoto = (fotoActual?.lectura ?? null) as LecturaFoto | null
+    /** Solicitud con más de un pedido: las decisiones se guardan por pedido y se confirman juntas. */
+    const esGrupo = Boolean(detalle?.multi && (detalle.multi.pedidos ?? 1) > 1)
 
     const validar = (): string | null => {
         if (veredicto === 'RECHAZAR' && !motivoSel) return 'Elegí el motivo de rechazo'
@@ -406,6 +417,52 @@ const EstudioBotDetalle = () => {
                 </div>
 
                 <div className="eb-col-derecha">
+                    {esGrupo && (
+                        <div className="eb-card eb-grupo-barra">
+                            <div className="eb-card-title">
+                                Solicitud con {detalle.multi!.pedidos} pedidos
+                                <span className="eb-hint" style={{ margin: '0 0 0 .5rem', display: 'inline' }}>{detalle.multi!.total} fotos · {detalle.multi!.fotos.filter((f) => !f.analisisId).length} descartadas</span>
+                            </div>
+                            <div className="eb-grupo-items">
+                                {detalle.multi!.decisiones.map((d) => {
+                                    const actual = d.analisisId === detalle.id
+                                    const dec = d.decision
+                                    const estado = d.estado !== 'PENDIENTE'
+                                        ? { txt: d.accion === 'CODIFICADA' ? 'Codificada' : d.accion === 'RECHAZADA' ? 'Rechazada' : d.accion === 'DERIVADA' ? 'Derivada' : 'Resuelta', cls: 'eb-badge-gris' }
+                                        : dec?.accion === 'CODIFICAR' ? { txt: 'Codificar ✓', cls: 'eb-badge-verde' }
+                                            : dec?.accion === 'RECHAZAR' ? { txt: `Rechazar ✓`, cls: 'eb-badge-rojo' }
+                                                : { txt: 'Sin decisión', cls: 'eb-badge-amarillo' }
+                                    return (
+                                        <button
+                                            key={d.analisisId}
+                                            type="button"
+                                            className={`eb-grupo-item ${actual ? 'eb-grupo-item-actual' : ''}`}
+                                            onClick={() => !actual && navigate(`/dashboard/estudios-bot/${d.analisisId}?foto=${d.imagenes[0] ?? 1}`)}
+                                            title={dec?.motivoTexto ?? d.botMotivo ?? ''}
+                                        >
+                                            <span>Pedido {d.pedido} <small>· foto {d.imagenes.join(', ')}</small></span>
+                                            <span className={`eb-badge ${estado.cls}`}>{estado.txt}</span>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                            {detalle.multi!.decisiones.some((d) => d.estado === 'PENDIENTE') && (
+                                <div className="eb-actions" style={{ marginTop: '.5rem' }}>
+                                    <span className="eb-hint" style={{ marginRight: 'auto' }}>
+                                        {detalle.multi!.confirmable ? 'Todos los pedidos tienen decisión. Revisá el resumen y confirmá.' : 'Falta guardar la decisión de algún pedido.'}
+                                    </span>
+                                    <button type="button" className="eb-btn-primary" disabled={!detalle.multi!.confirmable} onClick={() => setResumenAbierto(true)}>
+                                        <FaCheckCircle /> Confirmar solicitud completa
+                                    </button>
+                                </div>
+                            )}
+                            {detalle.multi!.decisiones.some((d) => d.error) && (
+                                <div className="eb-error-banner" style={{ marginTop: '.5rem' }}>
+                                    <FaTimesCircle /> <span>Último intento: {detalle.multi!.decisiones.find((d) => d.error)?.error}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     {/* Formulario de la operadora */}
                     <div className="eb-card">
                         <div className="eb-card-title">
@@ -442,12 +499,12 @@ const EstudioBotDetalle = () => {
                             </div>
                         ) : detalle.estado === 'PENDIENTE' && bot ? (
                             <>
-                                {detalle.multi && (detalle.multi.pedidos ?? 1) > 1 && (
+                                {esGrupo && (
                                     <div className="eb-error-banner" style={{ background: '#eff6ff', borderColor: '#bfdbfe', color: '#1e3a8a', marginTop: 0 }}>
-                                        <span>Esta solicitud tiene <b>{detalle.multi.pedidos} pedidos médicos</b> (pestañas de fotos). Por ahora el conjunto se resuelve en Expendio: desde acá solo se puede <b>derivar</b>, y se derivan todos juntos.</span>
+                                        <span>Esta solicitud tiene <b>{detalle.multi!.pedidos} pedidos médicos</b>. Guardá la decisión de cada uno (pestañas de fotos) y después <b>Confirmar solicitud completa</b>: todo sale junto hacia Andes. "Derivar" deriva la solicitud entera.</span>
                                     </div>
                                 )}
-                                <TrabajoPendiente detalle={detalle} motivos={motivos} avisar={avisar} onResuelto={(d) => setDetalle(d)} />
+                                <TrabajoPendiente key={detalle.id} detalle={detalle} motivos={motivos} avisar={avisar} onResuelto={(d) => setDetalle(d)} modoGrupo={esGrupo} />
                             </>
                         ) : detalle.resueltoPor === 'EXPENDIO' ? (
                             <div>
@@ -659,6 +716,10 @@ const EstudioBotDetalle = () => {
                     </div>
                 </div>
             </div>
+
+            {resumenAbierto && detalle.multi && (
+                <ResumenGrupo detalle={detalle} onClose={() => setResumenAbierto(false)} onConfirmado={alConfirmarGrupo} avisar={avisar} />
+            )}
 
             {fotoAProcesar && (
                 <div className="eb-modal-overlay" onClick={() => !procesando && setFotoAProcesar(null)}>

@@ -111,6 +111,36 @@ export interface MultiInfo {
     total: number
     procesadaPor: string | null
     fotos: MultiFoto[]
+    /** Etapa 2: qué decidió la operadora en cada pedido del grupo. */
+    decisiones: DecisionPedido[]
+    /** Todos los pedidos pendientes tienen decisión guardada: se puede confirmar. */
+    confirmable: boolean
+    /** Si está apagado, los rechazados de un grupo mixto no reciben aviso en la app. */
+    mensajesParciales: boolean
+}
+
+export interface DecisionPedido {
+    pedido: number
+    analisisId: string
+    imagenes: number[]
+    estado?: 'RECIBIDO' | 'PENDIENTE' | 'RESUELTO' | 'SOMBRA'
+    accion?: string | null
+    resueltoPor?: string | null
+    botVeredicto: Veredicto
+    botMotivo: string | null
+    decision: {
+        accion: Veredicto | null
+        motivoTexto: string | null
+        textoAfiliado: string | null
+        prestador: string | null
+        prestaciones: { descripcion: string | null; codigo: string | null; cantidad: number; importeConvenido: number | null }[]
+        total: string | null
+        usuario: string | null
+        guardadaEn: string | null
+    } | null
+    /** Rechazo parcial: si el aviso al afiliado salió o por qué no. */
+    mensaje: { texto: string; enviado: boolean; motivo?: string; error?: string } | null
+    error: string | null
 }
 
 export interface EstudiosListaResponse {

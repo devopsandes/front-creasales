@@ -7,7 +7,7 @@ import { FaCheck, FaPlus, FaTrash, FaExclamationTriangle, FaLock } from "react-i
 import LupaSelector from "./LupaSelector"
 import {
     buscarDiagnosticos, buscarEfectores, buscarPrestaciones, buscarPrestadores, buscarSolicitantes,
-    precioPrestacion, resolverEstudio,
+    guardarDecisionEstudio, precioPrestacion, resolverEstudio,
 } from "../../services/estudios-bot/estudiosBot.api"
 import { CatMotivo, CatPrestacion, EstudioDetalle, PrestacionElegida, Ref, Veredicto } from "../../interfaces/estudios-bot.interface"
 import { esTodoLaboratorio } from "./EstudiosBot"
@@ -34,21 +34,30 @@ type Props = {
     motivos: CatMotivo[]
     onResuelto: (d: EstudioDetalle) => void
     avisar: (tipo: 'ok' | 'err', msg: string) => void
+    /**
+     * Solicitud con varios pedidos: codificar y rechazar se GUARDAN como
+     * decisión del pedido y el conjunto sale con "Confirmar solicitud";
+     * derivar deriva la solicitud completa.
+     */
+    modoGrupo?: boolean
 }
 
-const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
+const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar, modoGrupo = false }: Props) => {
     const bot = detalle.bot!
     const idAfiliado = detalle.id_afiliado ?? ''
     const bloqueado = Boolean(detalle.bloqueo && !detalle.bloqueo.tomada)
+    // Modo grupo: si ya hay una decisión guardada, el formulario arranca con ella.
+    const guardada = modoGrupo && detalle.operadora && detalle.operadora.veredicto !== 'DERIVAR' ? detalle.operadora : null
+    const decisionGuardada = detalle.multi?.decisiones.find((d) => d.analisisId === detalle.id)?.decision ?? null
 
-    const [prestador, setPrestador] = useState<Ref>(bot.prestador?.id ? bot.prestador : vacio)
-    const [solicitante, setSolicitante] = useState<Ref>(bot.solicitante?.id ? bot.solicitante : vacio)
-    const [diagnostico, setDiagnostico] = useState<Ref>(bot.diagnostico?.id ? bot.diagnostico : vacio)
-    const [efector, setEfector] = useState<Ref>(bot.efector?.id ? bot.efector : vacio)
-    const [prestaciones, setPrestaciones] = useState<PrestacionElegida[]>(bot.prestaciones.filter((p) => p.idCodigo))
-    const [accion, setAccion] = useState<Veredicto>(bot.veredicto)
-    const [motivoId, setMotivoId] = useState(bot.motivo?.id ?? '')
-    const [comentario, setComentario] = useState('')
+    const [prestador, setPrestador] = useState<Ref>(guardada?.prestador?.id ? guardada.prestador : bot.prestador?.id ? bot.prestador : vacio)
+    const [solicitante, setSolicitante] = useState<Ref>(guardada?.solicitante?.id ? guardada.solicitante : bot.solicitante?.id ? bot.solicitante : vacio)
+    const [diagnostico, setDiagnostico] = useState<Ref>(guardada?.diagnostico?.id ? guardada.diagnostico : bot.diagnostico?.id ? bot.diagnostico : vacio)
+    const [efector, setEfector] = useState<Ref>(guardada?.efector?.id ? guardada.efector : bot.efector?.id ? bot.efector : vacio)
+    const [prestaciones, setPrestaciones] = useState<PrestacionElegida[]>((guardada ? guardada.prestaciones : bot.prestaciones).filter((p) => p.idCodigo))
+    const [accion, setAccion] = useState<Veredicto>(guardada?.veredicto ?? bot.veredicto)
+    const [motivoId, setMotivoId] = useState(guardada?.motivo?.id ?? bot.motivo?.id ?? '')
+    const [comentario, setComentario] = useState(guardada?.comentario ?? '')
     const [prestacionTemp, setPrestacionTemp] = useState<CatPrestacion | null>(null)
     const [cantidadTemp, setCantidadTemp] = useState(1)
     const [enviando, setEnviando] = useState(false)
@@ -67,7 +76,14 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
 
     // Comentario para el afiliado: arranca con la plantilla del motivo y la operadora lo edita, como en Expendio.
     const [textoAfiliado, setTextoAfiliado] = useState('')
-    useEffect(() => { setTextoAfiliado(motivoSel?.texto ?? '') }, [motivoSel?.idMensaje]) // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        // Decisión guardada con el mismo motivo: se respeta el texto que editó la operadora.
+        if (guardada && decisionGuardada?.textoAfiliado && motivoSel?.idMensaje === guardada.motivo?.id) {
+            setTextoAfiliado(decisionGuardada.textoAfiliado)
+            return
+        }
+        setTextoAfiliado(motivoSel?.texto ?? '')
+    }, [motivoSel?.idMensaje]) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Misma regla que el back para saber qué se corrigió.
     const cambios = useMemo(() => {
@@ -159,7 +175,9 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
         if (err) { avisar('err', err); return }
         setEnviando(true)
         try {
-            const r = await resolverEstudio(detalle.id, {
+            // Modo grupo: codificar y rechazar solo se guardan; derivar sigue siendo inmediato (deriva todo).
+            const enviar = modoGrupo && accion !== 'DERIVAR' ? guardarDecisionEstudio : resolverEstudio
+            const r = await enviar(detalle.id, {
                 accion,
                 veredicto: accion,
                 motivo: motivoSel ? { id: motivoSel.idMensaje, texto: motivoSel.tema } : undefined,
@@ -175,7 +193,9 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                 const m = Array.isArray(r.message) ? r.message.join(', ') : r.message
                 throw new Error(m ?? 'No se pudo resolver')
             }
-            avisar('ok', accion === 'CODIFICAR' ? 'Orden codificada' : accion === 'RECHAZAR' ? 'Pedido rechazado' : 'Derivado a Expendio')
+            avisar('ok', modoGrupo && accion !== 'DERIVAR'
+                ? `Decisión guardada para el pedido ${detalle.multi?.pedido ?? ''}: ${accion === 'CODIFICAR' ? 'codificar' : 'rechazar'}`
+                : accion === 'CODIFICAR' ? 'Orden codificada' : accion === 'RECHAZAR' ? 'Pedido rechazado' : 'Derivado a Expendio')
             onResuelto(r)
         } catch (e) {
             avisar('err', e instanceof Error ? e.message : 'Error al resolver')
@@ -207,7 +227,7 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
                 {(['CODIFICAR', 'RECHAZAR', 'DERIVAR'] as Veredicto[]).map((v) => (
                     <label key={v} className={`eb-veredicto-opt ${accion === v ? `eb-sel-${v.toLowerCase()}` : ''}`}>
                         <input type="radio" name="accion" checked={accion === v} onChange={() => setAccion(v)} />
-                        {v === 'CODIFICAR' ? 'Codificar' : v === 'RECHAZAR' ? 'Rechazar' : 'Derivar (resolver en Expendio)'}
+                        {v === 'CODIFICAR' ? 'Codificar' : v === 'RECHAZAR' ? 'Rechazar' : modoGrupo ? 'Derivar la solicitud completa' : 'Derivar (resolver en Expendio)'}
                         {bot.veredicto === v && <span className="eb-tag-prueba" style={{ marginLeft: '.4rem' }}>BOT</span>}
                     </label>
                 ))}
@@ -234,7 +254,9 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
             )}
 
             {accion === 'DERIVAR' && (
-                <span className="eb-hint" style={{ marginTop: '.75rem' }}>No se manda nada a Andes. El pedido queda en Expendio para resolverlo allá.</span>
+                <span className="eb-hint" style={{ marginTop: '.75rem' }}>
+                    No se manda nada a Andes. {modoGrupo ? 'Toda la solicitud (todos sus pedidos) queda en Expendio para resolverla allá.' : 'El pedido queda en Expendio para resolverlo allá.'}
+                </span>
             )}
 
             {accion === 'CODIFICAR' && (
@@ -342,9 +364,20 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar }: Props) => {
             </div>
 
             <div className="eb-actions">
-                <button className="eb-btn-primary" onClick={confirmar} disabled={enviando || bloqueado}>
-                    <FaCheck /> {enviando ? 'Enviando...' : `${etiqueta}${cambios.length ? ' (corregido)' : ' tal como propuso el bot'}`}
-                </button>
+                {modoGrupo && accion !== 'DERIVAR' ? (
+                    <>
+                        <span className="eb-hint" style={{ marginRight: 'auto' }}>
+                            {guardada ? 'Ya hay una decisión guardada para este pedido; guardar de nuevo la reemplaza.' : 'Nada sale hacia Andes hasta "Confirmar solicitud completa".'}
+                        </span>
+                        <button className="eb-btn-primary" onClick={confirmar} disabled={enviando || bloqueado}>
+                            <FaCheck /> {enviando ? 'Guardando...' : `Guardar decisión: ${etiqueta.toLowerCase()}${cambios.length ? ' (corregido)' : ''}`}
+                        </button>
+                    </>
+                ) : (
+                    <button className="eb-btn-primary" onClick={confirmar} disabled={enviando || bloqueado}>
+                        <FaCheck /> {enviando ? 'Enviando...' : `${etiqueta}${cambios.length ? ' (corregido)' : ' tal como propuso el bot'}`}
+                    </button>
+                )}
             </div>
 
             {modalAlerta && (

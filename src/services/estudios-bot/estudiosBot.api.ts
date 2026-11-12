@@ -64,6 +64,16 @@ export const obtenerImagenEstudio = (id: string, n?: number) =>
     handle<{ statusCode: number; url?: string; total?: number; message?: string }>(() =>
         client.get(`/estudios-bot/${id}/imagen`, { params: n && n > 1 ? { n } : {} }))
 
+/** Varias fotos: guarda qué hacer con este pedido (codificar o rechazar) sin ejecutar nada. */
+export const guardarDecisionEstudio = (id: string, body: ResolverBody) =>
+    handle<EstudioDetalle & { message?: string | string[] }>(() =>
+        client.post(`/estudios-bot/${id}/decision`, body))
+
+/** Varias fotos: ejecuta las decisiones guardadas de toda la solicitud. Devuelve el detalle del pedido 1. */
+export const confirmarGrupoEstudios = (grupoId: string) =>
+    handle<EstudioDetalle & { message?: string | string[] }>(() =>
+        client.post(`/estudios-bot/grupo/${grupoId}/confirmar`, null))
+
 /** Varias fotos: la operadora pide analizar la foto `n` que el bot descartó. Devuelve el detalle del pedido nuevo. */
 export const procesarImagenEstudio = (id: string, n: number) =>
     handle<EstudioDetalle & { message?: string | string[] }>(() =>
