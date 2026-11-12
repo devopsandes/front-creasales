@@ -64,6 +64,11 @@ export const obtenerImagenEstudio = (id: string, n?: number) =>
     handle<{ statusCode: number; url?: string; total?: number; message?: string }>(() =>
         client.get(`/estudios-bot/${id}/imagen`, { params: n && n > 1 ? { n } : {} }))
 
+/** Varias fotos: la operadora pide analizar la foto `n` que el bot descartó. Devuelve el detalle del pedido nuevo. */
+export const procesarImagenEstudio = (id: string, n: number) =>
+    handle<EstudioDetalle & { message?: string | string[] }>(() =>
+        client.post(`/estudios-bot/${id}/procesar-imagen`, null, { params: { n } }))
+
 export const guardarRevision = (id: string, body: GuardarRevisionBody) =>
     handle<EstudioDetalle & { message?: string | string[] }>(() =>
         client.post(`/estudios-bot/${id}/revision`, body))

@@ -243,6 +243,7 @@ const EstudiosBot = () => {
                       {it.reanalisis_de && <span className="eb-tag-prueba" title={`modo ${it.modo_reanalisis ?? ''}`}>REANÁLISIS</span>}
                       <TagOrigen origen={it.origen} />
                       {(it.cantidadImagenes ?? 1) > 1 && <span className="eb-tag-prueba eb-tag-imagenes" title="El pedido tiene varias fotos">{it.cantidadImagenes} FOTOS</span>}
+                      {(it.cantidadPedidos ?? 0) > 1 && <span className="eb-tag-prueba eb-tag-pedidos" title="El bot armó más de un pedido médico con las fotos">{it.cantidadPedidos} PEDIDOS</span>}
                     </td>
                     <td className="eb-td">{it.provincia ?? '—'}</td>
                     <td className="eb-td eb-td-prestador" title={it.bot_prestador_nombre ?? ''}>{it.bot_prestador_nombre ?? '—'}</td>

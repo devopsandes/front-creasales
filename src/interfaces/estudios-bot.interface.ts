@@ -78,6 +78,39 @@ export interface EstudioListaItem {
     /** WSP-CREASALES (chat), APPANDROID o APPIOS (pantalla de estudios de la app). */
     origen?: string
     cantidadImagenes?: number
+    /** Solicitud de la app con varias fotos: cuántos pedidos médicos armó el bot. */
+    cantidadPedidos?: number | null
+}
+
+/** Qué es cada foto de una solicitud con varias imágenes, según el bot. */
+export type RolFoto = 'PEDIDO' | 'CONTINUACION' | 'DUPLICADA' | 'CERTIFICADO' | 'NO_PEDIDO'
+export interface MultiFoto {
+    n: number
+    rol: RolFoto
+    /** CONTINUACION o DUPLICADA: de qué foto. */
+    de: number | null
+    motivo: string | null
+    /** Número de pedido al que pertenece, o null si se descartó. */
+    pedido: number | null
+    /** Fila (estudio) del pedido al que pertenece, o null si se descartó. */
+    analisisId: string | null
+    error: string | null
+    procesadaPor: string | null
+    /** Lo que el bot leyó en una foto descartada. */
+    lectura: Record<string, unknown> | null
+}
+export interface MultiInfo {
+    grupo: string | null
+    /** Qué pedido es este estudio (desde 1). */
+    pedido: number
+    /** Cuántos pedidos tiene la solicitud. */
+    pedidos: number | null
+    /** Fotos (desde 1) que forman este pedido. */
+    imagenes: number[]
+    rol: 'PEDIDO' | 'CERTIFICADO'
+    total: number
+    procesadaPor: string | null
+    fotos: MultiFoto[]
 }
 
 export interface EstudiosListaResponse {
@@ -162,6 +195,8 @@ export interface EstudioDetalle {
     origen?: string
     /** Todas las imágenes del pedido (la principal primero). Más de una solo en pedidos de la app. */
     imagenes?: string[]
+    /** Solicitud de la app con varias fotos: qué foto es qué y a qué pedido lleva cada una. */
+    multi?: MultiInfo | null
 }
 
 export interface ResolverBody extends GuardarRevisionBody {

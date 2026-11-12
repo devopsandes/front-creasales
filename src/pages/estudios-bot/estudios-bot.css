@@ -955,6 +955,59 @@
     border-color: #2563eb;
     color: #fff;
 }
+.eb-imagen-tab small {
+    font-weight: 700;
+    opacity: .8;
+    margin-left: .15rem;
+}
+/* Solicitud con varias fotos: qué es cada una según el bot */
+.eb-imagen-tab.eb-foto-descartada:not(.eb-imagen-tab-activa) {
+    border-style: dashed;
+    color: #9ca3af;
+}
+.eb-imagen-tab.eb-foto-continuacion:not(.eb-imagen-tab-activa) {
+    border-style: dotted;
+    color: #6b7280;
+}
+.eb-imagen-tab.eb-imagen-tab-otro:not(.eb-imagen-tab-activa) {
+    background: #f1f5f9;
+}
+.eb-tag-pedidos { background: #dbeafe; color: #1e40af; }
+.eb-badge-azul { background: #dbeafe; color: #1e40af; }
+
+.eb-foto-aviso {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    align-items: flex-start;
+}
+.eb-foto-lectura {
+    font-size: .8rem;
+    color: #374151;
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    padding: .5rem .75rem;
+    border: 1px dashed #e5e7eb;
+    border-radius: .5rem;
+    width: 100%;
+}
+.eb-modal-chico {
+    max-width: 480px;
+}
+.eb-modal-texto {
+    padding: 1rem 1.25rem 1.25rem;
+    font-size: .9rem;
+    color: #111827;
+}
+.eb-modal-texto p { margin: 0 0 .75rem; }
+.eb-modal-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    margin-top: 1rem;
+}
+
 
 /* Botón de copiar sobre el JSON */
 .eb-json-wrap {

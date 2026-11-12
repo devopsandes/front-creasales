@@ -1,16 +1,16 @@
 // src/pages/estudios-bot/EstudioBotDetalle.tsx
 import { useEffect, useMemo, useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt, FaSync, FaCopy } from "react-icons/fa"
 import LupaSelector from "./LupaSelector"
 import TrabajoPendiente from "./TrabajoPendiente"
 import { ACCION_CFG, VEREDICTO_CFG, TagOrigen, badgeBot, esTodoLaboratorio, formatFecha } from "./EstudiosBot"
 import {
     buscarDiagnosticos, buscarEfectores, buscarPrestaciones, buscarPrestadores, buscarSolicitantes,
-    guardarComentarioFinal, guardarRevision, obtenerEstudio, obtenerImagenEstudio, obtenerMotivosRechazo, reanalizarEstudio,
+    guardarComentarioFinal, guardarRevision, obtenerEstudio, obtenerImagenEstudio, obtenerMotivosRechazo, procesarImagenEstudio, reanalizarEstudio,
 } from "../../services/estudios-bot/estudiosBot.api"
 import {
-    CatMotivo, CatPrestacion, DecisionBot, EstudioDetalle, PrestacionElegida, Ref, RevisionOperadora, Veredicto,
+    CatMotivo, CatPrestacion, DecisionBot, EstudioDetalle, MultiFoto, PrestacionElegida, Ref, RevisionOperadora, RolFoto, Veredicto,
 } from "../../interfaces/estudios-bot.interface"
 import './estudios-bot.css'
 
@@ -18,6 +18,25 @@ const vacio: Ref = { id: null, nombre: null }
 
 /** Los pedidos escaneados llegan como PDF; una etiqueta <img> no los muestra. */
 const esPdf = (url: string) => /\.pdf(\?|#|$)/i.test(url)
+
+/** Cómo se le cuenta a la operadora el rol que el bot le dio a cada foto. */
+const ROL_FOTO_CFG: Record<RolFoto, { label: string; corto: string; cls: string }> = {
+    PEDIDO: { label: 'Pedido médico', corto: '', cls: 'eb-foto-pedido' },
+    CERTIFICADO: { label: 'Certificado de embarazo', corto: 'CERT.', cls: 'eb-foto-pedido' },
+    CONTINUACION: { label: 'Continuación (dorso o segunda página) de otra foto', corto: '↳', cls: 'eb-foto-continuacion' },
+    DUPLICADA: { label: 'La misma hoja repetida', corto: '=', cls: 'eb-foto-descartada' },
+    NO_PEDIDO: { label: 'No es un pedido médico', corto: '✕', cls: 'eb-foto-descartada' },
+}
+
+/** Lo poco de la lectura de una foto descartada que se le muestra a la operadora. */
+interface LecturaFoto {
+    tipo_documento?: string
+    legible?: boolean
+    confianza_lectura?: number
+    prestaciones_texto?: string[]
+    diagnostico_texto?: string | null
+    observaciones?: string | null
+}
 
 const OPINION_CFG: Record<string, { label: string; cls: string; sel: string }> = {
     BIEN: { label: 'El bot lo hubiera hecho bien', cls: 'eb-badge-verde', sel: 'eb-sel-codificar' },
@@ -28,6 +47,8 @@ const OPINION_CFG: Record<string, { label: string; cls: string; sel: string }> =
 const EstudioBotDetalle = () => {
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
+    /** `?foto=n`: con qué foto abrir (al saltar de un pedido a otro por las pestañas). */
+    const [searchParams] = useSearchParams()
 
     const [detalle, setDetalle] = useState<EstudioDetalle | null>(null)
     const [imagenUrl, setImagenUrl] = useState<string | null>(null)
@@ -91,6 +112,48 @@ const EstudioBotDetalle = () => {
         obtenerImagenEstudio(id, imagenN).then((r) => setImagenUrl(r.url ?? null)).catch(() => setImagenUrl(null))
     }, [id, imagenN])
 
+    // Varias fotos: al abrir un pedido se muestra su propia foto (la que pide la
+    // URL, o la primera de las suyas), no siempre la foto 1 de la solicitud.
+    useEffect(() => {
+        if (!detalle) return
+        const pedida = Number(searchParams.get('foto'))
+        const propia = detalle.multi?.imagenes?.[0]
+        setImagenN(pedida > 0 ? pedida : propia ?? 1)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [detalle?.id])
+
+    /** Pestaña de foto: si la foto pertenece a otro pedido de la solicitud, se abre ese pedido. */
+    const elegirFoto = (n: number) => {
+        const f = detalle?.multi?.fotos.find((x) => x.n === n)
+        if (f?.analisisId && f.analisisId !== detalle?.id) {
+            navigate(`/dashboard/estudios-bot/${f.analisisId}?foto=${n}`)
+            return
+        }
+        setImagenN(n)
+    }
+
+    // "¿Desea procesarla?": la operadora pide analizar una foto que el bot descartó.
+    const [fotoAProcesar, setFotoAProcesar] = useState<MultiFoto | null>(null)
+    const [procesando, setProcesando] = useState(false)
+    const procesarFoto = async () => {
+        if (!id || !fotoAProcesar) return
+        setProcesando(true)
+        try {
+            const r = await procesarImagenEstudio(id, fotoAProcesar.n)
+            if (!r.id) {
+                const m = Array.isArray(r.message) ? r.message.join(', ') : r.message
+                throw new Error(m ?? 'No se pudo procesar la foto')
+            }
+            avisar('ok', `Foto ${fotoAProcesar.n} analizada como pedido ${r.multi?.pedido ?? ''}`)
+            setFotoAProcesar(null)
+            navigate(`/dashboard/estudios-bot/${r.id}?foto=${fotoAProcesar.n}`)
+        } catch (e) {
+            avisar('err', e instanceof Error ? e.message : 'Error al procesar la foto')
+        } finally {
+            setProcesando(false)
+        }
+    }
+
     useEffect(() => {
         cargar()
         if (id) {
@@ -137,6 +200,9 @@ const EstudioBotDetalle = () => {
     }
 
     const motivoSel = useMemo(() => motivos.find((m) => m.idMensaje === motivoId) ?? null, [motivos, motivoId])
+    /** Varias fotos: la foto que se está mirando, si la solicitud tiene mapa de fotos. */
+    const fotoActual = detalle?.multi?.fotos.find((f) => f.n === imagenN) ?? null
+    const lecturaFoto = (fotoActual?.lectura ?? null) as LecturaFoto | null
 
     const validar = (): string | null => {
         if (veredicto === 'RECHAZAR' && !motivoSel) return 'Elegí el motivo de rechazo'
@@ -283,6 +349,11 @@ const EstudioBotDetalle = () => {
                     </div>
                     {bot && (
                         <div className="eb-cab-veredicto">
+                            {detalle.multi && (detalle.multi.pedidos ?? 1) > 1 && (
+                                <span className="eb-badge eb-badge-azul" title={`La solicitud tiene ${detalle.multi.total} fotos y el bot armó ${detalle.multi.pedidos} pedidos`}>
+                                    PEDIDO {detalle.multi.pedido} DE {detalle.multi.pedidos}
+                                </span>
+                            )}
                             {detalle.estado === 'PENDIENTE' && <span className="eb-badge eb-badge-violeta">PENDIENTE DE RESOLVER</span>}
                             {detalle.resueltoPor === 'OPERADORA' && op && (
                                 <span className={`eb-badge eb-badge-lg ${ACCION_CFG[detalle.accion ?? '']?.cls ?? ''}`}>{ACCION_CFG[detalle.accion ?? '']?.label ?? detalle.accion} por {op.usuario.nombre ?? '—'}</span>
@@ -303,16 +374,26 @@ const EstudioBotDetalle = () => {
                         Pedido médico
                         {(detalle.imagenes?.length ?? 1) > 1 && (
                             <span className="eb-imagen-tabs" title="El pedido tiene varias fotos">
-                                {detalle.imagenes!.map((_, i) => (
-                                    <button
-                                        key={i}
-                                        type="button"
-                                        className={`eb-imagen-tab ${imagenN === i + 1 ? 'eb-imagen-tab-activa' : ''}`}
-                                        onClick={() => setImagenN(i + 1)}
-                                    >
-                                        Foto {i + 1}
-                                    </button>
-                                ))}
+                                {detalle.imagenes!.map((_, i) => {
+                                    const n = i + 1
+                                    const f = detalle.multi?.fotos.find((x) => x.n === n)
+                                    const cfg = f ? ROL_FOTO_CFG[f.rol] : null
+                                    const mia = !f || f.analisisId === detalle.id
+                                    const titulo = f
+                                        ? `${cfg?.label ?? f.rol}${f.pedido ? ` · pedido ${f.pedido}` : ''}${f.de ? ` · de la foto ${f.de}` : ''}${f.motivo ? ` · ${f.motivo}` : ''}`
+                                        : undefined
+                                    return (
+                                        <button
+                                            key={i}
+                                            type="button"
+                                            className={`eb-imagen-tab ${imagenN === n ? 'eb-imagen-tab-activa' : ''} ${cfg?.cls ?? ''} ${mia ? '' : 'eb-imagen-tab-otro'}`}
+                                            title={titulo}
+                                            onClick={() => elegirFoto(n)}
+                                        >
+                                            Foto {n}{cfg?.corto ? ` ${cfg.corto}` : ''}{f?.pedido && (detalle.multi?.pedidos ?? 1) > 1 ? <small> P{f.pedido}</small> : null}
+                                        </button>
+                                    )
+                                })}
                             </span>
                         )}
                         {imagenUrl && <a className="eb-btn-link" href={imagenUrl} target="_blank" rel="noreferrer"><FaExternalLinkAlt /> Abrir</a>}
@@ -331,8 +412,43 @@ const EstudioBotDetalle = () => {
                             {detalle.estado === 'PENDIENTE' ? 'Resolver este pedido' : detalle.resueltoPor === 'OPERADORA' ? `Resuelto por ${op?.usuario.nombre ?? 'operadora'}` : 'Datos de la orden (operadora)'}
                         </div>
 
-                        {detalle.estado === 'PENDIENTE' && bot ? (
-                            <TrabajoPendiente detalle={detalle} motivos={motivos} avisar={avisar} onResuelto={(d) => setDetalle(d)} />
+                        {fotoActual && !fotoActual.analisisId ? (
+                            <div className="eb-foto-aviso">
+                                <div className="eb-error-banner" style={{ background: '#f8fafc', borderColor: '#cbd5e1', color: '#334155', margin: 0 }}>
+                                    <span>
+                                        <b>El bot no procesó la foto {fotoActual.n}</b>: {ROL_FOTO_CFG[fotoActual.rol]?.label.toLowerCase() ?? fotoActual.rol}
+                                        {fotoActual.de ? ` (de la foto ${fotoActual.de})` : ''}{fotoActual.motivo ? `. ${fotoActual.motivo}` : '.'}
+                                        {fotoActual.error ? ` Error de lectura: ${fotoActual.error}` : ''}
+                                    </span>
+                                </div>
+                                {lecturaFoto && (
+                                    <div className="eb-foto-lectura">
+                                        <span className="eb-label">Lo que leyó el bot en esta foto</span>
+                                        <div><span className="eb-hint">Tipo:</span> {lecturaFoto.tipo_documento ?? '—'} · <span className="eb-hint">legible:</span> {lecturaFoto.legible ? 'sí' : 'no'} · <span className="eb-hint">confianza:</span> {lecturaFoto.confianza_lectura ?? '—'}</div>
+                                        {(lecturaFoto.prestaciones_texto?.length ?? 0) > 0 && (
+                                            <div><span className="eb-hint">Prestaciones:</span> {lecturaFoto.prestaciones_texto!.join(' · ')}</div>
+                                        )}
+                                        {lecturaFoto.diagnostico_texto && <div><span className="eb-hint">Diagnóstico:</span> {lecturaFoto.diagnostico_texto}</div>}
+                                        {lecturaFoto.observaciones && <div><span className="eb-hint">Observaciones:</span> {lecturaFoto.observaciones}</div>}
+                                    </div>
+                                )}
+                                {detalle.estado === 'PENDIENTE' ? (
+                                    <button type="button" className="eb-btn-primary" onClick={() => setFotoAProcesar(fotoActual)}>
+                                        Procesar esta foto como un pedido
+                                    </button>
+                                ) : (
+                                    <span className="eb-hint">La solicitud ya no está pendiente: esta foto no se puede procesar.</span>
+                                )}
+                            </div>
+                        ) : detalle.estado === 'PENDIENTE' && bot ? (
+                            <>
+                                {detalle.multi && (detalle.multi.pedidos ?? 1) > 1 && (
+                                    <div className="eb-error-banner" style={{ background: '#eff6ff', borderColor: '#bfdbfe', color: '#1e3a8a', marginTop: 0 }}>
+                                        <span>Esta solicitud tiene <b>{detalle.multi.pedidos} pedidos médicos</b> (pestañas de fotos). Por ahora el conjunto se resuelve en Expendio: desde acá solo se puede <b>derivar</b>, y se derivan todos juntos.</span>
+                                    </div>
+                                )}
+                                <TrabajoPendiente detalle={detalle} motivos={motivos} avisar={avisar} onResuelto={(d) => setDetalle(d)} />
+                            </>
                         ) : detalle.resueltoPor === 'EXPENDIO' ? (
                             <div>
                                 <div className="eb-error-banner" style={{ background: '#fffbeb', borderColor: '#fcd34d', color: '#92400e', margin: 0 }}>
@@ -543,6 +659,32 @@ const EstudioBotDetalle = () => {
                     </div>
                 </div>
             </div>
+
+            {fotoAProcesar && (
+                <div className="eb-modal-overlay" onClick={() => !procesando && setFotoAProcesar(null)}>
+                    <div className="eb-modal eb-modal-chico" onClick={(e) => e.stopPropagation()}>
+                        <div className="eb-modal-header">
+                            <span className="eb-modal-title">Procesar la foto {fotoAProcesar.n}</span>
+                        </div>
+                        <div className="eb-modal-texto">
+                            <p>
+                                El bot no la procesó porque la leyó como <b>{ROL_FOTO_CFG[fotoAProcesar.rol]?.label.toLowerCase() ?? fotoAProcesar.rol}</b>
+                                {fotoAProcesar.de ? ` de la foto ${fotoAProcesar.de}` : ''}{fotoAProcesar.motivo ? ` (${fotoAProcesar.motivo})` : ''}.
+                            </p>
+                            <p>
+                                Si la procesás, el bot la vuelve a leer y la analiza como <b>un pedido médico más</b> de esta solicitud
+                                {fotoAProcesar.rol === 'CONTINUACION' ? ', aunque ya la haya usado como parte de otro pedido: revisá que no se repitan prestaciones' : ''}. ¿Desea procesarla?
+                            </p>
+                            <div className="eb-modal-acciones">
+                                <button type="button" className="eb-btn-secondary" disabled={procesando} onClick={() => setFotoAProcesar(null)}>No</button>
+                                <button type="button" className="eb-btn-primary" disabled={procesando} onClick={procesarFoto}>
+                                    {procesando ? <><FaSync className="spinning" /> Analizando...</> : 'Sí, procesarla'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {toast && (
                 <div className={`eb-toast ${toast.tipo === 'ok' ? 'eb-toast-ok' : 'eb-toast-err'}`}>
