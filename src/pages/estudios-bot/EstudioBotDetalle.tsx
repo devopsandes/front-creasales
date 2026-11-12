@@ -416,9 +416,9 @@ const EstudioBotDetalle = () => {
                             <div className="eb-foto-aviso">
                                 <div className="eb-error-banner" style={{ background: '#f8fafc', borderColor: '#cbd5e1', color: '#334155', margin: 0 }}>
                                     <span>
-                                        <b>El bot no procesó la foto {fotoActual.n}</b>: {ROL_FOTO_CFG[fotoActual.rol]?.label.toLowerCase() ?? fotoActual.rol}
-                                        {fotoActual.de ? ` (de la foto ${fotoActual.de})` : ''}{fotoActual.motivo ? `. ${fotoActual.motivo}` : '.'}
-                                        {fotoActual.error ? ` Error de lectura: ${fotoActual.error}` : ''}
+                                        <b>El bot no procesó la foto {fotoActual.n}</b>: {fotoActual.motivo ?? ROL_FOTO_CFG[fotoActual.rol]?.label.toLowerCase() ?? fotoActual.rol}
+                                        {fotoActual.de ? ` (de la foto ${fotoActual.de})` : ''}
+                                        {fotoActual.error ? ` · Error de lectura: ${fotoActual.error}` : ''}
                                     </span>
                                 </div>
                                 {lecturaFoto && (
@@ -668,8 +668,8 @@ const EstudioBotDetalle = () => {
                         </div>
                         <div className="eb-modal-texto">
                             <p>
-                                El bot no la procesó porque la leyó como <b>{ROL_FOTO_CFG[fotoAProcesar.rol]?.label.toLowerCase() ?? fotoAProcesar.rol}</b>
-                                {fotoAProcesar.de ? ` de la foto ${fotoAProcesar.de}` : ''}{fotoAProcesar.motivo ? ` (${fotoAProcesar.motivo})` : ''}.
+                                El bot no la procesó: <b>{fotoAProcesar.motivo ?? ROL_FOTO_CFG[fotoAProcesar.rol]?.label.toLowerCase() ?? fotoAProcesar.rol}</b>
+                                {fotoAProcesar.de ? ` (de la foto ${fotoAProcesar.de})` : ''}.
                             </p>
                             <p>
                                 Si la procesás, el bot la vuelve a leer y la analiza como <b>un pedido médico más</b> de esta solicitud
