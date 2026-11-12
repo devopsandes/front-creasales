@@ -489,6 +489,11 @@ const EstudioBotDetalle = () => {
                                         {lecturaFoto.observaciones && <div><span className="eb-hint">Observaciones:</span> {lecturaFoto.observaciones}</div>}
                                     </div>
                                 )}
+                                {fotoActual.avisoAfiliado && (
+                                    <span className="eb-hint" style={{ margin: 0 }}>
+                                        Al resolver la solicitud se le avisa al afiliado: «{fotoActual.avisoAfiliado}»
+                                    </span>
+                                )}
                                 {detalle.estado === 'PENDIENTE' ? (
                                     <button type="button" className="eb-btn-primary" onClick={() => setFotoAProcesar(fotoActual)}>
                                         Procesar esta foto como un pedido

@@ -31,7 +31,14 @@ const Resolucion = ({ foto, decision }: { foto: MultiFoto; decision: DecisionPed
         return (
             <div className="eb-res-txt">
                 <span className="eb-badge eb-badge-gris">DESCARTADA</span> {foto.motivo ?? ROL_TXT[foto.rol]}.
-                <div className="eb-hint">No se carga ni se avisa nada al afiliado por esta foto.</div>
+                {foto.avisoAfiliado ? (
+                    <div className="eb-res-mensaje" style={{ borderLeftColor: '#cbd5e1' }}>
+                        <span className="eb-hint">Aviso al afiliado:</span>
+                        <div>{foto.avisoAfiliado}</div>
+                    </div>
+                ) : (
+                    <div className="eb-hint">No se carga ni se avisa nada al afiliado por esta foto.</div>
+                )}
             </div>
         )
     }

@@ -98,6 +98,8 @@ export interface MultiFoto {
     procesadaPor: string | null
     /** Lo que el bot leyó en una foto descartada. */
     lectura: Record<string, unknown> | null
+    /** Foto que no es pedido médico: lo que se le avisa al afiliado al confirmar. */
+    avisoAfiliado?: string | null
 }
 export interface MultiInfo {
     grupo: string | null
