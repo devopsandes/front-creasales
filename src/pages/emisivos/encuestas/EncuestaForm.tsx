@@ -54,6 +54,7 @@ const mailInicial = (encuesta: Encuesta | null): MailFormulario => {
 const datosIniciales = (encuesta: Encuesta | null): DatosFormularioEncuesta => {
   const base = {
     audiencia: (encuesta ? audienciaDe(encuesta) : 'lista') as Audiencia,
+    obligatoria: encuesta?.obligatoria === true,
     descripcion: encuesta?.descripcion ?? '',
     textoBoton: encuesta?.textoBoton ?? '',
     condiciones: encuesta?.condiciones ?? '',
@@ -253,6 +254,26 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
             </div>
             <p className="encuestas-ayuda">{AUDIENCIAS.find((opcion) => opcion.valor === datos.audiencia)?.explicacion}</p>
           </div>
+
+          {/* 11/11/2026 (Karen): obligatoria en la app. Las públicas no van a la app. Se puede cambiar aunque tenga respuestas. */}
+          {datos.audiencia !== 'publica' && (
+            <div className="encuestas-label">
+              <label className="encuestas-check">
+                <input
+                  type="checkbox"
+                  checked={datos.obligatoria}
+                  disabled={guardando}
+                  onChange={(e) => cambiarCampos({ obligatoria: e.target.checked })}
+                />
+                Obligatoria en la app
+              </label>
+              <p className="encuestas-ayuda">
+                Se abre sola al entrar a la app y no se puede usar nada (ni la credencial ni el token) hasta responderla.
+                Llega con la app 7.1.9 en adelante; las versiones anteriores siguen viendo la tarjeta opcional. Destildarla
+                la apaga al instante.
+              </p>
+            </div>
+          )}
 
           {conRespuestas && (
             <p className="encuestas-aviso">

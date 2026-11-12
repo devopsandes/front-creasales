@@ -72,6 +72,8 @@ export interface ResumenEncuesta {
   accion?: AccionEncuesta | null;
   /** Solo lectura: si el mail a la persona tiene imagen subida. */
   tieneImagenMail?: boolean;
+  /** 11/11/2026 (Karen): la app 7.1.9 la abre sola y no deja usar la app hasta responderla. Emisivo viejo = false. */
+  obligatoria?: boolean;
 }
 
 /** GET /encuestas/:id: la encuesta completa. */
@@ -96,6 +98,8 @@ export interface DatosFormularioEncuesta {
   textoCierre: string;
   preguntas: PreguntaFormulario[];
   audiencia: Audiencia;
+  /** Solo lista o afiliados: obligatoria en la app (se abre sola y bloquea la app hasta responder). */
+  obligatoria: boolean;
   /** Solo pública: texto bajo el título en la web. */
   descripcion: string;
   /** Solo pública: texto del botón de enviar (vacío = "Enviar"). */
@@ -254,6 +258,8 @@ export const armarCuerpo = (datos: DatosFormularioEncuesta): string => {
     titulo: datos.titulo,
     textoCierre: datos.textoCierre,
     audiencia: datos.audiencia,
+    // Una pública no va a la app: nunca obligatoria (el backend igual la fuerza a false).
+    obligatoria: !publica && datos.obligatoria,
     descripcion: publica ? datos.descripcion : '',
     condiciones: publica ? datos.condiciones : '',
     textoBoton: publica ? datos.textoBoton : '',

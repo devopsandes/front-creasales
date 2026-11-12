@@ -701,6 +701,12 @@
   color: #92400e;
 }
 
+/* 11/11/2026: encuesta que bloquea la app hasta responder. */
+.encuestas-badge-obligatoria {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 /* Formulario: secciones, contadores y fila de campos */
 .encuestas-fila-arriba {
   align-items: flex-start;

@@ -215,6 +215,14 @@ const Encuestas = () => {
                   <span className={`encuestas-badge encuestas-badge-audiencia encuestas-badge-audiencia-${audiencia}`}>
                     {nombreAudiencia(audiencia)}
                   </span>
+                  {encuesta.obligatoria && (
+                    <span
+                      className="encuestas-badge encuestas-badge-obligatoria"
+                      title="Se abre sola en la app y no deja usarla hasta responder (app 7.1.9 en adelante)"
+                    >
+                      Obligatoria
+                    </span>
+                  )}
                 </div>
                 <div className="encuestas-info-linea">
                   {encuesta.cantidadPreguntas} {encuesta.cantidadPreguntas === 1 ? 'pregunta' : 'preguntas'}
