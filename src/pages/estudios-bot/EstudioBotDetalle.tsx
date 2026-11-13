@@ -5,7 +5,8 @@ import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCirc
 import LupaSelector from "./LupaSelector"
 import TrabajoPendiente from "./TrabajoPendiente"
 import ResumenGrupo from "./ResumenGrupo"
-import { ACCION_CFG, VEREDICTO_CFG, TagOrigen, badgeBot, esTodoLaboratorio, formatFecha } from "./EstudiosBot"
+import { ACCION_CFG, VEREDICTO_CFG, IconoChat, TagOrigen, badgeBot, esTodoLaboratorio, formatFecha } from "./EstudiosBot"
+import ChatAfiliado from "./ChatAfiliado"
 import {
     buscarDiagnosticos, buscarEfectores, buscarPrestaciones, buscarPrestadores, buscarSolicitantes,
     guardarComentarioFinal, guardarRevision, obtenerEstudio, obtenerImagenEstudio, obtenerMotivosRechazo, procesarImagenEstudio, reanalizarEstudio,
@@ -132,6 +133,9 @@ const EstudioBotDetalle = () => {
         }
         setImagenN(n)
     }
+
+    // Chat con el afiliado.
+    const [chatAbierto, setChatAbierto] = useState(false)
 
     // Etapa 2: resumen antes de confirmar la solicitud completa.
     const [resumenAbierto, setResumenAbierto] = useState(false)
@@ -303,6 +307,7 @@ const EstudioBotDetalle = () => {
                     <div>
                         <div className="eb-cab-nombre" style={colorAfiliado ? { background: colorAfiliado, padding: '2px 10px', borderRadius: 6, display: 'inline-block' } : undefined}>
                             {detalle.afiliado_nombre ?? '—'}{' '}
+                            <IconoChat chat={detalle.chat} onClick={() => setChatAbierto(true)} grande />
                             {detalle.es_prueba && <span className="eb-tag-prueba">PRUEBA</span>}
                             {bot?.modoSombra === false && <span className="eb-tag-prueba" style={{ background: '#1b7f4b', color: '#fff' }}>REAL</span>}
                             <TagOrigen origen={detalle.origen} />
@@ -721,6 +726,16 @@ const EstudioBotDetalle = () => {
                     </div>
                 </div>
             </div>
+
+            {chatAbierto && (
+                <ChatAfiliado
+                    id={detalle.id}
+                    titulo={detalle.afiliado_nombre ?? ''}
+                    onClose={() => setChatAbierto(false)}
+                    onCambio={(r) => setDetalle((d) => d ? { ...d, chat: r ? { ...(d.chat ?? { delAfiliado: 0, ultimoFecha: null, ultimoTexto: null, leidoEn: null }), ...r } : d.chat } : d)}
+                    avisar={avisar}
+                />
+            )}
 
             {resumenAbierto && detalle.multi && (
                 <ResumenGrupo detalle={detalle} onClose={() => setResumenAbierto(false)} onConfirmado={alConfirmarGrupo} avisar={avisar} />

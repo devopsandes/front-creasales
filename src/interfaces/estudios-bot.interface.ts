@@ -80,6 +80,30 @@ export interface EstudioListaItem {
     cantidadImagenes?: number
     /** Solicitud de la app con varias fotos: cuántos pedidos médicos armó el bot. */
     cantidadPedidos?: number | null
+    /** Chat con el afiliado: resumen guardado (puede estar desactualizado hasta la próxima lectura). */
+    chat?: ResumenChat | null
+}
+
+/** Resumen del chat con el afiliado de una solicitud. */
+export interface ResumenChat {
+    total: number
+    delAfiliado: number
+    /** El último mensaje lo escribió el afiliado: hay algo para leer. */
+    ultimoDeAfiliado: boolean
+    ultimoFecha: string | null
+    ultimoTexto: string | null
+    leidoEn: string | null
+}
+
+/** Un mensaje del chat con el afiliado (pestaña "Mensajes" de Expendio, chat de la app). */
+export interface MensajeChat {
+    id: string
+    texto: string
+    deAfiliado: boolean
+    fecha: string
+    fechaTexto: string
+    tieneImagen: boolean
+    enviadoPor: string | null
 }
 
 /** Qué es cada foto de una solicitud con varias imágenes, según el bot. */
@@ -229,6 +253,8 @@ export interface EstudioDetalle {
     imagenes?: string[]
     /** Solicitud de la app con varias fotos: qué foto es qué y a qué pedido lleva cada una. */
     multi?: MultiInfo | null
+    /** Chat con el afiliado: resumen guardado. */
+    chat?: ResumenChat | null
 }
 
 export interface ResolverBody extends GuardarRevisionBody {

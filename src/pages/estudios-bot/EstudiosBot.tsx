@@ -1,10 +1,29 @@
 // src/pages/estudios-bot/EstudiosBot.tsx
 import { useCallback, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { FaSearch, FaSync, FaTimesCircle, FaCheck } from "react-icons/fa"
+import { FaSearch, FaSync, FaTimesCircle, FaCheck, FaComments } from "react-icons/fa"
 import { listarEstudios } from "../../services/estudios-bot/estudiosBot.api"
-import { EstudioListaItem, Veredicto } from "../../interfaces/estudios-bot.interface"
+import { EstudioListaItem, ResumenChat, Veredicto } from "../../interfaces/estudios-bot.interface"
+import ChatAfiliado from "./ChatAfiliado"
 import './estudios-bot.css'
+
+/** Ícono del chat con el afiliado: cuántos mensajes hay y si el último es del afiliado (hay algo para leer). */
+export const IconoChat = ({ chat, onClick, grande = false }: { chat?: ResumenChat | null; onClick: () => void; grande?: boolean }) => {
+  const total = chat?.total ?? 0
+  const titulo = total
+    ? `${total} mensaje${total === 1 ? '' : 's'} con el afiliado${chat?.ultimoDeAfiliado ? ' · el último es del afiliado' : ''}${chat?.ultimoTexto ? `\nÚltimo: ${chat.ultimoTexto}` : ''}`
+    : 'Mensajes con el afiliado (todavía no hay)'
+  return (
+    <button
+      type="button"
+      className={`eb-chat-icono ${total ? 'eb-chat-icono-con' : ''} ${chat?.ultimoDeAfiliado ? 'eb-chat-icono-nuevo' : ''} ${grande ? 'eb-chat-icono-grande' : ''}`}
+      title={titulo}
+      onClick={(e) => { e.stopPropagation(); onClick() }}
+    >
+      <FaComments />{total > 0 && <span className="eb-chat-contador">{total}</span>}
+    </button>
+  )
+}
 
 /** En condicional: es lo que el bot haría, no lo que pasó. */
 export const VEREDICTO_CFG: Record<Veredicto, { label: string; cls: string }> = {
@@ -106,6 +125,10 @@ const EstudiosBot = () => {
   const [soloReales, setSoloReales] = useState(false)
   // Las operadoras arrancan viendo lo que tienen que resolver.
   const [estado, setEstado] = useState('PENDIENTE')
+  // Chat con el afiliado abierto desde la lista.
+  const [chatDe, setChatDe] = useState<EstudioListaItem | null>(null)
+  const [toast, setToast] = useState<{ tipo: 'ok' | 'err'; msg: string } | null>(null)
+  const avisar = (tipo: 'ok' | 'err', msg: string) => { setToast({ tipo, msg }); setTimeout(() => setToast(null), 4000) }
 
   const cargar = useCallback(async (p = 1) => {
     setCargando(true)
@@ -244,6 +267,7 @@ const EstudiosBot = () => {
                       <TagOrigen origen={it.origen} />
                       {(it.cantidadImagenes ?? 1) > 1 && <span className="eb-tag-prueba eb-tag-imagenes" title="El pedido tiene varias fotos">{it.cantidadImagenes} FOTOS</span>}
                       {(it.cantidadPedidos ?? 0) > 1 && <span className="eb-tag-prueba eb-tag-pedidos" title="El bot armó más de un pedido médico con las fotos">{it.cantidadPedidos} PEDIDOS</span>}
+                      <IconoChat chat={it.chat} onClick={() => setChatDe(it)} />
                     </td>
                     <td className="eb-td">{it.provincia ?? '—'}</td>
                     <td className="eb-td eb-td-prestador" title={it.bot_prestador_nombre ?? ''}>{it.bot_prestador_nombre ?? '—'}</td>
@@ -269,6 +293,21 @@ const EstudiosBot = () => {
             </tbody>
           </table>
         </div>
+
+        {chatDe && (
+          <ChatAfiliado
+            id={chatDe.id}
+            titulo={chatDe.afiliado_nombre ?? chatDe.nro_afiliado ?? ''}
+            onClose={() => setChatDe(null)}
+            onCambio={(r) => setItems((prev) => prev.map((x) => x.id === chatDe.id ? { ...x, chat: r ? { ...(x.chat ?? { delAfiliado: 0, ultimoFecha: null, ultimoTexto: null, leidoEn: null }), ...r } : x.chat } : x))}
+            avisar={avisar}
+          />
+        )}
+        {toast && (
+          <div className={`eb-toast ${toast.tipo === 'ok' ? 'eb-toast-ok' : 'eb-toast-err'}`}>
+            {toast.tipo === 'ok' ? <FaCheck /> : <FaTimesCircle />} <span>{toast.msg}</span>
+          </div>
+        )}
 
         <div className="eb-pagination">
           <div className="eb-total">Total: <b>{total}</b></div>

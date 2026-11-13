@@ -3,7 +3,7 @@ import axios from "axios"
 import { resolveClient } from "../apiClient"
 import {
     CatDiagnostico, CatEfector, CatMotivo, CatPrestacion, CatPrestador, CatSolicitante,
-    EstudioDetalle, EstudiosListaResponse, GuardarRevisionBody, ResolverBody,
+    EstudioDetalle, EstudiosListaResponse, GuardarRevisionBody, MensajeChat, ResolverBody, ResumenChat,
 } from "../../interfaces/estudios-bot.interface"
 
 const client = resolveClient("bot")
@@ -63,6 +63,16 @@ export const precioPrestacion = (idConvenio: string, idCodigo: string, idAfiliad
 export const obtenerImagenEstudio = (id: string, n?: number) =>
     handle<{ statusCode: number; url?: string; total?: number; message?: string }>(() =>
         client.get(`/estudios-bot/${id}/imagen`, { params: n && n > 1 ? { n } : {} }))
+
+/** Chat con el afiliado de la solicitud (solo lectura, no toma la alarma). */
+export const obtenerChatEstudio = (id: string) =>
+    handle<{ statusCode: number; mensajes?: MensajeChat[]; resumen?: ResumenChat | null; message?: string }>(() =>
+        client.get(`/estudios-bot/${id}/chat`))
+
+/** La operadora le escribe al afiliado. Devuelve el chat actualizado. */
+export const enviarChatEstudio = (id: string, texto: string) =>
+    handle<{ statusCode: number; mensajes?: MensajeChat[]; resumen?: ResumenChat | null; message?: string | string[] }>(() =>
+        client.post(`/estudios-bot/${id}/chat`, { texto }))
 
 /** Varias fotos: guarda qué hacer con este pedido (codificar o rechazar) sin ejecutar nada. */
 export const guardarDecisionEstudio = (id: string, body: ResolverBody) =>
