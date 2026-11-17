@@ -130,9 +130,8 @@ const EstudiosBot = () => {
   const [toast, setToast] = useState<{ tipo: 'ok' | 'err'; msg: string } | null>(null)
   const avisar = (tipo: 'ok' | 'err', msg: string) => { setToast({ tipo, msg }); setTimeout(() => setToast(null), 4000) }
 
-  const cargar = useCallback(async (p = 1) => {
-    setCargando(true)
-    setError(null)
+  const cargar = useCallback(async (p = 1, silencioso = false) => {
+    if (!silencioso) { setCargando(true); setError(null) }
     try {
       const r = await listarEstudios({ page: p, limit, q, veredicto, revision, incluirPruebas, incluirReanalisis, soloReales, estado })
       if (!Array.isArray(r.items)) throw new Error(r.message ?? 'No se pudo obtener el listado')
@@ -140,13 +139,22 @@ const EstudiosBot = () => {
       setTotal(r.total ?? 0)
       setPage(p)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error de conexión')
+      // Un refresco automático que falla no tapa la lista con un error.
+      if (!silencioso) setError(e instanceof Error ? e.message : 'Error de conexión')
     } finally {
-      setCargando(false)
+      if (!silencioso) setCargando(false)
     }
   }, [q, veredicto, revision, incluirPruebas, incluirReanalisis, soloReales, estado, limit])
 
   useEffect(() => { cargar(1) }, [veredicto, revision, incluirPruebas, incluirReanalisis, soloReales, estado]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refresco automático cada minuto, sin parpadeo y sin perder página ni filtros,
+  // para que el ícono del chat se ponga rojo solo cuando responde el afiliado
+  // (Fede, 16/11/2026). Con la pestaña del navegador oculta no se consulta.
+  useEffect(() => {
+    const t = setInterval(() => { if (!document.hidden) cargar(page, true) }, 60000)
+    return () => clearInterval(t)
+  }, [cargar, page])
 
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
