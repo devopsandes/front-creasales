@@ -17,6 +17,8 @@ const AYUDA_CRUCE = {
   exafiliados:
     'Cada persona se cruza con el padrón de Andes: reciben los que están de baja (y los vigentes); los que no figuran no reciben nada. Del padrón salen el CUIL, el mail (si la lista no lo trae) y el nombre del saludo. Alcanza con una columna de CUILs.',
   prestadores: 'A los prestadores la lista se les usa tal cual, así que cada fila necesita su mail.',
+  contactos:
+    'La lista se usa tal cual: alcanza con una columna de mails (y otra de nombres, si la tenés, para el saludo). Quedan afuera los que son afiliados de Andes: si la fila trae DNI se cruza con el padrón, y si el mail es de un afiliado que el sistema ya conoce, también.',
 } as const;
 
 interface PasoListaProps {

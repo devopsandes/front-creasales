@@ -27,6 +27,7 @@ import {
   numero,
   textoPorcentaje,
 } from './campaniasOpciones';
+import { motivoEspera } from './campaniaPlaca';
 import { useConfirmacion } from '../useConfirmacion';
 import CampaniaPersonas from './CampaniaPersonas';
 import { armarInforme, listasNecesarias, topeParaFiltro } from './informeCampania';
@@ -225,6 +226,9 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
                   />
                 )}
               </>
+            )}
+            {(s.lista.AFILIADO ?? 0) > 0 && (
+              <Fila etiqueta="Son afiliados" cantidad={s.lista.AFILIADO ?? 0} base={s.total} ayuda="Afiliados de Andes que estaban en la lista: no reciben" />
             )}
             {(s.lista.QUITADO ?? 0) > 0 && (
               <Fila etiqueta="Quitados a mano" cantidad={s.lista.QUITADO ?? 0} base={s.total} ayuda="Se sacaron de la lista antes de enviar" />
@@ -470,6 +474,11 @@ const CampaniaEstadisticas = ({ campania: inicial, onCerrar, onAviso }: Estadist
             <p className="campanias-ayuda" role="status">
               Se está enviando: los números se actualizan solos cada 10 segundos
               {actualizadoAt ? ` (última vez: ${fechaHora(actualizadoAt)})` : ''}.
+            </p>
+          )}
+          {enviando && motivoEspera(campania) && (
+            <p className="campanias-aviso" role="status">
+              {motivoEspera(campania)}
             </p>
           )}
           {error && <p className="campanias-error">{error}</p>}

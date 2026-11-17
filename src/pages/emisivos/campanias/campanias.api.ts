@@ -6,9 +6,13 @@ import { JSON_HEADERS, URL_EMISIVOS, pedir, pedirArchivo } from '../banner.api';
 import type { PlantillaBanner } from '../banner.api';
 
 export type EstadoCampania = 'BORRADOR' | 'PROCESANDO_LISTA' | 'LISTA' | 'ENVIANDO' | 'PAUSADA' | 'TERMINADA' | 'CANCELADA';
-/** exafiliados (23/10/2026): dados de baja del padrón, solo mail. */
-export type TipoDestinatario = 'afiliados' | 'prestadores' | 'exafiliados';
-export type PlantillaMail = 'aviso' | 'beneficio' | 'informativo' | 'simple';
+/**
+ * exafiliados (23/10/2026): dados de baja del padrón, solo mail.
+ * contactos (16/11/2026): lista de mails que no son afiliados (Campaña con placa propia de Ruy), solo mail.
+ */
+export type TipoDestinatario = 'afiliados' | 'prestadores' | 'exafiliados' | 'contactos';
+/** placa (16/11/2026): solo la imagen entera como link. La usa solo la Campaña con placa propia, no el asistente de siempre. */
+export type PlantillaMail = 'aviso' | 'beneficio' | 'informativo' | 'simple' | 'placa';
 export type CanalCampania = 'push' | 'mail' | 'banner';
 
 export interface CanalesCampania {
@@ -43,6 +47,10 @@ export interface MailCampania {
     textoFinal?: string | null;
     /** true: las tarjetas van antes del texto (beneficio e informativo). Sin la clave, después. */
     tarjetasPrimero?: boolean;
+    /** placa: lo que dice la imagen (alt y versión de texto del mail). */
+    textoAlternativo?: string;
+    /** placa: texto del botón dibujado debajo de la placa (va dentro de la imagen). */
+    botonDebajo?: { texto: string };
   };
 }
 
@@ -82,6 +90,8 @@ export interface ResumenLista {
   conCuil?: number | null;
   /** Personas quitadas a mano desde la tabla de la lista (no reciben nada). */
   quitados?: number;
+  /** Contactos: afiliados de Andes que se sacaron de la lista (solo viene si hubo alguno). */
+  afiliados?: number;
   /** Personas sumadas con "Agregar personas" después de la carga que quedaron recibiendo. */
   agregadas?: number;
   /** Líneas pegadas en "Agregar personas" que no eran un DNI, CUIL o mail válido. */
@@ -100,7 +110,7 @@ export interface OpcionReenvio {
   disponible: boolean;
 }
 
-export type EstadoListaPersona = 'OK' | 'BAJA_PADRON' | 'NO_ENCONTRADO' | 'SIN_DNI' | 'QUITADO';
+export type EstadoListaPersona = 'OK' | 'BAJA_PADRON' | 'NO_ENCONTRADO' | 'SIN_DNI' | 'QUITADO' | 'AFILIADO';
 /** Los de abajo de 'descartados' son para la tabla de Estadísticas (filtrosPersonas en emisivos). */
 export type FiltroLista =
   | 'todos'
@@ -173,6 +183,8 @@ export interface Campania {
   campaniaOrigenId: number | null;
   createdAt: string;
   updatedAt: string;
+  /** Solo en una campaña a contactos enviándose: los mails a contactos tienen un tope por día (sigue al día siguiente). */
+  topeDiario?: { tope: number; enviadosHoy: number; alcanzado: boolean; fueraDeHorario?: boolean; enEspera?: boolean };
 }
 
 export interface OpcionesCampania {
@@ -225,7 +237,7 @@ export interface ResultadoPrueba {
 
 export interface EstadisticasCampania {
   total: number;
-  lista: { OK?: number; BAJA_PADRON?: number; NO_ENCONTRADO?: number; SIN_DNI?: number; QUITADO?: number };
+  lista: { OK?: number; BAJA_PADRON?: number; NO_ENCONTRADO?: number; SIN_DNI?: number; QUITADO?: number; AFILIADO?: number };
   app: { conApp: number; sinApp: number };
   parentesco: { titulares: number; familiares: number; sinDato: number };
   push: {
@@ -303,6 +315,39 @@ const armarCuerpo = (datos: DatosFormularioCampania): string => {
   });
 };
 
+/** Lo que carga el paso Placa de la Campaña con placa propia (Ruy, 16/11/2026). */
+export interface DatosPlaca {
+  nombre: string;
+  asunto: string;
+  remitente: string;
+  replyTo: string;
+  botonLink: string;
+  textoAlternativo: string;
+  /** Texto del botón dibujado debajo de la placa; vacío = sin botón. */
+  textoBoton: string;
+}
+
+/** POST/PUT /campanias de una placa: siempre a contactos, solo mail, plantilla placa. */
+const armarCuerpoPlaca = (datos: DatosPlaca): string =>
+  JSON.stringify({
+    nombre: datos.nombre.trim(),
+    tipoDestinatario: 'contactos',
+    canales: { push: false, mail: true, banner: false },
+    mail: {
+      plantilla: 'placa',
+      asunto: datos.asunto,
+      remitente: datos.remitente,
+      replyTo: datos.replyTo,
+      contenido: { botonLink: datos.botonLink, textoAlternativo: datos.textoAlternativo, botonDebajo: { texto: datos.textoBoton } },
+    },
+  });
+
+export const crearCampaniaPlaca = (datos: DatosPlaca) =>
+  pedir<Campania>('/campanias', { method: 'POST', headers: JSON_HEADERS, body: armarCuerpoPlaca(datos) });
+
+export const editarCampaniaPlaca = (id: number, datos: DatosPlaca) =>
+  pedir<Campania>(`/campanias/${id}`, { method: 'PUT', headers: JSON_HEADERS, body: armarCuerpoPlaca(datos) });
+
 const exigirCampania = (data: Campania | undefined, id: number): Campania => {
   if (!data) throw new Error(`No se encontró la campaña #${id}`);
   return data;
@@ -329,7 +374,7 @@ export const editarCampania = (id: number, datos: DatosFormularioCampania) =>
 /** 409 si la campaña ya se envió: pedir() lanza el Error con el mensaje del backend. */
 export const borrarCampania = (id: number) => pedir<never>(`/campanias/${id}`, { method: 'DELETE' });
 
-/** Imagen del mail (plantilla beneficio): JPG, PNG o WEBP de hasta 1 MB. */
+/** Imagen del mail (plantillas beneficio y placa): JPG, PNG o WEBP de hasta 1 MB. */
 export const subirImagenCampania = (id: number, archivo: File) => {
   const formData = new FormData();
   formData.append('imagen', archivo);

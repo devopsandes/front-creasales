@@ -16,8 +16,11 @@ import {
   FaTimesCircle,
   FaTrash,
   FaBan,
+  FaImage,
 } from 'react-icons/fa';
 import CampaniaAsistente from './CampaniaAsistente';
+import CampaniaPlacaAsistente from './CampaniaPlacaAsistente';
+import { esCampaniaPlaca, motivoEspera } from './campaniaPlaca';
 import CampaniaEstadisticas from './CampaniaEstadisticas';
 import CampaniaReenvio from './CampaniaReenvio';
 import { borrarCampania, cancelarCampania, listarCampanias, pausarCampania, reanudarCampania } from './campanias.api';
@@ -39,8 +42,8 @@ import { useConfirmacion } from '../useConfirmacion';
 /** Qué modal está abierto (uno solo a la vez). */
 type Modal =
   | { tipo: 'ninguno' }
-  /** campania null = campaña nueva */
-  | { tipo: 'asistente'; campania: Campania | null; paso: number }
+  /** campania null = campaña nueva; placa = Campaña con placa propia nueva (Ruy, 16/11/2026) */
+  | { tipo: 'asistente'; campania: Campania | null; paso: number; placa?: boolean }
   | { tipo: 'estadisticas'; campania: Campania }
   | { tipo: 'reenvio'; campania: Campania };
 
@@ -179,6 +182,14 @@ const Campanias = () => {
           >
             <FaPlus /> Nueva campaña
           </button>
+          <button
+            className="campanias-btn campanias-btn-primario"
+            onClick={() => setModal({ tipo: 'asistente', campania: null, paso: 1, placa: true })}
+            disabled={ocupado}
+            title="Pegá el HTML de una placa (o subí la imagen) y mandala por mail a una lista de contactos"
+          >
+            <FaImage /> Campaña con placa propia
+          </button>
         </div>
       </div>
 
@@ -244,6 +255,7 @@ const Campanias = () => {
                 {campania.errorLista && (estado === 'PAUSADA' || estado === 'BORRADOR' || estado === 'LISTA') && (
                   <div className="campanias-info-linea campanias-info-aviso">{campania.errorLista}</div>
                 )}
+                {motivoEspera(campania) && <div className="campanias-info-linea campanias-info-aviso">{motivoEspera(campania)}</div>}
               </div>
 
               <div className="campanias-acciones">
@@ -327,7 +339,17 @@ const Campanias = () => {
         })}
       </ul>
 
-      {modal.tipo === 'asistente' && (
+      {modal.tipo === 'asistente' && (modal.placa || (modal.campania && esCampaniaPlaca(modal.campania))) && (
+        <CampaniaPlacaAsistente
+          campania={modal.campania}
+          // El asistente de placa junta Datos y Contenido en un solo paso: los pasos 3 a 5 del de siempre son 2 a 4 acá.
+          pasoInicial={Math.max(1, modal.paso - 1)}
+          onCerrar={cerrarModal}
+          onAviso={showToastMessage}
+          onEnviada={alEnviar}
+        />
+      )}
+      {modal.tipo === 'asistente' && !(modal.placa || (modal.campania && esCampaniaPlaca(modal.campania))) && (
         <CampaniaAsistente
           campania={modal.campania}
           pasoInicial={modal.paso}

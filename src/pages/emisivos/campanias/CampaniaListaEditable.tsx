@@ -9,6 +9,7 @@ import { agregarDestinatarios, obtenerCampania, quitarDestinatario, restaurarDes
 import type { Campania, DestinatarioFila } from './campanias.api';
 import { FILTROS_LISTA, MAX_AGREGAR, cruzaConPadron, numero } from './campaniasOpciones';
 import { useListaPersonas } from './useListaPersonas';
+import { conEtiquetaDeContactos, muestraDescartados } from './campaniaPlaca';
 import { BuscadorPersonas, PaginadoPersonas } from './ListaPersonasControles';
 
 interface ListaEditableProps {
@@ -79,7 +80,10 @@ const CampaniaListaEditable = ({ campania, onCampania, onAviso }: ListaEditableP
       <BuscadorPersonas
         valor={lista.buscarEscrito}
         onCambiar={lista.setBuscarEscrito}
-        filtros={FILTROS_LISTA.filter((f) => conPadron || f.valor !== 'descartados')}
+        filtros={conEtiquetaDeContactos(
+          FILTROS_LISTA.filter((f) => muestraDescartados(campania.tipoDestinatario, conPadron) || f.valor !== 'descartados'),
+          campania.tipoDestinatario,
+        )}
         filtro={filtro}
         onFiltro={lista.setFiltro}
       />

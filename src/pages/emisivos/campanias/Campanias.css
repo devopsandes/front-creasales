@@ -1388,3 +1388,19 @@
     height: 60vh;
   }
 }
+
+/* Campaña con placa propia (Ruy, 16/11/2026) */
+.campanias-textarea-codigo {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.campanias-link-boton {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #150958;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}

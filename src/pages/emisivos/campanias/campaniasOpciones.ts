@@ -68,14 +68,19 @@ export const TIPOS_DESTINATARIO: { valor: TipoDestinatario; etiqueta: string; co
   },
 ];
 
-/** Prestadores y ex afiliados: solo mail (no tienen la app de afiliado). */
-export const esSoloMail = (tipo: TipoDestinatario): boolean => tipo === 'prestadores' || tipo === 'exafiliados';
+/** Prestadores, ex afiliados y contactos: solo mail (no tienen la app de afiliado). */
+export const esSoloMail = (tipo: TipoDestinatario): boolean => tipo === 'prestadores' || tipo === 'exafiliados' || tipo === 'contactos';
 
 /** Afiliados y ex afiliados se cruzan con el padrón (no encontrados, sin DNI); los prestadores van tal cual. */
 export const cruzaConPadron = (tipo: TipoDestinatario): boolean => tipo === 'afiliados' || tipo === 'exafiliados';
 
-/** "Afiliados", "Prestadores" o "Ex afiliados", para la tabla y los encabezados. */
-export const etiquetaTipo = (tipo: TipoDestinatario): string => TIPOS_DESTINATARIO.find((t) => t.valor === tipo)?.corta ?? tipo;
+/**
+ * "Afiliados", "Prestadores", "Ex afiliados" o "Contactos", para la tabla y los encabezados. Contactos no está en
+ * TIPOS_DESTINATARIO a propósito: esa lista es la del formulario de siempre y los contactos se cargan solo desde la
+ * Campaña con placa propia (Ruy, 16/11/2026).
+ */
+export const etiquetaTipo = (tipo: TipoDestinatario): string =>
+  tipo === 'contactos' ? 'Contactos' : TIPOS_DESTINATARIO.find((t) => t.valor === tipo)?.corta ?? tipo;
 
 export const ESTADOS: Record<EstadoCampania, { etiqueta: string; clase: string }> = {
   BORRADOR: { etiqueta: 'Borrador', clase: 'borrador' },
@@ -392,6 +397,9 @@ export const lineasResumen = (resumen: ResumenLista, tipo: TipoDestinatario): st
   if (tipo === 'exafiliados') {
     sumar(resumen.noEncontrados, (n) => `${numero(n)} no encontrados en el padrón`);
     sumar(resumen.sinDni, (n) => `${numero(n)} sin DNI ni CUIL (no se pudieron cruzar con el padrón)`, true);
+  }
+  if (tipo === 'contactos') {
+    sumar(resumen.afiliados, (n) => `${numero(n)} ${n === 1 ? 'es afiliado' : 'son afiliados'} de Andes (no ${n === 1 ? 'recibe' : 'reciben'})`, true);
   }
   if (resumen.invalidas) {
     const filas = resumen.filasInvalidas ?? [];

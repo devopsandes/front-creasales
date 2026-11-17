@@ -11,6 +11,7 @@ const NOMBRE_PERSONA = {
   afiliados: { plural: 'afiliados', singular: 'Afiliado' },
   prestadores: { plural: 'prestadores', singular: 'Prestador' },
   exafiliados: { plural: 'ex afiliados', singular: 'Ex afiliado' },
+  contactos: { plural: 'contactos', singular: 'Contacto' },
 } as const;
 
 /**
@@ -21,6 +22,7 @@ const MOTIVO_NO_CORRESPONDE = {
   afiliados: '(de baja, no están en el padrón o quitadas a mano)',
   exafiliados: '(no están en el padrón o quitadas a mano)',
   prestadores: '(quitadas a mano)',
+  contactos: '(son afiliados de Andes o quitadas a mano)',
 } as const;
 
 /** Tope de filas por lista de personas: más que eso engorda el PDF sin que nadie lo lea. El detalle completo está en el Excel. */
@@ -162,6 +164,8 @@ const plural = (cantidad: number, singular: string, pluralTexto: string): string
 /** ¿El mail de la campaña tiene botón? Sin botón no hay clicks que medir. */
 const mailTieneBoton = (campania: Campania): boolean => {
   const contenido = campania.mail?.contenido;
+  // Placa (16/11/2026): la imagen entera es el botón; no tiene texto de botón.
+  if (campania.mail?.plantilla === 'placa') return Boolean(contenido?.botonLink?.trim());
   return campania.mail?.plantilla !== 'simple' && Boolean(contenido?.botonTexto?.trim() && contenido?.botonLink?.trim());
 };
 
@@ -365,6 +369,7 @@ export const armarInforme = (campania: Campania, stats: EstadisticasCampania, li
     if ((stats.lista.NO_ENCONTRADO ?? 0) > 0) motivos.push(`${numero(stats.lista.NO_ENCONTRADO ?? 0)} no encontrados`);
     if ((stats.lista.SIN_DNI ?? 0) > 0) motivos.push(`${numero(stats.lista.SIN_DNI ?? 0)} sin DNI ni CUIL`);
   }
+  if ((stats.lista.AFILIADO ?? 0) > 0) motivos.push(`${numero(stats.lista.AFILIADO ?? 0)} son afiliados de Andes`);
   if ((stats.lista.QUITADO ?? 0) > 0) motivos.push(`${numero(stats.lista.QUITADO ?? 0)} quitados a mano antes de enviar`);
   parrafos.push(
     descartadas > 0

@@ -4,6 +4,7 @@
 import type { Campania, DestinatarioFila } from './campanias.api';
 import { FILTROS_PERSONAS, cruzaConPadron, fechaHora } from './campaniasOpciones';
 import { useListaPersonas } from './useListaPersonas';
+import { conEtiquetaDeContactos, muestraDescartados } from './campaniaPlaca';
 import { BuscadorPersonas, PaginadoPersonas } from './ListaPersonasControles';
 
 interface PersonasProps {
@@ -55,8 +56,11 @@ const CampaniaPersonas = ({ campania, actualizadoAt }: PersonasProps) => {
   const { canales } = campania;
   const esAfiliados = campania.tipoDestinatario === 'afiliados';
   const conPadron = cruzaConPadron(campania.tipoDestinatario);
-  const filtros = FILTROS_PERSONAS.filter(
-    (f) => (!f.canal || canales[f.canal]) && (!f.soloAfiliados || esAfiliados) && (!f.conPadron || conPadron),
+  const filtros = conEtiquetaDeContactos(
+    FILTROS_PERSONAS.filter(
+      (f) => (!f.canal || canales[f.canal]) && (!f.soloAfiliados || esAfiliados) && (!f.conPadron || muestraDescartados(campania.tipoDestinatario, conPadron)),
+    ),
+    campania.tipoDestinatario,
   );
   const columnas = 4 + (esAfiliados ? 1 : 0) + (canales.push ? 1 : 0) + (canales.mail ? 1 : 0) + (canales.banner ? 1 : 0);
 

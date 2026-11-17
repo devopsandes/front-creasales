@@ -13,6 +13,7 @@ const ACLARACION_VIGENTES = {
   afiliados: ' (afiliados que están en el padrón)',
   exafiliados: ' (de baja o vigentes en el padrón)',
   prestadores: ' (prestadores de la lista)',
+  contactos: ' (contactos de la lista que no son afiliados)',
 } as const;
 
 interface PasoEnviarProps {
