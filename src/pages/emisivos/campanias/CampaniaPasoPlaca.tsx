@@ -39,6 +39,8 @@ interface PasoPlacaProps {
   onVerPreview: () => void;
   verificando: boolean;
   deshabilitado: boolean;
+  /** Ya hay lista cargada: la casilla de sacar afiliados queda fija (cambiarla pide recargar la lista). */
+  listaCargada: boolean;
 }
 
 const AVISO_ORIGEN: Record<OrigenPlaca, string> = {
@@ -65,6 +67,7 @@ const CampaniaPasoPlaca = ({
   onVerPreview,
   verificando,
   deshabilitado,
+  listaCargada,
 }: PasoPlacaProps) => {
   const elegirImagen = (e: ChangeEvent<HTMLInputElement>) => {
     const archivo = e.target.files?.[0] ?? null;
@@ -127,6 +130,21 @@ const CampaniaPasoPlaca = ({
           />
         </label>
       </div>
+
+      <label className="campanias-check">
+        <input
+          type="checkbox"
+          checked={datos.sacarAfiliados}
+          disabled={deshabilitado || listaCargada}
+          onChange={(e) => onCambiar({ sacarAfiliados: e.target.checked })}
+        />
+        Sacar de la lista a los que ya son afiliados de Andes{' '}
+        <span className="campanias-ayuda">
+          {listaCargada
+            ? '(para cambiarlo, volvé a cargar la lista después de guardar)'
+            : '(sin tildar, le llega a toda la lista: afiliados y no afiliados)'}
+        </span>
+      </label>
 
       <fieldset className="campanias-fieldset" disabled={deshabilitado || armando}>
         <legend>La placa</legend>

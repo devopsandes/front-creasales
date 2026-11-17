@@ -166,6 +166,8 @@ export interface Campania {
   id: number;
   nombre: string;
   tipoDestinatario: TipoDestinatario;
+  /** Contactos: true = al cargar la lista se sacan los que ya son afiliados (por defecto la lista va tal cual). */
+  sacarAfiliados?: boolean | number;
   canales: CanalesCampania;
   estado: EstadoCampania;
   push: PushCampania | null;
@@ -325,6 +327,8 @@ export interface DatosPlaca {
   textoAlternativo: string;
   /** Texto del botón dibujado debajo de la placa; vacío = sin botón. */
   textoBoton: string;
+  /** Sacar de la lista a los que ya son afiliados (casilla, destildada por defecto: Nico 17/11). */
+  sacarAfiliados: boolean;
 }
 
 /** POST/PUT /campanias de una placa: siempre a contactos, solo mail, plantilla placa. */
@@ -332,6 +336,7 @@ const armarCuerpoPlaca = (datos: DatosPlaca): string =>
   JSON.stringify({
     nombre: datos.nombre.trim(),
     tipoDestinatario: 'contactos',
+    sacarAfiliados: datos.sacarAfiliados,
     canales: { push: false, mail: true, banner: false },
     mail: {
       plantilla: 'placa',

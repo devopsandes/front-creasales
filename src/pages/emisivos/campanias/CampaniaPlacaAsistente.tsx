@@ -324,6 +324,7 @@ const CampaniaPlacaAsistente = ({ campania: campaniaInicial, pasoInicial = 1, on
               onVerPreview={() => void verPreview()}
               verificando={verificando || guardando}
               deshabilitado={!editable}
+              listaCargada={Boolean(campania?.resumen)}
             />
           )}
 

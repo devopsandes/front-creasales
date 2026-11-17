@@ -40,6 +40,7 @@ export const datosPlacaVacios = (remitente = ''): DatosPlaca => ({
   botonLink: LINK_BOT_COMERCIAL,
   textoAlternativo: '',
   textoBoton: '',
+  sacarAfiliados: false,
 });
 
 export const datosPlacaDesdeCampania = (campania: Campania): DatosPlaca => ({
@@ -50,6 +51,8 @@ export const datosPlacaDesdeCampania = (campania: Campania): DatosPlaca => ({
   botonLink: campania.mail?.contenido.botonLink ?? LINK_BOT_COMERCIAL,
   textoAlternativo: campania.mail?.contenido.textoAlternativo ?? '',
   textoBoton: campania.mail?.contenido.botonDebajo?.texto ?? '',
+  // MySQL devuelve el booleano como 1/0.
+  sacarAfiliados: campania.sacarAfiliados === true || campania.sacarAfiliados === 1,
 });
 
 /** Mensaje de error del paso Placa, o null si se puede guardar. */
