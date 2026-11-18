@@ -239,17 +239,20 @@ const CampaniaPasoPlaca = ({
 
       <label className="campanias-label">
         <span className="campanias-label-linea">
-          Texto alternativo <span className="campanias-ayuda">(opcional: lo que dice la placa)</span>{' '}
+          Texto debajo de la placa <span className="campanias-ayuda">(opcional)</span>{' '}
           <CampaniaContador valor={datos.textoAlternativo} maximo={MAX_TEXTO_ALTERNATIVO} />
         </span>
         <textarea
           className="campanias-input campanias-textarea"
-          rows={2}
+          rows={4}
           value={datos.textoAlternativo}
           disabled={deshabilitado}
           onChange={(e) => onCambiar({ textoAlternativo: e.target.value })}
         />
-        <span className="campanias-ayuda">Lo ve quien tiene las imágenes bloqueadas (Outlook) y va en la versión de solo texto del mail.</span>
+        <span className="campanias-ayuda">
+          Se ve en el mail debajo de la placa (por ejemplo, la explicación de la promo). Acepta {'{{NOMBRE}}'}, **negrita** y una línea en blanco
+          para empezar otro párrafo. También lo leen los que tienen las imágenes bloqueadas (Outlook).
+        </span>
       </label>
 
       <div className="campanias-preview-mail-accion">
