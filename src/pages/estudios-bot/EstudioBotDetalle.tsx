@@ -1,7 +1,7 @@
 // src/pages/estudios-bot/EstudioBotDetalle.tsx
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
-import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt, FaSync, FaCopy } from "react-icons/fa"
+import { FaArrowLeft, FaSave, FaPlus, FaTrash, FaEye, FaCheckCircle, FaTimesCircle, FaExternalLinkAlt, FaSync, FaCopy, FaUserClock } from "react-icons/fa"
 import LupaSelector from "./LupaSelector"
 import TrabajoPendiente from "./TrabajoPendiente"
 import ResumenGrupo from "./ResumenGrupo"
@@ -10,6 +10,7 @@ import ChatAfiliado from "./ChatAfiliado"
 import {
     buscarDiagnosticos, buscarEfectores, buscarPrestaciones, buscarPrestadores, buscarSolicitantes,
     guardarComentarioFinal, guardarRevision, obtenerEstudio, obtenerImagenEstudio, obtenerMotivosRechazo, procesarImagenEstudio, reanalizarEstudio,
+    soltarEstudio, trabajarEstudio,
 } from "../../services/estudios-bot/estudiosBot.api"
 import {
     CatMotivo, CatPrestacion, DecisionBot, EstudioDetalle, MultiFoto, PrestacionElegida, Ref, RevisionOperadora, RolFoto, Veredicto,
@@ -174,6 +175,30 @@ const EstudioBotDetalle = () => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id])
+
+    // Quién lo está gestionando (Karen, 19/11/2026): mientras el pendiente está
+    // abierto se renueva la marca cada minuto; al irse, si era de esta
+    // operadora, se libera. Si pasan 3 minutos sin señal, el back la libera solo.
+    const pendiente = detalle?.estado === 'PENDIENTE'
+    const propio = Boolean(detalle?.enTrabajoPropio)
+    useEffect(() => {
+        if (!id || !pendiente) return
+        const renovar = async () => {
+            try {
+                const r = await trabajarEstudio(id)
+                if (r.statusCode === 200) {
+                    setDetalle((prev) => prev && prev.id === id
+                        ? { ...prev, enTrabajo: r.enTrabajo ?? null, enTrabajoPropio: Boolean(r.propio) }
+                        : prev)
+                }
+            } catch { /* la próxima señal lo intenta de nuevo */ }
+        }
+        const t = setInterval(() => { if (!document.hidden) renovar() }, 60000)
+        return () => {
+            clearInterval(t)
+            if (propio) soltarEstudio(id).catch(() => { })
+        }
+    }, [id, pendiente, propio])
 
     // Reanálisis con el código actual (solo con la clave de supervisión).
     const [modoRe, setModoRe] = useState<'matching' | 'completo'>('matching')
@@ -422,6 +447,15 @@ const EstudioBotDetalle = () => {
                 </div>
 
                 <div className="eb-col-derecha">
+                    {detalle.estado === 'PENDIENTE' && detalle.enTrabajo && !detalle.enTrabajoPropio && (
+                        <div className="eb-en-trabajo-banner">
+                            <FaUserClock />
+                            <span><b>{detalle.enTrabajo.usuarioNombre}</b> está gestionando este estudio desde las {formatHora(detalle.enTrabajo.desde)}. Si lo resolvés vos, se lo vas a pisar.</span>
+                        </div>
+                    )}
+                    {detalle.estado === 'PENDIENTE' && detalle.enTrabajoPropio && (
+                        <div className="eb-en-trabajo-propio"><FaUserClock /> Lo estás gestionando vos: las demás operadoras lo ven marcado con tu nombre.</div>
+                    )}
                     {esGrupo && (
                         <div className="eb-card eb-grupo-barra">
                             <div className="eb-card-title">
@@ -787,6 +821,10 @@ const Campo = ({ label, valor, igual }: { label: string; valor: string; igual?: 
 
 const fmtPesos = (n: number | string | null | undefined) =>
     n === null || n === undefined || n === '' ? '—' : `$ ${Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
+const formatHora = (iso: string) => {
+    const d = new Date(iso)
+    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+}
 
 const fmtRef = (r: Ref | undefined, conMat = false, conCod = false) => {
     if (!r?.nombre) return ''

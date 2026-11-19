@@ -1219,3 +1219,36 @@
 .eb-chat-escribir { padding: .75rem 1rem 1rem; border-top: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: .5rem; }
 .eb-chat-acciones { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
 
+
+/* Quién está gestionando un pendiente en CreaSales (Karen, 19/11/2026). */
+.eb-en-trabajo {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  margin-left: .35rem;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: .75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.eb-en-trabajo-banner {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin: 0 0 .75rem;
+  padding: .7rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: .9rem;
+}
+.eb-en-trabajo-banner b { color: #78350f; }
+.eb-en-trabajo-propio {
+  margin: 0 0 .75rem;
+  font-size: .8rem;
+  color: #6b7280;
+}

@@ -82,6 +82,16 @@ export interface EstudioListaItem {
     cantidadPedidos?: number | null
     /** Chat con el afiliado: resumen guardado (puede estar desactualizado hasta la próxima lectura). */
     chat?: ResumenChat | null
+    /** Pendiente que otra operadora tiene abierto en CreaSales ahora. */
+    enTrabajo?: EnTrabajo | null
+}
+
+/** Quién está gestionando un pendiente en CreaSales (Karen, 19/11/2026). */
+export interface EnTrabajo {
+    usuarioId: string
+    usuarioNombre: string
+    desde: string
+    ultimaSenal: string
 }
 
 /** Resumen del chat con el afiliado de una solicitud. */
@@ -255,12 +265,17 @@ export interface EstudioDetalle {
     multi?: MultiInfo | null
     /** Chat con el afiliado: resumen guardado. */
     chat?: ResumenChat | null
+    /** Quién lo está gestionando en CreaSales (solo pendientes), y si es quien mira. */
+    enTrabajo?: EnTrabajo | null
+    enTrabajoPropio?: boolean
 }
 
 export interface ResolverBody extends GuardarRevisionBody {
     accion: Veredicto
     /** Rechazo: comentario para el afiliado, editado a partir de la plantilla. */
     textoAfiliado?: string
+    /** Otra operadora lo está gestionando y esta confirmó que sigue igual. */
+    forzar?: boolean
 }
 
 export interface GuardarRevisionBody {

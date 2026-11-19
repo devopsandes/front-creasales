@@ -170,7 +170,10 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar, modoGrupo = fa
         return null
     }
 
-    const confirmar = async () => {
+    // Otra operadora lo está gestionando: el back frena y acá se pregunta si seguir igual.
+    const [pisando, setPisando] = useState<string | null>(null)
+
+    const confirmar = async (forzar = false) => {
         const err = validar()
         if (err) { avisar('err', err); return }
         setEnviando(true)
@@ -179,6 +182,7 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar, modoGrupo = fa
             const enviar = modoGrupo && accion !== 'DERIVAR' ? guardarDecisionEstudio : resolverEstudio
             const r = await enviar(detalle.id, {
                 accion,
+                forzar: forzar || undefined,
                 veredicto: accion,
                 motivo: motivoSel ? { id: motivoSel.idMensaje, texto: motivoSel.tema } : undefined,
                 textoAfiliado: accion === 'RECHAZAR' ? (textoAfiliado.trim() || undefined) : undefined,
@@ -189,6 +193,10 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar, modoGrupo = fa
                 efector: { id: efector.id, nombre: efector.nombre },
                 prestaciones: prestaciones.map((p) => ({ idCodigo: p.idCodigo, codigo: p.codigo, descripcion: p.descripcion, cantidad: p.cantidad })),
             })
+            if (!r.id && r.codigo === 'EN_TRABAJO') {
+                setPisando(r.enTrabajo?.usuarioNombre || 'Otra operadora')
+                return
+            }
             if (!r.id) {
                 const m = Array.isArray(r.message) ? r.message.join(', ') : r.message
                 throw new Error(m ?? 'No se pudo resolver')
@@ -369,17 +377,35 @@ const TrabajoPendiente = ({ detalle, motivos, onResuelto, avisar, modoGrupo = fa
                         <span className="eb-hint" style={{ marginRight: 'auto' }}>
                             {guardada ? 'Ya hay una decisión guardada para este pedido; guardar de nuevo la reemplaza.' : 'Nada sale hacia Andes hasta "Confirmar solicitud completa".'}
                         </span>
-                        <button className="eb-btn-primary" onClick={confirmar} disabled={enviando || bloqueado}>
+                        <button className="eb-btn-primary" onClick={() => confirmar()} disabled={enviando || bloqueado}>
                             <FaCheck /> {enviando ? 'Guardando...' : `Guardar decisión: ${etiqueta.toLowerCase()}${cambios.length ? ' (corregido)' : ''}`}
                         </button>
                     </>
                 ) : (
-                    <button className="eb-btn-primary" onClick={confirmar} disabled={enviando || bloqueado}>
+                    <button className="eb-btn-primary" onClick={() => confirmar()} disabled={enviando || bloqueado}>
                         <FaCheck /> {enviando ? 'Enviando...' : `${etiqueta}${cambios.length ? ' (corregido)' : ' tal como propuso el bot'}`}
                     </button>
                 )}
             </div>
 
+            {pisando && (
+                <div className="eb-modal-overlay">
+                    <div className="eb-modal" style={{ maxWidth: 520 }}>
+                        <div className="eb-modal-header" style={{ background: '#b45309' }}>
+                            <h3 className="eb-modal-title"><FaExclamationTriangle /> Lo está gestionando {pisando}</h3>
+                        </div>
+                        <div className="eb-modal-body" style={{ padding: '1.25rem' }}>
+                            <p style={{ margin: '0 0 1rem', fontSize: '.875rem', color: '#111827' }}>
+                                <b>{pisando}</b> tiene este estudio abierto en CreaSales ahora mismo. Si seguís, lo resolvés vos y ella se va a encontrar con que ya no está pendiente.
+                            </p>
+                            <div className="eb-actions">
+                                <button type="button" className="eb-btn-secondary" onClick={() => setPisando(null)} disabled={enviando}>Dejárselo</button>
+                                <button type="button" className="eb-btn-primary" onClick={() => { setPisando(null); confirmar(true) }} disabled={enviando}>Seguir de todas formas</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {modalAlerta && (
                 <div className="eb-modal-overlay">
                     <div className="eb-modal" style={{ maxWidth: 560 }}>

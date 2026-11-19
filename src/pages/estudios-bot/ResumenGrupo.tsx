@@ -93,11 +93,17 @@ const ResumenGrupo = ({ detalle, onClose, onConfirmado, avisar }: Props) => {
     const mixto = codificar.length > 0 && rechazar.length > 0
     const todoRechazo = codificar.length === 0 && rechazar.length > 0
 
-    const confirmar = async () => {
+    const [pisando, setPisando] = useState<string | null>(null)
+
+    const confirmar = async (forzar = false) => {
         if (!multi.grupo) return
         setEnviando(true)
         try {
-            const r = await confirmarGrupoEstudios(multi.grupo)
+            const r = await confirmarGrupoEstudios(multi.grupo, forzar)
+            if (!r.id && r.codigo === 'EN_TRABAJO') {
+                setPisando(r.enTrabajo?.usuarioNombre || 'Otra operadora')
+                return
+            }
             if (!r.id) {
                 const m = Array.isArray(r.message) ? r.message.join(', ') : r.message
                 throw new Error(m ?? 'No se pudo confirmar la solicitud')
@@ -112,6 +118,25 @@ const ResumenGrupo = ({ detalle, onClose, onConfirmado, avisar }: Props) => {
             setEnviando(false)
         }
     }
+
+    if (pisando) return (
+        <div className="eb-modal-overlay">
+            <div className="eb-modal" style={{ maxWidth: 520 }}>
+                <div className="eb-modal-header" style={{ background: '#b45309' }}>
+                    <span className="eb-modal-title">Lo está gestionando {pisando}</span>
+                </div>
+                <div className="eb-modal-body" style={{ padding: '1.25rem' }}>
+                    <p style={{ margin: '0 0 1rem', fontSize: '.875rem', color: '#111827' }}>
+                        <b>{pisando}</b> tiene esta solicitud abierta en CreaSales ahora mismo. Si seguís, la confirmás vos y ella se va a encontrar con que ya no está pendiente.
+                    </p>
+                    <div className="eb-actions">
+                        <button type="button" className="eb-btn-secondary" onClick={() => setPisando(null)} disabled={enviando}>Dejársela</button>
+                        <button type="button" className="eb-btn-primary" onClick={() => { setPisando(null); confirmar(true) }} disabled={enviando}>Seguir de todas formas</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
 
     return (
         <div className="eb-modal-overlay" onClick={() => !enviando && onClose()}>
@@ -158,7 +183,7 @@ const ResumenGrupo = ({ detalle, onClose, onConfirmado, avisar }: Props) => {
                 </div>
                 <div className="eb-modal-acciones eb-resumen-acciones">
                     <button type="button" className="eb-btn-secondary" onClick={onClose} disabled={enviando}>Volver</button>
-                    <button type="button" className="eb-btn-primary" onClick={confirmar} disabled={enviando || !multi.confirmable}>
+                    <button type="button" className="eb-btn-primary" onClick={() => confirmar()} disabled={enviando || !multi.confirmable}>
                         {enviando ? <><FaSync className="spinning" /> Enviando a Andes...</> : <><FaCheck /> Confirmar</>}
                     </button>
                 </div>

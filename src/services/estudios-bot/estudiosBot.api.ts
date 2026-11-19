@@ -3,7 +3,7 @@ import axios from "axios"
 import { resolveClient } from "../apiClient"
 import {
     CatDiagnostico, CatEfector, CatMotivo, CatPrestacion, CatPrestador, CatSolicitante,
-    EstudioDetalle, EstudiosListaResponse, GuardarRevisionBody, MensajeChat, ResolverBody, ResumenChat,
+    EnTrabajo, EstudioDetalle, EstudiosListaResponse, GuardarRevisionBody, MensajeChat, ResolverBody, ResumenChat,
 } from "../../interfaces/estudios-bot.interface"
 
 const client = resolveClient("bot")
@@ -52,7 +52,7 @@ export const obtenerEstudio = (id: string, clave?: string, trabajar = false) =>
         client.get(`/estudios-bot/${id}`, { params: { ...(clave ? { clave } : {}), ...(trabajar ? { trabajar: 'true' } : {}) } }))
 
 export const resolverEstudio = (id: string, body: ResolverBody) =>
-    handle<EstudioDetalle & { message?: string | string[] }>(() =>
+    handle<EstudioDetalle & { message?: string | string[]; codigo?: string; enTrabajo?: EnTrabajo | null }>(() =>
         client.post(`/estudios-bot/${id}/resolver`, body))
 
 export const precioPrestacion = (idConvenio: string, idCodigo: string, idAfiliado: string, idProfesional: string) =>
@@ -76,13 +76,22 @@ export const enviarChatEstudio = (id: string, texto: string) =>
 
 /** Varias fotos: guarda qué hacer con este pedido (codificar o rechazar) sin ejecutar nada. */
 export const guardarDecisionEstudio = (id: string, body: ResolverBody) =>
-    handle<EstudioDetalle & { message?: string | string[] }>(() =>
+    handle<EstudioDetalle & { message?: string | string[]; codigo?: string; enTrabajo?: EnTrabajo | null }>(() =>
         client.post(`/estudios-bot/${id}/decision`, body))
 
 /** Varias fotos: ejecuta las decisiones guardadas de toda la solicitud. Devuelve el detalle del pedido 1. */
-export const confirmarGrupoEstudios = (grupoId: string) =>
-    handle<EstudioDetalle & { message?: string | string[] }>(() =>
-        client.post(`/estudios-bot/grupo/${grupoId}/confirmar`, null))
+export const confirmarGrupoEstudios = (grupoId: string, forzar = false) =>
+    handle<EstudioDetalle & { message?: string | string[]; codigo?: string; enTrabajo?: EnTrabajo | null }>(() =>
+        client.post(`/estudios-bot/grupo/${grupoId}/confirmar`, null, { params: forzar ? { forzar: 'true' } : {} }))
+
+/** Mientras la operadora tiene abierto un pendiente: renueva la marca "lo estoy gestionando". Devuelve quién lo tiene. */
+export const trabajarEstudio = (id: string) =>
+    handle<{ statusCode: number; enTrabajo?: EnTrabajo | null; propio?: boolean; pendiente?: boolean; message?: string }>(() =>
+        client.post(`/estudios-bot/${id}/trabajar`, null))
+
+/** La operadora se va del pendiente sin resolverlo: lo libera si era suyo. */
+export const soltarEstudio = (id: string) =>
+    handle<{ statusCode: number; message?: string }>(() => client.post(`/estudios-bot/${id}/soltar`, null))
 
 /** Varias fotos: la operadora pide analizar la foto `n` que el bot descartó. Devuelve el detalle del pedido nuevo. */
 export const procesarImagenEstudio = (id: string, n: number) =>

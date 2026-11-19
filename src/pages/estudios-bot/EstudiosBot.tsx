@@ -1,7 +1,7 @@
 // src/pages/estudios-bot/EstudiosBot.tsx
 import { useCallback, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { FaSearch, FaSync, FaTimesCircle, FaCheck, FaComments } from "react-icons/fa"
+import { FaSearch, FaSync, FaTimesCircle, FaCheck, FaComments, FaUserClock } from "react-icons/fa"
 import { listarEstudios } from "../../services/estudios-bot/estudiosBot.api"
 import { EstudioListaItem, ResumenChat, Veredicto } from "../../interfaces/estudios-bot.interface"
 import ChatAfiliado from "./ChatAfiliado"
@@ -283,6 +283,11 @@ const EstudiosBot = () => {
                     <td className="eb-td eb-td-motivo">{it.bot_veredicto === 'CODIFICAR' ? '' : (it.bot_motivo ?? '—')}</td>
                     <td className="eb-td eb-td-center">
                       {it.estado === 'PENDIENTE' && <span className="eb-badge eb-badge-violeta">Pendiente</span>}
+                      {it.estado === 'PENDIENTE' && it.enTrabajo && (
+                        <span className="eb-en-trabajo" title={`${it.enTrabajo.usuarioNombre} lo está gestionando desde ${formatFecha(it.enTrabajo.desde)}`}>
+                          <FaUserClock /> {it.enTrabajo.usuarioNombre.split(' ')[0]}
+                        </span>
+                      )}
                       {it.estado === 'RECIBIDO' && <span className="eb-pendiente">Analizando...</span>}
                       {it.estado === 'RESUELTO' && it.resuelto_por === 'OPERADORA' && (
                         <span className="eb-revisada" style={{ color: RESULTADO_CFG[it.accion ?? '']?.color ?? '#374151' }} title={`${it.op_usuario_nombre ?? ''} · ${formatFecha(it.op_fecha)}${it.campos_modificados?.length ? ` · corrigió ${it.campos_modificados.join(', ')}` : ''}`}>
