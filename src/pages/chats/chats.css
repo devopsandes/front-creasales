@@ -168,6 +168,24 @@
     white-space: nowrap;
 }
 
+/* Nota o mención con imagen, documento o texto citado: el contenido va de
+   arriba hacia abajo. En una fila, la imagen se quedaba con el ancho y el
+   texto terminaba partido sílaba por sílaba según el zoom. Fede, 19/11/2026. */
+.mensaje-nota-privada--apilada {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+
+.mensaje-nota-privada--apilada > .mensaje-nota-privada-text {
+    flex: 0 0 auto;
+    width: 100%;
+}
+
+.mensaje-nota-privada--apilada > .mensaje-nota-privada-author {
+    align-self: flex-end;
+}
+
 .mensaje-salida,
 .mensaje-entrada,
 .mensaje-archivado {

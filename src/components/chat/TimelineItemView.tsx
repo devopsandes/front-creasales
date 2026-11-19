@@ -83,6 +83,27 @@ export const resolveEventText = (evt: any): string => {
     }
 }
 
+/**
+ * El conversacional arma el texto de la nota con "[imagen adjunta]" o
+ * "[documento adjunto]" al final. Si el adjunto se está mostrando en la nota,
+ * esa marca sobra: se saca solo acá, porque el mismo texto se usa en otros
+ * lugares donde el adjunto no se ve. Fede, 19/11/2026.
+ */
+export const quitarMarcaAdjunto = (texto: string, payload: any): string => {
+    let limpio = texto
+    if (payload?.imageUrl) limpio = limpio.replace(/\s*\[imagen adjunta\]\s*$/i, '')
+    if (payload?.documentUrl) limpio = limpio.replace(/\s*\[documento adjunto\]\s*$/i, '')
+    if (limpio === texto) return texto
+    // "Nota privada: [imagen adjunta]" queda "Nota privada:" -> "Nota privada"
+    return limpio.replace(/:\s*$/, '').trim()
+}
+
+/** La nota lleva algo más que texto: va apilada (texto, adjunto, autor) y no en una fila. */
+const claseNota = (payload: any): string =>
+    payload?.imageUrl || payload?.documentUrl || payload?.text
+        ? 'mensaje-nota-privada mensaje-nota-privada--apilada'
+        : 'mensaje-nota-privada'
+
 export const formatAuthorName = (value: any) => {
     if (!value || typeof value !== 'string') return ''
     return value.toLowerCase().split(' ').filter(Boolean).map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
@@ -199,8 +220,8 @@ const TimelineItemView = ({ item: msj, onPreview }: Props) => {
         if (msj?.type === "PRIVATE_NOTE_CREATED") {
             return (
                 <div className='contenedor-nota-privada' id={msj?.id ? `event-${msj.id}` : undefined}>
-                    <div className='mensaje-nota-privada'>
-                        <span className='mensaje-nota-privada-text'>{resolveEventText(msj)}</span>
+                    <div className={claseNota({ imageUrl: msj?.payload?.imageUrl, documentUrl: msj?.payload?.documentUrl })}>
+                        <span className='mensaje-nota-privada-text'>{quitarMarcaAdjunto(resolveEventText(msj), msj?.payload)}</span>
                         {msj?.payload?.imageUrl && (
                             <img
                                 src={msj.payload.imageUrl}
@@ -222,8 +243,8 @@ const TimelineItemView = ({ item: msj, onPreview }: Props) => {
         if (msj?.type === "MENTION_CREATED") {
             return (
                 <div className='contenedor-nota-privada' id={msj?.id ? `event-${msj.id}` : undefined}>
-                    <div className='mensaje-nota-privada'>
-                        <span className='mensaje-nota-privada-text'>{resolveEventText(msj)}</span>
+                    <div className={claseNota(msj?.payload)}>
+                        <span className='mensaje-nota-privada-text'>{quitarMarcaAdjunto(resolveEventText(msj), msj?.payload)}</span>
                         {msj?.payload?.text && (
                             <span className='mensaje-nota-privada-text' style={{ display: 'block', marginTop: '4px', fontStyle: 'italic' }}>
                                 "{msj.payload.text}"
