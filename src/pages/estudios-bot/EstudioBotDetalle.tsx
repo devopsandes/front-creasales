@@ -193,7 +193,8 @@ const EstudioBotDetalle = () => {
                 }
             } catch { /* la próxima señal lo intenta de nuevo */ }
         }
-        const t = setInterval(() => { if (!document.hidden) renovar() }, 60000)
+        // Siempre, aunque la ventana esté tapada: el navegador la considera "oculta" y la marca vencería.
+        const t = setInterval(renovar, 45000)
         return () => {
             clearInterval(t)
             if (propio) soltarEstudio(id).catch(() => { })
