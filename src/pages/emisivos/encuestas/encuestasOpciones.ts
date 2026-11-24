@@ -24,6 +24,30 @@ export const LARGOS = {
   textoBoton: 40,
   terminosUrl: 300,
 };
+/**
+ * Cabecera de la web pública (24/11/2026): mismos tipos, topes y textos que valida emisivos
+ * (encuestas.cabecera.helpers.js). Emisivos además revisa la firma de los bytes.
+ */
+export const MAX_BYTES_CABECERA_IMAGEN = 1024 * 1024;
+export const MAX_BYTES_CABECERA_VIDEO = 3 * 1024 * 1024;
+export const ACCEPT_CABECERA = 'image/jpeg,image/png,image/webp,video/mp4';
+
+/** Imagen o video según el tipo del archivo; null si no es de los aceptados. */
+export const tipoDeArchivoCabecera = (tipo: string): 'imagen' | 'video' | null => {
+  if (tipo === 'video/mp4') return 'video';
+  if (tipo === 'image/jpeg' || tipo === 'image/png' || tipo === 'image/webp') return 'imagen';
+  return null;
+};
+
+/** El problema del archivo elegido para la cabecera, o null si sirve. */
+export const errorDeCabecera = (archivo: { type: string; size: number }): string | null => {
+  const tipo = tipoDeArchivoCabecera(archivo.type);
+  if (!tipo) return 'Tiene que ser una imagen JPG, PNG o WebP, o un video MP4.';
+  if (tipo === 'video' && archivo.size > MAX_BYTES_CABECERA_VIDEO) return 'El video puede pesar hasta 3 MB: exportalo en 720p.';
+  if (tipo === 'imagen' && archivo.size > MAX_BYTES_CABECERA_IMAGEN) return 'La imagen puede pesar hasta 1 MB.';
+  return null;
+};
+
 export const MAX_PREGUNTAS = 20;
 export const MIN_OPCIONES = 2;
 export const MAX_OPCIONES = 15;

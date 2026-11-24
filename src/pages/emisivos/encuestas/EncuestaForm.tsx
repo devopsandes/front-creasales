@@ -6,9 +6,19 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { FaArrowDown, FaArrowUp, FaPlus, FaSave, FaTimes, FaTrash } from 'react-icons/fa';
 import { datosVacios as datosVaciosCampania, nuevaClave as nuevaClaveTarjeta, remitenteVigente } from '../campanias/campaniasOpciones';
+import EncuestaCabecera from './EncuestaCabecera';
+import type { CambioCabecera } from './EncuestaCabecera';
 import EncuestaFormAccion from './EncuestaFormAccion';
 import type { CambioImagenMail } from './EncuestaMailEditor';
-import { armarCuerpo, crearEncuesta, editarEncuesta, quitarImagenMail, subirImagenMail } from './encuestas.api';
+import {
+  armarCuerpo,
+  crearEncuesta,
+  editarEncuesta,
+  quitarCabecera,
+  quitarImagenMail,
+  subirCabecera,
+  subirImagenMail,
+} from './encuestas.api';
 import type { Audiencia, DatosFormularioEncuesta, Encuesta, MailFormulario, PreguntaFormulario, TipoPregunta } from './encuestas.api';
 import {
   AUDIENCIAS,
@@ -81,10 +91,12 @@ const datosIniciales = (encuesta: Encuesta | null): DatosFormularioEncuesta => {
 };
 
 /** Todo lo que el usuario puede haber cambiado, en un solo texto: si difiere del guardado, hay cambios sin guardar. */
-const huellaDe = (datos: DatosFormularioEncuesta, imagen: CambioImagenMail): string => {
-  const archivo = imagen.archivo ? `${imagen.archivo.name}:${imagen.archivo.size}:${imagen.archivo.lastModified}` : '';
-  return `${armarCuerpo(datos)}|${archivo}|${imagen.quitar}`;
-};
+const SIN_CAMBIO = { archivo: null, quitar: false };
+
+const firmaArchivo = (archivo: File | null): string => (archivo ? `${archivo.name}:${archivo.size}:${archivo.lastModified}` : '');
+
+const huellaDe = (datos: DatosFormularioEncuesta, imagen: CambioImagenMail, cabecera: CambioCabecera = SIN_CAMBIO): string =>
+  `${armarCuerpo(datos)}|${firmaArchivo(imagen.archivo)}|${imagen.quitar}|${firmaArchivo(cabecera.archivo)}|${cabecera.quitar}`;
 
 const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => {
   const [datos, setDatos] = useState<DatosFormularioEncuesta>(() => datosIniciales(encuesta));
@@ -96,6 +108,8 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
   /** Id de la encuesta que ya existe en el servidor: la que se abrió o la que se creó recién (si la imagen falla, el reintento edita esa). */
   const [idGuardada, setIdGuardada] = useState<number | null>(encuesta?.id ?? null);
   const [versionImagen, setVersionImagen] = useState(() => Date.now());
+  /** La cabecera de la web pública (24/11/2026): como la imagen del mail, se sube después de guardar la encuesta. */
+  const [cabecera, setCabecera] = useState<CambioCabecera>(SIN_CAMBIO);
   const conRespuestas = (encuesta?.respondieron ?? 0) > 0;
   const publica = datos.audiencia === 'publica';
 
@@ -103,7 +117,7 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
   const [huellaGuardada, setHuellaGuardada] = useState<string | null>(() =>
     encuesta ? huellaDe(datosIniciales(encuesta), { archivo: null, quitar: false }) : null,
   );
-  const hayCambios = huellaGuardada === null || huellaDe(datos, imagen) !== huellaGuardada;
+  const hayCambios = huellaGuardada === null || huellaDe(datos, imagen, cabecera) !== huellaGuardada;
 
   // El formulario puede ser largo: cuando aparece un error, se lo trae a la vista.
   useEffect(() => {
@@ -203,6 +217,22 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
           return;
         }
         setVersionImagen(Date.now());
+      }
+
+      // La cabecera de la web, con la encuesta ya guardada (solo en las públicas). Si falla, mismo criterio que la imagen.
+      if (id !== null && publica && (cabecera.archivo || cabecera.quitar)) {
+        try {
+          if (cabecera.archivo) await subirCabecera(id, cabecera.archivo);
+          else await quitarCabecera(id);
+        } catch (errCabecera) {
+          setIdGuardada(id);
+          setHuellaGuardada(huellaDe(datos, SIN_CAMBIO));
+          setError(
+            `La encuesta se guardó, pero la cabecera no se pudo subir: ${errCabecera instanceof Error ? errCabecera.message : 'error de conexión'}. Volvé a tocar Guardar para reintentar.`,
+          );
+          setGuardando(false);
+          return;
+        }
       }
       onGuardado(mensaje);
     } catch (err) {
@@ -313,6 +343,15 @@ const EncuestaForm = ({ encuesta, onCerrar, onGuardado }: EncuestaFormProps) => 
                   onChange={(e) => cambiarCampos({ condiciones: e.target.value })}
                 />
               </label>
+              <EncuestaCabecera
+                idGuardada={idGuardada}
+                tieneGuardada={Boolean(encuesta?.tieneCabecera)}
+                tipoGuardada={encuesta?.cabeceraTipo ?? null}
+                version={versionImagen}
+                cambio={cabecera}
+                onCambio={setCabecera}
+                onError={setError}
+              />
             </>
           )}
 

@@ -72,6 +72,9 @@ export interface ResumenEncuesta {
   accion?: AccionEncuesta | null;
   /** Solo lectura: si el mail a la persona tiene imagen subida. */
   tieneImagenMail?: boolean;
+  /** Solo lectura (24/11/2026): si la web pública tiene cabecera (imagen o video arriba del título) y de qué tipo. */
+  tieneCabecera?: boolean;
+  cabeceraTipo?: 'imagen' | 'video' | null;
   /** 11/11/2026 (Karen): la app 7.1.9 la abre sola y no deja usar la app hasta responderla. Emisivo viejo = false. */
   obligatoria?: boolean;
 }
@@ -331,6 +334,42 @@ export const quitarImagenMail = (id: number) => {
 /** La imagen es pública (la piden los clientes de correo). El parámetro v evita ver una vieja guardada en el navegador. */
 export const urlImagenMail = (id: number, version: string | number): string =>
   `${URL_EMISIVOS}/encuestas/${id}/imagen-mail?v=${encodeURIComponent(String(version))}`;
+
+/** Lo que responde nginx cuando el archivo supera su tope (página HTML: pedir lo convierte en "Error 413: ..."). */
+const MENSAJE_413 = 'El video puede pesar hasta 3 MB: exportalo en 720p.';
+/**
+ * El 413 de nginx suele llegar sin los headers de CORS: el navegador no deja leerlo y fetch tira un TypeError ("Failed
+ * to fetch" en Chrome, "Load failed" en Safari). Con un archivo de más de 1 MB, lo más probable es el tope de nginx
+ * (revisión en frío, 24/11/2026).
+ */
+const MENSAJE_RED_ARCHIVO_GRANDE =
+  'No se pudo subir la cabecera: puede que el archivo pese demasiado para el servidor. Probá con uno más liviano o avisá a sistemas.';
+
+/**
+ * Cabecera de la web pública (24/11/2026): imagen JPG/PNG/WebP hasta 1 MB o video MP4 hasta 3 MB, arriba del título.
+ * Se sube DESPUÉS de guardar la encuesta, como la imagen del mail.
+ */
+export const subirCabecera = async (id: number, archivo: File) => {
+  const formData = new FormData();
+  formData.append('archivo', archivo);
+  try {
+    return await pedir<Encuesta>(`/encuestas/${id}/cabecera`, { method: 'POST', body: formData });
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Error 413')) throw new Error(MENSAJE_413);
+    if (error instanceof TypeError && archivo.size > 1024 * 1024) throw new Error(MENSAJE_RED_ARCHIVO_GRANDE);
+    throw error;
+  }
+};
+
+export const quitarCabecera = (id: number) => {
+  const formData = new FormData();
+  formData.append('quitar', 'true');
+  return pedir<Encuesta>(`/encuestas/${id}/cabecera`, { method: 'POST', body: formData });
+};
+
+/** La cabecera es pública (la pide la web). El parámetro v evita ver una vieja guardada en el navegador. */
+export const urlCabecera = (id: number, version: string | number): string =>
+  `${URL_EMISIVOS}/encuestas/${id}/cabecera?v=${encodeURIComponent(String(version))}`;
 
 /** Una página (de a 50, los más nuevos primero) de los registros de una encuesta pública. */
 export const listarRegistrosPublicos = async (id: number, consulta: ConsultaRegistros): Promise<PaginaRegistros> => {
