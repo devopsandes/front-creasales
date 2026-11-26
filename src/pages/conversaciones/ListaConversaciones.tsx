@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Link, Outlet, useParams } from "react-router-dom"
+import { Link, Outlet, useParams, useSearchParams } from "react-router-dom"
 import { Calendar, Search, User, Radio, ClipboardCheck } from "lucide-react"
 import { getConversaciones, getConversacionesTotales, ConversacionListItem, ConversacionesTotalesResponse, AuditoriaResumen } from "../../services/conversaciones/conversaciones.services"
 import { puedeAuditar, CALIFICACION_LABEL } from "../../components/conversaciones/AuditoriaConversacionCard"
@@ -8,6 +8,7 @@ import { Usuario } from "../../interfaces/auth.interface"
 import { getAuthSessionReason } from "../../utils/authSession"
 import { useDispatch } from "react-redux"
 import { openSessionExpired } from "../../app/slices/actionSlice"
+import ConversacionesTabs from "./ConversacionesTabs"
 import "../chats/chats.css"
 
 const capitalizeText = (text: string | undefined | null): string => {
@@ -52,6 +53,9 @@ const haceDias = (n: number) => { const d = new Date(); d.setDate(d.getDate() - 
 const ListaConversaciones = () => {
     const { id: activeConversacionId } = useParams()
     const dispatch = useDispatch()
+    // Filtros iniciales por URL (el reporte de auditorías linkea acá con operadora y rango).
+    const [searchParams] = useSearchParams()
+    const soloDia = (v: string | null) => v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null
 
     const token = localStorage.getItem("token") || ""
     const esAuditor = puedeAuditar(localStorage.getItem("role"))
@@ -61,17 +65,17 @@ const ListaConversaciones = () => {
     const [hasMore, setHasMore] = useState<boolean>(true)
     const [loading, setLoading] = useState<boolean>(true)
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
-    const [selectedFilter, setSelectedFilter] = useState<string>("") // "" | "SISTEMA" | operatorId
+    const [selectedFilter, setSelectedFilter] = useState<string>(searchParams.get("operatorId") ?? "") // "" | "SISTEMA" | operatorId
     const [operadores, setOperadores] = useState<Usuario[]>([])
     // Rango por fecha de cierre: arranca en los últimos 7 días para no recorrer
     // todo el histórico sin querer. Búsqueda y canal, opcionales.
-    const [desde, setDesde] = useState<string>(haceDias(7))
-    const [hasta, setHasta] = useState<string>(hoy())
+    const [desde, setDesde] = useState<string>(soloDia(searchParams.get("desde")) ?? haceDias(7))
+    const [hasta, setHasta] = useState<string>(soloDia(searchParams.get("hasta")) ?? hoy())
     const [busqueda, setBusqueda] = useState<string>("")
     const [q, setQ] = useState<string>("")
     const [canal, setCanal] = useState<string>("")
     // Filtro de auditoría: "" todas | "no" sin auditar | "si" auditadas | VERDE | AMARILLO | ROJO
-    const [auditada, setAuditada] = useState<string>("")
+    const [auditada, setAuditada] = useState<string>(searchParams.get("auditada") ?? "")
     const [totales, setTotales] = useState<ConversacionesTotalesResponse | null>(null)
 
     const listRef = useRef<HTMLDivElement>(null)
@@ -210,11 +214,7 @@ const ListaConversaciones = () => {
     return (
         <div className="chats-container">
             <div className="main-chat">
-                <div className="header-lista">
-                    <div className="header-item header-item--active">
-                        <span className="btn-item">Conversaciones archivadas</span>
-                    </div>
-                </div>
+                <ConversacionesTabs activa="lista" />
                 <div className="lista-main">
                     <div className="col-lista" ref={listRef} onScroll={handleListScroll}>
                         <div className="w-full px-2 mb-2 mt-2 conv-filtros">

@@ -81,6 +81,37 @@ export interface GuardarAuditoriaBody {
     comentario?: string | null
 }
 
+export interface AuditoriasReporteOperadora {
+    operatorId: string | null
+    nombre: string | null
+    apellido: string | null
+    total: number
+    VERDE: number
+    AMARILLO: number
+    ROJO: number
+}
+
+export interface AuditoriasReporteCriterio {
+    codigo: string
+    numero: number
+    titulo: string
+    grupo: string
+    /** Veces que se calificó sin contar "no aplica". */
+    evaluadas: number
+    total: number
+    VERDE: number
+    AMARILLO: number
+    ROJO: number
+    NO_APLICA: number
+}
+
+export interface AuditoriasReporteResponse {
+    statusCode: number
+    area: { total: number; VERDE: number; AMARILLO: number; ROJO: number }
+    operadoras: AuditoriasReporteOperadora[]
+    criterios: AuditoriasReporteCriterio[]
+}
+
 export interface ConversacionesListResponse {
     statusCode: number
     page: number
@@ -281,4 +312,31 @@ const guardarAuditoriaConversacion = async (
     }
 }
 
-export { getConversaciones, getConversacionDetalle, getConversacionesTotales, getAuditoriaConversacion, guardarAuditoriaConversacion }
+const getAuditoriasReporte = async (
+    token: string,
+    filters?: { desde?: string; hasta?: string; operatorId?: string },
+    options?: { signal?: AbortSignal }
+): Promise<AuditoriasReporteResponse & ErrorResponse> => {
+    try {
+        const headers = { authorization: `Bearer ${token}` }
+        const params: Record<string, string> = {}
+        if (filters?.desde) params.desde = filters.desde
+        if (filters?.hasta) params.hasta = filters.hasta
+        if (filters?.operatorId) params.operatorId = filters.operatorId
+        const { data } = await convClient.get<AuditoriasReporteResponse & ErrorResponse>(
+            "/conversaciones/auditorias/reporte",
+            { headers, params, signal: options?.signal }
+        )
+        return data
+    } catch (error) {
+        if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
+            throw error
+        }
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data as any
+        }
+        throw error
+    }
+}
+
+export { getConversaciones, getConversacionDetalle, getConversacionesTotales, getAuditoriaConversacion, guardarAuditoriaConversacion, getAuditoriasReporte }

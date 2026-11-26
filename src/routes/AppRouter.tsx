@@ -27,6 +27,7 @@ import { navCategorias, navChats, navConversaciones, navEmpresa, navEstados, nav
 import ListaChats from '../pages/chats/ListaChats'
 import ListaConversaciones from '../pages/conversaciones/ListaConversaciones'
 import ConversacionDetalle from '../pages/conversaciones/ConversacionDetalle'
+import ReporteAuditorias from '../pages/conversaciones/ReporteAuditorias'
 import LogoFondo from '../components/logo/LogoFondo'
 import TableUsers from '../pages/usuarios/TableUsers'
 import TableTickets from '../pages/tickets/TableTickets'
@@ -183,6 +184,8 @@ const AppRouter = () => {
         </Route>
 
         <Route path='conversaciones' element={<NavTag tags={navConversaciones} />}>
+          {/* Reporte de auditorías: va antes de ':id' para que "reporte" no se tome como id. */}
+          <Route path='reporte' element={<ReporteAuditorias />} />
           <Route element={<ListaConversaciones />}>
             <Route index element={<LogoFondo />} />
             <Route path=':id' element={<ConversacionDetalle />} />
