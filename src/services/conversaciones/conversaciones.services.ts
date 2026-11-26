@@ -22,6 +22,63 @@ export interface ConversacionListItem {
         nombre: string | null
         apellido: string | null
     } | null
+    /** Auditoría de calidad (solo si la conversación fue auditada). */
+    auditoria?: AuditoriaResumen | null
+}
+
+// ── Auditoría de calidad (criterios de Karen) ──
+
+export type AuditoriaCalificacion = "VERDE" | "AMARILLO" | "ROJO" | "NO_APLICA"
+
+export interface AuditoriaResumen {
+    calificacion: AuditoriaCalificacion
+    updatedAt: string
+    auditor: { id: string; nombre: string | null; apellido: string | null } | null
+}
+
+export interface AuditoriaCriterio {
+    codigo: string
+    numero: number
+    grupo: string
+    titulo: string
+    descripcion: string
+    automatico: boolean
+}
+
+export interface AuditoriaChequeo {
+    codigo: string
+    sugerencia: AuditoriaCalificacion
+    evidencia: string
+}
+
+export interface AuditoriaCriterioResultado {
+    codigo: string
+    calificacion: AuditoriaCalificacion
+    comentario?: string | null
+}
+
+export interface AuditoriaConversacion {
+    id: string
+    conversacionId: string
+    calificacion: AuditoriaCalificacion
+    criterios: AuditoriaCriterioResultado[]
+    comentario: string | null
+    auditor: { id: string; nombre: string | null; apellido: string | null } | null
+    operadorUserId: string | null
+    createdAt: string
+    updatedAt: string
+}
+
+export interface AuditoriaConversacionResponse {
+    statusCode: number
+    criterios: AuditoriaCriterio[]
+    chequeos: AuditoriaChequeo[]
+    auditoria: AuditoriaConversacion | null
+}
+
+export interface GuardarAuditoriaBody {
+    criterios: AuditoriaCriterioResultado[]
+    comentario?: string | null
 }
 
 export interface ConversacionesListResponse {
@@ -80,6 +137,8 @@ type GetConversacionesFilters = {
     /** Nombre, teléfono o N° de conversación. */
     q?: string
     canal?: string
+    /** "si" | "no" | "VERDE" | "AMARILLO" | "ROJO" */
+    auditada?: string
 }
 
 export interface ConversacionesTotalesResponse {
@@ -109,6 +168,7 @@ const getConversaciones = async (
         if (filters?.hasta) params.hasta = filters.hasta
         if (filters?.q) params.q = filters.q
         if (filters?.canal) params.canal = filters.canal
+        if (filters?.auditada) params.auditada = filters.auditada
 
         const { data } = await convClient.get<ConversacionesListResponse & ErrorResponse>(
             "/conversaciones",
@@ -177,4 +237,48 @@ const getConversacionesTotales = async (
     }
 }
 
-export { getConversaciones, getConversacionDetalle, getConversacionesTotales }
+const getAuditoriaConversacion = async (
+    token: string,
+    id: string,
+    options?: { signal?: AbortSignal }
+): Promise<AuditoriaConversacionResponse & ErrorResponse> => {
+    try {
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await convClient.get<AuditoriaConversacionResponse & ErrorResponse>(
+            `/conversaciones/${id}/auditoria`,
+            { headers, signal: options?.signal }
+        )
+        return data
+    } catch (error) {
+        if (axios.isCancel(error) || (error as any)?.name === "AbortError" || (error as any)?.code === "ERR_CANCELED") {
+            throw error
+        }
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data as any
+        }
+        throw error
+    }
+}
+
+const guardarAuditoriaConversacion = async (
+    token: string,
+    id: string,
+    body: GuardarAuditoriaBody
+): Promise<{ statusCode: number; auditoria: AuditoriaConversacion } & ErrorResponse> => {
+    try {
+        const headers = { authorization: `Bearer ${token}` }
+        const { data } = await convClient.put<{ statusCode: number; auditoria: AuditoriaConversacion } & ErrorResponse>(
+            `/conversaciones/${id}/auditoria`,
+            body,
+            { headers }
+        )
+        return data
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) {
+            return error.response.data as any
+        }
+        throw error
+    }
+}
+
+export { getConversaciones, getConversacionDetalle, getConversacionesTotales, getAuditoriaConversacion, guardarAuditoriaConversacion }

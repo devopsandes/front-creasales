@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, Outlet, useParams } from "react-router-dom"
-import { Calendar, Search, User, Radio } from "lucide-react"
-import { getConversaciones, getConversacionesTotales, ConversacionListItem, ConversacionesTotalesResponse } from "../../services/conversaciones/conversaciones.services"
+import { Calendar, Search, User, Radio, ClipboardCheck } from "lucide-react"
+import { getConversaciones, getConversacionesTotales, ConversacionListItem, ConversacionesTotalesResponse, AuditoriaResumen } from "../../services/conversaciones/conversaciones.services"
+import { puedeAuditar, CALIFICACION_LABEL } from "../../components/conversaciones/AuditoriaConversacionCard"
 import { usuariosXRole } from "../../services/auth/auth.services"
 import { Usuario } from "../../interfaces/auth.interface"
 import { getAuthSessionReason } from "../../utils/authSession"
@@ -53,6 +54,7 @@ const ListaConversaciones = () => {
     const dispatch = useDispatch()
 
     const token = localStorage.getItem("token") || ""
+    const esAuditor = puedeAuditar(localStorage.getItem("role"))
 
     const [conversaciones, setConversaciones] = useState<ConversacionListItem[]>([])
     const [page, setPage] = useState<number>(1)
@@ -68,6 +70,8 @@ const ListaConversaciones = () => {
     const [busqueda, setBusqueda] = useState<string>("")
     const [q, setQ] = useState<string>("")
     const [canal, setCanal] = useState<string>("")
+    // Filtro de auditoría: "" todas | "no" sin auditar | "si" auditadas | VERDE | AMARILLO | ROJO
+    const [auditada, setAuditada] = useState<string>("")
     const [totales, setTotales] = useState<ConversacionesTotalesResponse | null>(null)
 
     const listRef = useRef<HTMLDivElement>(null)
@@ -101,7 +105,7 @@ const ListaConversaciones = () => {
     }, [token])
 
     const buildFilters = () => {
-        const base = { desde: desde || undefined, hasta: hasta || undefined, q: q || undefined, canal: canal || undefined }
+        const base = { desde: desde || undefined, hasta: hasta || undefined, q: q || undefined, canal: canal || undefined, auditada: auditada || undefined }
         if (selectedFilter === "SISTEMA") return { ...base, sistema: true }
         if (selectedFilter) return { ...base, operatorId: selectedFilter }
         return base
@@ -151,7 +155,18 @@ const ListaConversaciones = () => {
 
         return () => { controller.abort() }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token, selectedFilter, desde, hasta, q, canal])
+    }, [token, selectedFilter, desde, hasta, q, canal, auditada])
+
+    // Cuando se guarda una auditoría en el detalle, se pinta el color en la lista sin recargar.
+    useEffect(() => {
+        const onAuditada = (e: Event) => {
+            const detail = (e as CustomEvent).detail as { conversacionId: string; auditoria: AuditoriaResumen } | undefined
+            if (!detail?.conversacionId) return
+            setConversaciones((prev) => prev.map((c) => c.id === detail.conversacionId ? { ...c, auditoria: detail.auditoria } : c))
+        }
+        window.addEventListener("conversacion-auditada", onAuditada)
+        return () => window.removeEventListener("conversacion-auditada", onAuditada)
+    }, [])
 
     const loadMore = async () => {
         if (!token) return
@@ -253,6 +268,19 @@ const ListaConversaciones = () => {
                                     <option value="IOS">App iOS</option>
                                 </select>
                             </div>
+                            {esAuditor && (
+                                <div className="filter-input-row">
+                                    <ClipboardCheck className="filter-input-icon" size={18} />
+                                    <select className={`filter-select ${auditada === "" ? "filter-select--placeholder" : ""}`} value={auditada} onChange={(e) => setAuditada(e.target.value)}>
+                                        <option value="">Auditoría: todas</option>
+                                        <option value="no">Sin auditar</option>
+                                        <option value="si">Auditadas</option>
+                                        <option value="VERDE">Verde</option>
+                                        <option value="AMARILLO">Amarillo</option>
+                                        <option value="ROJO">Rojo</option>
+                                    </select>
+                                </div>
+                            )}
 
                             {totales && (
                                 <div className="conv-totales" title="Conversaciones archivadas en el rango, por quién las archivó">
@@ -295,6 +323,9 @@ const ListaConversaciones = () => {
                                         <div className="chat-item-title">
                                             <div className="chat-item-name-row">
                                                 <span className="chat-item-name">{nombre}</span>
+                                                {esAuditor && conv.auditoria && (
+                                                    <span className={`auditoria-dot auditoria-dot--${conv.auditoria.calificacion.toLowerCase()}`} title={`Auditoría: ${CALIFICACION_LABEL[conv.auditoria.calificacion]}`} />
+                                                )}
                                             </div>
                                             <div className="chat-item-phone">
                                                 {telefono}

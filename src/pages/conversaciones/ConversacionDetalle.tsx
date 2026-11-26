@@ -10,6 +10,7 @@ import { getAuthSessionReason } from "../../utils/authSession"
 import TimelineItemView, { DocPreview, DocPreviewModal } from "../../components/chat/TimelineItemView"
 import { openSessionExpired } from "../../app/slices/actionSlice"
 import AfiliadoConversacionCard from "../../components/afiliado/AfiliadoConversacionCard"
+import AuditoriaConversacionCard, { puedeAuditar } from "../../components/conversaciones/AuditoriaConversacionCard"
 import "../chats/chats.css"
 
 const capitalizeText = (text: string | undefined | null): string => {
@@ -21,6 +22,8 @@ const ConversacionDetalle = () => {
     const { id } = useParams()
     const dispatch = useDispatch()
     const token = localStorage.getItem("token") || ""
+    const role = localStorage.getItem("role") || ""
+    const esAuditor = puedeAuditar(role)
 
     const [loading, setLoading] = useState<boolean>(true)
     const [data, setData] = useState<ConversacionDetalleResponse | null>(null)
@@ -117,7 +120,7 @@ const ConversacionDetalle = () => {
             </div>
 
             {/* Panel derecho: la conversación y quién habló en ella (en vivo desde Andes). */}
-            <div className="chat-info-panel chat-info-panel--open conv-detalle-panel">
+            <div className={`chat-info-panel chat-info-panel--open conv-detalle-panel ${esAuditor ? "conv-detalle-panel--auditoria" : ""}`}>
                 <div className="chat-info-panel-content">
                     <div className="chat-info-panel-header">
                         <h3>Conversación{conversacion.numeroConversacion ? ` N° ${conversacion.numeroConversacion}` : ''}</h3>
@@ -131,6 +134,15 @@ const ConversacionDetalle = () => {
                                 <div className="chat-info-panel-row"><span className="chat-info-panel-label">Archivada</span><span className="chat-info-panel-value">{fmt(conversacion.closedAt)}</span></div>
                             </div>
                         </div>
+                        {/* Auditoría de calidad (criterios de Karen): solo ROOT / ADMIN / SUPER. */}
+                        {esAuditor && (
+                            <AuditoriaConversacionCard
+                                token={token}
+                                conversacionId={conversacion.id}
+                                onAuthExpired={onAuthExpired}
+                                onGuardada={(a) => window.dispatchEvent(new CustomEvent("conversacion-auditada", { detail: { conversacionId: conversacion.id, auditoria: { calificacion: a.calificacion, updatedAt: a.updatedAt, auditor: a.auditor } } }))}
+                            />
+                        )}
                         <AfiliadoConversacionCard token={token} chatId={conversacion.chat?.id} conversacionId={conversacion.id} onAuthExpired={onAuthExpired} />
                     </div>
                 </div>
